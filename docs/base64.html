@@ -58,7 +58,7 @@
         text-underline-offset: 2px;
     }
 
-    body { font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif; }
+    body { font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif; font-variant-ligatures: none; }
     ul > li { list-style-type: disc; }
 
     code {
@@ -70,7 +70,6 @@
         font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         font-size: 0.875rem;
         line-height: 1.4;
-        font-variant-ligatures:contextual;
     }
     pre {
         margin: 1rem 0;
@@ -226,28 +225,6 @@ console.log(Buffer.from("aGVsbG8=", "base64").toString("utf8")); // hello
 // Browser (UTF-8 safe)
 const enc = (s) =&gt; btoa(unescape(encodeURIComponent(s)));
 const dec = (b) =&gt; decodeURIComponent(escape(atob(b)));
-</code></pre>
-
-    <li><b>C</b> (data URI example)</li>
-    <br/>
-    <pre class="line-numbers"><code class="language-c">// Using OpenSSL for brevity (BIO_f_base64). Many tiny single-file encoders exist.
-#include &lt;openssl/bio.h&gt;
-#include &lt;openssl/evp.h&gt;
-#include &lt;string.h&gt;
-
-char* b64(const unsigned char* data, size_t len) {
-    BIO *b64 = BIO_new(BIO_f_base64());
-    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL); // no newlines
-    BIO *mem = BIO_new(BIO_s_mem());
-    b64 = BIO_push(b64, mem);
-    BIO_write(b64, data, (int)len);
-    BIO_flush(b64);
-    BUF_MEM* bptr;
-    BIO_get_mem_ptr(b64, &amp;bptr);
-    char* out = strndup(bptr-&gt;data, bptr-&gt;length);
-    BIO_free_all(b64);
-    return out;
-}
 </code></pre>
 </ol>
 <br/>
