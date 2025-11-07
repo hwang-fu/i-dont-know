@@ -3,7 +3,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title></title>
+    <title>Base64 – Cheatsheet & Guide</title>
 
     <!-- Theme (pick any from Prism site) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.css">
@@ -16,140 +16,81 @@
 
 <style>
     table {
-        border-collapse: collapse;      /* merge borders so you don't get double lines */
-        width: 100%;                    /* optional: make it full width */
+        border-collapse: collapse;
+        width: 100%;
         font-family: system-ui, sans-serif;
         font-size: 14px;
     }
-
     th {
-        background-color: #f5f5f5;      /* light gray header background */
-        text-align: left;               /* header text alignment */
+        background-color: #f5f5f5;
+        text-align: left;
         font-weight: 600;
     }
-
     th, td {
-        border: 1px solid #ddd;         /* subtle border color */
-        padding: 8px 12px;              /* breathing room */
+        border: 1px solid #ddd;
+        padding: 8px 12px;
     }
+    tr:nth-child(even) { background-color: #fafafa; }
+    tr:hover { background-color: #f0f8ff; }
 
-    tr:nth-child(even) {
-        background-color: #fafafa;      /* zebra striping for readability */
-    }
+    .hl-red { background-color: red; }
+    .hl-green { background-color: green; }
+    .hl-blue { background-color: blue; }
+    .hl-yellow { background-color: yellow; }
 
-    tr:hover {
-        background-color: #f0f8ff;      /* light hover highlight */
-    }
+    .hl-red-bg { background-color: red; }
+    .hl-green-bg { background-color: green; }
+    .hl-blue-bg { background-color: blue; }
+    .hl-yellow-bg { background-color: yellow; }
 
-    .hl-red {
-        background-color: red;
-    }
+    .hl-red-fg { color: red; }
+    .hl-green-fg { color: green; }
+    .hl-blue-fg { color: blue; }
+    .hl-yellow-fg { color: yellow; }
+    .hl-grey-fg { color: grey; }
+    .hl-black-fg { color: black; }
 
-    .hl-green {
-        background-color: green;
-    }
-
-    .hl-blue {
-        background-color: blue;
-    }
-
-    .hl-yellow {
-        background-color: yellow;
-    }
-
-    .hl-red-bg {
-        background-color: red;
-    }
-
-    .hl-green-bg {
-        background-color: green;
-    }
-
-    .hl-blue-bg {
-        background-color: blue;
-    }
-
-    .hl-yellow-bg {
-        background-color: yellow;
-    }
-
-    .hl-red-fg {
-        color: red;
-    }
-
-    .hl-green-fg {
-        color: green;
-    }
-
-    .hl-blue-fg {
-        color: blue;
-    }
-
-    .hl-yellow-fg {
-        color: yellow;
-    }
-
-    .hl-grey-fg {
-        color: grey;
-    }
-
-    .hl-black-fg {
-        color: black;
-    }
-
-    .comment {
-        color: grey;
-    }
-
+    .comment { color: grey; }
     .red-underline {
         text-decoration-line: underline;
         text-decoration-color: red;
-        text-decoration-thickness: 2px; /* optional: make it a bit thicker */
-        text-underline-offset: 2px;     /* optional: move it slightly down */
+        text-decoration-thickness: 2px;
+        text-underline-offset: 2px;
     }
 
-    body {
-        font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
-    }
-
-    ul > li {
-        list-style-type: disc;
-    }
+    body { font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif; }
+    ul > li { list-style-type: disc; }
 
     code {
-        color: #24292e;                     /* text */
-        background-color: #f6f8fa;          /* bg */
-        border: 1px solid #d0d7de;          /* subtle frame */
+        color: #24292e;
+        background-color: #f6f8fa;
+        border: 1px solid #d0d7de;
         border-radius: .375rem;
         padding: .15rem .35rem;
         font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-        font-size: 0.875rem;                /* 14px-ish; avoid bare numbers */
+        font-size: 0.875rem;
         line-height: 1.4;
         font-variant-ligatures:contextual;
     }
-
-    /* Block code container */
     pre {
         margin: 1rem 0;
         padding: .8rem 1rem;
-        background-color: #f6f8fa;       /* match inline bg */
+        background-color: #f6f8fa;
         border: 1px solid #d0d7de;
         border-radius: .5rem;
-        overflow: auto;                   /* scroll if long */
-        tab-size: 4;                      /* adjust as needed */
+        overflow: auto;
+        tab-size: 4;
     }
-
-    /* Code inside pre: remove extra padding/background from inline style */
     pre code {
-        display: block;                   /* ensure full-width */
-        padding: 0;                       /* pre handles padding */
-        background: transparent;          /* avoid double bg */
-        border: 0;                        /* avoid double border */
+        display: block;
+        padding: 0;
+        background: transparent;
+        border: 0;
         color: #24292e;
         font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         font-size: 0.875rem;
         line-height: 1.5;
-        white-space: pre;                 /* preserve spacing; use pre-wrap to wrap long lines */
+        white-space: pre;
     }
 </style>
 </head>
@@ -157,84 +98,210 @@
 <body>
 <!-- * * * * * * * * * * * * * * -->
 
-
 <hr/>
 <h1>Base64</h1>
+<p class="hl-grey-fg">
+Base64 encodes arbitrary bytes into 64 ASCII symbols
+so that binary data can travel through text-only systems
+(emails, JSON, URLs, HTML, etc.).<br/>
+Therefore, it is NOT encryption, it is representation.
+</p>
 <hr/>
 
-
 <!-- * * * * * * * * * * * * * * -->
-<h3></h3>
+<h3>1) What is Base64 and why do we need it?</h3>
 <ol>
-    <li></li>
+    <li><b>Problem:</b> Some channels are text-only (7-bit safe).
+        Raw bytes may be mangled.
+        Base64 maps every 3 bytes to 4 printable characters.</li>
     <br/>
     <br/>
-    <li></li>
+    <li><b>Alphabet:</b> <code>A–Z a–z 0–9 + /</code> (URL-safe variant uses <code>-</code> and <code>_</code> instead of <code>+</code> and <code>/</code>).</li>
     <br/>
     <br/>
-    <li></li>
+    <li><b>Padding:</b> Encoded output length is a multiple of 4 using <code>=</code> as padding (except some URL/MIME variants where padding may be omitted).</li>
     <br/>
 </ol>
+<pre class="line-numbers"><code class="language-text">Standard alphabet (index → char)
+0–25  : A–Z
+26–51 : a–z
+52–61 : 0–9
+62    : +
+63    : /
+</code></pre>
 <br/>
 <!-- * * * * * * * * * * * * * * -->
 
+<hr/>
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>2) How encoding works (bit view)</h3>
+<ol>
+    <li><b>Group input</b> bytes into 24-bit blocks (3×8 bits). If less than 3 bytes remain, pad with zero bits.</li>
+    <br/>
+    <br/>
+    <li><b>Split</b> 24 bits into 4 groups of 6 bits. Each 6-bit value indexes the alphabet (0–63).</li>
+    <br/>
+    <br/>
+    <li><b>Pad output</b> with <code>=</code> if input length mod 3 is 1 (add <code>==</code>) or 2 (add <code>=</code>).</li>
+    <br/>
+</ol>
+<pre><code class="language-text">Example: "Man" (ASCII: 0x4D 0x61 0x6E)
+
+0x4D     0x61     0x6E
+01001101 01100001 01101110  → 24 bits
+
+Split 6-bit groups:
+010011 010110 000101 101110 → 19, 22, 5, 46
+
+Map to alphabet:
+19=T, 22=W, 5=F, 46=u  → "TWFu"
+</code></pre>
+
+<pre class="line-numbers"><code class="language-javascript">// Minimal JS example
+const encode = (s) =&gt; btoa(unescape(encodeURIComponent(s))); // UTF-8 safe
+const decode = (b) =&gt; decodeURIComponent(escape(atob(b)));
+
+console.log(encode("Man"));     // "TWFu"
+console.log(decode("TWFu"));    // "Man"
+</code></pre>
+<br/>
 
 <hr/>
 
-
 <!-- * * * * * * * * * * * * * * -->
-<h3></h3>
+<h3>3) Variants you’ll see in the wild</h3>
 <ol>
-    <li></li>
+    <li><b>URL-safe Base64:</b> replace <code>+</code> → <code>-</code>, <code>/</code> → <code>_</code>; padding <code>=</code> often omitted.</li>
     <br/>
+    <li><b>MIME Base64 (RFC 2045):</b> inserts line breaks (typically every 76 chars) for email transport.</li>
     <br/>
-    <li></li>
-    <br/>
-    <br/>
-    <li></li>
+    <li><b>Base64url (RFC 4648 §5):</b> exact spec for JWT, JWS, etc.; usually <i>no padding</i>.</li>
     <br/>
 </ol>
-<br/>
-<!-- * * * * * * * * * * * * * * -->
 
+<table>
+  <thead>
+    <tr><th>Variant</th><th>62</th><th>63</th><th>Padding</th><th>Typical uses</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Standard</td><td>+</td><td>/</td><td><code>=</code> required</td><td>MIME, general</td></tr>
+    <tr><td>URL-safe</td><td>-</td><td>_</td><td><code>=</code> often omitted</td><td>JWT, URLs, web APIs</td></tr>
+    <tr><td>MIME</td><td>+</td><td>/</td><td><code>=</code> required</td><td>Email, attachments</td></tr>
+  </tbody>
+</table>
+
+<pre class="line-numbers"><code class="language-javascript">// Base64url helpers (JS)
+const toUrl = (b64) =&gt; b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/,"");
+const fromUrl = (u) =&gt; (u + "===".slice((u.length + 3) % 4)).replace(/-/g,"+").replace(/_/g,"/");
+</code></pre>
+<br/>
 
 <hr/>
 
-
 <!-- * * * * * * * * * * * * * * -->
-<h3></h3>
+<h3>4) Code snippets in common languages</h3>
 <ol>
-    <li></li>
+    <li><b>Python</b> (<code>base64</code> standard lib)</li>
     <br/>
+    <pre class="line-numbers"><code class="language-python">import base64
+
+s = "你好, world"
+b = s.encode("utf-8")
+e = base64.b64encode(b).decode("ascii")
+print(e)  # 5L2g5aW9LCDkuK3lm70=
+
+# decode
+raw = base64.b64decode(e)
+print(raw.decode("utf-8"))
+</code></pre>
+
+    <li><b>Node.js / Browser</b></li>
     <br/>
-    <li></li>
+    <pre class="line-numbers"><code class="language-javascript">// Node.js
+const buf = Buffer.from("hello", "utf8");
+console.log(buf.toString("base64"));          // aGVsbG8=
+console.log(Buffer.from("aGVsbG8=", "base64").toString("utf8")); // hello
+
+// Browser (UTF-8 safe)
+const enc = (s) =&gt; btoa(unescape(encodeURIComponent(s)));
+const dec = (b) =&gt; decodeURIComponent(escape(atob(b)));
+</code></pre>
+
+    <li><b>C</b> (data URI example)</li>
     <br/>
-    <br/>
-    <li></li>
-    <br/>
+    <pre class="line-numbers"><code class="language-c">// Using OpenSSL for brevity (BIO_f_base64). Many tiny single-file encoders exist.
+#include &lt;openssl/bio.h&gt;
+#include &lt;openssl/evp.h&gt;
+#include &lt;string.h&gt;
+
+char* b64(const unsigned char* data, size_t len) {
+    BIO *b64 = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL); // no newlines
+    BIO *mem = BIO_new(BIO_s_mem());
+    b64 = BIO_push(b64, mem);
+    BIO_write(b64, data, (int)len);
+    BIO_flush(b64);
+    BUF_MEM* bptr;
+    BIO_get_mem_ptr(b64, &amp;bptr);
+    char* out = strndup(bptr-&gt;data, bptr-&gt;length);
+    BIO_free_all(b64);
+    return out;
+}
+</code></pre>
 </ol>
 <br/>
-<!-- * * * * * * * * * * * * * * -->
-
 
 <hr/>
 
+<!-- * * * * * * * * * * * * * * -->
+<h3>5) Common pitfalls & tips</h3>
+<ol>
+    <li><b>UTF-8 vs bytes:</b> Base64 encodes <i>bytes</i>. If you start with text, encode to UTF-8 bytes first.</li>
+    <br/>
+    <li><b>Padding:</b> If decoding fails, you may be missing <code>=</code> padding (esp. base64url). Re-pad to multiple of 4.</li>
+    <br/>
+    <li><b>Line wraps:</b> MIME inserts newlines, some decoders require removing them (<code>NO_NL</code> options).</li>
+    <br/>
+    <li><b>Security:</b> Base64 is not encryption. Do not treat it as confidentiality. It’s easily reversible.</li>
+    <br/>
+    <li><b>Size overhead:</b> Encoded size ≈ <code>4/3</code> of input. Large payloads inflate, consider compression first.</li>
+    <br/>
+</ol>
+
+<pre class="line-numbers"><code class="language-bash"># Quick CLI (Linux/macOS)
+printf "hello" | base64           # aGVsbG8=
+echo "aGVsbG8=" | base64 --decode # hello
+
+# OpenSSL (no newlines)
+printf "hello" | openssl base64 -A
+</code></pre>
+
+<hr/>
 
 <!-- * * * * * * * * * * * * * * -->
-<h3></h3>
+<h3>6) Cheats</h3>
 <ol>
-    <li></li>
+    <li><b>Length math</b>:
+        <ul>
+            <li>Encoded length = <code>4 * ceil(n_bytes / 3)</code></li>
+            <li>Decoded max length = <code>floor(n_b64_chars * 3 / 4)</code></li>
+        </ul>
+    </li>
     <br/>
+    <li><b>Data URI</b>:
+        <pre class="line-numbers"><code class="language-text">data:&lt;mime&gt;;base64,&lt;payload&gt;
+
+img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+</code></pre>
+    </li>
     <br/>
-    <li></li>
-    <br/>
-    <br/>
-    <li></li>
+    <li><b>Validate quickly (regex)</b>:
+        <pre class="line-numbers"><code class="language-regex">^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$</code></pre>
+    </li>
     <br/>
 </ol>
 <br/>
-<!-- * * * * * * * * * * * * * * -->
-
 
 <hr/>
 <!-- * * * * * * * * * * * * * * -->
@@ -242,3 +309,4 @@
 <!-- * * * * * * * * * * * * * * -->
 </html>
 <!-- * * * * * * * * * * * * * * -->
+
