@@ -510,6 +510,115 @@ interval(1000)
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Why does Angular HTTP use cold Observables?</h3>
+<ol>
+    <li>Angular’s <code>HttpClient.get(...)</code> returns a <b>cold</b> Observable.
+        This means: the request is sent <em>only when you subscribe</em>.</li>
+
+    <br/><br/>
+
+    <li>Each subscription triggers a <em>new</em> HTTP call.
+        This is good for one-off requests (like loading a page) and for retry logic.</li>
+
+    <br/><br/>
+
+    <li>Why cold?
+        So your code is predictable: you control <em>when</em> the request happens and you can easily cancel it by unsubscribing.</li>
+
+    <br/>
+
+<pre class="line-numbers"><code class="language-ts">import { HttpClient } from '@angular/common/http';import { shareReplay } from 'rxjs';
+
+class UserService {
+    constructor(private http: HttpClient) {}
+
+    // Each subscribe triggers a NEW request (cold)
+    loadUsers() {
+        return this.http.get('/api/users');
+    }
+
+    // If you want to SHARE one request with many subscribers: (First subscriber sends request, later subscribers reuse the result.)
+    loadUsersShared() {
+        return this.http.get('/api/users')
+            .pipe(
+                shareReplay(1) // cache the last value for new subscribers
+            );
+    }
+}
+</code></pre>
+    <br/><br/>
+
+    <li><strong>Tip:</strong> If you see duplicate HTTP calls, you likely subscribed more than once.
+        Use <code>shareReplay(1)</code> if you want to share one result.</li>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>Why do forms often use <code>BehaviorSubject</code>?</h3>
+<ol>
+    <li>Forms need to keep the <em>current</em> state: values, errors, dirty/touched flags.
+        New listeners (like a new component) must get the latest state right away.</li>
+
+    <br/><br/>
+
+    <li><code>BehaviorSubject</code> is perfect here: it always has a current value and gives it to new subscribers immediately.</li>
+
+    <br/><br/>
+
+    <li>Angular’s <code>FormControl.valueChanges</code> is an Observable of values over time.
+        If you keep a mirror of form state yourself, a <code>BehaviorSubject</code> makes it simple.</li>
+
+    <br/>
+
+<pre class="line-numbers"><code class="language-ts">import { BehaviorSubject } from 'rxjs';
+
+type Profile = { name: string; email: string };
+
+class ProfileStore {
+  // start with an initial value
+  private readonly _state = new BehaviorSubject&lt;Profile&gt;({ name: '', email: '' });
+
+  // expose as Observable for read-only access
+  state$ = this._state.asObservable();
+
+  // update from anywhere (e.g., form handlers)
+  update(patch: Partial&lt;Profile&gt;) {
+    const current = this._state.value;     // latest value
+    this._state.next({ ...current, ...patch });
+  }
+}
+
+// somewhere in your component:
+// store.state$.subscribe(profile =&gt; render(profile));
+// form.valueChanges.subscribe(val =&gt; store.update(val));
+</code></pre>
+
+    <br/><br/>
+
+    <li><strong>Result:</strong> Any subscriber (new or old) immediately sees the current form state and any future changes.</li>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 <!-- * * * * * * * * * * * * * * -->
 
 
