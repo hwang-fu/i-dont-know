@@ -295,7 +295,7 @@ numbers$.subscribe(result =&gt; {
 
     <br/><br/>
 
-    <li>Operators do not change the original stream;
+    <li>Operators do not change the original stream,
         they create a new stream with new values.</li>
 
     <br/>
@@ -309,6 +309,200 @@ numbers$.subscribe(result =&gt; {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Does <code>of()</code> emit immediately?</h3>
+<ol>
+    <li><code>of(1, 2, 3)</code> creates a stream that sends 1, then 2, then 3 as soon as you subscribe.</li>
+    <br/><br/>
+
+    <li>It is a "cold" <code>Observable</code>: each subscriber gets the same values from the start.</li>
+    <br/><br/>
+
+    <li>So yes — your code will print three values right after <code>subscribe()</code> runs.</li>
+    <br/>
+<pre class="line-numbers"><code class="language-ts">import { of } from 'rxjs';
+
+const numbers$ = of(1, 2, 3);
+
+numbers$.subscribe(v =&gt; console.log(v)); // 1, 2, 3 (sync, one after another)
+</code></pre>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>How do I add values later and trigger <code>subscribe()</code>?</h3>
+<ol>
+    <li>Normal Observables (like from <code>of()</code>) are "read-only" from the outside.<br/><br/>
+        You cannot push new values into them after creation.</li>
+
+    <br/><br/><br/>
+
+    <li>To push values yourself, use a <code>Subject</code> (or <code>BehaviorSubject</code>, <code>ReplaySubject</code>).<br/><br/>
+        They have a <code>next(value)</code> method that emits to all subscribers.</li>
+
+    <br/><br/><br/>
+
+    <li>Or build your own Observable with <code>new Observable()</code> and call <code>observer.next(...)</code> inside.</li>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>Add values with <code>Subject</code> (most common)</h3>
+<ol>
+    <li><code>Subject</code> starts empty. You push values using <code>next()</code>.</li>
+
+    <br/>
+
+<pre class="line-numbers"><code class="language-ts">import { Subject } from 'rxjs';
+
+const clicks$ = new Subject&lt;number&gt;();
+
+// Listen
+clicks$.subscribe(v =&gt; console.log('A:', v));
+clicks$.subscribe(v =&gt; console.log('B:', v));
+
+// Emit (later, anywhere you hold the subject)
+clicks$.next(1);  // A: 1, B: 1
+clicks$.next(2);  // A: 2, B: 2
+</code></pre>
+
+    <br/><br/>
+
+    <li>Use it for event streams: buttons, sockets, custom signals.</li>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>Keep latest value with <code>BehaviorSubject</code></h3>
+<ol>
+    <li><code>BehaviorSubject</code> needs an initial value and always remembers the latest value.</li>
+
+    <br/>
+
+<pre class="line-numbers"><code class="language-ts">
+import { BehaviorSubject } from 'rxjs';
+
+const count$ = new BehaviorSubject&lt;number&gt;(0); // initial value 0
+
+count$.subscribe(v =&gt; console.log('First:', v)); // First: 0
+
+count$.next(1);
+count$.next(2);
+
+count$.subscribe(v =&gt; console.log('Second (late):', v)); // Second (late): 2 (gets latest immediately)
+</code></pre>
+
+    <br/><br/>
+
+    <li>Great for app state: user, theme, cart, form values.</li>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>Build your own Observable (custom producer)</h3>
+<ol>
+    <li>Use <code>new Observable()</code> when you want control over how values are produced.</li>
+
+    <br/>
+
+<pre class="line-numbers"><code class="language-ts">import { Observable } from 'rxjs';
+
+const ticker$ = new Observable&lt;number&gt;((observer) =&gt; {
+    let n = 0;
+    const id = setInterval(() =&gt; {
+        observer.next(n++);                 // push next number every 500ms
+        if (n === 5) observer.complete();   // finish after 5 values
+    }, 500);
+
+    // cleanup on unsubscribe
+    return () =&gt; clearInterval(id);
+});
+
+const sub = ticker$.subscribe({
+    next: v =&gt; console.log('tick', v),
+    complete: () =&gt; console.log('done'),
+});
+
+// Later, if needed: sub.unsubscribe();
+</code></pre>
+
+    <br/><br/>
+
+    <li>Good when wrapping <code>setInterval</code>, DOM events, or 3rd-party APIs.</li>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>Cold vs Hot (quick idea)</h3>
+<ol>
+    <li><strong>Cold</strong> (e.g., <code>of()</code>, <code>from()</code>, HTTP):
+        each subscriber gets the same sequence from the start.</li>
+    <br/><br/>
+
+    <li><strong>Hot</strong> (e.g., <code>Subject</code>, DOM events):
+        values happen regardless of subscribers,
+        late subscribers may miss older values.</li>
+    <br/><br/>
+
+    <li><code>BehaviorSubject</code> is hot, but it replays the latest value to new subscribers.</li>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>When emissions are not immediate</h3>
+<ol>
+    <li>Sources like <code>interval()</code>, <code>timer()</code>, HTTP calls, or user events emit later (async), not immediately.</li>
+
+    <br/>
+
+<pre class="line-numbers"><code class="language-ts">import { interval, take } from 'rxjs';
+
+interval(1000)
+    .pipe(take(3))
+    .subscribe(v =&gt; console.log(v)); // prints 0, 1, 2 — one per second
+</code></pre>
+
+    <br/><br/>
+
+    <li>So: some streams are sync (<code>of()</code>), some are async (timers, HTTP, UI events).</li>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
