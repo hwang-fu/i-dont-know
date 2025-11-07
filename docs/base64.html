@@ -108,7 +108,7 @@ Therefore, it is NOT encryption, it is representation.
 <hr/>
 
 <!-- * * * * * * * * * * * * * * -->
-<h3>1) What is Base64 and why do we need it?</h3>
+<h3>What is Base64 and why do we need it?</h3>
 <ol>
     <li><b>Problem:</b> Some channels are text-only (7-bit safe).
         Raw bytes may be mangled.
@@ -134,7 +134,7 @@ Therefore, it is NOT encryption, it is representation.
 <hr/>
 
 <!-- * * * * * * * * * * * * * * -->
-<h3>2) How encoding works (bit view)</h3>
+<h3>How encoding works (bit view)</h3>
 <ol>
     <li><b>Group input</b> bytes into 24-bit blocks (3×8 bits). If less than 3 bytes remain, pad with zero bits.</li>
     <br/>
@@ -169,7 +169,7 @@ console.log(decode("TWFu"));    // "Man"
 <hr/>
 
 <!-- * * * * * * * * * * * * * * -->
-<h3>3) Variants you’ll see in the wild</h3>
+<h3>Variants you’ll see in the wild</h3>
 <ol>
     <li><b>URL-safe Base64:</b> replace <code>+</code> → <code>-</code>, <code>/</code> → <code>_</code>; padding <code>=</code> often omitted.</li>
     <br/>
@@ -199,7 +199,7 @@ const fromUrl = (u) =&gt; (u + "===".slice((u.length + 3) % 4)).replace(/-/g,"+"
 <hr/>
 
 <!-- * * * * * * * * * * * * * * -->
-<h3>4) Code snippets in common languages</h3>
+<h3>Code snippets in common languages</h3>
 <ol>
     <li><b>Python</b> (<code>base64</code> standard lib)</li>
     <br/>
@@ -232,7 +232,7 @@ const dec = (b) =&gt; decodeURIComponent(escape(atob(b)));
 <hr/>
 
 <!-- * * * * * * * * * * * * * * -->
-<h3>5) Common pitfalls & tips</h3>
+<h3>Common pitfalls & tips</h3>
 <ol>
     <li><b>UTF-8 vs bytes:</b> Base64 encodes <i>bytes</i>. If you start with text, encode to UTF-8 bytes first.</li>
     <br/>
@@ -257,7 +257,7 @@ printf "hello" | openssl base64 -A
 <hr/>
 
 <!-- * * * * * * * * * * * * * * -->
-<h3>6) Cheats</h3>
+<h3>Cheats</h3>
 <ol>
     <li><b>Length math</b>:
         <ul>
@@ -279,8 +279,86 @@ img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
     <br/>
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
 
 <hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>Why do we need <code>=</code> padding characters?</h3>
+<ol>
+    <li><b>Decoder needs a hint:</b> Zero bits added during encoding are indistinguishable from real data after transmission. The number of <code>=</code> tells the decoder how many bytes to keep:
+    <ul>
+      <li><code>==</code> → last block had <b>1 input byte</b></li>
+      <li><code>=</code>  → last block had <b>2 input bytes</b></li>
+      <li>no <code>=</code> → last block had <b>3 input bytes</b></li>
+    </ul>
+  </li>
+  <br/>
+  <br/>
+  <li><b>Concrete example: 1 input byte</b> (<code>"M"</code> → <code>0x4D</code>)</li>
+</ol>
+
+<pre class="line-numbers"><code class="language-text">Input bytes (1): 4D
+Pad with 16 zero bits to reach 24 bits:
+01001101 00000000 00000000
+
+Split to 6-bit groups:
+010011 010000 000000 000000
+    19     16      0      0   → naive alphabet: T Q A A
+
+Naive Base64 would be "TQAA" (ambiguous).
+Correct Base64 replaces the last two chars with "=" to mark missing bytes:
+"TQ=="
+</code></pre>
+
+<br/>
+
+<ol start="4">
+  <li><b>Concrete example: 2 input bytes</b> (<code>"Ma"</code> → <code>0x4D 0x61</code>)</li>
+</ol>
+
+<pre class="line-numbers"><code class="language-text">Input bytes (2): 4D 61
+Pad with 8 zero bits:
+01001101 01100001 00000000
+
+Split to 6-bit groups:
+010011 010110 000100 000000
+    19     22      4      0   → naive alphabet: T W E A
+
+Naive Base64 would be "TWEA".
+Correct Base64 uses one "=" to mark one missing byte:
+"TWE="
+</code></pre>
+
+<br/>
+<br/>
+
+<ol start="5">
+    <li><b>Why not rely on the zero bits alone?</b><br/><br/>
+        After encoding, the decoder cannot know whether those zeros were padding or real data.<br/><br/>
+        The <code>=</code> characters are explicit metadata that makes decoding unambiguous.</li>
+
+    <br/>
+    <br/>
+    <br/>
+
+    <li><b>URL-safe and omitted padding:</b> In Base64url (JWT, etc.) the <code>=</code> is often omitted for compactness.
+        To decode, restore padding so length % 4 == 0 (append <code>=</code> as needed).</li>
+</ol>
+
+<pre class="line-numbers"><code class="language-javascript">// Re-pad a Base64url string u back to standard Base64 for decoding
+const repad = (u) =&gt; (u + "===".slice((u.length + 3) % 4))
+                      .replace(/-/g, "+")
+                      .replace(/_/g, "/");
+
+// Examples:
+repad("TQ")     // "TQ=="  (1 input byte)
+repad("TWE")    // "TWE="  (2 input bytes)
+repad("TWFu")   // "TWFu"  (3 input bytes, no padding)
+</code></pre>
+
 <!-- * * * * * * * * * * * * * * -->
 </body>
 <!-- * * * * * * * * * * * * * * -->
