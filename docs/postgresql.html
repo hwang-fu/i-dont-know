@@ -213,7 +213,7 @@
         <li><code>SERIAL</code> automatically creates an auto-incrementing integer column (in modern PostgreSQL, use <code>GENERATED ALWAYS AS IDENTITY</code> instead).</li>
         <li><code>PRIMARY KEY</code> ensures each row has a unique, non-null identifier.</li>
         <li><code>VARCHAR(50)</code> defines a text field up to 50 characters.</li>
-        <li><code>DEFAULT CURRENT_DATE</code> auto-fills with today’s date when no value is given.</li>
+        <li><code>DEFAULT CURRENT_DATE</code> auto-fills with today's date when no value is given.</li>
     </ul>
     <br/>
     <br/>
@@ -248,7 +248,7 @@
 </code></pre>
     <br/>
     <ul>
-        <li><code>CHECK (order_total &gt;= 0)</code> ensures totals can’t be negative.</li>
+        <li><code>CHECK (order_total &gt;= 0)</code> ensures totals can't be negative.</li>
         <li><code>PRIMARY KEY</code> and <code>FOREIGN KEY</code> constraints can appear at the bottom as table-level definitions.</li>
         <li><code>NUMERIC(10,2)</code> means up to 10 digits total, 2 after the decimal point.</li>
     </ul>
@@ -359,32 +359,242 @@ DROP TABLE employees;
 
 
 <!-- * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * -->
-
-
-<hr/>
-
-
-<!-- * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * -->
-
-
-<hr/>
-
-
-<!-- * * * * * * * * * * * * * * -->
-<h3></h3>
+<h3>Understanding Schemas in PostgreSQL</h3>
 <ol>
-    <li></li>
+    <li><b>What is a Schema?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>schema</b> in PostgreSQL is like a <u>folder</u> or <u>namespace</u> inside a database.</li>
+        <br/>
+        <li>Each schema contains its own set of tables, views, functions, and other objects — just like different folders can contain different files.</li>
+        <br/>
+        <li>This allows you to:
+            <ul>
+                <li>Organize your database objects logically (e.g. <code>hr.employees</code>, <code>sales.orders</code>).</li>
+                <li>Have tables with the same name in different schemas without conflict (e.g. <code>test.users</code> vs <code>prod.users</code>).</li>
+                <li>Control access permissions at a schema level.</li>
+            </ul>
+        </li>
+    </ul>
     <br/>
     <br/>
-    <li></li>
+
+
+    <li><b>Database vs Schema</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL databases are the top-level containers.</li>
+        <br/>
+        <li>A schema lives <u>inside</u> a database, and tables live inside a schema.</li>
+    </ul>
+<pre><code class="language-text">
+Database → Schema → Table → Row
+</code></pre>
+    <br/>
+    <ul>
+        <li>For example, you might have a database called <code>company_db</code>, which contains two schemas:</li>
+    </ul>
+<pre><code class="language-text">
+company_db
+ ├── public
+ │    ├── employees
+ │    ├── departments
+ │
+ └── analytics
+      ├── sales_summary
+      ├── monthly_reports
+</code></pre>
+    <br/>
+    <ul>
+        <li>This way, you can separate your operational data (<code>public</code>) from analytical data (<code>analytics</code>).</li>
+    </ul>
     <br/>
     <br/>
-    <li></li>
+
+
+    <li><b>The Default Schema: public</b></li>
+    <br/>
+    <ul>
+        <li>When you first create a new database, PostgreSQL automatically creates a schema named <code>public</code>.</li>
+        <br/>
+        <li>Unless you specify otherwise, every table, view, or function you create goes into the <code>public</code> schema.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">-- This table is created inside the default "public" schema
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Its full name is actually <code>public.users</code>, even if you normally omit the schema prefix.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Creating a Custom Schema</b></li>
+<pre><code class="language-sql line-numbers">CREATE SCHEMA hr;
+CREATE SCHEMA sales;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Now you have two additional namespaces: <code>hr</code> and <code>sales</code>.</li>
+        <br/>
+        <li>You can create tables inside them using a schema-qualified name:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE TABLE hr.employees (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    position TEXT
+);
+
+CREATE TABLE sales.orders (
+    id SERIAL PRIMARY KEY,
+    amount NUMERIC(10,2),
+    customer TEXT
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Now <code>hr.employees</code> and <code>sales.orders</code> are two independent tables, even though both live in the same database.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Accessing Tables in Schemas</b></li>
+<pre><code class="language-sql line-numbers">-- Access table using schema-qualified name
+SELECT * FROM hr.employees;
+
+-- Access table from the default "public" schema
+SELECT * FROM public.users;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You always access tables by <code>schema_name.table_name</code>.</li>
+        <br/>
+        <li>If you omit the schema, PostgreSQL looks for the table in the schemas listed in the current <b>search_path</b> (see below).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>The Search Path</b></li>
+    <br/>
+    <ul>
+        <li>The <b>search_path</b> is the list of schemas that PostgreSQL looks through when you reference an object without a schema prefix.</li>
+        <br/>
+        <li>By default, it is usually:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SHOW search_path;
+
+-- Output example:
+-- "public", "$user"
+</code></pre>
+    <br/>
+    <ul>
+        <li>This means:
+            <ul>
+                <li>First, PostgreSQL looks for the object in <code>public</code>.</li>
+                <li>Then, it looks for a schema with the same name as the current user.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You can change the search path to prioritize another schema:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SET search_path TO hr, public;
+
+-- Now "employees" means "hr.employees"
+SELECT * FROM employees;
+</code></pre>
+    <br/>
+    <ul>
+        <li>When working on large projects, this helps you avoid writing <code>hr.</code> or <code>sales.</code> all the time.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Dropping a Schema</b></li>
+<pre><code class="language-sql line-numbers">DROP SCHEMA hr;
+
+-- Or remove all its objects automatically:
+DROP SCHEMA hr CASCADE;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>DROP SCHEMA hr;</code> will fail if the schema is not empty.</li>
+        <li><code>CASCADE</code> deletes the schema and all contained tables, views, and functions.</li>
+        <li>⚠️ Use <code>CASCADE</code> with caution — this is irreversible!</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Schema Permissions</b></li>
+    <br/>
+    <ul>
+        <li>You can grant or revoke access to schemas independently of table permissions.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">-- Grant a user permission to create objects in a schema
+GRANT CREATE ON SCHEMA sales TO alice;
+
+-- Allow a user to use (read from) the schema
+GRANT USAGE ON SCHEMA hr TO bob;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>USAGE</code> allows access to existing objects inside the schema.</li>
+        <li><code>CREATE</code> allows creating new objects within that schema.</li>
+        <li>Combining these allows a user to both read and create inside that namespace.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>When to Use Schemas</b></li>
+    <br/>
+    <ul>
+        <li><b>Organizing modules</b> — for example, <code>hr</code>, <code>finance</code>, and <code>sales</code> schemas in a company database.</li>
+        <br/>
+        <li><b>Separating environments</b> — e.g., <code>dev</code>, <code>test</code>, <code>prod</code> schemas in the same database for testing purposes.</li>
+        <br/>
+        <li><b>Multi-tenant applications</b> — one schema per customer, while keeping all data in a single database.</li>
+        <br/>
+        <li><b>Access control</b> — different roles can have access to different schemas.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><mark>Summary</mark></li>
+    <ul>
+        <li>A <b>schema</b> is a namespace inside a PostgreSQL database that groups related tables and objects together.</li>
+        <br/>
+        <li>By default, all objects go into the <code>public</code> schema, but you can create your own with <code>CREATE SCHEMA</code>.</li>
+        <br/>
+        <li>Access tables as <code>schema_name.table_name</code> — or adjust <code>search_path</code> for convenience.</li>
+        <br/>
+        <li>Use schemas to organize projects, control permissions, and keep your database clean and modular.</li>
+    </ul>
     <br/>
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 <!-- * * * * * * * * * * * * * * -->
 
 
