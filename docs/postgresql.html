@@ -1324,7 +1324,192 @@ ROLLBACK;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Filtering Rows with the WHERE Clause</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>WHERE</code> clause in PostgreSQL filters rows returned by a <code>SELECT</code>, <code>UPDATE</code>, or <code>DELETE</code> statement based on one or more conditions.</li>
+        <br/>
+        <li>It is evaluated <u>before</u> grouping or ordering results — only rows satisfying the condition(s) are kept.</li>
+        <br/>
+        <li>You can use logical operators (<code>AND</code>, <code>OR</code>, <code>NOT</code>), comparison operators (<code>=</code>, <code>&lt;</code>, <code>&gt;</code>, etc.), and range or set operators like <code>BETWEEN</code>, <code>IN</code>, and <code>LIKE</code>.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">SELECT column1, column2, ...
+FROM table_name
+WHERE condition;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>condition</code> can include comparisons, logical connectors, or functions that evaluate to <code>TRUE</code> or <code>FALSE</code>.</li>
+        <li>Rows for which the condition is <code>TRUE</code> are returned; <code>FALSE</code> or <code>NULL</code> rows are excluded.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Comparison Operators</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM employees
+WHERE department = 'Engineering';
+</code></pre>
+    <br/>
+    <ul>
+        <li><b>Common operators:</b></li>
+        <table>
+            <thead>
+                <tr><th>Operator</th><th>Description</th><th>Example</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>=</code></td><td>Equal to</td><td><code>salary = 50000</code></td></tr>
+                <tr><td><code>&lt;&gt;</code> or <code>!=</code></td><td>Not equal to</td><td><code>department &lt;&gt; 'IT'</code></td></tr>
+                <tr><td><code>&gt;</code></td><td>Greater than</td><td><code>age &gt; 30</code></td></tr>
+                <tr><td><code>&lt;</code></td><td>Less than</td><td><code>salary &lt; 40000</code></td></tr>
+                <tr><td><code>&gt;=</code></td><td>Greater than or equal to</td><td><code>age &gt;= 18</code></td></tr>
+                <tr><td><code>&lt;=</code></td><td>Less than or equal to</td><td><code>hire_date &lt;= '2025-01-01'</code></td></tr>
+            </tbody>
+        </table>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Combining Conditions with AND, OR, NOT</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM employees
+WHERE department = 'Sales'
+    AND hire_date &gt;= '2024-01-01'
+    OR active = TRUE;
+</code></pre>
+    <br/>
+    <ul>
+        <li>It is recommended to use parentheses for clarity:
+<pre><code class="language-sql line-numbers">WHERE (department = 'Sales' AND hire_date &gt;= '2024-01-01') OR active = TRUE;</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Filtering Ranges with BETWEEN</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM employees
+WHERE salary BETWEEN 40000 AND 60000;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>BETWEEN a AND b</code> is equivalent to <code>(salary &gt;= a AND salary &lt;= b)</code>.</li>
+        <li>It <u>includes</u> both boundary values.</li>
+        <li>You can use it with dates, numbers, or text:</li>
+<pre><code class="language-sql line-numbers">WHERE hire_date BETWEEN '2024-01-01' AND '2024-12-31';</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Filtering by a Set with IN</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM employees
+WHERE department IN ('HR', 'IT', 'Finance');
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>IN</code> checks whether a value matches any value in the provided list.</li>
+        <li>Equivalent to multiple <code>OR</code> conditions:</li>
+<pre><code class="language-sql line-numbers">WHERE department = 'HR' OR department = 'IT' OR department = 'Finance';</code></pre>
+        <li>You can also use a subquery:
+<pre><code class="language-sql line-numbers">WHERE department_id IN (SELECT id FROM departments WHERE active = TRUE);</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Pattern Matching with LIKE and ILIKE</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM employees
+WHERE last_name LIKE 'S%';
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>LIKE</code> is case-sensitive pattern matching.</li>
+        <li><code>ILIKE</code> is the case-insensitive version (PostgreSQL extension).</li>
+        <li>Examples:</li>
+<pre><code class="language-sql line-numbers">WHERE name LIKE  'A%';      -- starts with A
+WHERE name LIKE  '%son';    -- ends with son
+WHERE name ILIKE '%SMITH%'; -- contains 'smith' (case-insensitive)
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Filtering NULL Values</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM employees
+WHERE department IS NULL;
+
+SELECT * FROM employees
+WHERE department IS NOT NULL;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>= NULL</code> does <u>not</u> work — use <code>IS NULL</code> and <code>IS NOT NULL</code>.</li>
+        <li>This is because <code>NULL</code> represents "unknown", not an actual value.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Checking Membership with EXISTS</b></li>
+<pre><code class="language-sql line-numbers">SELECT *
+FROM employees e
+WHERE EXISTS (
+    SELECT 1 FROM departments d
+    WHERE d.id = e.department_id
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>EXISTS</code> checks whether a subquery returns at least one row.</li>
+        <li>If it does, the condition is <code>TRUE</code>, otherwise <code>FALSE</code>.</li>
+        <li>Often used for correlated subqueries and conditional joins.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using ANY and ALL</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM employees
+WHERE salary &gt; ANY (SELECT salary FROM interns);
+
+SELECT * FROM employees
+WHERE salary &gt; ALL (SELECT salary FROM interns);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>ANY</code> — condition is true if it holds for <u>at least one</u> value returned by the subquery.</li>
+        <li><code>ALL</code> — condition must hold for <u>every</u> value returned by the subquery.</li>
+        <li>These are useful when comparing against ranges of values dynamically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Combining Multiple Conditions</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM employees
+WHERE department = 'Finance'
+    AND (salary BETWEEN 40000 AND 60000)
+    AND active = TRUE
+    AND last_name ILIKE 'J%';
+</code></pre>
+    <br/>
+    <ul>
+        <li>Conditions can be chained together in flexible and readable ways.</li>
+        <li>Parentheses make the logic explicit and prevent ambiguity.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
