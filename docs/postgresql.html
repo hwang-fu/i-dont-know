@@ -1517,7 +1517,245 @@ WHERE department = 'Finance'
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Database Design in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><u>Database design</u> is the process of organizing data into structured tables that represent real-world entities and their relationships.</li>
+        <br/>
+        <li>Good design ensures:
+            <ul>
+                <li>Data integrity (accuracy and consistency).</li>
+                <li>Scalability (efficient growth with more data).</li>
+                <li>Performance (fast queries and updates).</li>
+                <li>Maintainability (easy schema evolution and clear relationships).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>PostgreSQL, as a relational database, uses <b>tables</b>, <b>keys</b>, and <b>relationships</b> to represent structured data logically and efficiently.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Step 1: Identify Entities and Attributes</b></li>
+    <br/>
+    <ul>
+        <li>Begin by identifying <b>entities</b> — objects or concepts you need to store data about (e.g. <code>customers</code>, <code>orders</code>, <code>products</code>).</li>
+        <br/>
+        <li>For each entity, determine its <b>attributes</b> — descriptive properties or fields.</li>
+    </ul>
+<pre><code class="language-text">
+Entity: Customer
+ ├── customer_id (primary key)
+ ├── name
+ ├── email
+ └── phone
+
+Entity: Order
+ ├── order_id (primary key)
+ ├── customer_id (foreign key)
+ ├── order_date
+ └── total_amount
+</code></pre>
+    <br/>
+    <ul>
+        <li>Each entity becomes a table, and each attribute becomes a column.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Step 2: Define Primary Keys</b></li>
+    <br/>
+    <ul>
+        <li>A <b>primary key</b> uniquely identifies each row in a table.</li>
+        <li>PostgreSQL commonly uses:
+            <ul>
+                <li><code>SERIAL</code> or <code>IDENTITY</code> columns for numeric IDs.</li>
+                <li>Or <code>UUID</code> for globally unique identifiers.</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    name        TEXT NOT NULL,
+    email       TEXT UNIQUE
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Each table should have exactly ONE primary key column or a composite key (a combination of multiple columns) when necessary.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Step 3: Define Relationships with Foreign Keys</b></li>
+    <br/>
+    <ul>
+        <li><u>Foreign keys</u> define relationships between tables by referencing primary keys of other tables.</li>
+        <li>They maintain <u>referential integrity</u>, ensuring that related data exists before referencing it.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE TABLE orders (
+    order_id     SERIAL PRIMARY KEY,
+    customer_id  INT REFERENCES customers(customer_id),
+    order_date   DATE NOT NULL DEFAULT CURRENT_DATE,
+    total_amount NUMERIC(10,2)
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, <code>orders.customer_id</code> links each order to its corresponding customer.</li>
+        <li>You can specify actions like <code>ON DELETE CASCADE</code> or <code>ON UPDATE SET NULL</code> for dependency behavior.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Step 4: Normalize Your Data</b></li>
+    <br/>
+    <ul>
+        <li><u>Normalization</u> is the process of structuring data to reduce redundancy and improve consistency.</li>
+        <br/>
+        <li>Common normal forms:
+            <ul>
+                <li><b>1NF (First Normal Form)</b> — No repeating groups or arrays, every field holds atomic values.</li>
+                <li><b>2NF (Second Normal Form)</b> — Every non-key attribute depends entirely on the primary key.</li>
+                <li><b>3NF (Third Normal Form)</b> — No transitive dependencies (non-key columns shouldn't depend on other non-key columns).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example — Unnormalized table:</li>
+<pre><code class="language-text">
+orders
+ ├── order_id
+ ├── customer_name
+ ├── customer_email
+ ├── product_1
+ ├── product_2
+</code></pre>
+        <li>Normalized design:</li>
+<pre><code class="language-text">
+customers
+ ├── customer_id
+ ├── name
+ ├── email
+
+orders
+ ├── order_id
+ ├── customer_id
+ ├── order_date
+
+order_items
+ ├── order_id
+ ├── product_id
+ ├── quantity
+</code></pre>
+        <li>This separation avoids data duplication and keeps relationships clear.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Step 5: Add Constraints and Data Integrity Rules</b></li>
+    <br/>
+    <ul>
+        <li>Constraints enforce rules at the database level:
+            <ul>
+                <li><code>NOT NULL</code> — prevents missing values.</li>
+                <li><code>UNIQUE</code> — ensures no duplicates.</li>
+                <li><code>CHECK</code> — validates data according to conditions.</li>
+                <li><code>DEFAULT</code> — sets fallback values automatically.</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE TABLE employees (
+    id        SERIAL PRIMARY KEY,
+    name      TEXT NOT NULL,
+    salary    NUMERIC(8,2) CHECK (salary &gt;= 0),
+    active    BOOLEAN DEFAULT TRUE
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>These ensure that invalid or inconsistent data cannot be inserted even by mistake.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Step 6: Use Indexes for Performance</b></li>
+    <br/>
+    <ul>
+        <li><u>Indexes</u> speed up data retrieval by allowing faster lookups on large tables.</li>
+        <li>PostgreSQL automatically creates an index for primary and unique keys, but you can add more as needed.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_employees_department ON employees(department);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use indexes wisely — they make reads faster but can slow down inserts and updates.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Step 7: Consider Denormalization (for Performance)</b></li>
+    <br/>
+    <ul>
+        <li>In some high-performance or reporting cases, you may intentionally duplicate certain data to avoid complex joins.</li>
+        <li>This is called <u>denormalization</u> — used to trade storage for speed.</li>
+        <li>Example: storing <code>customer_name</code> directly inside <code>orders</code> for faster querying, even though it's also in <code>customers</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Step 8: Plan for Relationships — One-to-Many and Many-to-Many</b></li>
+    <br/>
+    <ul>
+        <li><b>One-to-Many</b> — a customer can have many orders.</li>
+<pre><code class="language-sql line-numbers">-- one-to-many
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INT REFERENCES customers(customer_id)
+);
+</code></pre>
+        <li><b>Many-to-Many</b> — students can take many courses, and each course has many students.</li>
+<pre><code class="language-sql line-numbers">-- many-to-many through a junction table
+CREATE TABLE enrollments (
+    student_id INT REFERENCES students(id),
+    course_id  INT REFERENCES courses(id),
+    PRIMARY KEY (student_id, course_id)
+);
+</code></pre>
+        <li>Use junction (bridge) tables for many-to-many relationships.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Step 9: Naming Conventions and Documentation</b></li>
+    <br/>
+    <ul>
+        <li>Consistent naming improves readability and maintainability:
+            <ul>
+                <li>Use <code>snake_case</code> for all identifiers (e.g. <code>order_date</code>).</li>
+                <li>Plural names for tables (<code>employees</code>, <code>orders</code>).</li>
+                <li>Singular names for columns (<code>employee_id</code>).</li>
+                <li>Prefix foreign keys with the table they reference (e.g. <code>customer_id</code> in <code>orders</code>).</li>
+            </ul>
+        </li>
+        <li>Document your schema using comments:</li>
+<pre><code class="language-sql line-numbers">COMMENT ON TABLE employees IS 'Stores employee data for the company';
+COMMENT ON COLUMN employees.salary IS 'Monthly gross salary in euros';
+</code></pre>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
