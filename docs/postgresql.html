@@ -1004,7 +1004,146 @@ SELECT first_name, last_name FROM contractors;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Concatenating Strings in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>String concatenation means joining two or more strings together into a single text value.</li>
+        <br/>
+        <li>In PostgreSQL, you can concatenate strings using:
+            <ul>
+                <li>The concatenation operator <code>||</code> (most common and SQL-standard).</li>
+                <li>The <code>CONCAT()</code> function.</li>
+                <li>The <code>CONCAT_WS()</code> function (concatenate with a separator).</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Using the || Operator</b></li>
+<pre><code class="language-sql line-numbers">SELECT 'Hello' || ' ' || 'World' AS greeting;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>||</code> operator joins strings directly.</li>
+        <li>In this example, PostgreSQL returns <code>Hello World</code>.</li>
+        <li>You can concatenate columns and literals together as well:</li>
+<pre><code class="language-sql line-numbers">SELECT
+    first_name || ' ' || last_name AS full_name
+FROM employees;
+</code></pre>
+        <li>This is the most widely used approach for text combination in PostgreSQL.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Handling NULLs with ||</b></li>
+<pre><code class="language-sql line-numbers">SELECT 'Hello' || NULL || 'World' AS result;
+</code></pre>
+    <br/>
+    <ul>
+        <li>If any operand is <code>NULL</code>, the entire concatenated result becomes <code>NULL</code>.</li>
+        <li>Example result: <code>NULL</code>.</li>
+        <li>To avoid this, use the <code>COALESCE()</code> function to replace <code>NULL</code> with an empty string:</li>
+<pre><code class="language-sql line-numbers">SELECT 'Hello' || COALESCE(NULL, '') || 'World' AS safe_concat;</code></pre>
+        <li>Result: <code>HelloWorld</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using CONCAT()</b></li>
+<pre><code class="language-sql line-numbers">SELECT CONCAT('Hello', ' ', 'World') AS greeting;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>CONCAT()</code> joins any number of arguments together.</li>
+        <li>Unlike <code>||</code>, it automatically treats <code>NULL</code> as an empty string.</li>
+        <li>Example:</li>
+<pre><code class="language-sql line-numbers">SELECT CONCAT('Hello', NULL, 'World') AS greeting;</code></pre>
+        <li>Result: <code>HelloWorld</code> (not <code>NULL</code>).</li>
+        <li>This makes <code>CONCAT()</code> safer when dealing with nullable columns.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using CONCAT_WS() — Concatenate with Separator</b></li>
+<pre><code class="language-sql line-numbers">SELECT CONCAT_WS('-', '2025', '11', '10') AS formatted_date;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>CONCAT_WS(separator, arg1, arg2, ...)</code> stands for "Concatenate With Separator."</li>
+        <li>The first argument is used as the separator between all other arguments.</li>
+        <li><code>NULL</code> values are ignored automatically.</li>
+        <li>Example with <code>NULL</code>:
+<pre><code class="language-sql line-numbers">SELECT CONCAT_WS(' ', 'Alice', NULL, 'Johnson');</code></pre>
+        <li>Result: <code>Alice Johnson</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Concatenating Columns Example</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    first_name || ' ' || last_name AS full_name,
+    department || ' Department'    AS dept_name
+FROM employees;
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Concatenation in UPDATE Statements</b></li>
+<pre><code class="language-sql line-numbers">UPDATE employees
+SET full_name = first_name || ' ' || last_name;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can use concatenation when updating data, for example, to fill a derived column.</li>
+        <li>PostgreSQL evaluates the expressions on the right-hand side for each row.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Concatenation with Numbers and Other Types</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    'Employee ID: ' || employee_id AS label
+FROM employees;
+</code></pre>
+    <br/>
+    <ul>
+        <li>PostgreSQL automatically casts numbers, booleans, and dates to text when concatenated with a string.</li>
+        <li>You can also use explicit conversion for clarity:</li>
+<pre><code class="language-sql line-numbers">SELECT 'Employee ID: ' || CAST(employee_id AS TEXT) FROM employees;</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Formatting Example: Full Address</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    CONCAT_WS(', ',
+        street,
+        city,
+        postal_code,
+        country
+    ) AS full_address
+FROM customers;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This builds a clean formatted address string, skipping <code>NULL</code> parts automatically.</li>
+        <li>Example result: <code>"Main Street 5, Berlin, 10115, Germany"</code>.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
