@@ -2493,7 +2493,288 @@ WHERE contype = 'c' AND conrelid = 'employees'::regclass;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Foreign Keys in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <u>foreign key</u> establishes a relationship between two tables by linking a column (or set of columns) in one table to the <code>PRIMARY KEY</code> or <code>UNIQUE</code> column of another table.</li>
+        <br/>
+        <li>It enforces <b>referential integrity</b> — ensuring that a value in the referencing table must always match an existing value in the referenced table (or be <code>NULL</code> if allowed).</li>
+        <br/>
+        <li>Foreign keys prevent "orphan" records, i.e., rows that refer to non-existent data in another table.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE child_table (
+    column_name data_type REFERENCES parent_table (parent_column)
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>REFERENCES</code> keyword defines the link to the target table and column.</li>
+        <li>By default, PostgreSQL enforces that the referenced value must exist in the parent table before it can be inserted into the child table.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Basic Foreign Key Relationship</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    name        TEXT NOT NULL
+);
+
+CREATE TABLE orders (
+    order_id     SERIAL PRIMARY KEY,
+    customer_id  INT REFERENCES customers(customer_id),
+    order_date   DATE NOT NULL DEFAULT CURRENT_DATE
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here:
+            <ul>
+                <li><code>customers</code> is the <b>parent</b> table.</li>
+                <li><code>orders</code> is the <b>child</b> table — each order must refer to a valid customer.</li>
+            </ul>
+        </li>
+        <li>If you try to insert an order for a non-existent customer, PostgreSQL will reject it.</li>
+<pre><code class="language-text">ERROR:  insert or update on table "orders" violates foreign key constraint "orders_customer_id_fkey"
+DETAIL: Key (customer_id)=(999) is not present in table "customers".
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Foreign Key Constraint Naming</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL automatically generates a name (e.g. <code>orders_customer_id_fkey</code>), but you can define your own for clarity:</li>
+<pre><code class="language-sql line-numbers">CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INT,
+    CONSTRAINT fk_orders_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES customers (customer_id)
+);
+</code></pre>
+        <li>Explicit naming is recommended for maintainability, especially in large schemas.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Inserting and Deleting Data</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO customers (name) VALUES ('Alice');
+INSERT INTO orders (customer_id) VALUES (1);  -- valid
+
+INSERT INTO orders (customer_id) VALUES (999); -- invalid
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can only insert a child row if the referenced parent row exists.</li>
+        <li>If you delete a parent row that is still referenced by children, PostgreSQL will block the operation unless an <code>ON DELETE</code> rule is specified.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>ON DELETE and ON UPDATE Actions</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL provides several options for handling parent changes:</li>
+        <table>
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Description</th>
+                    <th>Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>NO ACTION</code> (default)</td>
+                    <td>Rejects the change if it would break referential integrity.</td>
+                    <td><code>ON DELETE NO ACTION</code></td>
+                </tr>
+                <tr>
+                    <td><code>RESTRICT</code></td>
+                    <td>Similar to <code>NO ACTION</code>, but checked immediately instead of at the end of the transaction.</td>
+                    <td><code>ON DELETE RESTRICT</code></td>
+                </tr>
+                <tr>
+                    <td><code>CASCADE</code></td>
+                    <td>Deletes or updates dependent child rows automatically.</td>
+                    <td><code>ON DELETE CASCADE</code></td>
+                </tr>
+                <tr>
+                    <td><code>SET NULL</code></td>
+                    <td>Sets the child's foreign key column to <code>NULL</code>.</td>
+                    <td><code>ON DELETE SET NULL</code></td>
+                </tr>
+                <tr>
+                    <td><code>SET DEFAULT</code></td>
+                    <td>Sets the column to its default value (must be valid or NULL).</td>
+                    <td><code>ON DELETE SET DEFAULT</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </ul>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-sql line-numbers">CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INT REFERENCES customers(customer_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+</code></pre>
+        <li>Now if you delete a customer, all their orders are automatically deleted too.</li>
+        <li>If the customer's ID changes (rare but possible), the foreign key in <code>orders</code> updates automatically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using SET NULL and SET DEFAULT</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INT REFERENCES customers(customer_id)
+        ON DELETE SET NULL
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>When the referenced customer is deleted, the foreign key in <code>orders</code> becomes <code>NULL</code>.</li>
+        <li>This requires the foreign key column to allow <code>NULL</code> values, otherwise, PostgreSQL will reject the setup.</li>
+    </ul>
+    <br/>
+    <ul>
+        <li>Example with <code>SET DEFAULT</code>:</li>
+<pre><code class="language-sql line-numbers">CREATE TABLE orders (
+    order_id    SERIAL PRIMARY KEY,
+    customer_id INT DEFAULT 0 REFERENCES customers(customer_id) ON DELETE SET DEFAULT
+);
+</code></pre>
+        <li>Here, when a customer is deleted, all their orders will have <code>customer_id</code> reset to <code>0</code> (a placeholder or "unassigned" value).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Composite Foreign Keys</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE enrollments (
+    student_id INT,
+    course_id  INT,
+    PRIMARY KEY (student_id, course_id)
+);
+
+CREATE TABLE grades (
+    student_id INT,
+    course_id  INT,
+    grade      CHAR(2),
+    FOREIGN KEY (student_id, course_id)
+        REFERENCES enrollments (student_id, course_id)
+        ON DELETE CASCADE
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Composite keys reference multiple columns together, maintaining multi-column relationships.</li>
+        <li>The number and order of columns in the <code>FOREIGN KEY</code> must exactly match those in the referenced key.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Deferrable Foreign Keys</b></li>
+<pre><code class="language-sql line-numbers">ALTER TABLE orders
+ADD CONSTRAINT fk_customer
+    FOREIGN KEY (customer_id)
+    REFERENCES customers (customer_id)
+    DEFERRABLE INITIALLY DEFERRED;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Normally, PostgreSQL checks foreign key integrity immediately when you insert or update a row.</li>
+        <li>With <code>DEFERRABLE INITIALLY DEFERRED</code>, checks occur only when the transaction commits — allowing temporary inconsistencies within a transaction.</li>
+        <li>Example use case: cyclic relationships between tables that reference each other.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Checking Existing Foreign Keys</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    conname             AS constraint_name,
+    conrelid::regclass  AS table_name,
+    confrelid::regclass AS referenced_table,
+    confupdtype         AS on_update,
+    confdeltype         AS on_delete
+FROM pg_constraint
+WHERE contype = 'f';
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>pg_constraint</code> system catalog stores all foreign key definitions.</li>
+        <li>The <code>confdeltype</code> and <code>confupdtype</code> columns contain codes for delete/update actions:
+            <ul>
+                <li><code>a</code> — NO ACTION</li>
+                <li><code>r</code> — RESTRICT</li>
+                <li><code>c</code> — CASCADE</li>
+                <li><code>n</code> — SET NULL</li>
+                <li><code>d</code> — SET DEFAULT</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Behavior When Dropping Referenced Tables</b></li>
+<pre><code class="language-sql line-numbers">DROP TABLE customers;
+-- ERROR:  cannot drop table customers because other objects depend on it
+</code></pre>
+    <br/>
+    <ul>
+        <li>PostgreSQL blocks the drop to preserve referential integrity.</li>
+        <li>You can force the removal (and automatically drop all dependent constraints) using <code>CASCADE</code>:</li>
+<pre><code class="language-sql line-numbers">DROP TABLE customers CASCADE;</code></pre>
+        <li>This will also remove all foreign key constraints in child tables that reference it, but the child tables themselves remain intact.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>NULL and Foreign Keys</b></li>
+    <br/>
+    <ul>
+        <li>Foreign key columns can contain <code>NULL</code> unless defined as <code>NOT NULL</code>.</li>
+        <li>When <code>NULL</code> is present, PostgreSQL skips foreign key validation for that row (because "unknown" cannot be compared).</li>
+        <li>This allows optional relationships — e.g., an <code>order</code> that may not yet be linked to a <code>customer</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL automatically creates indexes on the referenced columns in the parent table (if they are primary or unique keys).</li>
+        <li>However, you may also create indexes on the foreign key columns in the child table for faster joins and deletions:</li>
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_orders_customer_id ON orders(customer_id);
+</code></pre>
+        <li>This improves query performance when filtering or joining on the foreign key.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
