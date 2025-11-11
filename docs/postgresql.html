@@ -4017,6 +4017,197 @@ SELECT 40000::SMALLINT; -- ERROR: smallint out of range
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>The DECIMAL Type in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>DECIMAL</code> (or its synonym <code>NUMERIC</code>) is a <u>fixed-point, exact numeric</u> data type in PostgreSQL.</li>
+        <br/>
+        <li>It stores numbers with user-defined precision and scale, ensuring <u>no rounding errors</u> in arithmetic operations.</li>
+        <br/>
+        <li>This makes it ideal for use in <b>financial, accounting, and scientific</b> calculations where accuracy matters more than speed.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Declaration Syntax</b></li>
+<pre><code class="language-sql line-numbers">NUMERIC(precision, scale)
+-- or
+DECIMAL(precision, scale)
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>precision</code>: total number of significant digits (before + after decimal point).</li>
+        <li><code>scale</code>: number of digits allowed <code>after</code> the decimal point.</li>
+        <li>For example: <code>NUMERIC(8, 2)</code> means:
+            <ul>
+                <li>Up to 8 digits total.</li>
+                <li>2 digits after the decimal (so max 999999.99).</li>
+            </ul>
+        </li>
+        <li>If you omit <code>(p, s)</code>, PostgreSQL allows arbitrary precision — only limited by memory.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Defining DECIMAL Columns</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE transactions (
+    id       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    amount   DECIMAL(10, 2),
+    tax_rate NUMERIC(5, 3),
+    total    NUMERIC(12, 4)
+);
+
+INSERT INTO transactions (amount, tax_rate, total)
+VALUES (1234.56, 0.075, 1326.9300);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>DECIMAL(10, 2)</code> — up to 10 digits total, with 2 after the decimal (e.g., 99999999.99).</li>
+        <li><code>NUMERIC(5, 3)</code> &nbsp; — up to 5 digits total, 3 of them after the decimal (e.g., 12.345).</li>
+        <li><code>NUMERIC(12, 4)</code> — higher precision for cumulative totals.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Precision and Rounding</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE test_round (
+    value NUMERIC(6, 2)
+);
+
+INSERT INTO test_round VALUES (123.456);  -- Automatically rounded
+SELECT * FROM test_round;
+</code></pre>
+    <br/>
+    <ul>
+        <li>PostgreSQL rounds values to the defined scale when inserting or updating.</li>
+        <li>Result:</li>
+<pre><code class="language-text"> value
+--------
+ 123.46
+</code></pre>
+        <li>If a number exceeds the allowed <b>precision</b>, PostgreSQL raises an error instead of truncating silently.</li>
+<pre><code class="language-text">ERROR:  numeric field overflow
+DETAIL: A field with precision 6, scale 2 must round to an absolute value less than 10^4.
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Comparison with Floating-Point Types</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    0.1 + 0.2                                   AS float_sum,
+    CAST(0.1 AS NUMERIC) + CAST(0.2 AS NUMERIC) AS numeric_sum;
+</code></pre>
+    <br/>
+    <ul>
+        <li><b>Floating-point (REAL/DOUBLE)</b> types use binary fractions and may produce tiny rounding errors:</li>
+<pre><code class="language-text"> float_sum   | numeric_sum
+-------------+--------------
+ 0.300000000 | 0.3
+</code></pre>
+        <li><code>NUMERIC</code> / <code>DECIMAL</code> performs exact arithmetic and never introduces such artifacts.</li>
+        <li>Therefore, prefer <code>DECIMAL</code> for money, interest rates, or measurements requiring exactness.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Default Precision and Scale</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE flexible_numbers (
+    value NUMERIC
+);
+
+INSERT INTO flexible_numbers VALUES (12345678901234567890.123456789);
+SELECT value FROM flexible_numbers;
+</code></pre>
+    <br/>
+    <ul>
+        <li>If no precision and scale are specified, <code>NUMERIC</code> stores numbers with arbitrary length and precision.</li>
+        <li>This allows very large or very precise numbers, but may be slightly slower to process.</li>
+        <li>Output example:</li>
+<pre><code class="language-text"> value
+---------------------
+ 12345678901234567890.123456789
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Arithmetic Operations</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    amount,
+    tax_rate,
+    amount * tax_rate AS tax,
+    amount + (amount * tax_rate) AS total
+FROM transactions;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>NUMERIC</code> values support all arithmetic operators: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>.</li>
+        <li>PostgreSQL maintains full precision in intermediate steps and rounds only at output or storage.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Rounding Functions</b></li>
+<pre><code class="language-sql line-numbers">SELECT ROUND(12.3456, 2),  -- 12.35
+       TRUNC(12.3456, 2);  -- 12.34
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>ROUND()</code> — rounds to the nearest value using standard half-up rounding.</li>
+        <li><code>TRUNC()</code> — simply cuts off extra digits (no rounding).</li>
+        <li>Both functions work natively with <code>NUMERIC</code> values.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Formatting and Casting</b></li>
+<pre><code class="language-sql line-numbers">SELECT TO_CHAR(1234.5::NUMERIC(10,2), '9999.99');  -- '1234.50'
+SELECT TO_CHAR(9876.5432, '9,999.00');             -- '9,876.54'
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>TO_CHAR()</code> converts <code>NUMERIC</code> values into formatted text with grouping, padding, or currency symbols.</li>
+        <li>You can also cast <code>NUMERIC</code> to <code>INTEGER</code> or <code>DOUBLE PRECISION</code> as needed.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT CAST(12.34 AS INT);              -- 12
+SELECT CAST(12.34 AS DOUBLE PRECISION); -- 12.34
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Storage and Performance</b></li>
+    <br/>
+    <ul>
+        <li><code>NUMERIC</code> values are stored in a <b>variable-length</b> binary format, optimized for precision rather than speed.</li>
+        <li>For small integers or approximate values, <code>INTEGER</code> or <code>DOUBLE PRECISION</code> are faster.</li>
+        <li>However, <code>NUMERIC</code> ensures exactness even for very large or fractional numbers.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Practical Use Cases</b></li>
+    <br/>
+    <ul>
+        <li><b>Finance:</b> storing currency, exchange rates, and interest calculations (<code>NUMERIC(12,2)</code>).</li>
+        <li><b>Scientific data:</b> precise measurements with fixed decimals (<code>NUMERIC(8,4)</code>).</li>
+        <li><b>Accounting:</b> totals, taxes, and percentages where rounding errors are unacceptable.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 
 <!-- * * * * * * * * * * * * * * -->
 
