@@ -2782,7 +2782,296 @@ WHERE contype = 'f';
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Basics on Joining Tables in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <code>JOIN</code> combines rows from two or more tables based on a related column between them.</li>
+        <br/>
+        <li>In PostgreSQL, joins are performed using the <code>JOIN</code> keyword together with <code>ON</code> or <code>USING</code> clauses that specify matching columns.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic JOIN Syntax</b></li>
+<pre><code class="language-sql line-numbers">SELECT columns
+FROM table1
+JOIN table2
+  ON table1.column_name = table2.column_name;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>JOIN</code> matches rows from both tables where the condition is true.</li>
+        <li>By default, <code>JOIN</code> means <code>INNER JOIN</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example Setup</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    city TEXT
+);
+
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INT REFERENCES customers(customer_id),
+    order_date DATE DEFAULT CURRENT_DATE,
+    amount NUMERIC(10,2)
+);
+
+INSERT INTO customers (name, city)
+VALUES ('Alice', 'Berlin'),
+       ('Bob', 'Munich'),
+       ('Charlie', 'Hamburg');
+
+INSERT INTO orders (customer_id, amount)
+VALUES (1, 120.00),
+       (1, 90.50),
+       (2, 45.00);
+</code></pre>
+    <br/>
+    <ul>
+        <li>This setup lets us explore all join types using <code>customers</code> and <code>orders</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>INNER JOIN</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    customers.name,
+    orders.order_id,
+    orders.amount
+FROM customers
+INNER JOIN orders
+    ON customers.customer_id = orders.customer_id;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>INNER JOIN</code> returns only rows with matching values in both tables.</li>
+        <li>If a customer has no orders, that customer will not appear in the result.</li>
+        <li>Result:</li>
+<pre><code class="language-text"> name   | order_id | amount
+--------+-----------+--------
+ Alice  |     1     | 120.00
+ Alice  |     2     |  90.50
+ Bob    |     3     |  45.00
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>2. LEFT JOIN (or LEFT OUTER JOIN)</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    customers.name,
+    orders.order_id,
+    orders.amount
+FROM customers
+LEFT JOIN orders
+    ON customers.customer_id = orders.customer_id;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>LEFT JOIN</code> returns all rows from the left table (<code>customers</code>), and the matching rows from the right table (<code>orders</code>).</li>
+        <li>If no match exists, PostgreSQL fills right-side columns with <code>NULL</code>.</li>
+        <li>Result:</li>
+<pre><code class="language-text"> name     | order_id | amount
+----------+-----------+--------
+ Alice    |     1     | 120.00
+ Alice    |     2     |  90.50
+ Bob      |     3     |  45.00
+ Charlie  |   NULL    | NULL
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>RIGHT JOIN (or RIGHT OUTER JOIN)</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    customers.name,
+    orders.order_id,
+    orders.amount
+FROM customers
+RIGHT JOIN orders
+    ON customers.customer_id = orders.customer_id;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>RIGHT JOIN</code> returns all rows from the right table (<code>orders</code>) and matching rows from the left table (<code>customers</code>).</li>
+        <li>Unmatched rows from the left table will appear as <code>NULL</code>.</li>
+        <li>Typically less used than <code>LEFT JOIN</code> because you can just swap the table order.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>FULL JOIN (or FULL OUTER JOIN)</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    customers.name,
+    orders.order_id,
+    orders.amount
+FROM customers
+FULL JOIN orders
+    ON customers.customer_id = orders.customer_id;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>FULL JOIN</code> returns all rows from both tables, matching them when possible.</li>
+        <li>Unmatched rows from either table get <code>NULL</code> values in the missing columns.</li>
+        <li>Result example if some rows had no counterpart:</li>
+<pre><code class="language-text"> name     | order_id | amount
+----------+-----------+--------
+ Alice    |     1     | 120.00
+ Alice    |     2     |  90.50
+ Bob      |     3     |  45.00
+ Charlie  |   NULL    | NULL
+ NULL     |     4     |  80.00   -- order without a known customer
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>CROSS JOIN</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    customers.name,
+    orders.order_id
+FROM customers
+CROSS JOIN orders;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>CROSS JOIN</code> produces the <b>Cartesian product</b> — every row from the first table is combined with every row from the second.</li>
+        <li>Use with caution — the number of rows grows rapidly (e.g., 10 × 10 = 100).</li>
+        <li>This join type does not require an <code>ON</code> condition.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>SELF JOIN</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    name TEXT,
+    manager_id INT REFERENCES employees(employee_id)
+);
+
+SELECT e.name AS employee,
+       m.name AS manager
+FROM employees e
+LEFT JOIN employees m
+  ON e.manager_id = m.employee_id;
+</code></pre>
+    <br/>
+    <ul>
+        <li>A <b>self join</b> joins a table to itself — useful for hierarchical or tree-like data such as employees and managers.</li>
+        <li>Aliases (<code>e</code>, <code>m</code>) are necessary to distinguish between the two instances of the same table.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>USING Clause</b></li>
+<pre><code class="language-sql line-numbers">SELECT *
+FROM customers
+JOIN orders USING (customer_id);
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>USING (column_name)</code> syntax is a shortcut when both tables share a column with the same name.</li>
+        <li>It automatically merges the duplicate join column in the output, so you'll see only one <code>customer_id</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>8. Joining More Than Two Tables</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE order_items (
+    order_item_id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(order_id),
+    product_name TEXT,
+    quantity INT
+);
+
+SELECT
+    c.name AS customer,
+    o.order_id,
+    i.product_name,
+    i.quantity
+FROM customers c
+JOIN orders o
+  ON c.customer_id = o.customer_id
+JOIN order_items i
+  ON o.order_id = i.order_id;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can chain multiple <code>JOIN</code> clauses in one query.</li>
+        <li>Each <code>JOIN</code> connects one more table through a matching condition.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Filtering After Joins</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    c.name, o.amount
+FROM customers c
+JOIN orders o
+  ON c.customer_id = o.customer_id
+WHERE o.amount &gt; 50;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can use <code>WHERE</code>, <code>ORDER BY</code>, <code>LIMIT</code>, and other clauses after joining.</li>
+        <li>PostgreSQL first performs the join, then filters the results according to your conditions.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>NATURAL JOIN</b></li>
+<pre><code class="language-sql line-numbers">SELECT *
+FROM customers
+NATURAL JOIN orders;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>NATURAL JOIN</code> automatically joins tables using all columns with the same names.</li>
+        <li>While convenient, it can be dangerous — if new columns with the same name are added later, join behavior may change unexpectedly.</li>
+        <li>Use <code>JOIN ... USING (...)</code> instead for clarity and control.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li>Joins can be computationally expensive for large tables.</li>
+        <li>To optimize performance:
+            <ul>
+                <li>Ensure both sides of join conditions are indexed (especially foreign key columns).</li>
+                <li>Use <code>EXPLAIN</code> to analyze query plans and check for sequential scans.</li>
+                <li>Limit unnecessary joins — fetch only required columns.</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-sql line-numbers">EXPLAIN SELECT * FROM customers JOIN orders ON customers.customer_id = orders.customer_id;</code></pre>
+    <br/>
+    <ul>
+        <li>This shows how PostgreSQL executes the join internally (e.g., nested loop, hash join, merge join).</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
