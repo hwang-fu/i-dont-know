@@ -3342,7 +3342,242 @@ SELECT name, city FROM students_2025 WHERE city = 'Munich';
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>The BOOLEAN Type in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>BOOLEAN</code> type in PostgreSQL represents truth values — logical <b>true</b> or <b>false</b> conditions.</li>
+        <br/>
+        <li>It is often used in columns that represent yes/no, on/off, or active/inactive states.</li>
+        <br/>
+        <li>Unlike databases that simulate booleans with integers (e.g. 0/1), PostgreSQL has a <b>native</b> boolean type with its own rules and accepted literals.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Declaration Syntax</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    name    TEXT NOT NULL,
+    active  BOOLEAN DEFAULT TRUE
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>BOOLEAN</code> columns can take values <code>TRUE</code>, <code>FALSE</code>, or <code>NULL</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Accepted Literal Values</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL accepts a variety of textual and numeric representations for boolean values:</li>
+        <br/>
+        <table>
+            <thead>
+                <tr>
+                    <th>Meaning</th>
+                    <th>Accepted Values</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>TRUE</b></td>
+                    <td><code>TRUE</code>, <code>'t'</code>, <code>'true'</code>, <code>'y'</code>, <code>'yes'</code>, <code>'on'</code>, <code>'1'</code></td>
+                </tr>
+                <tr>
+                    <td><b>FALSE</b></td>
+                    <td><code>FALSE</code>, <code>'f'</code>, <code>'false'</code>, <code>'n'</code>, <code>'no'</code>, <code>'off'</code>, <code>'0'</code></td>
+                </tr>
+            </tbody>
+        </table>
+        <br/>
+        <li>The matching is <u>case-insensitive</u>, so <code>'True'</code>, <code>'YES'</code>, and <code>'On'</code> all work the same.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Examples of Insertion</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO users (name, active)
+VALUES
+    ('Alice', TRUE),
+    ('Bob', 'yes'),
+    ('Charlie', 'f'),
+    ('Diana', 0);
+
+SELECT * FROM users;
+</code></pre>
+    <br/>
+    <ul>
+        <li>PostgreSQL automatically interprets <code>'yes'</code>, <code>'f'</code>, and <code>0</code> according to the truth table above.</li>
+        <li>Result:</li>
+<pre><code class="language-text"> user_id |  name    | active
+----------+----------+---------
+ 1        | Alice    | t
+ 2        | Bob      | t
+ 3        | Charlie  | f
+ 4        | Diana    | f
+</code></pre>
+        <li><code>t</code> and <code>f</code> are how PostgreSQL displays boolean values by default.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Boolean Display Formats</b></li>
+    <br/>
+    <ul>
+        <li>Although PostgreSQL stores booleans internally as true/false, by default it displays them as <code>t</code> and <code>f</code>.</li>
+        <li>This is a historical choice compatible with early UNIX and SQL standards.</li>
+        <li>You can cast or format them differently if needed:</li>
+<pre><code class="language-sql line-numbers">SELECT active::text FROM users;
+-- Outputs: 't', 'f'
+
+SELECT
+    CASE
+        WHEN active THEN 'Active'
+        ELSE 'Inactive'
+    END
+FROM users;
+-- Custom labels for boolean output
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using Booleans in Conditions</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM users WHERE active = TRUE;
+
+-- Shorter equivalent:
+SELECT * FROM users WHERE active;
+
+-- Opposite:
+SELECT * FROM users WHERE NOT active;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can write conditions with or without explicitly comparing to <code>TRUE</code> or <code>FALSE</code>.</li>
+        <li>The expression <code>WHERE active</code> is shorthand for <code>WHERE active = TRUE</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>NULL with Boolean Columns</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO users (name, active) VALUES ('Eve', NULL);
+
+SELECT name,
+       CASE
+         WHEN active THEN 'True'
+         WHEN NOT active THEN 'False'
+         ELSE 'Unknown'
+       END AS status
+FROM users;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Boolean columns can be <code>NULL</code>, representing "unknown" or "not specified."</li>
+        <li>This is different from <code>FALSE</code> — PostgreSQL treats <code>NULL</code> as neither true nor false.</li>
+        <li>The <code>CASE</code> statement (or <code>COALESCE</code>) can be used to handle <code>NULL</code> explicitly.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Boolean Operators</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL supports standard logical operators on boolean expressions:</li>
+        <table>
+            <thead>
+                <tr>
+                    <th>Operator</th>
+                    <th>Description</th>
+                    <th>Example</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>AND</code></td>
+                    <td>True if both operands are true</td>
+                    <td><code>TRUE AND FALSE</code></td>
+                    <td>FALSE</td>
+                </tr>
+                <tr>
+                    <td><code>OR</code></td>
+                    <td>True if at least one operand is true</td>
+                    <td><code>TRUE OR FALSE</code></td>
+                    <td>TRUE</td>
+                </tr>
+                <tr>
+                    <td><code>NOT</code></td>
+                    <td>Negates the boolean value</td>
+                    <td><code>NOT TRUE</code></td>
+                    <td>FALSE</td>
+                </tr>
+            </tbody>
+        </table>
+        <br/>
+        <li>Example usage inside a query:</li>
+<pre><code class="language-sql line-numbers">SELECT * FROM users
+WHERE active OR name = 'Alice';
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Boolean Expressions in SELECT</b></li>
+<pre><code class="language-sql line-numbers">SELECT name,
+       (active AND city = 'Berlin') AS active_in_berlin
+FROM users;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Boolean expressions can appear directly in the <code>SELECT</code> list — returning <code>t</code>, <code>f</code>, or <code>NULL</code> per row.</li>
+        <li>This is useful for logical flags or derived states.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Indexing Boolean Columns</b></li>
+    <br/>
+    <ul>
+        <li>Boolean columns typically have low selectivity (few distinct values), so simple indexes are often not useful.</li>
+        <li>However, you can create <u>partial indexes</u> to speed up queries on a specific boolean value:</li>
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_users_active_true
+ON users (user_id)
+WHERE active = TRUE;
+</code></pre>
+        <li>This makes <code>WHERE active = TRUE</code> queries faster without indexing inactive users.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Converting Between Boolean and Other Types</b></li>
+<pre><code class="language-sql line-numbers">SELECT CAST(TRUE AS INT);   -- returns 1
+SELECT CAST(FALSE AS INT);  -- returns 0
+
+SELECT CAST(1 AS BOOLEAN);  -- returns TRUE
+SELECT CAST(0 AS BOOLEAN);  -- returns FALSE
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can cast between <code>BOOLEAN</code> and <code>INTEGER</code> types if needed.</li>
+        <li>PostgreSQL follows standard semantics: <code>TRUE → 1</code>, <code>FALSE → 0</code>.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
