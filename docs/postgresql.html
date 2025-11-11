@@ -2123,7 +2123,170 @@ WHERE table_name = 'employees';
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>The DEFAULT Constraint in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>DEFAULT</code> constraint in PostgreSQL assigns an automatic value to a column when no value is specified during an <code>INSERT</code> operation.</li>
+        <br/>
+        <li>It helps maintain data consistency and prevents <code>NULL</code> values in cases where a sensible fallback value exists.</li>
+        <br/>
+        <li>Defaults can be constant values (like numbers or text), expressions, or even built-in PostgreSQL functions such as <code>CURRENT_DATE</code> or <code>NOW()</code>.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE table_name (
+    column_name data_type DEFAULT default_value,
+    ...
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>DEFAULT</code> keyword is placed after the data type when defining the column.</li>
+        <li>If you omit the column in an <code>INSERT</code> statement, PostgreSQL automatically fills it with the default value.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Simple DEFAULT Values</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE tasks (
+    task_id SERIAL PRIMARY KEY,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>When a new task is inserted without specifying <code>status</code> or <code>created_at</code>, PostgreSQL automatically assigns:
+            <ul>
+                <li><code>'pending'</code> to <code>status</code>.</li>
+                <li>The current date and time (via <code>NOW()</code>) to <code>created_at</code>.</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-sql line-numbers">INSERT INTO tasks (description) VALUES ('Write documentation');
+-- status     → 'pending'
+-- created_at → current timestamp
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Using DEFAULT with Numeric and Boolean Columns</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    price NUMERIC(10,2) DEFAULT 0.00,
+    available BOOLEAN DEFAULT TRUE
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>If you omit <code>price</code> or <code>available</code> when inserting, PostgreSQL will assign <code>0.00</code> and <code>TRUE</code> respectively.</li>
+        <li>This avoids the need to manually fill common defaults like <code>0</code>, <code>TRUE</code>, or <code>'N/A'</code> for each row.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using DEFAULT with Expressions</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    order_date DATE DEFAULT CURRENT_DATE,
+    total NUMERIC(10,2) DEFAULT (0.0),
+    order_ref TEXT DEFAULT ('ORD-' || EXTRACT(YEAR FROM CURRENT_DATE))
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Defaults can be expressions or function results — not just constants.</li>
+        <li>Here:
+            <ul>
+                <li><code>CURRENT_DATE</code> fills in today’s date automatically.</li>
+                <li><code>('ORD-' || EXTRACT(YEAR FROM CURRENT_DATE))</code> generates a dynamic prefix for each order (e.g., <code>ORD-2025</code>).</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Inserting Explicit DEFAULT Values</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO tasks (description, status)
+VALUES ('Review code', DEFAULT);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use the <code>DEFAULT</code> keyword explicitly in <code>INSERT</code> statements to apply the column’s predefined default value.</li>
+        <li>This is especially useful when inserting into selected columns but still wanting defaults for others.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Adding a DEFAULT Constraint to an Existing Table</b></li>
+<pre><code class="language-sql line-numbers">ALTER TABLE employees
+ALTER COLUMN active SET DEFAULT TRUE;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can add or modify default values using <code>ALTER TABLE</code>.</li>
+        <li>Defaults affect only <u>future</u> inserts — existing rows remain unchanged unless updated manually.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Removing a DEFAULT Constraint</b></li>
+<pre><code class="language-sql line-numbers">ALTER TABLE employees
+ALTER COLUMN active DROP DEFAULT;
+</code></pre>
+    <br/>
+    <ul>
+        <li>After dropping the default, you must explicitly provide a value for that column when inserting new rows.</li>
+        <li>If the column also has <code>NOT NULL</code>, inserts without a value will raise an error.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Combining DEFAULT with NOT NULL</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username TEXT NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>This combination ensures every user row always has a valid non-NULL value — either the provided one or the default <code>TRUE</code>.</li>
+        <li>It’s one of the most common patterns for robust schema design.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Viewing Default Values</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    column_name,
+    column_default
+FROM information_schema.columns
+WHERE table_name = 'tasks';
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>column_default</code> column displays the default expressions or constant values assigned to each field.</li>
+        <li>Useful for auditing and verifying schema configurations.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
