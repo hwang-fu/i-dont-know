@@ -4216,6 +4216,328 @@ SELECT CAST(12.34 AS DOUBLE PRECISION); -- 12.34
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Date and Time Types in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL supports a full suite of <u>temporal data types</u> for working with dates, times, and timestamps.</li>
+        <br/>
+        <li>They follow the SQL standard closely and provide both <u>timezone-aware</u> and <u>timezone-independent</u> options.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Available Date and Time Types</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Example Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>DATE</code></td>
+                <td>Stores calendar dates (year, month, day)</td>
+                <td><code>'2025-11-11'</code></td>
+            </tr>
+            <tr>
+                <td><code>TIME [ (p) ]</code></td>
+                <td>Stores time of day (no date, no timezone)</td>
+                <td><code>'13:45:20'</code></td>
+            </tr>
+            <tr>
+                <td><code>TIME [ (p) ] WITH TIME ZONE</code></td>
+                <td>Stores time of day including timezone offset</td>
+                <td><code>'13:45:20+01'</code></td>
+            </tr>
+            <tr>
+                <td><code>TIMESTAMP [ (p) ]</code></td>
+                <td>Stores date and time (no timezone)</td>
+                <td><code>'2025-11-11 13:45:20'</code></td>
+            </tr>
+            <tr>
+                <td><code>TIMESTAMP [ (p) ] WITH TIME ZONE</code></td>
+                <td>Stores date and time with timezone awareness</td>
+                <td><code>'2025-11-11 13:45:20+01'</code></td>
+            </tr>
+            <tr>
+                <td><code>INTERVAL [ fields ] [ (p) ]</code></td>
+                <td>Represents duration or difference between timestamps</td>
+                <td><code>'3 days 04:05:06'</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li><code>(p)</code> specifies optional fractional seconds precision (0 – 6 digits).</li>
+        <li><code>TIMESTAMP WITH TIME ZONE</code> can also be written as <code>TIMESTAMPTZ</code> (shorthand alias).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>DATE Type</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE events (
+    id          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    title       TEXT,
+    event_date  DATE
+);
+
+INSERT INTO events (title, event_date)
+VALUES
+    ('Conference', '2025-12-01'),
+    ('Workshop', CURRENT_DATE);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>DATE</code> stores only the year, month, and day.</li>
+        <li><code>CURRENT_DATE</code> returns the system's current date.</li>
+        <li>Arithmetic is supported:</li>
+<pre><code class="language-sql line-numbers">SELECT
+    event_date + INTERVAL '7 days' AS next_week
+FROM events;
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>TIME Type</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE shifts (
+    employee    TEXT,
+    start_time  TIME,
+    end_time    TIME
+);
+
+INSERT INTO shifts
+VALUES
+    ('Alice', '09:00', '17:30'),
+    ('Bob',   '22:00', '06:00');
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>TIME</code> stores the hour, minute, and second (optionally with microseconds).</li>
+        <li>It is independent of any date or timezone.</li>
+        <li>You can compute time differences as intervals:</li>
+<pre><code class="language-sql line-numbers">SELECT
+    end_time - start_time AS duration
+FROM shifts;</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>TIME WITH TIME ZONE (TIMETZ)</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE broadcasts (
+    show_name TEXT,
+    air_time  TIME WITH TIME ZONE
+);
+
+INSERT INTO broadcasts
+VALUES
+    ('Morning News', '07:00+01'),
+    ('Night Talk', '23:00-05');
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>TIME WITH TIME ZONE</code> (or <code>TIMETZ</code>) stores a local time and its associated timezone offset.</li>
+        <li>Rarely used in modern applications, since most real-world scheduling uses full timestamps instead.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>TIMESTAMP (Without Time Zone)</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE logs (
+    log_id      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    message     TEXT,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO logs (message) VALUES ('System started');
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>TIMESTAMP</code> records both date and time but has <u>no timezone awareness</u>.</li>
+        <li><code>CURRENT_TIMESTAMP</code> returns the local date and time when the row is inserted.</li>
+        <li>Useful when you want consistent "local" timestamps (e.g., system logs).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>TIMESTAMP WITH TIME ZONE (TIMESTAMPTZ)</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE meetings (
+    meeting_id  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    title       TEXT,
+    start_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO meetings (title, start_at) VALUES ('Team Sync', '2025-11-11 09:00:00+01');
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>TIMESTAMPTZ</code> automatically normalizes values to UTC internally.</li>
+        <li>When displayed, PostgreSQL converts them to the current session timezone (<code>SHOW TIMEZONE;</code>).</li>
+        <li>This ensures consistent handling of international data and daylight saving changes.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SET TIMEZONE TO 'UTC';
+SELECT start_at FROM meetings;
+
+SET TIMEZONE TO 'America/New_York';
+SELECT start_at FROM meetings;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The same instant in time displays differently under different timezones.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>INTERVAL Type</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE rentals (
+    rental_id  SERIAL PRIMARY KEY,
+    start_date TIMESTAMP,
+    duration   INTERVAL
+);
+
+INSERT INTO rentals VALUES (1, '2025-11-11 10:00:00', INTERVAL '3 days 4 hours');
+
+SELECT
+    start_date + duration AS return_date
+FROM rentals;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>INTERVAL</code> represents a time duration or span, not a specific point in time.</li>
+        <li>You can add or subtract intervals to/from timestamps or dates.</li>
+        <li>Intervals can include multiple components (years, months, days, hours, minutes, seconds).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Extracting Date and Time Parts</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    EXTRACT(YEAR FROM start_at)   AS year,
+    EXTRACT(MONTH FROM start_at)  AS month,
+    EXTRACT(DAY FROM start_at)    AS day,
+    EXTRACT(HOUR FROM start_at)   AS hour
+FROM meetings;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>EXTRACT()</code> retrieves individual components from a date or timestamp.</li>
+        <li>Other functions like <code>DATE_PART()</code> and <code>TO_CHAR()</code> provide similar functionality with formatting control.</li>
+<pre><code class="language-sql line-numbers">SELECT TO_CHAR(start_at, 'YYYY-MM-DD HH24:MI');</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Date and Time Arithmetic</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    NOW()                           AS now,
+    NOW() + INTERVAL '7 days'       AS next_week,
+    NOW() - INTERVAL '1 month'      AS last_month,
+    AGE('2025-12-31', '2025-01-01') AS difference;
+</code></pre>
+    <br/>
+    <ul>
+        <li><b>+</b> and <b>-</b> can be used with intervals for addition and subtraction.</li>
+        <li><code>AGE()</code> returns a human-readable interval difference between two timestamps.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Useful Built-in Functions</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Function</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>NOW()</code></td>
+                <td>Current date and time (same as <code>CURRENT_TIMESTAMP</code>)</td>
+            </tr>
+            <tr>
+                <td><code>CURRENT_DATE</code></td>
+                <td>Current date (no time)</td>
+            </tr>
+            <tr>
+                <td><code>CURRENT_TIME</code></td>
+                <td>Current time of day</td>
+            </tr>
+            <tr>
+                <td><code>LOCALTIME</code> / <code>LOCALTIMESTAMP</code></td>
+                <td>Local time/date-time without timezone conversion</td>
+            </tr>
+            <tr>
+                <td><code>AGE(timestamp1, timestamp2)</code></td>
+                <td>Difference between two timestamps as interval</td>
+            </tr>
+            <tr>
+                <td><code>DATE_TRUNC('field', source)</code></td>
+                <td>Truncates a timestamp to the specified precision (e.g., hour, day, month)</td>
+            </tr>
+        </tbody>
+    </table>
+<pre><code class="language-sql line-numbers">SELECT DATE_TRUNC('month', NOW()); -- first day of current month
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Converting Between Date/Time Types</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    '2025-11-11'::DATE + INTERVAL '1 day',   -- date → timestamp
+    '13:45:00'::TIME + INTERVAL '2 hours',   -- time + interval
+    NOW()::DATE AS current_day,              -- timestamp → date
+    CAST('2025-11-11 09:00' AS TIMESTAMPTZ);
+</code></pre>
+    <br/>
+    <ul>
+        <li>PostgreSQL allows safe and intuitive casting between date/time types.</li>
+        <li>Implicit conversions automatically promote or truncate precision where possible.</li>
+    </ul>
+    <br/>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
