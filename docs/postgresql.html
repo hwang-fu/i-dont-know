@@ -2208,7 +2208,7 @@ WHERE table_name = 'employees';
         <li>Defaults can be expressions or function results — not just constants.</li>
         <li>Here:
             <ul>
-                <li><code>CURRENT_DATE</code> fills in today’s date automatically.</li>
+                <li><code>CURRENT_DATE</code> fills in today's date automatically.</li>
                 <li><code>('ORD-' || EXTRACT(YEAR FROM CURRENT_DATE))</code> generates a dynamic prefix for each order (e.g., <code>ORD-2025</code>).</li>
             </ul>
         </li>
@@ -2223,7 +2223,7 @@ VALUES ('Review code', DEFAULT);
 </code></pre>
     <br/>
     <ul>
-        <li>Use the <code>DEFAULT</code> keyword explicitly in <code>INSERT</code> statements to apply the column’s predefined default value.</li>
+        <li>Use the <code>DEFAULT</code> keyword explicitly in <code>INSERT</code> statements to apply the column's predefined default value.</li>
         <li>This is especially useful when inserting into selected columns but still wanting defaults for others.</li>
     </ul>
     <br/>
@@ -2266,7 +2266,7 @@ ALTER COLUMN active DROP DEFAULT;
     <br/>
     <ul>
         <li>This combination ensures every user row always has a valid non-NULL value — either the provided one or the default <code>TRUE</code>.</li>
-        <li>It’s one of the most common patterns for robust schema design.</li>
+        <li>It's one of the most common patterns for robust schema design.</li>
     </ul>
     <br/>
     <br/>
@@ -2294,7 +2294,198 @@ WHERE table_name = 'tasks';
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>The CHECK Constraint in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>CHECK</code> constraint ensures that data in a column or row meets a specified logical condition before it is inserted or updated.</li>
+        <br/>
+        <li>It acts like a built-in validation rule inside the database, preventing invalid or inconsistent values from being stored.</li>
+        <br/>
+        <li>When a row violates the condition defined by a <code>CHECK</code> constraint, PostgreSQL rejects the operation and raises an error.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE table_name (
+    column_name data_type CHECK (condition),
+    ...
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can apply <code>CHECK</code> directly to a single column or define it as a table-level constraint involving multiple columns.</li>
+        <li>The condition must evaluate to <code>TRUE</code> or <code>NULL</code> (not <code>FALSE</code>), otherwise, the insert or update will fail.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Simple CHECK Constraint</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    first_name  TEXT NOT NULL,
+    salary      NUMERIC(10,2) CHECK (salary &gt;= 0)
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>This constraint guarantees that <code>salary</code> values must always be greater than or equal to zero.</li>
+        <li>Attempting to insert a negative salary will trigger an error.</li>
+<pre><code class="language-text">ERROR:  new row for relation "employees" violates check constraint "employees_salary_check"
+DETAIL: Failing row contains (-500).
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Multiple CHECK Constraints</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    name       TEXT NOT NULL,
+    price      NUMERIC(10,2) CHECK (price &gt;= 0),
+    discount   NUMERIC(5,2) CHECK (discount BETWEEN 0 AND 100)
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Each <code>CHECK</code> is validated independently.</li>
+        <li>PostgreSQL allows multiple <code>CHECK</code> constraints on the same table, each with its own rule.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Table-Level CHECK Constraint</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE accounts (
+    account_id   SERIAL PRIMARY KEY,
+    balance      NUMERIC(10,2),
+    credit_limit NUMERIC(10,2),
+    CHECK (balance &lt;= credit_limit)
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>This constraint compares two columns in the same row.</li>
+        <li>It ensures that the <code>balance</code> never exceeds the <code>credit_limit</code>.</li>
+        <li>Unlike column-level checks, this form enforces a condition across multiple columns.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Adding a CHECK Constraint to an Existing Table</b></li>
+<pre><code class="language-sql line-numbers">ALTER TABLE employees
+ADD CONSTRAINT salary_positive CHECK (salary &gt;= 0);
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can add new named <code>CHECK</code> constraints later with <code>ALTER TABLE</code>.</li>
+        <li>PostgreSQL immediately validates all existing rows — if any violate the rule, the command fails.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Dropping a CHECK Constraint</b></li>
+<pre><code class="language-sql line-numbers">ALTER TABLE employees
+DROP CONSTRAINT salary_positive;
+</code></pre>
+    <br/>
+    <ul>
+        <li>To remove a <code>CHECK</code> constraint, you must reference it by name.</li>
+        <li>Use <code>\d table_name</code> in <code>psql</code> or query <code>pg_constraint</code> to see its name.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using CHECK with Logical Operators</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE students (
+    student_id SERIAL PRIMARY KEY,
+    age        INT CHECK (age &gt;= 5 AND age &lt;= 100),
+    grade      TEXT CHECK (grade IN ('A', 'B', 'C', 'D', 'F'))
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>AND</code>, <code>OR</code>, and <code>IN</code> can be combined inside the condition for complex logic.</li>
+        <li>This example:
+            <ul>
+                <li>Ensures <code>age</code> stays within a reasonable range.</li>
+                <li>Limits <code>grade</code> values to a predefined set of letters.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using Functions in CHECK Constraints</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    email   TEXT CHECK (POSITION('@' IN email) &gt; 1)
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can call PostgreSQL functions or expressions within <code>CHECK</code>.</li>
+        <li>Here, <code>POSITION('@' IN email)</code> ensures that the <code>email</code> column contains an "@" symbol.</li>
+        <li>However, for complex validations, application-level or trigger-based logic may be preferable.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Deferrable CHECK Constraints</b></li>
+<pre><code class="language-sql line-numbers">ALTER TABLE accounts
+ADD CONSTRAINT balance_valid CHECK (balance &lt;= credit_limit)
+DEFERRABLE INITIALLY DEFERRED;
+</code></pre>
+    <br/>
+    <ul>
+        <li>A <code>DEFERRABLE</code> constraint can be checked at the end of a transaction instead of at each statement.</li>
+        <li>This is useful when temporary violations occur during intermediate steps of a multi-step update.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Viewing CHECK Constraints</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    conname AS constraint_name,
+    convalidated,
+    condeferrable
+FROM pg_constraint
+WHERE contype = 'c' AND conrelid = 'employees'::regclass;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use the <code>pg_constraint</code> system catalog to inspect existing <code>CHECK</code> constraints.</li>
+        <li><code>convalidated = true</code> indicates that all rows currently satisfy the constraint.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>CHECK vs. Application-Level Validation</b></li>
+    <br/>
+    <ul>
+        <li>CHECK constraints are enforced at the database level — they cannot be bypassed by client errors or inconsistent application code.</li>
+        <li>However:
+            <ul>
+                <li>They should remain simple and deterministic.</li>
+                <li>Complex, cross-table validations (e.g., involving subqueries) are better handled with triggers or application logic.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
