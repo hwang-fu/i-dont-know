@@ -3585,7 +3585,227 @@ SELECT CAST(0 AS BOOLEAN);  -- returns FALSE
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Character Types: CHAR, VARCHAR, and TEXT in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL provides several types for storing textual data: <code>CHAR</code>, <code>VARCHAR</code>, and <code>TEXT</code>.</li>
+        <br/>
+        <li>Although they appear similar, they differ in how they handle length, padding, and validation.</li>
+        <br/>
+        <li>All three are stored efficiently as variable-length strings internally, but their behavior and use cases differ slightly.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>CHAR(n) — Fixed-Length Character Type</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE products_char (
+    code CHAR(5),
+    name TEXT
+);
+
+INSERT INTO products_char VALUES ('AB', 'Widget');
+SELECT code, LENGTH(code) FROM products_char;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>CHAR(n)</code> (or <code>CHARACTER(n)</code>) stores <b>exactly <code>n</code> characters</b>.</li>
+        <li>If you insert a shorter string, PostgreSQL <b>pads it with spaces</b> to the fixed length.</li>
+        <li>If you insert a longer string, it is <b>truncated</b>.</li>
+        <li>Result:</li>
+<pre><code class="language-text"> code  | length
+-------+--------
+ AB    | 5
+</code></pre>
+        <li>Notice how <code>'AB'</code> was stored as <code>'AB   '</code> (with padding).</li>
+        <li>Useful when strings must have uniform length (e.g., fixed codes, legacy systems).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>VARCHAR(n) — Variable-Length with Limit</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE products_varchar (
+    code VARCHAR(5),
+    name TEXT
+);
+
+INSERT INTO products_varchar VALUES ('AB', 'Widget');
+INSERT INTO products_varchar VALUES ('ABCDE', 'Gadget');
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>VARCHAR(n)</code> (or <code>CHARACTER VARYING(n)</code>) stores a string <b>upto <code>n</code> characters</b> long.</li>
+        <li>It <b>does not pad</b> shorter strings with spaces.</li>
+        <li>If the input exceeds <code>n</code>, PostgreSQL raises an error:</li>
+<pre><code class="language-text">ERROR:  value too long for type character varying(5)
+</code></pre>
+        <li>This type is ideal when you need a length restriction (e.g., usernames ≤ 50 characters).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>TEXT — Unlimited-Length Variable Text</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE articles (
+    id SERIAL PRIMARY KEY,
+    title TEXT,
+    content TEXT
+);
+
+INSERT INTO articles (title, content)
+VALUES ('Intro to PostgreSQL', 'PostgreSQL is a powerful open-source RDBMS...');
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>TEXT</code> stores strings of <b>any length</b> (up to about 1 GB per field).</li>
+        <li>It does not require you to specify a limit and does not pad or truncate values.</li>
+        <li>Functionally equivalent to <code>VARCHAR</code> without a length limit — same performance, same behavior.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Comparison Between CHAR, VARCHAR, and TEXT</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Behavior</th>
+                <th>Length Limit</th>
+                <th>Padded?</th>
+                <th>Use Case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>CHAR(n)</code></td>
+                <td>Fixed-length</td>
+                <td>Yes</td>
+                <td>Yes (spaces)</td>
+                <td>Fixed-size codes, legacy data</td>
+            </tr>
+            <tr>
+                <td><code>VARCHAR(n)</code></td>
+                <td>Variable-length, validated</td>
+                <td>Yes</td>
+                <td>No</td>
+                <td>Text with known maximum length (e.g., names)</td>
+            </tr>
+            <tr>
+                <td><code>TEXT</code></td>
+                <td>Variable-length, unlimited</td>
+                <td>No</td>
+                <td>No</td>
+                <td>General-purpose text, documents, comments</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <br/>
+
+
+    <li><b>CHAR vs VARCHAR vs TEXT in Practice</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE demo (
+    c1 CHAR(5),
+    c2 VARCHAR(5),
+    c3 TEXT
+);
+
+INSERT INTO demo VALUES ('AB', 'AB', 'AB');
+SELECT c1, c2, c3, LENGTH(c1), LENGTH(c2), LENGTH(c3) FROM demo;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Result:</li>
+<pre><code class="language-text"> c1     | c2 | c3 | length
+---------+----+----+--------
+ AB     | AB | AB | 5  2  2
+</code></pre>
+        <li><code>CHAR(5)</code> pads to 5 characters, while <code>VARCHAR</code> and <code>TEXT</code> store only what you insert.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Performance and Storage</b></li>
+    <br/>
+    <ul>
+        <li>Internally, PostgreSQL stores <code>CHAR</code>, <code>VARCHAR</code>, and <code>TEXT</code> using the same variable-length storage format (<code>varlena</code>).</li>
+        <br/>
+        <li>There is <b>no performance difference</b> between <code>TEXT</code> and <code>VARCHAR(n)</code> for most workloads.</li>
+        <br/>
+        <li>The only difference lies in input validation and space padding behavior — not storage or speed.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Trimming and Padding</b></li>
+<pre><code class="language-sql line-numbers">SELECT 'abc'::CHAR(5) = 'abc'::CHAR(5);  -- TRUE
+SELECT 'abc'::CHAR(5) = 'abc';           -- TRUE (ignores padding)
+SELECT LENGTH('abc'::CHAR(5));           -- 5
+</code></pre>
+    <br/>
+    <ul>
+        <li>When comparing <code>CHAR(n)</code> values, PostgreSQL ignores trailing spaces.</li>
+        <li>This means <code>'AB   '</code> and <code>'AB'</code> compare as equal.</li>
+        <li>However, when concatenating or measuring string length, padding spaces remain visible.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Changing Length or Type</b></li>
+<pre><code class="language-sql line-numbers">ALTER TABLE products_varchar
+ALTER COLUMN code TYPE VARCHAR(10);
+
+ALTER TABLE products_char
+ALTER COLUMN code TYPE TEXT;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can safely change between these text types if data fits within the new limits.</li>
+        <li>When increasing the <code>VARCHAR</code> length, PostgreSQL validates existing data automatically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Function Compatibility</b></li>
+<pre><code class="language-sql line-numbers">SELECT UPPER(code), LOWER(name)
+FROM products_varchar;
+
+SELECT LENGTH(content), LEFT(content, 20)
+FROM articles;
+</code></pre>
+    <br/>
+    <ul>
+        <li>All three types (<code>CHAR</code>, <code>VARCHAR</code>, <code>TEXT</code>) are fully compatible with PostgreSQL string functions and operators.</li>
+        <li>You can use <code>UPPER()</code>, <code>LOWER()</code>, <code>CONCAT()</code>, <code>LENGTH()</code>, <code>TRIM()</code>, etc., interchangeably.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Recommended Usage</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL documentation itself recommends using <code>TEXT</code> for most textual data.</li>
+        <li><b>Guidelines:</b>
+            <ul>
+                <li>Use <code>TEXT</code> when you don’t need a maximum length restriction.</li>
+                <li>Use <code>VARCHAR(n)</code> if you want to enforce a limit (e.g., 50 characters for a username).</li>
+                <li>Use <code>CHAR(n)</code> only when you must store fixed-length data (e.g., ISO codes, status flags).</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
