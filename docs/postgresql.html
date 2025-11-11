@@ -4516,7 +4516,237 @@ FROM meetings;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>The UUID Type in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>UUID</code> stands for <b>Universally Unique Identifier</b>.</li>
+        <br/>
+        <li>It is a 128-bit value used to uniquely identify rows, records, or entities across systems, databases, and even time — without relying on a central sequence generator.</li>
+        <br/>
+        <li>PostgreSQL natively supports <code>UUID</code> as a built-in data type, compliant with RFC&nbsp;4122.</li>
+        <br/>
+        <li>UUIDs are often used as <b>primary keys</b> in distributed or large-scale applications where integer IDs might collide or reveal sequence information.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>UUID Format</b></li>
+    <br/>
+    <ul>
+        <li>A UUID is typically written as a 36-character string in hexadecimal form, separated by hyphens:</li>
+<pre><code class="language-text">550e8400-e29b-41d4-a716-446655440000</code></pre>
+        <li>Internally, PostgreSQL stores it efficiently as a 16-byte binary value (not as text).</li>
+        <li>UUIDs are <b>case-insensitive</b> — <code>'A23B...'</code> and <code>'a23b...'</code> represent the same value.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Creating a Table with UUID Column</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE users (
+    user_id UUID PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+INSERT INTO users (user_id, name)
+VALUES ('550e8400-e29b-41d4-a716-446655440000', 'Alice');
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>UUID</code> columns can be manually assigned, or automatically generated using PostgreSQL's functions.</li>
+        <li>Each UUID guarantees uniqueness across space and time with an extremely low probability of collision.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generating UUIDs Automatically</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL provides UUID generation through the <code>uuid-ossp</code> and <code>pgcrypto</code> extensions.</li>
+        <li>To enable them:</li>
+<pre><code class="language-sql line-numbers">CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+</code></pre>
+        <li>Then you can generate UUIDs using built-in functions:</li>
+<pre><code class="language-sql line-numbers">-- Using uuid-ossp:
+SELECT uuid_generate_v1();   -- based on MAC + timestamp
+SELECT uuid_generate_v4();   -- random-based (most common)
+
+-- Using pgcrypto:
+SELECT gen_random_uuid();    -- random version 4 UUID (faster, preferred)
+</code></pre>
+        <li>Modern PostgreSQL versions (≥13) recommend <code>gen_random_uuid()</code> from <code>pgcrypto</code> for simplicity and performance.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Auto-Generated UUIDs as Primary Keys</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE api_tokens (
+    token_id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id  UUID NOT NULL,
+    issued_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO api_tokens (user_id)
+VALUES ('550e8400-e29b-41d4-a716-446655440000');
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, <code>gen_random_uuid()</code> generates a new unique identifier automatically when no ID is provided.</li>
+        <li>This eliminates the need for numeric sequences and prevents ID collisions across distributed systems.</li>
+        <li>UUID-based keys are also non-sequential — they don't reveal record creation order or count.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>UUID Versions Overview</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Version</th>
+                <th>Source</th>
+                <th>Function (uuid-ossp)</th>
+                <th>Use Case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>v1</td>
+                <td>Timestamp + MAC address</td>
+                <td><code>uuid_generate_v1()</code></td>
+                <td>Predictable, contains machine/time info (not recommended for public use)</td>
+            </tr>
+            <tr>
+                <td>v3</td>
+                <td>Namespace + MD5 hash</td>
+                <td><code>uuid_generate_v3(namespace, name)</code></td>
+                <td>Deterministic generation from names</td>
+            </tr>
+            <tr>
+                <td>v4</td>
+                <td>Random numbers</td>
+                <td><code>uuid_generate_v4()</code> or <code>gen_random_uuid()</code></td>
+                <td>Most common, fast, and secure for general use</td>
+            </tr>
+            <tr>
+                <td>v5</td>
+                <td>Namespace + SHA-1 hash</td>
+                <td><code>uuid_generate_v5(namespace, name)</code></td>
+                <td>Deterministic but safer than v3</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>Version 4 (random) UUIDs are the default choice for new projects.</li>
+        <li>Versions 3 and 5 are used when deterministic IDs are needed for given input data.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Comparing UUID vs SERIAL IDs</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Aspect</th>
+                <th><code>SERIAL / IDENTITY</code></th>
+                <th><code>UUID</code></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Uniqueness</td>
+                <td>Unique within a single database sequence</td>
+                <td>Globally unique across databases and servers</td>
+            </tr>
+            <tr>
+                <td>Predictability</td>
+                <td>Sequential, reveals insertion order</td>
+                <td>Non-sequential, unpredictable</td>
+            </tr>
+            <tr>
+                <td>Storage Size</td>
+                <td>4–8 bytes</td>
+                <td>16 bytes</td>
+            </tr>
+            <tr>
+                <td>Indexing Speed</td>
+                <td>Faster (smaller, sequential)</td>
+                <td>Slightly slower (larger, random order)</td>
+            </tr>
+            <tr>
+                <td>Replication / Merging</td>
+                <td>May collide between instances</td>
+                <td>Safe across distributed databases</td>
+            </tr>
+            <tr>
+                <td>Use Case</td>
+                <td>Simple local applications</td>
+                <td>Microservices, APIs, distributed systems</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>While <code>UUID</code> keys consume more storage and index space, their <b>global uniqueness</b> makes them ideal for modern scalable systems.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Querying UUID Columns</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM api_tokens
+WHERE token_id = 'b36d6d3e-b41a-4d0c-b4e4-9985a93f79a7';
+
+-- You can also use functions:
+SELECT token_id::TEXT FROM api_tokens;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can compare, cast, or index UUID columns just like integers.</li>
+        <li>UUID comparisons are efficient and type-safe — no need for string matching.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Indexing and Performance</b></li>
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_api_tokens_user_id ON api_tokens(user_id);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Indexing UUID columns works exactly like for integers.</li>
+        <li>However, because UUIDs are random, inserts can fragment B-tree indexes, slightly reducing performance for very large tables.</li>
+        <li>To optimize insert speed, consider using <code>uuid_generate_v1mc()</code> (MAC/time-ordered UUID) or PostgreSQL's <code>pgcrypto</code> functions with custom ordering strategies.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><mark>Summary</mark></li>
+    <ul>
+        <li><code>UUID</code> stores globally unique 128-bit identifiers.</li>
+        <br/>
+        <li>Use <code>gen_random_uuid()</code> (from <code>pgcrypto</code>) for fast, random version-4 UUIDs.</li>
+        <br/>
+        <li>UUIDs are ideal for distributed databases, microservices, and systems where uniqueness across servers matters.</li>
+        <br/>
+        <li>While they consume more space and are non-sequential, they provide strong uniqueness guarantees and security benefits over <code>SERIAL</code> keys.</li>
+        <br/>
+        <li>PostgreSQL stores them efficiently as binary data and allows full indexing, casting, and comparison support.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
@@ -4524,7 +4754,221 @@ FROM meetings;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>The UUID Type in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>UUID</code> stands for <b>Universally Unique Identifier</b>.</li>
+        <br/>
+        <li>It is a 128-bit value used to uniquely identify rows, records, or entities across systems, databases, and even time — without relying on a central sequence generator.</li>
+        <br/>
+        <li>PostgreSQL natively supports <code>UUID</code> as a built-in data type, compliant with <u>RFC&nbsp;4122</u>.</li>
+        <br/>
+        <li>UUIDs are often used as <u>primary keys</u> in distributed or large-scale applications where integer IDs might collide or reveal sequence information.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>UUID Format</b></li>
+    <br/>
+    <ul>
+        <li>A UUID is typically written as a 36-character string in hexadecimal form, separated by hyphens:</li>
+<pre><code class="language-text">550e8400-e29b-41d4-a716-446655440000</code></pre>
+        <li>Internally, PostgreSQL stores it efficiently as a 16-byte binary value (not as text).</li>
+        <li>UUIDs are <b>case-insensitive</b>, <code>'A23B...'</code> and <code>'a23b...'</code> represent the same value.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Creating a Table with UUID Column</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE users (
+    user_id UUID PRIMARY KEY,
+    name    TEXT NOT NULL
+);
+
+INSERT INTO users (user_id, name)
+VALUES ('550e8400-e29b-41d4-a716-446655440000', 'Alice');
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>UUID</code> columns can be manually assigned, or automatically generated using PostgreSQL's functions.</li>
+        <li>Each UUID guarantees uniqueness across space and time with an extremely low probability of collision.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generating UUIDs Automatically</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL provides UUID generation through the <code>uuid-ossp</code> and <code>pgcrypto</code> extensions.</li>
+        <li>To enable them:</li>
+<pre><code class="language-sql line-numbers">CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+</code></pre>
+        <li>Then you can generate UUIDs using built-in functions:</li>
+<pre><code class="language-sql line-numbers">-- Using uuid-ossp:
+SELECT uuid_generate_v1();   -- based on MAC + timestamp
+SELECT uuid_generate_v4();   -- random-based (most common)
+
+-- Using pgcrypto:
+SELECT gen_random_uuid();    -- random version 4 UUID (faster, preferred)
+</code></pre>
+        <li>Modern PostgreSQL versions (≥13) recommend <code>gen_random_uuid()</code> from <code>pgcrypto</code> for simplicity and performance.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Auto-Generated UUIDs as Primary Keys</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE api_tokens (
+    token_id  UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id   UUID NOT NULL,
+    issued_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO api_tokens (user_id)
+VALUES ('550e8400-e29b-41d4-a716-446655440000');
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, <code>gen_random_uuid()</code> generates a new unique identifier automatically when no ID is provided.</li>
+        <li>This eliminates the need for numeric sequences and prevents ID collisions across distributed systems.</li>
+        <li>UUID-based keys are also non-sequential — they don't reveal record creation order or count.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>UUID Versions Overview</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Version</th>
+                <th>Source</th>
+                <th>Function (uuid-ossp)</th>
+                <th>Use Case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>v1</td>
+                <td>Timestamp + MAC address</td>
+                <td><code>uuid_generate_v1()</code></td>
+                <td>Predictable, contains machine/time info (not recommended for public use)</td>
+            </tr>
+            <tr>
+                <td>v3</td>
+                <td>Namespace + MD5 hash</td>
+                <td><code>uuid_generate_v3(namespace, name)</code></td>
+                <td>Deterministic generation from names</td>
+            </tr>
+            <tr>
+                <td>v4</td>
+                <td>Random numbers</td>
+                <td><code>uuid_generate_v4()</code> or <code>gen_random_uuid()</code></td>
+                <td>Most common, fast, and secure for general use</td>
+            </tr>
+            <tr>
+                <td>v5</td>
+                <td>Namespace + SHA-1 hash</td>
+                <td><code>uuid_generate_v5(namespace, name)</code></td>
+                <td>Deterministic but safer than v3</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>Version 4 (random) UUIDs are the default choice for new projects.</li>
+        <li>Versions 3 and 5 are used when deterministic IDs are needed for given input data.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Comparing UUID vs SERIAL IDs</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Aspect</th>
+                <th><code>SERIAL / IDENTITY</code></th>
+                <th><code>UUID</code></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Uniqueness</td>
+                <td>Unique within a single database sequence</td>
+                <td>Globally unique across databases and servers</td>
+            </tr>
+            <tr>
+                <td>Predictability</td>
+                <td>Sequential, reveals insertion order</td>
+                <td>Non-sequential, unpredictable</td>
+            </tr>
+            <tr>
+                <td>Storage Size</td>
+                <td>4–8 bytes</td>
+                <td>16 bytes</td>
+            </tr>
+            <tr>
+                <td>Indexing Speed</td>
+                <td>Faster (smaller, sequential)</td>
+                <td>Slightly slower (larger, random order)</td>
+            </tr>
+            <tr>
+                <td>Replication / Merging</td>
+                <td>May collide between instances</td>
+                <td>Safe across distributed databases</td>
+            </tr>
+            <tr>
+                <td>Use Case</td>
+                <td>Simple local applications</td>
+                <td>Microservices, APIs, distributed systems</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>While <code>UUID</code> keys consume more storage and index space, their <b>global uniqueness</b> makes them ideal for modern scalable systems.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Querying UUID Columns</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM api_tokens
+WHERE token_id = 'b36d6d3e-b41a-4d0c-b4e4-9985a93f79a7';
+
+-- You can also use functions:
+SELECT token_id::TEXT FROM api_tokens;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can compare, cast, or index UUID columns just like integers.</li>
+        <li>UUID comparisons are efficient and type-safe — no need for string matching.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Indexing and Performance</b></li>
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_api_tokens_user_id ON api_tokens(user_id);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Indexing UUID columns works exactly like for integers.</li>
+        <li>However, because UUIDs are random, inserts can fragment B-tree indexes, slightly reducing performance for very large tables.</li>
+        <li>To optimize insert speed, consider using <code>uuid_generate_v1mc()</code> (MAC/time-ordered UUID) or PostgreSQL's <code>pgcrypto</code> functions with custom ordering strategies.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
