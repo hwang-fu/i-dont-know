@@ -526,7 +526,7 @@ DROP SCHEMA hr CASCADE;
     <ul>
         <li><code>DROP SCHEMA hr;</code> will fail if the schema is not empty.</li>
         <li><code>CASCADE</code> deletes the schema and all contained tables, views, and functions.</li>
-        <li>⚠️ Use <code>CASCADE</code> with caution — this is irreversible!</li>
+        <li>Use <code>CASCADE</code> with caution — this is irreversible!</li>
     </ul>
     <br/>
     <br/>
@@ -588,7 +588,178 @@ GRANT USAGE ON SCHEMA hr TO bob;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Inserting Data into Tables</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Once you've created a table, you can add rows of data using the <code>INSERT INTO</code> statement.</li>
+        <br/>
+        <li>Each inserted row corresponds to one record in the table, containing values for one or more columns.</li>
+        <br/>
+        <li>PostgreSQL allows flexible insertion:
+            <ul>
+                <li>Insert all columns at once.</li>
+                <li>Insert into selected columns only.</li>
+                <li>Insert multiple rows in a single command.</li>
+                <li>Insert data from another table or query.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO &lt;table_name&gt; (&lt;column1&gt;, &lt;column2&gt;, &lt;column3&gt;, ...)
+VALUES (&lt;value1&gt;, &lt;value2&gt;, &lt;value3&gt;, ...);
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Simple Insert</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO employees (first_name, last_name, department)
+VALUES ('Alice', 'Johnson', 'Engineering');
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>employee_id</code> column (if auto-generated) does not need to be specified, PostgreSQL fills it automatically.</li>
+        <li>String literals are enclosed in single quotes (<code>'...'</code>).</li>
+        <li>After execution, a new row appears in <code>employees</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Inserting into All Columns</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO employees
+VALUES (DEFAULT, 'Bob', 'Smith', 'Sales');
+</code></pre>
+    <br/>
+    <ul>
+        <li>If you omit the column list, you must provide a value for every column in order.</li>
+        <li>Use <code>DEFAULT</code> to let PostgreSQL fill an auto-generated value (like an identity or timestamp).</li>
+        <li>This form is more error-prone — prefer naming columns explicitly when possible.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Inserting Multiple Rows at Once</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO employees (first_name, last_name, department)
+VALUES
+    ('Charlie', 'Wang', 'Finance'),
+    ('Diana', 'Lopez', 'Marketing'),
+    ('Ethan', 'Neuer', 'IT');
+</code></pre>
+    <br/>
+    <ul>
+        <li>This is faster and cleaner than running multiple <code>INSERT</code> statements.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using DEFAULT Values</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO employees (first_name, last_name)
+VALUES ('Frank', 'Baker');
+
+INSERT INTO employees (first_name, last_name, department)
+VALUES ('Grace', 'Kim', DEFAULT);
+</code></pre>
+    <br/>
+    <ul>
+        <li>If a column has a <code>DEFAULT</code> value, you can omit it or explicitly use <code>DEFAULT</code>.</li>
+        <li>In both cases, PostgreSQL automatically fills in the default.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Inserting Data from Another Table</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO archived_employees (first_name, last_name, department)
+SELECT first_name, last_name, department
+FROM employees
+WHERE active = FALSE;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Instead of manually typing values, you can pull data from an existing table or query.</li>
+        <li>This is useful for:
+            <ul>
+                <li>Archiving old records,</li>
+                <li>Duplicating data,</li>
+                <li>Creating backups or subsets.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Returning Values After Insert</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO employees (first_name, last_name, department)
+VALUES ('Helene', 'Zabak', 'Operations')
+RETURNING employee_id;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>RETURNING</code> clause immediately outputs data from the newly inserted row(s).</li>
+        <li>You can return multiple columns:
+<pre><code class="language-sql line-numbers">RETURNING employee_id, first_name, hire_date;</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Handling Conflicts (Upserts)</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO employees (employee_id, first_name, last_name, department)
+VALUES (1, 'Ian', 'Miller', 'Engineering')
+ON CONFLICT (employee_id) DO UPDATE SET department = EXCLUDED.department;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>ON CONFLICT</code> handles cases where an insert violates a unique or primary key constraint.</li>
+        <li><code>EXCLUDED</code> refers to the new row that caused the conflict.</li>
+        <li>You can:
+            <ul>
+                <li><code>DO NOTHING</code> to skip the row, or</li>
+                <li><code>DO UPDATE</code> to modify the existing row.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Full Insert Scenario</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE customers (
+    id           SERIAL PRIMARY KEY,
+    name         TEXT NOT NULL,
+    email        TEXT UNIQUE,
+    created_at   TIMESTAMP DEFAULT NOW()
+);
+
+INSERT INTO customers (name, email)
+VALUES
+    ('Alice Green', 'alice@example.com'),
+    ('Bob White', 'bob@example.com');
+
+INSERT INTO customers (name, email)
+VALUES ('Alice Green', 'alice@example.com')
+ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The first insert adds two new customers.</li>
+        <li>The second one updates an existing customer (instead of erroring) because of the <code>ON CONFLICT</code> rule.</li>
+        <li><code>NOW()</code> automatically sets the timestamp.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
