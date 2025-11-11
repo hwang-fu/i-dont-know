@@ -189,11 +189,11 @@
 </code></pre>
     <br/>
     <ul>
-        <li><code>table_name</code> — the name of your new table.</li>
-        <li><code>column_name</code> — the name of each column in that table.</li>
-        <li><code>data_type</code> — defines the kind of data stored (e.g., <code>INTEGER</code>, <code>TEXT</code>, <code>BOOLEAN</code>, <code>DATE</code>, etc.).</li>
-        <li><code>[constraint]</code> — optional restrictions like <code>NOT NULL</code>, <code>DEFAULT</code>, etc.</li>
-        <li><code>[table_constraints]</code> — rules applying to multiple columns, e.g. primary keys, foreign keys.</li>
+        <li><code>table_name</code>: the name of your new table.</li>
+        <li><code>column_name</code>: the name of each column in that table.</li>
+        <li><code>data_type</code>: defines the kind of data stored (e.g., <code>INTEGER</code>, <code>TEXT</code>, <code>BOOLEAN</code>, <code>DATE</code>, etc.).</li>
+        <li><code>[constraint]</code>: optional restrictions like <code>NOT NULL</code>, <code>DEFAULT</code>, etc.</li>
+        <li><code>[table_constraints]</code>: rules applying to multiple columns, e.g. primary keys, foreign keys.</li>
     </ul>
     <br/>
     <br/>
@@ -556,13 +556,13 @@ GRANT USAGE ON SCHEMA hr TO bob;
     <li><b>When to Use Schemas</b></li>
     <br/>
     <ul>
-        <li><b>Organizing modules</b> — for example, <code>hr</code>, <code>finance</code>, and <code>sales</code> schemas in a company database.</li>
+        <li><b>Organizing modules</b>: for example, <code>hr</code>, <code>finance</code>, and <code>sales</code> schemas in a company database.</li>
         <br/>
-        <li><b>Separating environments</b> — e.g., <code>dev</code>, <code>test</code>, <code>prod</code> schemas in the same database for testing purposes.</li>
+        <li><b>Separating environments</b>: e.g., <code>dev</code>, <code>test</code>, <code>prod</code> schemas in the same database for testing purposes.</li>
         <br/>
-        <li><b>Multi-tenant applications</b> — one schema per customer, while keeping all data in a single database.</li>
+        <li><b>Multi-tenant applications</b>: one schema per customer, while keeping all data in a single database.</li>
         <br/>
-        <li><b>Access control</b> — different roles can have access to different schemas.</li>
+        <li><b>Access control</b>: different roles can have access to different schemas.</li>
     </ul>
     <br/>
     <br/>
@@ -574,7 +574,7 @@ GRANT USAGE ON SCHEMA hr TO bob;
         <br/>
         <li>By default, all objects go into the <code>public</code> schema, but you can create your own with <code>CREATE SCHEMA</code>.</li>
         <br/>
-        <li>Access tables as <code>schema_name.table_name</code> — or adjust <code>search_path</code> for convenience.</li>
+        <li>Access tables as <code>schema_name.table_name</code>, or adjust <code>search_path</code> for convenience.</li>
         <br/>
         <li>Use schemas to organize projects, control permissions, and keep your database clean and modular.</li>
     </ul>
@@ -767,7 +767,236 @@ ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Basics on Selecting Data from Tables</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>SELECT</code> statement in PostgreSQL is used to <u>query</u> data from one or more tables.</li>
+        <br/>
+        <li>PostgreSQL processes <code>SELECT</code> queries logically in this order:
+<pre><code class="language-text">FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT</code></pre>
+        </li>
+        <br/>
+        <li>This order matters when you design complex queries.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">SELECT &lt;column1&gt;, &lt;column2&gt;, ...
+FROM &lt;table_name&gt;;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can select all columns using <code>*</code>, but it's better to specify only what you need.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Select All Columns</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM employees;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Retrieves every column and every row from <code>employees</code>.</li>
+        <li>Useful for quick checks, but inefficient in production queries.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Filtering Rows with WHERE</b></li>
+<pre><code class="language-sql line-numbers">SELECT first_name, last_name
+FROM employees
+WHERE department = 'Engineering';
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>WHERE</code> filters rows based on a condition.</li>
+        <li>Operators include:
+            <ul>
+                <li><code>=</code> equal</li>
+                <li><code>&lt;&gt;</code> or <code>!=</code> not equal</li>
+                <li><code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></li>
+                <li><code>AND</code>, <code>OR</code>, <code>NOT</code> for logical combinations</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Filtering with Pattern Matching (LIKE)</b></li>
+<pre><code class="language-sql line-numbers">SELECT first_name, last_name
+FROM employees
+WHERE last_name LIKE 'S%';
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>LIKE</code> is used for pattern matching with wildcards:
+            <ul>
+                <li><code>%</code>: matches any sequence of characters.</li>
+                <li><code>_</code>: matches exactly one character.</li>
+            </ul>
+        </li>
+        <li>Example: <code>'S%'</code> finds all last names starting with "S".</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Sorting Results with ORDER BY</b></li>
+<pre><code class="language-sql line-numbers">SELECT first_name, last_name, hire_date
+FROM employees
+ORDER BY hire_date DESC;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>ORDER BY</code> sorts rows by one or more columns.</li>
+        <li>Use <code>ASC</code> (default) or <code>DESC</code> for descending order.</li>
+        <li>You can sort by multiple columns:
+<pre><code class="language-sql line-numbers">ORDER BY department ASC, last_name ASC;</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Limiting Results with LIMIT and OFFSET</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM employees
+ORDER BY employee_id
+LIMIT 5 OFFSET 10;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>LIMIT</code> restricts how many rows are returned.</li>
+        <li><code>OFFSET</code> skips the given number of rows before starting output.</li>
+        <li>Commonly used for pagination (e.g., "page 3, 10 results per page").</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Aliasing Columns and Tables</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    first_name AS given,
+    last_name AS family
+FROM employees AS e;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Aliases give temporary names to columns or tables for readability.</li>
+        <li>You can omit <code>AS</code>, both forms work:
+<pre><code class="language-sql line-numbers">SELECT first_name given, last_name family FROM employees e;</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Combining Conditions</b></li>
+<pre><code class="language-sql line-numbers">SELECT first_name, last_name, department
+FROM employees
+WHERE department = 'Sales'
+    AND hire_date &gt;= '2024-01-01'
+    OR active = TRUE;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use parentheses to control logical order:
+<pre><code class="language-sql line-numbers">WHERE (department = 'Sales' AND hire_date &gt;= '2024-01-01') OR active = TRUE;</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Distinct Rows</b></li>
+<pre><code class="language-sql line-numbers">SELECT DISTINCT department
+FROM employees;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>DISTINCT</code> removes duplicate rows from the result set.</li>
+        <li>You can apply it to one or multiple columns:
+<pre><code class="language-sql line-numbers">SELECT DISTINCT department, active FROM employees;</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Computed Columns and Expressions</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    first_name || ' ' || last_name AS full_name,
+    EXTRACT(YEAR FROM hire_date)   AS hire_year
+FROM employees;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can create new columns by combining or transforming existing ones.</li>
+        <li><code>||</code> concatenates strings.</li>
+        <li><code>EXTRACT()</code> extracts a specific part (like year, month, day) from a date or timestamp.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Aggregating Data with GROUP BY</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    department,
+    COUNT(*) AS total_employees
+FROM employees
+GROUP BY department;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>GROUP BY</code> groups rows by unique combinations of column values.</li>
+        <li>Often used with aggregate functions:
+            <ul>
+                <li><code>COUNT()</code>: number of rows.</li>
+                <li><code>SUM()</code>: total sum.</li>
+                <li><code>AVG()</code>: average.</li>
+                <li><code>MIN()</code> / <code>MAX()</code>: smallest / largest value.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Filtering Groups with HAVING</b></li>
+<pre><code class="language-sql line-numbers">SELECT department, COUNT(*) AS total_employees
+FROM employees
+GROUP BY department
+HAVING COUNT(*) &gt; 5;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>HAVING</code> filters groups (after aggregation), while <code>WHERE</code> filters individual rows (before aggregation).</li>
+        <li>Example: only show departments with more than 5 employees.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Combining Results with UNION</b></li>
+<pre><code class="language-sql line-numbers">SELECT first_name, last_name FROM employees
+UNION
+SELECT first_name, last_name FROM contractors;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>UNION</code> merges two result sets and removes duplicates.</li>
+        <li>Use <code>UNION ALL</code> to keep duplicates.</li>
+        <li>Each <code>SELECT</code> must have the same number and type of columns.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
