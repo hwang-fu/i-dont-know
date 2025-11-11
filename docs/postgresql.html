@@ -3079,7 +3079,262 @@ NATURAL JOIN orders;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Set Operations in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><u>Set operations</u> in PostgreSQL allow you to combine the results of two or more <code>SELECT</code> queries into a single result set.</li>
+        <br/>
+        <li>They work on complete rows (as sets), not on individual columns.</li>
+        <br/>
+        <li>Common operations include:
+            <ul>
+                <li><code>UNION</code> – combine and remove duplicates.</li>
+                <li><code>UNION ALL</code> – combine and keep duplicates.</li>
+                <li><code>INTERSECT</code> – return only rows common to both queries.</li>
+                <li><code>EXCEPT</code> – return rows from the first query that are not in the second.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Each query in a set operation MUST:
+            <ul>
+                <li>Select the <u>same number of columns</u>.</li>
+                <li>Have <u>compatible data types</u> for corresponding columns.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Example Setup</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE students_2024 (
+    name TEXT,
+    city TEXT
+);
+
+CREATE TABLE students_2025 (
+    name TEXT,
+    city TEXT
+);
+
+INSERT INTO students_2024 VALUES
+    ('Alice', 'Berlin'),
+    ('Bob', 'Munich'),
+    ('Charlie', 'Hamburg');
+
+INSERT INTO students_2025 VALUES
+    ('Alice', 'Berlin'),
+    ('David', 'Stuttgart'),
+    ('Ella', 'Munich');
+</code></pre>
+    <br/>
+    <ul>
+        <li>We now have two tables with overlapping and distinct rows.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>1. UNION — Combine and Remove Duplicates</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM students_2024
+UNION
+SELECT * FROM students_2025;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>UNION</code> merges the two result sets and automatically removes duplicates.</li>
+        <li>The combined result is sorted and distinct by default.</li>
+        <li>Result:</li>
+<pre><code class="language-text">   name    |    city
+------------+------------
+ Alice      | Berlin
+ Bob        | Munich
+ Charlie    | Hamburg
+ David      | Stuttgart
+ Ella       | Munich
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>2. UNION ALL — Combine and Keep Duplicates</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM students_2024
+UNION ALL
+SELECT * FROM students_2025;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>UNION ALL</code> keeps duplicate rows, without sorting or removing them.</li>
+        <li>It is faster than <code>UNION</code> because PostgreSQL skips duplicate checking.</li>
+        <li>Result:</li>
+<pre><code class="language-text">   name    |    city
+------------+------------
+ Alice      | Berlin
+ Bob        | Munich
+ Charlie    | Hamburg
+ Alice      | Berlin
+ David      | Stuttgart
+ Ella       | Munich
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>3. INTERSECT — Common Rows Only</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM students_2024
+INTERSECT
+SELECT * FROM students_2025;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>INTERSECT</code> returns only the rows that appear in <b>both</b> queries.</li>
+        <li>Duplicates are automatically removed.</li>
+        <li>Result:</li>
+<pre><code class="language-text">   name    |    city
+------------+------------
+ Alice      | Berlin
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>4. INTERSECT ALL — Common Rows, Keep Duplicates</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM students_2024
+INTERSECT ALL
+SELECT * FROM students_2025;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>INTERSECT ALL</code> keeps duplicates as they appear in both results.</li>
+        <li>If a row appears twice in both tables, it appears twice in the output.</li>
+        <li>Since our data has only one matching row, the result is identical to <code>INTERSECT</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>5. EXCEPT — Rows in First Query but Not in Second</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM students_2024
+EXCEPT
+SELECT * FROM students_2025;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>EXCEPT</code> returns all rows from the first query that do not appear in the second.</li>
+        <li>Duplicates are removed automatically.</li>
+        <li>Result:</li>
+<pre><code class="language-text">   name    |    city
+------------+------------
+ Bob        | Munich
+ Charlie    | Hamburg
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>6. EXCEPT ALL — Keep Duplicates</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM students_2024
+EXCEPT ALL
+SELECT * FROM students_2025;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>EXCEPT ALL</code> behaves like <code>EXCEPT</code>, but keeps duplicates according to their frequency in the first query minus the second.</li>
+        <li>Example: if a row appears 3 times in the first query and once in the second, it appears twice in the result.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>7. Matching Columns and Types</b></li>
+<pre><code class="language-sql line-numbers">-- This will fail:
+SELECT name FROM students_2024
+UNION
+SELECT name, city FROM students_2025;
+</code></pre>
+    <br/>
+    <ul>
+        <li>All participating queries in a set operation must have:
+            <ul>
+                <li>The <b>same number of columns</b>.</li>
+                <li><b>Compatible data types</b> in corresponding positions.</li>
+            </ul>
+        </li>
+        <li>Otherwise PostgreSQL will raise an error:</li>
+<pre><code class="language-text">ERROR:  each UNION query must have the same number of columns
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>8. Sorting Combined Results</b></li>
+<pre><code class="language-sql line-numbers">SELECT name, city FROM students_2024
+UNION
+SELECT name, city FROM students_2025
+ORDER BY name;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use <code>ORDER BY</code> only <b>after the final set operation</b> — not inside each <code>SELECT</code>.</li>
+        <li>PostgreSQL treats the combined output as one large table that can be sorted or filtered further.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>9. Using Parentheses for Complex Set Operations</b></li>
+<pre><code class="language-sql line-numbers">(SELECT * FROM students_2024
+ UNION
+ SELECT * FROM students_2025)
+EXCEPT
+SELECT * FROM expelled_students;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Parentheses control the evaluation order when mixing multiple set operators.</li>
+        <li>Without parentheses, PostgreSQL evaluates from left to right.</li>
+        <li>Use parentheses to make complex logic clear and unambiguous.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>10. Combining with WHERE or JOIN Clauses</b></li>
+<pre><code class="language-sql line-numbers">SELECT name, city FROM students_2024 WHERE city = 'Munich'
+UNION
+SELECT name, city FROM students_2025 WHERE city = 'Munich';
+</code></pre>
+    <br/>
+    <ul>
+        <li>Each <code>SELECT</code> can include its own <code>WHERE</code>, <code>JOIN</code>, or <code>GROUP BY</code> clause before the set operation.</li>
+        <li>This allows you to filter and process each dataset independently before combining them.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>11. Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li><code>UNION</code> and <code>INTERSECT</code> remove duplicates — they require sorting or hashing internally, which can be expensive on large data sets.</li>
+        <li><code>UNION ALL</code> and <code>EXCEPT ALL</code> skip this step and are generally faster.</li>
+        <li>When possible, use <code>UNION ALL</code> if you are sure duplicates are not an issue.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">EXPLAIN SELECT * FROM students_2024 UNION SELECT * FROM students_2025;</code></pre>
+    <br/>
+    <ul>
+        <li><code>EXPLAIN</code> helps visualize how PostgreSQL performs the merge internally.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
