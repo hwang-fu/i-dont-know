@@ -1151,7 +1151,172 @@ FROM customers;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Dropping Tables in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>DROP TABLE</code> statement permanently removes a table and all its data from a PostgreSQL database.</li>
+        <br/>
+        <li>When you drop a table, PostgreSQL deletes:
+            <ul>
+                <li>All rows stored in the table.</li>
+                <li>Associated indexes and constraints.</li>
+                <li>Any dependent objects (if you use <code>CASCADE</code>).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Once dropped, the data <mark>cannot</mark> be recovered unless you have a backup.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">DROP TABLE &lt;table_name&gt;;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>table_name</code> — the name of the table you want to delete.</li>
+        <li>If the table doesn't exist, PostgreSQL will raise an error unless you use <code>DROP TABLE IF EXISTS</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Dropping a Table</b></li>
+<pre><code class="language-sql line-numbers">DROP TABLE employees;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Deletes the <code>employees</code> table completely from the database.</li>
+        <li>All its data, indexes, and constraints are removed permanently.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Safely Dropping a Table</b></li>
+<pre><code class="language-sql line-numbers">DROP TABLE IF EXISTS employees;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Prevents an error if the table does not exist.</li>
+        <li>This is a safer way to clean up tables, especially in scripts or migrations.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Dropping Multiple Tables</b></li>
+<pre><code class="language-sql line-numbers">DROP TABLE IF EXISTS employees, departments, projects;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can drop multiple tables in one command by separating their names with commas.</li>
+        <li>Each table will be dropped in the order listed.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using CASCADE and RESTRICT</b></li>
+<pre><code class="language-sql line-numbers">DROP TABLE employees CASCADE;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>CASCADE</code> automatically drops any dependent objects (like foreign keys in other tables, views, or triggers).</li>
+        <li>Use carefully — this can remove more than you expect!</li>
+        <li>To prevent accidental cascade deletion, use <code>RESTRICT</code> (the default behavior):</li>
+<pre><code class="language-sql line-numbers">DROP TABLE employees RESTRICT;</code></pre>
+        <li>PostgreSQL will refuse to drop the table if anything depends on it.</li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li><b>Example: Dropping with Dependencies</b></li>
+<pre><code class="language-sql line-numbers">-- Example: "customers" table references "orders" through a foreign key
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY
+);
+
+CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(order_id)
+);
+
+-- Dropping the parent table with CASCADE
+DROP TABLE orders CASCADE;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>CASCADE</code> tells PostgreSQL to remove not only the <code>orders</code> table itself, but also any <u>objects that depend on it</u> — such as foreign key constraints, views, or triggers.</li>
+        <br/>
+        <li>In this example:
+            <ul>
+                <li>The table <code>orders</code> is permanently deleted.</li>
+                <li>The foreign key constraint (inside <code>customers</code>) is automatically removed, so <code>customers.order_id</code> can take whatever values it wants in the future.</li>
+                <li>The <code>customers</code> table itself remains intact — only the relationship to <code>orders</code> is dropped.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>PostgreSQL will also print a notice similar to:
+<pre><code class="language-text">NOTICE:  drop cascades to constraint customers_order_id_fkey on table customers
+DROP TABLE
+</code></pre>
+        </li>
+        <br/>
+        <li>Always double-check before using <code>CASCADE</code>, as it can remove multiple dependent objects automatically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+
+    <li><b>Dropping a Table in a Specific Schema</b></li>
+<pre><code class="language-sql line-numbers">DROP TABLE company.employees;
+</code></pre>
+    <br/>
+    <ul>
+        <li>If the table belongs to a non-default schema, include the schema name.</li>
+        <li>Example: <code>company.employees</code> drops the <code>employees</code> table inside the <code>company</code> schema.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Checking if a Table Exists</b></li>
+<pre><code class="language-sql line-numbers">-- Using psql meta-command
+\dt
+
+-- Or query the catalog directly
+SELECT tablename
+FROM pg_catalog.pg_tables
+WHERE tablename = 'employees';
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>\dt</code> lists all tables in the current database (works in <code>psql</code>).</li>
+        <li>Alternatively, query the <code>pg_catalog.pg_tables</code> system table to check existence programmatically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Practical Tip: Use Transactions</b></li>
+<pre><code class="language-sql line-numbers">BEGIN;
+DROP TABLE employees;
+ROLLBACK;
+</code></pre>
+    <br/>
+    <ul>
+        <li>During testing, wrap <code>DROP TABLE</code> inside a transaction.</li>
+        <li><code>ROLLBACK</code> cancels the deletion if you change your mind before committing.</li>
+        <li>This helps prevent irreversible data loss while experimenting.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
