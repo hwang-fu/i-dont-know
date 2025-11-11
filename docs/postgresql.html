@@ -4976,6 +4976,222 @@ SELECT token_id::TEXT FROM api_tokens;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Common Table Expressions (CTE) in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <b>Common Table Expression (CTE)</b> is a temporary, named result set defined within a query using the <code>WITH</code> clause.</li>
+        <br/>
+        <li>CTEs make SQL queries <b>easier to read, maintain, and debug</b>, especially when dealing with subqueries or recursive data.</li>
+        <br/>
+        <li>They exist ONLY for the duration of the SINGLE SQL statement and are not stored as permanent tables.</li>
+        <br/>
+        <li>CTEs can be:
+            <ul>
+                <li><b>Non-recursive</b>: similar to a named subquery.</li>
+                <li><b>Recursive</b>: used to query hierarchical or tree-like data.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">WITH cte_name (optional_columns) AS (
+    SQL_query
+)
+SELECT ...
+FROM cte_name;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>cte_name</code> — the name of your temporary result set.</li>
+        <li><code>optional_columns</code> — optional list of column names for the CTE result.</li>
+        <li><code>SQL_query</code> — a normal SELECT (or even INSERT / UPDATE / DELETE) that defines the data.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Basic Non-Recursive CTE</b></li>
+<pre><code class="language-sql line-numbers">WITH top_sellers AS (
+    SELECT
+        seller_id,
+        SUM(amount) AS total_sales
+    FROM orders
+    GROUP BY seller_id
+    HAVING SUM(amount) &gt; 5000
+)
+
+SELECT
+    s.seller_id,
+    s.total_sales,
+    u.name
+FROM top_sellers AS s
+JOIN users AS u ON u.id = s.seller_id;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The inner query creates a <code>top_sellers</code> CTE containing only sellers with total sales above 5000.</li>
+        <li>The main query then joins that result with <code>users</code> to retrieve seller details.</li>
+        <li>This improves readability compared to deeply nested subqueries.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using Multiple CTEs</b></li>
+<pre><code class="language-sql line-numbers">WITH
+    orders_per_customer AS (
+        SELECT customer_id, COUNT(*) AS order_count
+        FROM orders
+        GROUP BY customer_id
+    ),
+    top_customers AS (
+        SELECT customer_id
+        FROM orders_per_customer
+        WHERE order_count &gt; 10
+    )
+
+SELECT c.name, opc.order_count
+FROM top_customers tc
+JOIN orders_per_customer opc ON tc.customer_id = opc.customer_id
+JOIN customers c ON c.id = tc.customer_id;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can define multiple CTEs in a single <code>WITH</code> clause — each separated by commas.</li>
+        <li>Later CTEs can reference earlier ones within the same statement.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Modifying Data with CTEs</b></li>
+<pre><code class="language-sql line-numbers">WITH updated AS (
+    UPDATE products
+    SET price = price * 1.10
+    WHERE category = 'electronics'
+    RETURNING id, price
+)
+SELECT * FROM updated;
+</code></pre>
+    <br/>
+    <ul>
+        <li>CTEs can be used with <b>INSERT</b>, <b>UPDATE</b>, or <b>DELETE</b> statements that return data using <code>RETURNING</code>.</li>
+        <li>This pattern is powerful for performing modifications and immediately reading back affected rows.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Recursive CTEs</b></li>
+    <br/>
+    <ul>
+        <li>Recursive CTEs are used to handle <b>hierarchical data</b> such as organizational charts, category trees, or dependency chains.</li>
+        <li>The general form consists of two parts:
+            <ul>
+                <li><b>Anchor member</b> — the base query (starting rows).</li>
+                <li><b>Recursive member</b> — a query that references the CTE itself, used to fetch related rows iteratively.</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-sql line-numbers">WITH RECURSIVE subordinates AS (
+    -- Anchor: start from the manager
+    SELECT employee_id, name, manager_id
+    FROM employees
+    WHERE manager_id IS NULL
+
+    UNION ALL
+
+    -- Recursive step: find employees reporting to those above
+    SELECT e.employee_id, e.name, e.manager_id
+    FROM employees e
+    INNER JOIN subordinates s ON e.manager_id = s.employee_id
+)
+SELECT * FROM subordinates;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This query builds an entire organization hierarchy starting from the top-level manager.</li>
+        <li>The recursion continues until no new rows are produced.</li>
+        <li><b>UNION ALL</b> is used (instead of <code>UNION</code>) to include all recursive results efficiently.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Folder Hierarchy</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE folders (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    parent_id INT REFERENCES folders(id)
+);
+
+WITH RECURSIVE folder_tree AS (
+    SELECT id, name, parent_id, 1 AS depth
+    FROM folders
+    WHERE parent_id IS NULL
+
+    UNION ALL
+
+    SELECT f.id, f.name, f.parent_id, ft.depth + 1
+    FROM folders f
+    JOIN folder_tree ft ON f.parent_id = ft.id
+)
+SELECT * FROM folder_tree ORDER BY depth;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This recursive CTE prints all folders in a tree, showing their depth levels.</li>
+        <li>Very useful for hierarchical structures like menus, file systems, and organizational charts.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li>CTEs behave like <b>optimization fences</b> in older PostgreSQL versions (≤12):
+            <ul>
+                <li>The CTE is fully materialized before the main query executes.</li>
+                <li>This means it is computed once and stored temporarily, which may hurt performance for very large datasets.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>In PostgreSQL ≥13, <b>inlinable CTEs</b> were introduced, non-recursive CTEs can now be automatically inlined by the optimizer if safe.</li>
+        <br/>
+        <li>To enforce materialization (useful for debugging or when side-effects matter):</li>
+<pre><code class="language-sql line-numbers">WITH MATERIALIZED temp_data AS (...)
+SELECT * FROM temp_data;
+</code></pre>
+        <br/>
+        <li>Or, to explicitly allow inlining for better performance:</li>
+<pre><code class="language-sql line-numbers">WITH NOT MATERIALIZED temp_data AS (...)
+SELECT * FROM temp_data;
+</code></pre>
+    </ul>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
