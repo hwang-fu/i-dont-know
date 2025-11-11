@@ -1967,7 +1967,155 @@ WHERE tc.constraint_type = 'PRIMARY KEY';
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>The NOT NULL Constraint in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>NOT NULL</code> constraint ensures that a column cannot contain a <code>NULL</code> value.</li>
+        <br/>
+        <li>In PostgreSQL, <code>NULL</code> represents "unknown" or "missing" data — not the same as an empty string or zero.</li>
+        <br/>
+        <li>By declaring a column as <code>NOT NULL</code>, you guarantee that every row must have a valid (non-NULL) value in that column.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE table_name (
+    column_name data_type NOT NULL,
+    ...
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Attach <code>NOT NULL</code> right after the data type in the column definition.</li>
+        <li>If you try to insert a row without providing a value for that column, PostgreSQL will raise an error.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Defining NOT NULL Columns</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    first_name  TEXT NOT NULL,
+    last_name   TEXT NOT NULL,
+    email       TEXT,
+    hire_date   DATE NOT NULL DEFAULT CURRENT_DATE
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, <code>first_name</code>, <code>last_name</code>, and <code>hire_date</code> must always contain valid values.</li>
+        <li><code>email</code> is optional — it can be left <code>NULL</code>.</li>
+        <li>If you omit a <code>NOT NULL</code> column in an <code>INSERT</code> statement, PostgreSQL will throw an error unless a <code>DEFAULT</code> value is provided.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Attempting to Insert NULL</b></li>
+<pre><code class="language-sql line-numbers">INSERT INTO employees (first_name, last_name, hire_date)
+VALUES (NULL, 'Smith', '2025-01-01');
+</code></pre>
+    <br/>
+    <ul>
+        <li>This will fail with an error like:</li>
+<pre><code class="language-text">ERROR:  null value in column "first_name" of relation "employees" violates not-null constraint
+DETAIL: Failing row contains (null, Smith, 2025-01-01).
+</code></pre>
+        <li>PostgreSQL prevents the insertion because <code>first_name</code> is defined as <code>NOT NULL</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Adding a NOT NULL Constraint to an Existing Table</b></li>
+<pre><code class="language-sql line-numbers">ALTER TABLE employees
+ALTER COLUMN email SET NOT NULL;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can add <code>NOT NULL</code> later using <code>ALTER TABLE</code>, but only if all existing rows already have non-NULL values in that column.</li>
+        <li>If some rows contain <code>NULL</code>, you must first update or delete them before applying the constraint.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Removing a NOT NULL Constraint</b></li>
+<pre><code class="language-sql line-numbers">ALTER TABLE employees
+ALTER COLUMN email DROP NOT NULL;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This makes the column nullable again, allowing future <code>NULL</code> values.</li>
+        <li>Dropping <code>NOT NULL</code> is safe and does not affect existing data.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using DEFAULT with NOT NULL</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE tasks (
+    task_id SERIAL PRIMARY KEY,
+    description TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending'
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Combining <code>NOT NULL</code> with a <code>DEFAULT</code> value ensures the column is always filled — even if the user doesn't explicitly provide a value.</li>
+        <li>Example insert:</li>
+<pre><code class="language-sql line-numbers">INSERT INTO tasks (description) VALUES ('Review code');
+-- status automatically becomes 'pending'</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Checking Which Columns Are NOT NULL</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    column_name,
+    is_nullable
+FROM information_schema.columns
+WHERE table_name = 'employees';
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>is_nullable</code> column will show <code>NO</code> for <code>NOT NULL</code> columns and <code>YES</code> for nullable ones.</li>
+        <li>Useful for verifying schema constraints in large databases.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>NOT NULL vs. CHECK Constraints</b></li>
+    <br/>
+    <ul>
+        <li>You could technically write a <code>CHECK (column IS NOT NULL)</code> constraint, but <code>NOT NULL</code> is faster, simpler, and the standard method.</li>
+        <li>Both enforce the same rule, but <code>NOT NULL</code> is built into the column definition and optimized by PostgreSQL.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Behavior with Primary Keys</b></li>
+    <br/>
+    <ul>
+        <li>Primary key columns are automatically <code>NOT NULL</code>, you don't need to specify it explicitly.</li>
+<pre><code class="language-sql line-numbers">CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+</code></pre>
+        <li>Even if you omit <code>NOT NULL</code>, the <code>PRIMARY KEY</code> constraint will enforce it internally.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
