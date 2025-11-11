@@ -3797,7 +3797,7 @@ FROM articles;
         <li>PostgreSQL documentation itself recommends using <code>TEXT</code> for most textual data.</li>
         <li><b>Guidelines:</b>
             <ul>
-                <li>Use <code>TEXT</code> when you don’t need a maximum length restriction.</li>
+                <li>Use <code>TEXT</code> when you don't need a maximum length restriction.</li>
                 <li>Use <code>VARCHAR(n)</code> if you want to enforce a limit (e.g., 50 characters for a username).</li>
                 <li>Use <code>CHAR(n)</code> only when you must store fixed-length data (e.g., ISO codes, status flags).</li>
             </ul>
@@ -3813,7 +3813,203 @@ FROM articles;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Integer Types in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL provides several <b>integer data types</b> to represent whole numbers with different storage sizes and numeric ranges.</li>
+        <br/>
+        <li>All integer types are <b>signed</b> (they support both positive and negative values) and stored efficiently in binary form.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Available Integer Types</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Alias</th>
+                <th>Storage Size</th>
+                <th>Range</th>
+                <th>Typical Usage</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>SMALLINT</code></td>
+                <td><code>INT2</code></td>
+                <td>2 bytes</td>
+                <td>-32,768 to 32,767</td>
+                <td>Very small numbers, compact storage</td>
+            </tr>
+            <tr>
+                <td><code>INTEGER</code></td>
+                <td><code>INT</code> or <code>INT4</code></td>
+                <td>4 bytes</td>
+                <td>-2,147,483,648 to 2,147,483,647</td>
+                <td>General-purpose integer type (most common)</td>
+            </tr>
+            <tr>
+                <td><code>BIGINT</code></td>
+                <td><code>INT8</code></td>
+                <td>8 bytes</td>
+                <td>-9,223,372,036,854,775,808 to 9,223,372,036,854,775,807</td>
+                <td>Very large values (IDs, counts, etc.)</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>All these types behave identically except for their size and range.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic Usage</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE inventory (
+    item_id     INT PRIMARY KEY,
+    quantity    SMALLINT,
+    reorder_min INT,
+    reorder_max BIGINT
+);
+
+INSERT INTO inventory VALUES (1, 25, 10, 5000000000);
+</code></pre>
+    <br/>
+    <ul>
+        <li>PostgreSQL will automatically select appropriate storage and enforce the numeric range for each column.</li>
+        <li>If you try to insert a value beyond the range, it raises an error:</li>
+<pre><code class="language-text">ERROR: integer out of range
+</code></pre>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Integer Aliases and Compatibility</b></li>
+    <br/>
+    <ul>
+        <li><code>INT</code> and <code>INTEGER</code> are exact synonyms.</li>
+        <li><code>INT2</code>, <code>INT4</code>, and <code>INT8</code> are internal aliases for <code>SMALLINT</code>, <code>INTEGER</code>, and <code>BIGINT</code>.</li>
+        <li>You can use any version interchangeably — all mean the same data type.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Auto-Incrementing Integers</b></li>
+<pre><code class="language-sql line-numbers">CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    name    TEXT NOT NULL
+);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Internally, PostgreSQL expands this into:
+<pre><code class="language-sql line-numbers">user_id INTEGER NOT NULL DEFAULT nextval('users_user_id_seq'::regclass);
+</code></pre>
+        <li>In modern PostgreSQL, the preferred syntax is the <b>identity column</b>:</li>
+<pre><code class="language-sql line-numbers">CREATE TABLE users (
+    user_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name TEXT
+);
+</code></pre>
+        <li><code>GENERATED ALWAYS AS IDENTITY</code> is SQL-standard and avoids manually managing sequences.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Working with Sequences</b></li>
+<pre><code class="language-sql line-numbers">-- Create a table with SERIAL
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    amount   NUMERIC(10,2)
+);
+
+-- Check the associated sequence
+\d orders
+-- Shows: "order_id" integer DEFAULT nextval('orders_order_id_seq'::regclass)
+
+-- Get the next value manually:
+SELECT nextval('orders_order_id_seq');
+</code></pre>
+    <br/>
+    <ul>
+        <li>Each <code>SERIAL</code> or <code>IDENTITY</code> column uses a dedicated <b>sequence</b> object for generating new values.</li>
+        <li>You can control sequences directly using functions like <code>nextval()</code>, <code>currval()</code>, and <code>setval()</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Arithmetic and Overflow</b></li>
+<pre><code class="language-sql line-numbers">SELECT 2147483647 + 1;        -- overflow for INTEGER
+SELECT 9223372036854775807 + 1;  -- overflow for BIGINT
+</code></pre>
+    <br/>
+    <ul>
+        <li>PostgreSQL detects overflows and raises an error — it does not wrap around silently.</li>
+        <li>To handle large numeric computations safely, use <code>NUMERIC</code> (arbitrary precision).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Type Casting</b></li>
+<pre><code class="language-sql line-numbers">SELECT '42'::INT;      -- 42
+SELECT 3.7::INT;       -- 4 truncated to 3
+SELECT 3.7::BIGINT;    -- also truncates fractional part
+</code></pre>
+    <br/>
+    <ul>
+        <li>PostgreSQL automatically casts compatible numeric and string literals to integer types when possible.</li>
+        <li>Fractions are <b>truncated</b> (not rounded).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Comparison and Sorting</b></li>
+<pre><code class="language-sql line-numbers">SELECT * FROM inventory ORDER BY quantity DESC;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Integers can be sorted and compared normally with <code>&gt;</code>, <code>&lt;</code>, <code>=</code>, etc.</li>
+        <li>Indexes on integer columns are highly efficient, making them ideal for primary keys and lookup columns.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Converting Between Integer Types</b></li>
+<pre><code class="language-sql line-numbers">SELECT 500::SMALLINT;   -- OK
+SELECT 40000::SMALLINT; -- ERROR: smallint out of range
+</code></pre>
+    <br/>
+    <ul>
+        <li>Conversions between integer types work as long as the value fits in the target range.</li>
+        <li>If it doesn't, PostgreSQL throws an overflow error.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Performance Tips</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>SMALLINT</code> only when saving space truly matters, otherwise <code>INTEGER</code> is more convenient.</li>
+        <li><code>BIGINT</code> should be used for IDs or counters that may exceed 2 billion (e.g., event logs, user IDs in large systems).</li>
+        <li>All integer types are fast to compare, sort, and index, since they are stored as fixed-size binary numbers.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
