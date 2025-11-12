@@ -252,26 +252,150 @@ export class UserProfile {
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3>Signals</h3>
+<h3>Basics about Signals</h3>
 <ol>
-    <li><code>WritableSignal</code></li>
-    <br/>
-    <br/>
-    <br/>
-    <li><b>Computed signal</b>s are read-only signals that derive their value from other signals.</li>
-    <br/>
-    <br/>
-    <br/>
-    <li></li>
-    <br/>
-    <br/>
-    <br/>
-    <li></li>
-    <br/>
-    <br/>
-    <br/>
-    <li></li>
-    <br/>
+    <li><b>What is a signal?</b><br/><br/>
+        A <code>signal</code> is a reactive value container that automatically notifies Angular when its content changes.<br/><br/>
+        Unlike normal class properties, signals are tracked by Angular's change detection system — any component using them updates automatically.
+        <br/><br/>
+        Example:
+<pre class="line-numbers"><code class="language-ts">import { signal, Component } from '@angular/core';
+
+@Component({
+    selector: 'counter-example',
+    template: `
+        &lt;h3&gt;Count: {{ count() }}&lt;/h3&gt;
+        &lt;button (click)="increment()"&gt;+&lt;/button&gt;
+    `,
+    standalone: true,
+})
+export class CounterExample {
+    count = signal(0);
+    increment() {
+        this.count.update(v =&gt; v + 1);
+    }
+}
+</code></pre>
+        <br/>
+        Signals are functions — you read them by calling like <code>count()</code>, not <code>count</code>.
+    </li>
+
+    <br/><br/><br/>
+
+    <li><b>Writable signals</b><br/><br/>
+        A writable signal is a normal signal created with <code>signal()</code>. It can be changed with:
+        <ul>
+            <br/>
+            <li><code>.set(newValue)</code> – replace the value directly</li>
+            <br/>
+            <li><code>.update(fn)</code> – change it based on its current value</li>
+        </ul>
+        <br/>
+        Example:
+<pre class="line-numbers"><code class="language-ts">const counter = signal(0);
+
+counter.set(10);          // sets value to 10
+counter.update(v =&gt; v+1); // now 11
+console.log(counter());   // prints 11
+</code></pre>
+    </li>
+
+    <br/><br/><br/>
+
+    <li><b>Computed signals</b><br/><br/>
+        Computed signals are read-only values derived from one or more other signals.
+        They automatically recalculate when any of their dependencies change.
+        <br/><br/>
+        Example:
+<pre class="line-numbers"><code class="language-ts">import { signal, computed } from '@angular/core';
+
+const first = signal('Hwang');
+const last  = signal('Fu');
+
+const fullName = computed(() =&gt; `${first()} ${last()}`);
+
+console.log(fullName());   // "Hwang Fu"
+
+last.set('Fucius');
+console.log(fullName());   // "Hwang Fucius" – updated automatically
+</code></pre>
+    </li>
+
+    <br/><br/><br/>
+
+    <li><b>Effects</b><br/><br/>
+        An <code>effect()</code> runs a piece of code automatically whenever the signals it reads change.
+        Useful for logging, animations, or syncing values.
+        <br/><br/>
+        Example:
+<pre class="line-numbers"><code class="language-ts">import { signal, effect } from '@angular/core';
+
+const count = signal(0);
+
+effect(() =&gt; {
+    console.log('Count changed:', count());
+});
+
+count.set(1);  // console logs: Count changed: 1
+count.set(2);  // console logs: Count changed: 2
+</code></pre>
+        <br/>
+        Angular automatically cleans up effects when their owner component is destroyed.
+    </li>
+
+    <br/><br/><br/>
+
+    <li><b>Inputs and signals</b><br/><br/>
+        You can also create component inputs that behave like signals using <code>input()</code>.
+        <br/><br/>
+        Example:
+<pre class="line-numbers"><code class="language-ts">@Component({
+    selector: 'user-card',
+    template: `&lt;p&gt;Hello, {{ name() }}!&lt;/p&gt;`,
+})
+export class UserCard {
+    name = input('Anonymous');   // signal-style input with default
+}
+</code></pre>
+        <br/>
+        <ul>
+            <li><code>input()</code> → for reading input signals</li>
+            <li><code>output()</code> → for emitting events</li>
+            <li><code>model()</code> → for two-way binding (v18+)</li>
+        </ul>
+    </li>
+
+    <br/><br/><br/>
+
+    <li><b>Readonly vs writable signals</b><br/><br/>
+        A computed signal is <code>readonly</code> by design, meaning you cannot call <code>.set()</code> or <code>.update()</code> on it.<br/><br/>
+        Writable signals (<code>signal()</code>) can both be read and updated.
+    </li>
+
+    <br/><br/><br/>
+
+    <li><b>Accessing signals from the template</b><br/><br/>
+        In templates, signals behave like functions — you must call them:
+<pre class="line-numbers"><code class="language-html">&lt;h2&gt;{{ count() }}&lt;/h2&gt;   &lt;!-- ✅ correct --&gt;
+&lt;h2&gt;{{ count }}&lt;/h2&gt;     &lt;!-- ❌ won't update --&gt;
+</code></pre>
+        <br/>
+        Angular automatically re-renders that part of the template when the signal changes.
+    </li>
+
+    <br/><br/><br/>
+
+    <li><b>When to use signals?</b><br/><br/>
+        <ul>
+            <li>For local component state (form inputs, toggles, UI flags)</li>
+            <br/>
+            <li>For derived/computed data</li>
+            <br/>
+            <li>For lightweight reactivity without external stores</li>
+            <br/>
+            <li>Instead of RxJS <code>BehaviorSubject</code> for simple cases</li>
+        </ul>
+    </li>
 </ol>
 <br/>
 <!-- * * * * * * * * * * * * * * -->
