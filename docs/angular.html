@@ -887,7 +887,192 @@ export class ResetDefaultDirective {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Component Selectors</h3>
+<ol>
+    <li><b>What is a component selector?</b></li>
+    <br/>
+    <ul>
+        <li>The <code>selector</code> tells Angular where to place a component in the DOM.</li>
+        <br/>
+        <li>It lives in the <code>@Component({ ... })</code> metadata:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-user-card',
+    template: `&lt;p&gt;User card works&lt;/p&gt;`,
+})
+export class UserCard {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Every time Angular sees <code>&lt;app-user-card&gt;</code> in a template, it creates a <code>UserCard</code> component there.</li>
+        <br/>
+        <li>The element itself becomes the host of the component. It is not replaced.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Element selectors</b></li>
+    <br/>
+    <ul>
+        <li>This is the most common style.</li>
+        <br/>
+        <li>The selector looks like a custom HTML tag name:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-profile',
+    template: `&lt;h2&gt;Profile&lt;/h2&gt;`,
+})
+export class ProfileComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Usage in another template --&gt;
+&lt;app-profile&gt;&lt;/app-profile&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use <b>kebab-case</b> (lowercase with dashes): <code>app-profile</code>, <code>user-card</code>, etc.</li>
+        <br/>
+        <li>Start with a prefix like <code>app-</code> (you can customize your own) to avoid conflicts with future HTML tags.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Attribute selectors</b></li>
+    <br/>
+    <ul>
+        <li>An attribute selector matches normal HTML elements that have a certain attribute.</li>
+        <br/>
+        <li>Example:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: '[appPanel]',
+    template: `&lt;ng-content&gt;&lt;/ng-content&gt;`,
+})
+export class PanelComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Usage --&gt;
+&lt;section appPanel&gt;
+    Panel content
+&lt;/section&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, the host is the existing <code>&lt;section&gt;</code> element.</li>
+        <br/>
+        <li>Use attribute selectors when you want to "enhance" an existing element, not introduce a new tag.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Multiple selectors</b></li>
+    <br/>
+    <ul>
+        <li>You can combine selectors with commas.</li>
+        <br/>
+        <li>Example (similar to your drop zone example):</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'drop-zone, [dropzone]',
+    template: '&lt;ng-content&gt;&lt;/ng-content&gt;',
+})
+export class DropZoneComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Both usages match the same component --&gt;
+&lt;drop-zone&gt;Drop files here&lt;/drop-zone&gt;
+
+&lt;div dropzone&gt;Drop files here&lt;/div&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Both an element <code>&lt;drop-zone&gt;</code> and any element with the <code>dropzone</code> attribute become hosts for the same component.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using CSS selectors</b></li>
+    <br/>
+    <ul>
+        <li>The <code>selector</code> field accepts valid CSS selectors.</li>
+        <br/>
+        <li>For example, matching all reset buttons:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'button[type="reset"]',
+    template: '&lt;ng-content&gt;&lt;/ng-content&gt;',
+})
+export class ResetButtonComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;button type="reset"&gt;Reset form&lt;/button&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Every <code>&lt;button type="reset"&gt;</code> now becomes a <code>ResetButtonComponent</code> host.</li>
+        <br/>
+        <li>Be careful with very broad selectors like <code>div</code> or <code>button</code>, they can match too many elements and make templates confusing.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>One component per element</b></li>
+    <br/>
+    <ul>
+        <li>Only one component can attach to a single element.</li>
+        <br/>
+        <li>Directives (like attribute directives) can stack, but components cannot.</li>
+        <br/>
+        <li>If two component selectors both match the same element, Angular will throw an error.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Naming and best practices</b></li>
+    <br/>
+    <ul>
+        <li>Use a clear prefix (e.g. <code>app-</code>, <code>admin-</code>, <code>shared-</code>).</li>
+        <br/>
+        <li>Element selectors for main UI blocks:
+<pre><code class="language-text">
+app-header, app-footer, app-user-card
+</code></pre>
+        </li>
+        <br/>
+        <li>Attribute selectors for behavior-like components or directive-style helpers:
+<pre><code class="language-text">
+[appPanel], [appResetDefault], [dropzone]
+</code></pre>
+        </li>
+        <br/>
+        <li>Keep selectors specific enough so it is obvious where a component is used.</li>
+        <br/>
+        <li>Do not reuse the same selector name for different components.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>How Angular uses the selector</b></li>
+    <br/>
+    <ul>
+        <li>During compilation, Angular scans your templates.</li>
+        <br/>
+        <li>When it finds something that matches a component's selector, it:
+            <ul>
+                <li>Creates an instance of that component,</li>
+                <li>Attaches it to the matching DOM element (host),</li>
+                <li>Renders the component's template inside that host.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The host element is kept. Angular only controls what is rendered inside it and its attributes / classes.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
