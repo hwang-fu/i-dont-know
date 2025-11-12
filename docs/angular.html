@@ -1080,7 +1080,7 @@ app-header, app-footer, app-user-card
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3>Styling Components</h3>
+<h3>Basics on Styling Components</h3>
 <ol>
     <li><b>Where do component styles live?</b></li>
     <br/>
@@ -1355,7 +1355,7 @@ export class BoxComponent {}
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3>Input properties</h3>
+<h3>Basics on Input properties</h3>
 <ol>
     <li><b>What are input properties?</b></li>
     <br/>
@@ -1546,6 +1546,221 @@ ngOnChanges(changes: SimpleChanges) {
     <br/>
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>Basics on Output properties</h3>
+<ol>
+    <li><b>What are output properties?</b></li>
+    <br/>
+    <ul>
+        <li><code>@Output()</code> lets a child component send data back to its parent.</li>
+        <br/>
+        <li>They are used for <u>custom events</u> — things that happen inside the child component that the parent wants to know about.</li>
+        <br/>
+        <li>For example: a button click, a form submission, or a value change.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, Output, EventEmitter } from '@angular/core';
+
+@Component({
+    selector: 'app-like-button',
+    template: `&lt;button (click)="like()"&gt;Like&lt;/button&gt;`,
+})
+export class LikeButtonComponent {
+    @Output() liked = new EventEmitter&lt;void&gt;();
+
+    like() {
+        console.log('Button clicked!');
+        this.liked.emit();
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Parent component --&gt;
+&lt;app-like-button (liked)="onLiked()"&gt;&lt;/app-like-button&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The child emits an event, and the parent listens with parentheses <code>(liked)</code>.</li>
+        <br/>
+        <li>This is the exact reverse of how <code>@Input()</code> works.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Sending data with the event</b></li>
+    <br/>
+    <ul>
+        <li>You can include data when you emit an event, not just a signal that something happened.</li>
+        <br/>
+        <li>Example: passing the current like count.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-like-counter',
+    template: `&lt;button (click)="addLike()"&gt;{{ count }}&lt;/button&gt;`,
+})
+export class LikeCounterComponent {
+    count = 0;
+    @Output() countChange = new EventEmitter&lt;number&gt;();
+
+    addLike() {
+        this.count++;
+        this.countChange.emit(this.count);
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Parent component --&gt;
+&lt;app-like-counter (countChange)="onCountUpdated($event)"&gt;&lt;/app-like-counter&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">// Parent component
+onCountUpdated(newCount: number) {
+    console.log('New like count:', newCount);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The special variable <code>$event</code> contains whatever data was emitted.</li>
+        <br/>
+        <li>Here, it's the number sent from <code>this.countChange.emit(this.count)</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Renaming an output event</b></li>
+    <br/>
+    <ul>
+        <li>You can rename the event name seen in HTML by passing a string to <code>@Output()</code>.</li>
+        <br/>
+        <li>Example:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-toggle',
+    template: `
+        &lt;button (click)="toggle()"&gt;Toggle&lt;/button&gt;
+    `,
+})
+export class ToggleComponent {
+    private on = false;
+
+    @Output('toggled') stateChanged = new EventEmitter&lt;boolean&gt;();
+
+    toggle() {
+        this.on = !this.on;
+        this.stateChanged.emit(this.on);
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Parent uses the alias name --&gt;
+&lt;app-toggle (toggled)="onToggled($event)"&gt;&lt;/app-toggle&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>In TypeScript it's called <code>stateChanged</code>, but in the template it appears as <code>(toggled)</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Combining inputs and outputs</b></li>
+    <br/>
+    <ul>
+        <li>It is very common to have both — one for incoming data, one for outgoing events.</li>
+        <br/>
+        <li>Example: a simple custom checkbox component.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-checkbox',
+    template: `
+        &lt;label&gt;
+            &lt;input type="checkbox" [checked]="checked" (change)="onChange($event)" /&gt;
+            &lt;ng-content&gt;&lt;/ng-content&gt;
+        &lt;/label&gt;
+    `,
+})
+export class CheckboxComponent {
+    @Input()  checked = false;
+    @Output() checkedChange = new EventEmitter&lt;boolean&gt;();
+
+    onChange(event: Event) {
+        const input = event.target as HTMLInputElement;
+        this.checkedChange.emit(input.checked);
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Parent component --&gt;
+&lt;app-checkbox [(checked)]="subscribed"&gt;Subscribe&lt;/app-checkbox&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>[(checked)]</code> syntax is shorthand for combining <code>[checked]</code> and <code>(checkedChange)</code>.</li>
+        <br/>
+        <li>This two-way binding works automatically because the names follow the pattern <code>value</code> / <code>valueChange</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Signal-style outputs (Angular 17+)</b></li>
+    <br/>
+    <ul>
+        <li>With the new signal system, you can define outputs using <code>output()</code> instead of <code>@Output()</code>.</li>
+        <br/>
+        <li>This keeps your code consistent with signal-style inputs.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, output } from '@angular/core';
+
+@Component({
+    selector: 'app-delete-button',
+    template: `&lt;button (click)="onDelete()"&gt;Delete&lt;/button&gt;`,
+})
+export class DeleteButtonComponent {
+    deleted = output&lt;string&gt;();
+
+    onDelete() {
+        this.deleted.emit('item-42');
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-delete-button (deleted)="handleDelete($event)"&gt;&lt;/app-delete-button&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>output()</code> works almost the same as <code>@Output()</code>, but is simpler to read alongside <code>input()</code>.</li>
+        <br/>
+        <li>Use it when writing modern Angular components that already use signals.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
