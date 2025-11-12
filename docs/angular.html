@@ -1744,7 +1744,178 @@ export class DeleteButtonComponent {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Content projection with <code>&lt;ng-content&gt;</code></h3>
+<ol>
+    <li><b>What is content projection?</b></li>
+    <br/>
+    <ul>
+        <li>Content projection means letting the parent component <b>insert</b> its own HTML into the child component's template.</li>
+        <br/>
+        <li>Think of it like a "placeholder" where outside content will appear.</li>
+        <br/>
+        <li>Angular uses the special tag <code>&lt;ng-content&gt;</code> for this purpose.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-card',
+    template: `
+        &lt;div class="card"&gt;
+            &lt;h3&gt;Header&lt;/h3&gt;
+            &lt;ng-content&gt;&lt;/ng-content&gt;   &lt;!-- projected content here --&gt;
+        &lt;/div&gt;
+    `,
+    styles: [`
+        .card {
+            border: 1px solid #ddd;
+            border-radius: .5rem;
+            padding: 1rem;
+            margin: .5rem 0;
+        }
+    `],
+})
+export class CardComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Parent component --&gt;
+&lt;app-card&gt;
+    &lt;p&gt;This paragraph comes from the parent.&lt;/p&gt;
+&lt;/app-card&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The paragraph inside <code>&lt;app-card&gt;</code> replaces <code>&lt;ng-content&gt;</code> in the child template.</li>
+        <br/>
+        <li>This lets you make reusable "container" components that still display custom content.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Why use content projection?</b></li>
+    <br/>
+    <ul>
+        <li>It helps you design flexible components that define a structure or style, but not the actual content.</li>
+        <br/>
+        <li>Examples:
+            <ul>
+                <li>Cards, modals, panels, alerts</li>
+                <li>Layouts like headers and sidebars</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;app-alert class="info"&gt;
+    &lt;b&gt;Heads up!&lt;/b&gt; Please check your email.
+&lt;/app-alert&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>app-alert</code> defines the look, and the parent provides the message.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Projecting multiple content sections</b></li>
+    <br/>
+    <ul>
+        <li>You can have more than one <code>&lt;ng-content&gt;</code> in a component, each with a CSS selector.</li>
+        <br/>
+        <li>This is called <b>selective content projection</b>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-dialog',
+    template: `
+        &lt;div class="dialog"&gt;
+            &lt;header&gt;
+                &lt;ng-content select="[dialog-title]"&gt;&lt;/ng-content&gt;
+            &lt;/header&gt;
+
+            &lt;section&gt;
+                &lt;ng-content&gt;&lt;/ng-content&gt;   &lt;!-- default slot --&gt;
+            &lt;/section&gt;
+
+            &lt;footer&gt;
+                &lt;ng-content select="[dialog-actions]"&gt;&lt;/ng-content&gt;
+            &lt;/footer&gt;
+        &lt;/div&gt;
+    `,
+})
+export class DialogComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-dialog&gt;
+    &lt;h2 dialog-title&gt;Delete file?&lt;/h2&gt;
+
+    &lt;p&gt;This action cannot be undone.&lt;/p&gt;
+
+    &lt;div dialog-actions&gt;
+        &lt;button&gt;Cancel&lt;/button&gt;
+        &lt;button&gt;Confirm&lt;/button&gt;
+    &lt;/div&gt;
+&lt;/app-dialog&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Each <code>&lt;ng-content&gt;</code> selects the elements that match its selector.</li>
+        <br/>
+        <li>Anything not matching any selector goes into the "default" <code>&lt;ng-content&gt;</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using <code>ngProjectAs</code> for flexibility</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes, an element's tag can't be changed to match the selector — for example, it's a shared component or library element.</li>
+        <br/>
+        <li>You can use the attribute <code>ngProjectAs</code> to "pretend" it matches a selector.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;app-dialog&gt;
+    &lt;app-title ngProjectAs="[dialog-title]"&gt;Edit profile&lt;/app-title&gt;
+    &lt;p&gt;Form fields go here...&lt;/p&gt;
+    &lt;app-footer ngProjectAs="[dialog-actions]"&gt;
+        &lt;button&gt;Close&lt;/button&gt;
+    &lt;/app-footer&gt;
+&lt;/app-dialog&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Even though the elements are <code>&lt;app-title&gt;</code> and <code>&lt;app-footer&gt;</code>, Angular projects them into the right slots.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Styling projected content</b></li>
+    <br/>
+    <ul>
+        <li>You can style projected content, but only from the <b>parent side</b> (because it's the parent's HTML).</li>
+        <br/>
+        <li>Inside the child component, you can style how the <code>&lt;ng-content&gt;</code> container looks — margins, padding, layout, etc. — but not the projected inner elements' styles directly.</li>
+        <br/>
+        <li>Angular keeps encapsulation: the projected content keeps the parent's styles, not the child's.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Projecting multiple components</b></li>
+    <br/>
+    <ul>
+        <li>You can project any combination of text, HTML, or components.</li>
+        <br/>
+        <li>This makes powerful layouts easy to build.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;app-card&gt;
+    &lt;app-user-info [user]="user"&gt;&lt;/app-user-info&gt;
+    &lt;app-user-stats [user]="user"&gt;&lt;/app-user-stats&gt;
+&lt;/app-card&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Both <code>&lt;app-user-info&gt;</code> and <code>&lt;app-user-stats&gt;</code> are rendered inside the card's <code>&lt;ng-content&gt;</code>.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
