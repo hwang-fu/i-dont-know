@@ -2355,7 +2355,8 @@ ngAfterViewInit() {
     <ul>
         <li>Sometimes, you need direct access to elements or components inside your template — for example, to read a property, call a method, or focus an input.</li>
         <br/>
-        <li>Angular provides <b>queries</b> for this purpose. A query "asks" Angular for a reference to a matching element or component in your view.</li>
+        <li>Angular provides <u>queries</u> for this purpose —
+            A query "asks" Angular for a reference to a matching element or component in your view.</li>
         <br/>
         <li>The most common query decorators are:</li>
         <ul>
@@ -2379,9 +2380,7 @@ ngAfterViewInit() {
 
 @Component({
     selector: 'app-focus-input',
-    template: `
-        &lt;input #userInput type="text" placeholder="Type something..." /&gt;
-    `,
+    template: `&lt;input #userInput type="text" placeholder="Type something..." /&gt;`,
 })
 export class FocusInputComponent implements AfterViewInit {
     @ViewChild('userInput') inputElement!: ElementRef&lt;HTMLInputElement&gt;;
@@ -2393,7 +2392,7 @@ export class FocusInputComponent implements AfterViewInit {
 </code></pre>
     <br/>
     <ul>
-        <li>The <code>#userInput</code> in the template defines a <b>template reference variable</b>.</li>
+        <li>The <code>#userInput</code> in the template defines a <u>template reference variable</u>.</li>
         <li><code>@ViewChild('userInput')</code> finds that element after the view is created.</li>
         <li>Always access it in <code>ngAfterViewInit()</code>, not <code>ngOnInit()</code>, because the view isn't ready before that.</li>
     </ul>
@@ -2436,9 +2435,7 @@ export class ParentComponent {
     <br/>
     <ul>
         <li><code>@ViewChild(ChildComponent)</code> looks for the first <code>&lt;app-child&gt;</code> element in the view.</li>
-        <br/>
         <li>You can then access its public properties and methods directly.</li>
-        <br/>
         <li>Angular keeps this reference updated automatically whenever the view changes.</li>
     </ul>
     <br/>
@@ -2531,10 +2528,10 @@ export class PanelComponent implements AfterContentInit {
         <li><code>@ContentChild</code> / <code>@ContentChildren</code> → for content projected from a parent. Access them in <code>ngAfterContentInit()</code>.</li>
     </ul>
 <pre><code class="language-text">
-ViewChild      → single element in template
-ViewChildren   → multiple elements in template
-ContentChild   → single projected element (via &lt;ng-content&gt;)
-ContentChildren→ multiple projected elements
+ViewChild       → single element in template
+ViewChildren    → multiple elements in template
+ContentChild    → single projected element (via &lt;ng-content&gt;)
+ContentChildren → multiple projected elements
 </code></pre>
     <br/>
     <br/>
@@ -2558,7 +2555,183 @@ ContentChildren→ multiple projected elements
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Using DOM APIs in Angular</h3>
+<ol>
+    <li><b>Why use DOM APIs?</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes you need to interact directly with the browser's Document Object Model (DOM) — for example, to focus an input, measure an element's size, scroll smoothly, or change a style dynamically.</li>
+        <br/>
+        <li>Angular normally manages the DOM for you through templates and bindings, but you can safely access it when necessary.</li>
+        <br/>
+        <li>Direct DOM access should be done carefully to keep your app safe and compatible with server-side rendering (Angular Universal).</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Accessing elements with ElementRef</b></li>
+    <br/>
+    <ul>
+        <li><code>ElementRef</code> is the simplest way to get a reference to a DOM element.</li>
+        <br/>
+        <li>It wraps the real DOM node inside a <code>nativeElement</code> property.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+
+@Component({
+    selector: 'app-box',
+    template: `&lt;div #box class="blue-box"&gt;Hello Box&lt;/div&gt;`,
+    styles: [`.blue-box { width: 100px; height: 100px; background: lightblue; }`]
+})
+export class BoxComponent implements AfterViewInit {
+    @ViewChild('box') box!: ElementRef&lt;HTMLDivElement&gt;;
+
+    ngAfterViewInit() {
+        console.log(this.box.nativeElement); // &lt;div&gt; element itself
+        this.box.nativeElement.style.border = '2px solid navy';
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, <code>nativeElement</code> gives direct access to the DOM node.</li>
+        <li>You can read or set properties like <code>textContent</code>, <code>classList</code>, <code>style</code>, etc.</li>
+        <li>Always access it in <code>ngAfterViewInit()</code> so the view is ready.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Modifying styles and classes</b></li>
+    <br/>
+    <ul>
+        <li>Angular provides the <code>Renderer2</code> service for safer DOM manipulation.</li>
+        <br/>
+        <li><code>Renderer2</code> works even when your app runs outside the browser (like in a server environment).</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, ElementRef, Renderer2, ViewChild, AfterViewInit } from '@angular/core';
+
+@Component({
+    selector: 'app-colored-box',
+    template: `&lt;div #box&gt;Click me!&lt;/div&gt;`
+})
+export class ColoredBoxComponent implements AfterViewInit {
+    @ViewChild('box') box!: ElementRef;
+    constructor(private renderer: Renderer2) {}
+
+    ngAfterViewInit() {
+        this.renderer.setStyle(this.box.nativeElement, 'background', 'pink');
+        this.renderer.setStyle(this.box.nativeElement, 'padding', '10px');
+        this.renderer.addClass(this.box.nativeElement, 'rounded');
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>setStyle()</code>, <code>addClass()</code>, <code>removeClass()</code>, and <code>setAttribute()</code> are cross-platform safe.</li>
+        <li>This avoids direct DOM access and works well with Angular Universal.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Listening to DOM events</b></li>
+    <br/>
+    <ul>
+        <li>You can use <code>Renderer2.listen()</code> to attach an event listener directly to an element.</li>
+        <br/>
+        <li>This gives more control than template bindings when you need dynamic event management.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">ngAfterViewInit() {
+    this.renderer.listen(this.box.nativeElement, 'click', () =&gt; {
+        alert('Box clicked!');
+    });
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>listen()</code> automatically cleans up when the element is destroyed — you don't need to remove listeners manually.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Reading sizes and positions</b></li>
+    <br/>
+    <ul>
+        <li>Use normal DOM properties like <code>offsetWidth</code>, <code>offsetHeight</code>, or <code>getBoundingClientRect()</code> to measure elements.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">ngAfterViewInit() {
+    const rect = this.box.nativeElement.getBoundingClientRect();
+    console.log('Width:', rect.width, 'Height:', rect.height);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This is useful for animations, positioning, or responsive logic.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Scrolling and focusing</b></li>
+    <br/>
+    <ul>
+        <li>Many DOM elements have built-in methods like <code>scrollIntoView()</code> and <code>focus()</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">scrollToBox() {
+    this.box.nativeElement.scrollIntoView({ behavior: 'smooth' });
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can call these safely once the view exists.</li>
+        <li>Combine with buttons or triggers to make smooth navigation experiences.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using @HostListener for simple DOM events</b></li>
+    <br/>
+    <ul>
+        <li>Instead of manually using <code>Renderer2.listen()</code>, Angular offers the <code>@HostListener()</code> decorator to respond to DOM events directly on your component's host element.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, HostListener } from '@angular/core';
+
+@Component({
+    selector: 'app-click-alert',
+    template: `&lt;div&gt;Click anywhere on me!&lt;/div&gt;`,
+})
+export class ClickAlertComponent {
+    @HostListener('click')
+    handleClick() {
+        console.log('Host element clicked!');
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>@HostListener()</code> automatically registers and cleans up event handlers.</li>
+        <li>It's the easiest way to respond to host events without touching <code>Renderer2</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Safety notes</b></li>
+    <br/>
+    <ul>
+        <li>Avoid direct DOM manipulation when possible — it can bypass Angular's rendering and cause inconsistencies.</li>
+        <br/>
+        <li>Use <code>Renderer2</code> or <code>@HostListener</code> for most operations — they work in web workers and server rendering.</li>
+        <br/>
+        <li>If you must access <code>window</code> or <code>document</code>, do it only inside browser-safe conditions (e.g., check <code>isPlatformBrowser()</code>).</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
