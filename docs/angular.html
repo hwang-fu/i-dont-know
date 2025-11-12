@@ -3409,7 +3409,7 @@ export class ListComponent {
     `,
 })
 export class GreeterComponent {
-    name = 'Junzhe';
+    name = 'Hwangfucius';
     date = new Date();
 }
 </code></pre>
@@ -3578,11 +3578,475 @@ export class GreeterComponent {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Adding Event Listeners in Angular</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Event listeners let your components react to user actions such as clicks, typing, mouse movements, or key presses.</li>
+        <br/>
+        <li>Instead of using <code>addEventListener()</code> manually, Angular provides a simpler, declarative way to attach events in templates using parentheses <code>()</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic syntax</b></li>
+    <br/>
+    <ul>
+        <li>The general syntax is:</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;element (eventName)="expression"&gt;&lt;/element&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Example: listening for a button click.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;button (click)="onClick()"&gt;Click me&lt;/button&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class ClickExampleComponent {
+    onClick() {
+        console.log('Button clicked!');
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Whenever the button is clicked, Angular calls the <code>onClick()</code> method in the component.</li>
+        <li>You don't need to query the element or manually add listeners — Angular handles it for you.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Accessing the event object</b></li>
+    <br/>
+    <ul>
+        <li>Angular passes the native browser event as a special variable named <code>$event</code>.</li>
+        <br/>
+        <li>You can use it to inspect or react to event details like mouse position or keyboard keys.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;input (input)="onInput($event)" placeholder="Type something..." /&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class InputExampleComponent {
+    onInput(event: Event) {
+        const input = event.target as HTMLInputElement;
+        console.log('You typed:', input.value);
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>$event</code> gives full access to the original DOM event (the same object you'd get from <code>addEventListener</code>).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Passing custom arguments</b></li>
+    <br/>
+    <ul>
+        <li>You can mix custom arguments and the event object freely.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;button (click)="sayHello('Hwangfucius', $event)"&gt;Greet&lt;/button&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class HelloComponent {
+    sayHello(name: string, event: MouseEvent) {
+        console.log(`Hello, ${name}!`, event);
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This allows flexible event handlers that take both static and dynamic input.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Keyboard events</b></li>
+    <br/>
+    <ul>
+        <li>Angular supports all standard DOM keyboard events such as <code>keydown</code>, <code>keyup</code>, and <code>keypress</code>.</li>
+        <br/>
+        <li>You can use <u>key modifiers</u> to listen for specific keys directly.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;input (keyup.enter)="onEnter($event)" placeholder="Press Enter" /&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class KeyExampleComponent {
+    onEnter(event: KeyboardEvent) {
+        const input = event.target as HTMLInputElement;
+        console.log('Entered:', input.value);
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Angular automatically detects modifier keys like <code>.enter</code>, <code>.esc</code>, <code>.tab</code>, <code>.shift</code>, <code>.alt</code>, and others.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Mouse events</b></li>
+    <br/>
+    <ul>
+        <li>Angular also supports mouse events such as <code>mouseenter</code>, <code>mouseleave</code>, <code>mousemove</code>, <code>mousedown</code>, <code>mouseup</code>, etc.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;div
+    (mouseenter)="onHover(true)"
+    (mouseleave)="onHover(false)"
+    [class.active]="hovered"
+&gt;
+    Hover over me!
+&lt;/div&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class MouseExampleComponent {
+    hovered = false;
+
+    onHover(isHovering: boolean) {
+        this.hovered = isHovering;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, the element gains a class when hovered, and Angular removes it when the mouse leaves.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Event filtering with templates</b></li>
+    <br/>
+    <ul>
+        <li>You can write conditions directly inside the template binding to control when a handler runs.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;input (keydown)="($event.key === 'Enter') &amp;&amp; submit()" /&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This uses a short-circuit expression, <code>submit()</code> runs only when the pressed key is Enter.</li>
+        <li>Be careful not to put too much logic inside the template, prefer keeping code in the component.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using @HostListener for host element events</b></li>
+    <br/>
+    <ul>
+        <li>You can attach listeners to the component's own host element using the <code>@HostListener()</code> decorator.</li>
+        <br/>
+        <li>This is especially useful in directives and reusable UI components.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, HostListener } from '@angular/core';
+
+@Component({
+    selector: 'app-box',
+    template: `&lt;div&gt;Click anywhere on me&lt;/div&gt;`,
+})
+export class BoxComponent {
+    @HostListener('click', ['$event'])
+    handleClick(event: MouseEvent) {
+        console.log('Box clicked!', event);
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>@HostListener()</code> automatically handles registration and cleanup.</li>
+        <li>It can also listen to global events like <code>window:scroll</code> or <code>document:keydown</code>:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@HostListener('window:scroll', ['$event'])
+onScroll(event: Event) {
+    console.log('Scrolling detected!');
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This is how many Angular libraries implement resize or scroll tracking internally.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Event binding vs DOM addEventListener</b></li>
+    <br/>
+    <ul>
+        <li>In plain JavaScript, you'd do:
+<pre><code class="language-js line-numbers">document.querySelector('button').addEventListener('click', handler);
+</code></pre>
+        </li>
+        <li>But in Angular, the framework:
+            <ul>
+                <li>Sets up the listeners when the view is created,</li>
+                <li>Removes them when the component is destroyed,</li>
+                <li>Runs them inside Angular's change detection zone (so your UI updates automatically).</li>
+            </ul>
+        </li>
+        <li>This means you don't need to worry about memory leaks or manual cleanup.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Combining events with data binding</b></li>
+    <br/>
+    <ul>
+        <li>Event binding is often combined with property binding to create interactive UIs.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;input [value]="text" (input)="text = $event.target.value" /&gt;
+&lt;p&gt;You typed: {{ text }}&lt;/p&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class CombineExampleComponent {
+    text = '';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This pattern underlies Angular's two-way binding (<code>[(ngModel)]</code>).</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>Two-way binding in Angular</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Two-way binding lets data flow both ways — from your component class to the template, and from the template back to the class.</li>
+        <br/>
+        <li>It's commonly used for form inputs, switches, checkboxes, and other user-editable fields.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic concept</b></li>
+    <br/>
+    <ul>
+        <li>Two-way binding combines:
+            <ul>
+                <li><b>Property binding</b> &nbsp; — <code>[value]="username"</code> (data → UI)</li>
+                <li><b>Event binding</b> &nbsp; &nbsp; &nbsp; — <code>(input)="username = $event.target.value"</code> (UI → data)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Angular provides a special shorthand for this pattern: <code>[( )]</code> — known as the <b>banana-in-a-box</b> syntax.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;input [(ngModel)]="username" /&gt;
+&lt;p&gt;Hello, {{ username }}!&lt;/p&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class TwoWayExampleComponent {
+    username = 'Alice';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>When the input changes, <code>username</code> updates instantly; when the component changes <code>username</code>, the input field updates automatically too.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>How ngModel works internally</b></li>
+    <br/>
+    <ul>
+        <li>The syntax <code>[(ngModel)]="username"</code> is just sugar for combining two bindings:</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;input
+    [ngModel]="username"
+    (ngModelChange)="username = $event"
+/&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>[ngModel]</code> → sets the initial value (one-way binding).</li>
+        <li><code>(ngModelChange)</code> → fires whenever the value changes in the UI.</li>
+        <li>Together, they synchronize both sides automatically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using ngModel (FormsModule required)</b></li>
+    <br/>
+    <ul>
+        <li>To use <code>ngModel</code>, you must import the <code>FormsModule</code> in your component or application (or add it to <code>imports</code> for standalone components).</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+
+@Component({
+    selector: 'app-form-demo',
+    standalone: true,
+    imports: [FormsModule],
+    template: `
+        &lt;input [(ngModel)]="name" placeholder="Enter your name" /&gt;
+        &lt;p&gt;Hello, {{ name || 'stranger' }}!&lt;/p&gt;
+    `
+})
+export class FormDemoComponent {
+    name = '';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>If you forget to import <code>FormsModule</code>, Angular will show an error:
+            <code>NG0303: Can't bind to 'ngModel' since it isn't a known property...</code></li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Two-way binding with custom components</b></li>
+    <br/>
+    <ul>
+        <li>You can create your own components that support <code>[(...)]</code> syntax, just like <code>ngModel</code>.</li>
+        <br/>
+        <li>All you need is an <b>@Input()</b> and an <b>@Output()</b> following a specific naming pattern:
+            <code>name</code> and <code>nameChange</code>.
+        </li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-toggle',
+    template: `
+        &lt;button (click)="toggle()"&gt;
+            {{ on ? 'ON' : 'OFF' }}
+        &lt;/button&gt;
+    `,
+    standalone: true
+})
+export class ToggleComponent {
+    @Input() on = false;
+    @Output() onChange = new EventEmitter&lt;boolean&gt;();
+
+    toggle() {
+        this.on = !this.on;
+        this.onChange.emit(this.on);
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-toggle [(on)]="enabled"&gt;&lt;/app-toggle&gt;
+&lt;p&gt;Feature is: {{ enabled ? 'Enabled' : 'Disabled' }}&lt;/p&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class ParentComponent {
+    enabled = true;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Angular automatically recognizes <code>on</code> + <code>onChange</code> as a two-way binding pair.</li>
+        <li>So <code>[(on)]</code> expands into <code>[on]</code> and <code>(onChange)</code> internally.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Two-way binding with checkboxes and select boxes</b></li>
+    <br/>
+    <ul>
+        <li>Two-way binding is very common in forms — it works with input types, checkboxes, selects, and textareas.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;label&gt;
+    &lt;input type="checkbox" [(ngModel)]="subscribed" /&gt; Subscribe to newsletter
+&lt;/label&gt;
+
+&lt;select [(ngModel)]="language"&gt;
+    &lt;option value="en"&gt;English&lt;/option&gt;
+    &lt;option value="de"&gt;German&lt;/option&gt;
+    &lt;option value="zh"&gt;Chinese&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;p&gt;Subscribed: {{ subscribed }}&lt;/p&gt;
+&lt;p&gt;Language: {{ language }}&lt;/p&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class PreferencesComponent {
+    subscribed = false;
+    language = 'en';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>As you check/uncheck or change the dropdown, Angular updates the component variables instantly.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using standalone signals instead of ngModel (modern alternative)</b></li>
+    <br/>
+    <ul>
+        <li>Starting in Angular 17, you can achieve two-way reactivity using <u>signals</u> instead of <code>ngModel</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, signal } from '@angular/core';
+
+@Component({
+    selector: 'app-signal-demo',
+    template: `
+        &lt;input [value]="name()" (input)="name.set($event.target.value)" /&gt;
+        &lt;p&gt;Name: {{ name() }}&lt;/p&gt;
+    `,
+    standalone: true
+})
+export class SignalDemoComponent {
+    name = signal('Hwangfucius');
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Signals provide reactive state without needing the FormsModule — and are fully type-safe.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
 
 <hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 <footer>
     <p>&copy; 2025 Hwangfucius. All rights reserved.</p>
 </footer>
