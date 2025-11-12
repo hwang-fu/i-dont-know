@@ -2928,7 +2928,204 @@ export class HighlightDirective extends HoverBase {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Programmatically rendering components</h3>
+<ol>
+    <li><b>What does "programmatically rendering" mean?</b></li>
+    <br/>
+    <ul>
+        <li>Normally, you add components to your template using HTML tags, like <code>&lt;app-card&gt;&lt;/app-card&gt;</code>.</li>
+        <br/>
+        <li>But sometimes, you want to create components <b>with code</b> — for example:
+            <ul>
+                <li>Show a popup or dialog dynamically.</li>
+                <li>Render components from a list of types.</li>
+                <li>Build a dashboard where widgets can appear or disappear.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This is called <b>programmatic component rendering</b>.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic idea</b></li>
+    <br/>
+    <ul>
+        <li>To insert a component manually, Angular gives you a <code>ViewContainerRef</code>.</li>
+        <br/>
+        <li>This reference represents a "place" in the DOM where new views (templates or components) can be created.</li>
+        <br/>
+        <li>Then, you use <code>createComponent()</code> to insert your component at runtime.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Setup: create a target placeholder</b></li>
+    <br/>
+    <ul>
+        <li>You first mark where in the template you want to insert components using <code>#container</code>.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;div&gt;Dynamic Area:&lt;/div&gt;
+&lt;ng-container #container&gt;&lt;/ng-container&gt;
+&lt;button (click)="addCard()"&gt;Add Card&lt;/button&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>&lt;ng-container&gt;</code> is invisible in the DOM — it just holds a view.</li>
+        <li>The <code>#container</code> gives you a reference in TypeScript.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Getting the container in TypeScript</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>@ViewChild()</code> with <code>ViewContainerRef</code> to access the container.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, ViewChild, ViewContainerRef } from '@angular/core';
+import { CardComponent } from './card.component';
+
+@Component({
+    selector: 'app-dynamic-host',
+    templateUrl: './dynamic-host.component.html',
+})
+export class DynamicHostComponent {
+    @ViewChild('container', { read: ViewContainerRef }) container!: ViewContainerRef;
+
+    addCard() {
+        this.container.createComponent(CardComponent);
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Every time you click the button, Angular will create a new <code>CardComponent</code> inside the container.</li>
+        <li>That's all it takes to render a component programmatically!</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Passing data to the created component</b></li>
+    <br/>
+    <ul>
+        <li>After you create a component, you can access its instance and set its inputs.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">addCard() {
+    const cardRef = this.container.createComponent(CardComponent);
+    cardRef.instance.title = 'Dynamic card created at ' + new Date().toLocaleTimeString();
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The returned object (<code>ComponentRef</code>) has an <code>instance</code> property — that's the component itself.</li>
+        <li>You can set its public fields or call methods directly.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Clearing or removing components</b></li>
+    <br/>
+    <ul>
+        <li>To remove all dynamically created components, just clear the container:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">clearAll() {
+    this.container.clear();
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>To remove one specific component, destroy it manually:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const ref = this.container.createComponent(CardComponent);
+// later...
+ref.destroy();
+</code></pre>
+    <br/>
+    <ul>
+        <li>When destroyed, Angular also removes its DOM and unsubscribes from any observables automatically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: a dynamic alert system</b></li>
+    <br/>
+    <ul>
+        <li>Here's a small, complete example of dynamically creating alert components:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-alert',
+    template: `&lt;div class="alert"&gt;{{ message }}&lt;/div&gt;`,
+    styles: [`.alert { background: #ffe4b5; padding: .5rem; margin: .25rem 0; }`],
+    standalone: true,
+})
+export class AlertComponent {
+    message = '';
+}
+
+@Component({
+    selector: 'app-alert-demo',
+    template: `
+        &lt;button (click)="showAlert('Something happened!')"&gt;Show Alert&lt;/button&gt;
+        &lt;ng-container #alertHost&gt;&lt;/ng-container&gt;
+    `,
+})
+export class AlertDemoComponent {
+    @ViewChild('alertHost', { read: ViewContainerRef }) host!: ViewContainerRef;
+
+    showAlert(text: string) {
+        const ref = this.host.createComponent(AlertComponent);
+        ref.instance.message = text;
+        setTimeout(() =&gt; ref.destroy(), 3000); // auto remove after 3s
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Each alert appears when the button is clicked, and disappears automatically after 3 seconds.</li>
+        <li>This pattern is often used in real applications for toast notifications, modals, or temporary messages.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Advanced: creating from a component type variable</b></li>
+    <br/>
+    <ul>
+        <li>You can store component types in variables and render them dynamically at runtime.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Type } from '@angular/core';
+
+const components: Type&lt;any&gt;[] = [AlertComponent, CardComponent, WidgetComponent];
+
+addRandom() {
+    const randomType = components[Math.floor(Math.random() * components.length)];
+    this.container.createComponent(randomType);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This makes it easy to load different components conditionally — for example, from configuration or user choices.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Lifecycle and cleanup</b></li>
+    <br/>
+    <ul>
+        <li>Dynamically created components still run all normal Angular lifecycles (<code>ngOnInit</code>, <code>ngOnDestroy</code>, etc.).</li>
+        <br/>
+        <li>When you clear or destroy them, Angular cleans up automatically — no need to remove DOM elements manually.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
