@@ -114,6 +114,11 @@
 
     body {
         font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
+        font-variant-ligatures: none;
+    }
+
+    table {
+        font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
     }
 
     ul > li {
@@ -129,7 +134,6 @@
         font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         font-size: 0.875rem;                /* 14px-ish; avoid bare numbers */
         line-height: 1.4;
-        font-variant-ligatures:contextual;
     }
 
     /* Block code container */
@@ -396,6 +400,107 @@ export class UserCard {
             <li>Instead of RxJS <code>BehaviorSubject</code> for simple cases</li>
         </ul>
     </li>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3>Linked Signals</h3>
+<ol>
+    <li><b>What is a linked signal?</b><br/><br/>
+        A <code>linkedSignal()</code> is a special kind of signal that stays connected to another signal.<br/><br/>
+        When the source signal changes, the linked one also updates automatically.<br/><br/>
+        Think of it as a "live copy" or a "mirror" of another signal — but one that can also transform or filter the value.
+        <br/><br/>
+        Example:
+<pre class="line-numbers"><code class="language-ts">import { signal, linkedSignal } from '@angular/core';
+
+const name = signal('Hwangfu');
+
+// Linked signal that always follows `name`
+const upperName = linkedSignal(() =&gt; name().toUpperCase());
+
+console.log(upperName()); // "HWANGFU"
+
+name.set('Fucius');
+console.log(upperName()); // "FUCIUS" – updated automatically
+</code></pre>
+    </li>
+
+    <br/><br/><br/>
+
+    <li><b>Why not just use <code>computed()</code>?</b><br/><br/>
+        <code>computed()</code> and <code>linkedSignal()</code> look similar, but there's one key difference:<br/><br/>
+        <ul>
+            <li><code>computed()</code> → read-only, you can't change its value directly</li>
+            <br/>
+            <li><code>linkedSignal()</code> → can also be written to (you can modify it)</li>
+        </ul>
+        <br/>
+        Example:
+<pre class="line-numbers"><code class="language-ts">const count = signal(0);
+
+// Computed: only reads from count
+const double = computed(() =&gt; count() * 2);
+
+// Linked: can read and write
+const mirror = linkedSignal(() =&gt; count(), {
+    // define how writing back should work
+    set: (newVal) =&gt; count.set(newVal),
+});
+
+mirror.set(5);
+console.log(count()); // 5
+</code></pre>
+    </li>
+
+    <br/><br/><br/>
+
+    <li><b>When to use linked signals?</b><br/><br/>
+        Linked signals are useful when two parts of your code need to share the same data, but maybe in a slightly different form.<br/><br/>
+        For example, if you want to edit a copy of a user object without losing the original right away:
+<pre class="line-numbers"><code class="language-ts">const activeUser = signal({ id: 1, name: 'Alice' });
+
+// Create a linked version for editing
+const editUser = linkedSignal(() =&gt; activeUser(), {
+    // treat users with the same id as the same object
+    equal: (a, b) =&gt; a.id === b.id,
+});
+
+console.log(editUser());  // { id: 1, name: 'Alice' }
+
+editUser.update(u =&gt; ({ ...u, name: 'Alicia' }));
+console.log(editUser().name);  // "Alicia"
+
+// if `activeUser` changes, `editUser` also updates
+activeUser.set({ id: 1, name: 'Alina' });
+console.log(editUser().name);  // "Alina"
+</code></pre>
+    </li>
+
+    <br/><br/><br/>
+
+    <li><b>Basic syntax patterns</b><br/><br/>
+        You can define a linked signal in two common ways:
+        <br/><br/>
+        <b>1. Simple form</b>
+<pre class="line-numbers"><code class="language-ts">const copy = linkedSignal(() =&gt; source());
+</code></pre>
+        <b>2. Detailed form</b>
+<pre class="line-numbers"><code class="language-ts">const copy = linkedSignal({
+    source: source,
+    computation: (value) =&gt; value,
+    equal: (a, b) =&gt; a.id === b.id,
+});
+</code></pre>
+        <br/>
+        The detailed form gives you more control: you can define how values are compared, or how they're computed.
+    </li>
+
 </ol>
 <br/>
 <!-- * * * * * * * * * * * * * * -->
