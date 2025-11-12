@@ -2348,7 +2348,209 @@ ngAfterViewInit() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Referencing component children with queries</h3>
+<ol>
+    <li><b>What are queries?</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes, you need direct access to elements or components inside your template — for example, to read a property, call a method, or focus an input.</li>
+        <br/>
+        <li>Angular provides <b>queries</b> for this purpose. A query "asks" Angular for a reference to a matching element or component in your view.</li>
+        <br/>
+        <li>The most common query decorators are:</li>
+        <ul>
+            <li><code>@ViewChild()</code> — finds one element or component inside the component's own template.</li>
+            <li><code>@ViewChildren()</code> — finds multiple matching elements or components in the view.</li>
+            <li><code>@ContentChild()</code> and <code>@ContentChildren()</code> — find projected content (passed in via <code>&lt;ng-content&gt;</code>).</li>
+        </ul>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>@ViewChild() — getting a single child element</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>@ViewChild()</code> to get a reference to one element or component inside your template.</li>
+        <br/>
+        <li>Example: focusing an input after the component appears.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+
+@Component({
+    selector: 'app-focus-input',
+    template: `
+        &lt;input #userInput type="text" placeholder="Type something..." /&gt;
+    `,
+})
+export class FocusInputComponent implements AfterViewInit {
+    @ViewChild('userInput') inputElement!: ElementRef&lt;HTMLInputElement&gt;;
+
+    ngAfterViewInit() {
+        this.inputElement.nativeElement.focus();  // focus when ready
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>#userInput</code> in the template defines a <b>template reference variable</b>.</li>
+        <li><code>@ViewChild('userInput')</code> finds that element after the view is created.</li>
+        <li>Always access it in <code>ngAfterViewInit()</code>, not <code>ngOnInit()</code>, because the view isn't ready before that.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>@ViewChild() — getting a child component instance</b></li>
+    <br/>
+    <ul>
+        <li>You can also use <code>@ViewChild()</code> to access another component that is part of your template.</li>
+        <br/>
+        <li>Example:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-child',
+    template: `&lt;p&gt;Child works!&lt;/p&gt;`,
+})
+export class ChildComponent {
+    sayHello() {
+        console.log('Hello from Child!');
+    }
+}
+
+@Component({
+    selector: 'app-parent',
+    template: `
+        &lt;app-child&gt;&lt;/app-child&gt;
+        &lt;button (click)="callChild()"&gt;Call Child&lt;/button&gt;
+    `,
+})
+export class ParentComponent {
+    @ViewChild(ChildComponent) child!: ChildComponent;
+
+    callChild() {
+        this.child.sayHello();
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>@ViewChild(ChildComponent)</code> looks for the first <code>&lt;app-child&gt;</code> element in the view.</li>
+        <br/>
+        <li>You can then access its public properties and methods directly.</li>
+        <br/>
+        <li>Angular keeps this reference updated automatically whenever the view changes.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>@ViewChildren() — getting multiple elements or components</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>@ViewChildren()</code> when you need to handle several matching items — for example, a list of child components.</li>
+        <br/>
+        <li>Angular returns a <code>QueryList</code> that you can loop over.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-item',
+    template: `&lt;li&gt;Item&lt;/li&gt;`,
+})
+export class ItemComponent {}
+
+@Component({
+    selector: 'app-list',
+    template: `
+        &lt;ul&gt;
+            &lt;app-item *ngFor="let i of [1,2,3]"&gt;&lt;/app-item&gt;
+        &lt;/ul&gt;
+        &lt;button (click)="logItems()"&gt;Log items&lt;/button&gt;
+    `,
+})
+export class ListComponent implements AfterViewInit {
+    @ViewChildren(ItemComponent) items!: QueryList&lt;ItemComponent&gt;;
+
+    ngAfterViewInit() {
+        console.log('Found items:', this.items.length);
+    }
+
+    logItems() {
+        this.items.forEach((item, index) =&gt; console.log('Item', index + 1, item));
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>QueryList</code> acts like a live array — it updates automatically if the view changes (for example, if <code>*ngIf</code> adds or removes elements).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>@ContentChild() and @ContentChildren() — projected content</b></li>
+    <br/>
+    <ul>
+        <li>Use these for elements or components that are <b>projected into</b> your component through <code>&lt;ng-content&gt;</code>.</li>
+        <br/>
+        <li>This is for content that the <b>parent passes in</b>, not what the component itself defines.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-panel',
+    template: `
+        &lt;div class="panel"&gt;
+            &lt;ng-content&gt;&lt;/ng-content&gt;
+        &lt;/div&gt;
+    `,
+})
+export class PanelComponent implements AfterContentInit {
+    @ContentChild('projected') content!: ElementRef;
+
+    ngAfterContentInit() {
+        console.log('Projected element:', this.content.nativeElement);
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-panel&gt;
+    &lt;p #projected&gt;Hello projected world!&lt;/p&gt;
+&lt;/app-panel&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>@ContentChild()</code> finds a matching reference inside the projected content (the part between <code>&lt;app-panel&gt;...&lt;/app-panel&gt;</code>).</li>
+        <li>Access it in <code>ngAfterContentInit()</code>, not <code>ngOnInit()</code>, since the content is only inserted after initialization.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>When to use each hook</b></li>
+    <br/>
+    <ul>
+        <li><code>@ViewChild</code> / <code>@ViewChildren</code> → for elements or components declared inside your own template. Access them in <code>ngAfterViewInit()</code>.</li>
+        <br/>
+        <li><code>@ContentChild</code> / <code>@ContentChildren</code> → for content projected from a parent. Access them in <code>ngAfterContentInit()</code>.</li>
+    </ul>
+<pre><code class="language-text">
+ViewChild      → single element in template
+ViewChildren   → multiple elements in template
+ContentChild   → single projected element (via &lt;ng-content&gt;)
+ContentChildren→ multiple projected elements
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Practical use cases</b></li>
+    <br/>
+    <ul>
+        <li>Auto-focusing or measuring DOM elements after view init.</li>
+        <li>Calling methods on child components (e.g., <code>reset()</code>, <code>validate()</code>).</li>
+        <li>Collecting or managing groups of dynamic child components.</li>
+        <li>Reacting to projected content, like tabs, cards, or custom slots.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
