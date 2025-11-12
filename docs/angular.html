@@ -2739,6 +2739,211 @@ export class ClickAlertComponent {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Inheritance in Angular</h3>
+<ol>
+    <li><b>Using inheritance between Angular components</b></li>
+    <br/>
+    <ul>
+        <li>Suppose you have multiple components that display data and log user actions — you can extract this logic into a base class.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component } from '@angular/core';
+
+export class BaseLogger {
+    log(message: string) {
+        console.log(`[LOG]: ${message}`);
+    }
+}
+
+@Component({
+    selector: 'app-user',
+    template: `&lt;p&gt;User Component&lt;/p&gt;`,
+})
+export class UserComponent extends BaseLogger {
+    constructor() {
+        super();
+        this.log('User component initialized');
+    }
+}
+
+@Component({
+    selector: 'app-admin',
+    template: `&lt;p&gt;Admin Component&lt;/p&gt;`,
+})
+export class AdminComponent extends BaseLogger {
+    constructor() {
+        super();
+        this.log('Admin component initialized');
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Both components now reuse <code>log()</code> from <code>BaseLogger</code>.</li>
+        <li>You can call <code>super()</code> to use methods or constructor logic from the parent.</li>
+        <li>This is a clean way to share reusable class-level logic.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Extending a base component with lifecycle hooks</b></li>
+    <br/>
+    <ul>
+        <li>You can also move common lifecycle logic to a base class — for example, cleanup code or initial setup.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { OnInit, OnDestroy } from '@angular/core';
+
+export abstract class BaseComponent implements OnInit, OnDestroy {
+    ngOnInit() {
+        console.log('Component initialized.');
+    }
+
+    ngOnDestroy() {
+        console.log('Component destroyed.');
+    }
+}
+
+@Component({
+    selector: 'app-profile',
+    template: `&lt;p&gt;Profile&lt;/p&gt;`,
+})
+export class ProfileComponent extends BaseComponent {
+    ngOnInit() {
+        super.ngOnInit(); // Call base logic
+        console.log('Profile-specific init.');
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The base class handles shared setup/cleanup, and child components can extend it with their own behavior.</li>
+        <li>Use <code>super.ngOnInit()</code> to keep the parent's logic.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Sharing injected services across subclasses</b></li>
+    <br/>
+    <ul>
+        <li>Services can also be shared using inheritance.</li>
+        <br/>
+        <li>The parent class can inject dependencies, and the child automatically inherits them.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+
+export class BaseDataComponent {
+    constructor(protected http: HttpClient) {}
+
+    fetchData(url: string) {
+        return this.http.get(url);
+    }
+}
+
+@Component({
+    selector: 'app-users',
+    template: `&lt;button (click)="load()"&gt;Load Users&lt;/button&gt;`,
+})
+export class UsersComponent extends BaseDataComponent {
+    load() {
+        this.fetchData('/api/users').subscribe(data =&gt; console.log(data));
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>UsersComponent</code> inherits both the injected <code>HttpClient</code> and the <code>fetchData()</code> method.</li>
+        <li>This pattern is great for components that share similar service interactions.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Inheritance for directives</b></li>
+    <br/>
+    <ul>
+        <li>You can also extend one directive from another to reuse behavior.</li>
+        <br/>
+        <li>Example: create a base directive that listens for hover events, then extend it to style specific elements.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Directive, HostListener, ElementRef } from '@angular/core';
+
+@Directive()
+export class HoverBase {
+    constructor(protected el: ElementRef) {}
+
+    @HostListener('mouseenter')
+    onEnter() {
+        this.el.nativeElement.style.opacity = '0.8';
+    }
+
+    @HostListener('mouseleave')
+    onLeave() {
+        this.el.nativeElement.style.opacity = '1';
+    }
+}
+
+@Directive({
+    selector: '[highlightOnHover]'
+})
+export class HighlightDirective extends HoverBase {
+    @HostListener('mouseenter')
+    override onEnter() {
+        super.onEnter();
+        this.el.nativeElement.style.background = 'lightyellow';
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>HighlightDirective</code> extends <code>HoverBase</code>, keeping its hover logic but adding a highlight effect.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>When not to use inheritance</b></li>
+    <br/>
+    <ul>
+        <li>Inheritance is great for sharing core logic, but not for everything.</li>
+        <br/>
+        <li>Prefer <b>composition</b> (injecting a service) if:
+            <ul>
+                <li>Different components need similar but not identical features.</li>
+                <li>You want to avoid deep inheritance chains.</li>
+                <li>The shared behavior doesn't rely on component lifecycles.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>For example, instead of a <code>BaseLogger</code>, you could inject a <code>LoggerService</code>.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
