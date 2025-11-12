@@ -4184,7 +4184,7 @@ export class SignalDemoComponent {
 &lt;p&gt;Hello, {{ fullName }}!&lt;/p&gt;
 </code></pre>
 <pre><code class="language-ts line-numbers">export class LetExampleComponent {
-    firstName = 'Junzhe';
+    firstName = 'Hwangfucius';
     lastName = 'Wang';
 }
 </code></pre>
@@ -4252,7 +4252,260 @@ export class SignalDemoComponent {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Pipes in Angular</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <b>pipe</b> in Angular is a simple way to <u>transform data directly in the template</u> — for example, changing text to uppercase, formatting dates, or displaying numbers nicely.</li>
+        <br/>
+        <li>Pipes let you keep your component logic clean by doing small formatting tasks in HTML instead of TypeScript.</li>
+        <br/>
+        <li>Angular comes with many <b>built-in pipes</b> (like <code>date</code>, <code>uppercase</code>, <code>currency</code>), and you can also <b>create your own custom pipes</b>.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic syntax</b></li>
+    <br/>
+    <ul>
+        <li>You apply a pipe using the vertical bar (<code>|</code>) symbol inside interpolation (<code>{{ }}</code>).</li>
+    </ul>
+<pre><code class="language-html line-numbers">{{ value | pipeName }}</code></pre>
+    <br/>
+    <ul>
+        <li>Example:</li>
+    </ul>
+<pre><code class="language-html line-numbers">{{ username | uppercase }}</code></pre>
+    <br/>
+    <ul>
+        <li>This will display <code>username</code> in all capital letters, without modifying the variable itself.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Chaining multiple pipes</b></li>
+    <br/>
+    <ul>
+        <li>You can chain multiple pipes together, and Angular applies them from left to right.</li>
+    </ul>
+<pre><code class="language-html line-numbers">{{ birthday | date:'longDate' | uppercase }}</code></pre>
+    <br/>
+    <ul>
+        <li>First, the <code>date</code> pipe formats <code>birthday</code>, and then <code>uppercase</code> converts it to capital letters.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using pipe arguments</b></li>
+    <br/>
+    <ul>
+        <li>Some pipes accept one or more arguments to customize the result.</li>
+    </ul>
+<pre><code class="language-html line-numbers">{{ amount | currency:'EUR':'symbol':'1.2-2' }}</code></pre>
+<pre><code class="language-ts line-numbers">export class PipeExampleComponent {
+    amount = 1234.5;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This formats <code>1234.5</code> as <code>€1,234.50</code>.</li>
+        <li>Arguments are separated by colons (<code>:</code>).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Common built-in pipes</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Pipe</th>
+                <th>Example</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>uppercase</code></td>
+                <td><code>{{ 'hello' | uppercase }}</code></td>
+                <td>Converts text to uppercase.</td>
+            </tr>
+            <tr>
+                <td><code>lowercase</code></td>
+                <td><code>{{ 'HELLO' | lowercase }}</code></td>
+                <td>Converts text to lowercase.</td>
+            </tr>
+            <tr>
+                <td><code>titlecase</code></td>
+                <td><code>{{ 'hello world' | titlecase }}</code></td>
+                <td>Capitalizes the first letter of each word.</td>
+            </tr>
+            <tr>
+                <td><code>date</code></td>
+                <td><code>{{ today | date:'fullDate' }}</code></td>
+                <td>Formats a Date object into a readable string.</td>
+            </tr>
+            <tr>
+                <td><code>currency</code></td>
+                <td><code>{{ price | currency:'USD' }}</code></td>
+                <td>Formats numbers as currencies.</td>
+            </tr>
+            <tr>
+                <td><code>percent</code></td>
+                <td><code>{{ 0.25 | percent }}</code></td>
+                <td>Converts a decimal to a percentage (e.g. 0.25 → 25%).</td>
+            </tr>
+            <tr>
+                <td><code>number</code></td>
+                <td><code>{{ 1234.567 | number:'1.0-1' }}</code></td>
+                <td>Formats numbers with control over decimal places.</td>
+            </tr>
+            <tr>
+                <td><code>json</code></td>
+                <td><code>{{ obj | json }}</code></td>
+                <td>Pretty-prints objects as JSON text (for debugging).</td>
+            </tr>
+            <tr>
+                <td><code>slice</code></td>
+                <td><code>{{ list | slice:1:3 }}</code></td>
+                <td>Extracts part of an array or string (start:end).</td>
+            </tr>
+            <tr>
+                <td><code>async</code></td>
+                <td><code>{{ user$ | async }}</code></td>
+                <td>Subscribes to an Observable or Promise and shows its value automatically.</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <br/>
+
+
+    <li><b>The async pipe (special case)</b></li>
+    <br/>
+    <ul>
+        <li>The <code>async</code> pipe is one of the most powerful — it automatically subscribes to Observables or Promises and updates the template when new data arrives.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;p&gt;User: {{ user$ | async }}&lt;/p&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">import { Component } from '@angular/core';
+import { of } from 'rxjs';
+
+@Component({
+    selector: 'app-async-demo',
+    templateUrl: './async-demo.component.html',
+})
+export class AsyncDemoComponent {
+    user$ = of('Hwangfucius');
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>No need to manually subscribe or unsubscribe — Angular handles it for you.</li>
+        <li>When the observable emits a new value, the UI updates automatically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Pure vs Impure pipes</b></li>
+    <br/>
+    <ul>
+        <li>By default, pipes are <b>pure</b>: they run only when the input value changes.</li>
+        <li>An <b>impure</b> pipe runs on every change detection cycle (which can be slower).</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Pipe({
+    name: 'myPipe',
+    pure: true, // default
+})
+export class MyPipe {
+    transform(value: string) {
+        return value.toUpperCase();
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use pure pipes for simple formatting.</li>
+        <li>Use impure pipes only if you need to react to changes inside complex objects or arrays that mutate frequently.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Creating a custom pipe</b></li>
+    <br/>
+    <ul>
+        <li>You can create your own pipe using the <code>@Pipe</code> decorator.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Pipe, PipeTransform } from '@angular/core';
+
+@Pipe({
+    name: 'greet'
+})
+export class GreetPipe implements PipeTransform {
+    transform(name: string): string {
+        return `Hello, ${name}!`;
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">{{ 'Hwangfucius' | greet }}</code></pre>
+    <br/>
+    <ul>
+        <li>The pipe class must implement the <code>PipeTransform</code> interface and define a <code>transform()</code> method.</li>
+        <li>Angular calls this method every time the value (or arguments) change.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Custom pipe with parameters</b></li>
+    <br/>
+    <ul>
+        <li>Your custom pipe can accept parameters, just like built-in ones.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Pipe({ name: 'repeat' })
+export class RepeatPipe implements PipeTransform {
+    transform(value: string, times: number = 2): string {
+        return value.repeat(times);
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">{{ 'Hi' | repeat:3 }}</code></pre>
+    <br/>
+    <ul>
+        <li>This displays <code>HiHiHi</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>When to use pipes</b></li>
+    <br/>
+    <ul>
+        <li>Use pipes for:
+            <ul>
+                <li>Formatting or displaying data (dates, currency, etc.)</li>
+                <li>Simple text transformations</li>
+                <li>Displaying filtered or transformed lists</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Avoid pipes for:
+            <ul>
+                <li>Heavy computation or large data filtering (do that in TypeScript)</li>
+                <li>Functions that depend on external asynchronous calls (use services instead)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
