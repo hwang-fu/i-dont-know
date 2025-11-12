@@ -1355,7 +1355,197 @@ export class BoxComponent {}
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Input properties</h3>
+<ol>
+    <li><b>What are input properties?</b></li>
+    <br/>
+    <ul>
+        <li><code>@Input()</code> lets a parent component send data down to a child component.</li>
+        <br/>
+        <li>It works just like passing arguments into a function, but through HTML attributes.</li>
+        <br/>
+        <li>Example:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-greeting',
+    template: `&lt;h3&gt;Hello, {{ name }}!&lt;/h3&gt;`,
+})
+export class GreetingComponent {
+    @Input() name = 'Guest';   // receives value from parent
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Parent template --&gt;
+&lt;app-greeting name="Alice"&gt;&lt;/app-greeting&gt;
+&lt;app-greeting name="Bob"&gt;&lt;/app-greeting&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The parent sets <code>name</code> just like a normal HTML attribute.</li>
+        <br/>
+        <li>Angular automatically passes that value into the child component's <code>@Input()</code> field.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Binding expressions to inputs</b></li>
+    <br/>
+    <ul>
+        <li>You can also bind dynamic data using square brackets <code>[]</code>.</li>
+        <br/>
+        <li>This lets you send variables, not just strings.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-parent',
+    template: `
+        &lt;app-greeting [name]="userName"&gt;&lt;/app-greeting&gt;
+    `,
+})
+export class ParentComponent {
+    userName = 'Hwangfucius';
+}
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Setting default values</b></li>
+    <br/>
+    <ul>
+        <li>If the parent does not pass a value, the default value in the child is used.</li>
+        <br/>
+        <li>Example:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-user-card',
+    template: `&lt;p&gt;User: {{ name }} ({{ role }})&lt;/p&gt;`,
+})
+export class UserCardComponent {
+    @Input() name = 'Anonymous';
+    @Input() role = 'Viewer';
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-user-card&gt;&lt;/app-user-card&gt;
+&lt;app-user-card name="Alice" role="Admin"&gt;&lt;/app-user-card&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The first card uses defaults. The second one overrides both values.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Renaming an input</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes, you want to expose a different name in HTML than in your class.</li>
+        <br/>
+        <li>You can do this by giving <code>@Input()</code> a string argument:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-book',
+    template: `&lt;p&gt;Title: {{ title }}&lt;/p&gt;`,
+})
+export class BookComponent {
+    @Input('bookTitle') title = '';
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-book bookTitle="The Hobbit"&gt;&lt;/app-book&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, the HTML uses <code>bookTitle</code>, but inside the component, the field name is <code>title</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Input type conversion (transforms)</b></li>
+    <br/>
+    <ul>
+        <li>Starting from Angular 16+, you can add simple type transformations directly in the <code>@Input()</code> decorator.</li>
+        <br/>
+        <li>Example — converting attribute values into booleans:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, Input, booleanAttribute } from '@angular/core';
+
+@Component({
+    selector: 'app-toggle',
+    template: `&lt;button&gt;Enabled: {{ enabled }}&lt;/button&gt;`,
+})
+export class ToggleComponent {
+    @Input({ transform: booleanAttribute }) enabled = false;
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-toggle enabled&gt;&lt;/app-toggle&gt;
+&lt;app-toggle enabled="false"&gt;&lt;/app-toggle&gt;
+&lt;app-toggle&gt;&lt;/app-toggle&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>booleanAttribute</code> helper makes <code>enabled</code> behave like a real HTML boolean attribute.</li>
+        <br/>
+        <li>The first one is <code>true</code>, the others are <code>false</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Signal-style inputs (Angular 17+)</b></li>
+    <br/>
+    <ul>
+        <li>You can also define inputs as reactive signals using <code>input()</code>.</li>
+        <br/>
+        <li>This makes them automatically re-render when updated, no need for change detection tricks.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, input } from '@angular/core';
+
+@Component({
+    selector: 'app-profile',
+    template: `&lt;p&gt;Welcome, {{ name() }}!&lt;/p&gt;`,
+})
+export class ProfileComponent {
+    name = input('Guest');
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-profile name="Hwangfucius"&gt;&lt;/app-profile&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>It behaves like <code>@Input()</code>, but integrates perfectly with the Angular signals system.</li>
+        <br/>
+        <li>In templates, signal inputs must be called like functions (<code>{{ name() }}</code>).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Validating and reacting to input changes</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes, you want to run logic whenever an input changes.</li>
+        <br/>
+        <li>Two simple ways:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">// 1. Use a setter
+@Input()
+set count(value: number) {
+    console.log('Count changed to', value);
+}
+
+// 2. Use ngOnChanges (classic lifecycle hook)
+ngOnChanges(changes: SimpleChanges) {
+    console.log(changes);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Setters are simpler for one property, <code>ngOnChanges</code> works if you have many inputs.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
