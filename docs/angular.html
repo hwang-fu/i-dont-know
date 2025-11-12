@@ -4912,7 +4912,176 @@ export class SectionComponent {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Create Template Fragments with <code>&lt;ng-template&gt;</code></h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>&lt;ng-template&gt;</code> tag defines a chunk of HTML that Angular <u>does not render right away</u>.</li>
+        <br/>
+        <li>It is a <u>template fragment</u> — a block of markup that Angular can insert, reuse, or render later under certain conditions.</li>
+        <br/>
+        <li>It's often used for:
+            <ul>
+                <li>Conditionally showing or hiding parts of the template,</li>
+                <li>Customizing reusable components (like dialogs or cards),</li>
+                <li>Rendering content dynamically using <code>ngTemplateOutlet</code>.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic example</b></li>
+    <br/>
+    <ul>
+        <li>Angular doesn't render an <code>&lt;ng-template&gt;</code> until you explicitly tell it to.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;ng-template&gt;
+    &lt;p&gt;This is hidden by default.&lt;/p&gt;
+&lt;/ng-template&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The browser will not display anything — it's stored as a "template instruction" for Angular.</li>
+        <li>To show it, you must render it manually using <code>*ngIf</code> or <code>ngTemplateOutlet</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using with *ngIf</b></li>
+    <br/>
+    <ul>
+        <li><code>*ngIf</code> can take an <code>else</code> block that points to an <code>&lt;ng-template&gt;</code>.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;div *ngIf="loggedIn; else loginPrompt"&gt;
+    Welcome back, user!
+&lt;/div&gt;
+
+&lt;ng-template #loginPrompt&gt;
+    &lt;p&gt;Please log in to continue.&lt;/p&gt;
+&lt;/ng-template&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class LoginExampleComponent {
+    loggedIn = false;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>If <code>loggedIn</code> is <code>false</code>, Angular will render the <code>loginPrompt</code> template instead.</li>
+        <li>The <code>#loginPrompt</code> gives the template a reference name.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using with @for (or *ngFor)</b></li>
+    <br/>
+    <ul>
+        <li>Every <code>@for</code> loop internally uses <code>&lt;ng-template&gt;</code> to repeat DOM fragments.</li>
+        <li>You can also define your own template for each repeated item.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;ng-template #userTemplate let-name&gt;
+    &lt;li&gt;{{ name }}&lt;/li&gt;
+&lt;/ng-template&gt;
+
+&lt;ul&gt;
+    @for (name of users) {
+        &lt;ng-container [ngTemplateOutlet]="userTemplate" [ngTemplateOutletContext]="{ $implicit: name }"&gt;&lt;/ng-container&gt;
+    }
+&lt;/ul&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class UserListComponent {
+    users = ['Alice', 'Bob', 'Charlie'];
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>let-name</code> variable receives the value passed by the context (<code>$implicit: name</code>).</li>
+        <li><code>ngTemplateOutlet</code> renders the same template multiple times with different data.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Rendering manually with ngTemplateOutlet</b></li>
+    <br/>
+    <ul>
+        <li>You can insert a template manually anywhere in the DOM using <code>&lt;ng-container&gt;</code> and <code>ngTemplateOutlet</code>.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;ng-template #alertTemplate&gt;
+    &lt;div class="alert"&gt;This is an alert message!&lt;/div&gt;
+&lt;/ng-template&gt;
+
+&lt;ng-container [ngTemplateOutlet]="alertTemplate"&gt;&lt;/ng-container&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>ngTemplateOutlet</code> acts like a function call — it "renders" the referenced template in that place.</li>
+        <li><code>&lt;ng-container&gt;</code> is a structural wrapper that doesn't create any extra HTML element.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Passing data into a template</b></li>
+    <br/>
+    <ul>
+        <li>Templates can accept contextual data using the <code>ngTemplateOutletContext</code> input.</li>
+        <li>You can define a variable in the template using <code>let-</code> syntax.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;ng-template #greetTemplate let-person&gt;
+    &lt;p&gt;Hello, {{ person }}!&lt;/p&gt;
+&lt;/ng-template&gt;
+
+&lt;ng-container
+    [ngTemplateOutlet]="greetTemplate"
+    [ngTemplateOutletContext]="{ person: 'Hwangfucius' }"&gt;
+&lt;/ng-container&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This outputs: <b>Hello, Hwangfucius!</b></li>
+        <li>You can think of <code>ngTemplateOutletContext</code> as "passing parameters" to the template.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using multiple templates dynamically</b></li>
+    <br/>
+    <ul>
+        <li>You can switch between different templates based on component state.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;ng-template #loading&gt;&lt;p&gt;Loading...&lt;/p&gt;&lt;/ng-template&gt;
+&lt;ng-template #success&gt;&lt;p&gt;Data loaded successfully!&lt;/p&gt;&lt;/ng-template&gt;
+&lt;ng-template #error&gt;&lt;p&gt;Something went wrong.&lt;/p&gt;&lt;/ng-template&gt;
+
+&lt;ng-container [ngTemplateOutlet]="currentTemplate"&gt;&lt;/ng-container&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class TemplateSwitcherComponent {
+    state: 'loading' | 'success' | 'error' = 'loading';
+
+    get currentTemplate() {
+        if (this.state === 'success') return this.success;
+        if (this.state === 'error') return this.error;
+        return this.loading;
+    }
+
+    @ViewChild('loading', { static: true }) loading!: TemplateRef&lt;any&gt;;
+    @ViewChild('success', { static: true }) success!: TemplateRef&lt;any&gt;;
+    @ViewChild('error', { static: true }) error!: TemplateRef&lt;any&gt;;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This technique is useful for conditional UI — for example, showing loading spinners, error messages, or success content.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
