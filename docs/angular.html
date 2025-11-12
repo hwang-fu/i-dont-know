@@ -4513,7 +4513,217 @@ export class RepeatPipe implements PipeTransform {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Creating Custom Pipes in Angular</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes the built-in Angular pipes are not enough, you may want to transform your data in a way that fits your own app logic.</li>
+        <br/>
+        <li>In such cases, you can easily create a <u>custom pipe</u> with the <code>@Pipe</code> decorator.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic structure of a custom pipe</b></li>
+    <br/>
+    <ul>
+        <li>A custom pipe is simply a class that implements the <code>PipeTransform</code> interface.</li>
+        <li>This interface requires you to define one method: <code>transform(value: any, ...args: any[]): any</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Pipe, PipeTransform } from '@angular/core';
+
+@Pipe({
+    name: 'example'  // The pipe name used in templates: {{ value | example }}
+})
+export class ExamplePipe implements PipeTransform {
+    transform(value: any): any {
+        // modify the value and return it
+        return value;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>You then use it like any other pipe:</li>
+    </ul>
+<pre><code class="language-html line-numbers">{{ 'Hello' | example }}</code></pre>
+    <br/>
+    <ul>
+        <li>This structure is the foundation for every custom pipe you'll make.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: A "greet" pipe</b></li>
+    <br/>
+    <ul>
+        <li>Let's start with a simple example: a pipe that adds a greeting before a name.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Pipe, PipeTransform } from '@angular/core';
+
+@Pipe({ name: 'greet' })
+export class GreetPipe implements PipeTransform {
+    transform(name: string): string {
+        return `Hello, ${name}!`;
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">{{ 'Hwangfucius' | greet }}</code></pre>
+    <br/>
+    <ul>
+        <li>Output: <b>Hello, Hwangfucius!</b></li>
+        <li>Notice that you didn't change the original value, pipes only transform the display, not the data itself.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Passing parameters to your pipe</b></li>
+    <br/>
+    <ul>
+        <li>Your custom pipe can also accept arguments, separated by colons (<code>:</code>).</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Pipe({ name: 'repeat' })
+export class RepeatPipe implements PipeTransform {
+    transform(value: string, times: number = 2): string {
+        return value.repeat(times);
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">{{ 'Hi' | repeat:3 }}</code></pre>
+    <br/>
+    <ul>
+        <li>Output: <b>HiHiHi</b></li>
+        <li>Angular automatically passes the extra arguments to your <code>transform()</code> method after the first parameter.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Capitalize only the first letter</b></li>
+    <br/>
+    <ul>
+        <li>This pipe transforms the first letter to uppercase while keeping the rest lowercase.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Pipe({ name: 'capitalize' })
+export class CapitalizePipe implements PipeTransform {
+    transform(value: string): string {
+        if (!value) return '';
+        return value[0].toUpperCase() + value.slice(1).toLowerCase();
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">{{ 'aNGuLAr' | capitalize }}</code></pre>
+    <br/>
+    <ul>
+        <li>Output: <b>Angular</b></li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Filtering a list</b></li>
+    <br/>
+    <ul>
+        <li>This pipe filters an array based on a text input (a bit more advanced).</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Pipe({ name: 'filter' })
+export class FilterPipe implements PipeTransform {
+    transform(items: string[], search: string): string[] {
+        if (!items || !search) return items;
+        const lower = search.toLowerCase();
+        return items.filter(item =&gt; item.toLowerCase().includes(lower));
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;input [(ngModel)]="keyword" placeholder="Search..." /&gt;
+&lt;ul&gt;
+    @for (name of (names | filter:keyword)) {
+        &lt;li&gt;{{ name }}&lt;/li&gt;
+    }
+&lt;/ul&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class FilterExampleComponent {
+    keyword = '';
+    names = ['Alice', 'Bob', 'Charlie', 'David'];
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>As the user types, the pipe filters the list automatically.</li>
+        <li>Remember that pipes are only for presentation — for very large data sets, prefer filtering in the component or backend.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Pure vs Impure custom pipes</b></li>
+    <br/>
+    <ul>
+        <li>By default, custom pipes are <b>pure</b>, meaning Angular only calls them when the input value changes.</li>
+        <li>If you need the pipe to run every time change detection happens (for example, if you mutate the same array), mark it as <b>impure</b> by setting <code>pure: false</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Pipe({
+    name: 'impureFilter',
+    pure: false
+})
+export class ImpureFilterPipe implements PipeTransform {
+    transform(items: string[], search: string): string[] {
+        // runs on every change detection
+        return items.filter(item =&gt; item.includes(search));
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Impure pipes re-run often, so use them sparingly — they can slow down performance if overused.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using custom pipes in standalone components</b></li>
+    <br/>
+    <ul>
+        <li>If your component is standalone, you must add the pipe to its <code>imports</code> array.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-greet-demo',
+    standalone: true,
+    imports: [GreetPipe],
+    template: `&lt;p&gt;{{ 'Hwangfucius' | greet }}&lt;/p&gt;`
+})
+export class GreetDemoComponent {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Now the component can use <code>greet</code> in its template.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using custom pipes in NgModules (non-standalone apps)</b></li>
+    <br/>
+    <ul>
+        <li>If you're using Angular with NgModules, declare your pipe inside the <code>declarations</code> array of a module.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@NgModule({
+    declarations: [CapitalizePipe],
+    exports: [CapitalizePipe]
+})
+export class SharedPipesModule {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Then import <code>SharedPipesModule</code> into any module that needs those pipes.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
