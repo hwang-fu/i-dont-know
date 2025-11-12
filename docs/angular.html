@@ -2106,7 +2106,241 @@ export class BoxComponent {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Component Lifecycle</h3>
+<ol>
+    <li><b>What is a component lifecycle?</b></li>
+    <br/>
+    <ul>
+        <li>Every Angular component goes through a <b>series of steps</b> from creation to destruction.</li>
+        <br/>
+        <li>Angular lets you run your own code at specific moments, like when the component is created, updated, or removed.</li>
+        <br/>
+        <li>These moments are called <u>lifecycle hooks</u>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, OnInit, OnDestroy } from '@angular/core';
 
+@Component({
+    selector: 'app-timer',
+    template: `&lt;p&gt;Seconds: {{ seconds }}&lt;/p&gt;`,
+})
+export class TimerComponent implements OnInit, OnDestroy {
+    seconds = 0;
+    private intervalId: any;
+
+    ngOnInit() {
+        console.log('Timer created');
+        this.intervalId = setInterval(() =&gt; this.seconds++, 1000);
+    }
+
+    ngOnDestroy() {
+        console.log('Timer destroyed');
+        clearInterval(this.intervalId);
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- When <app-timer> is created, ngOnInit runs. When it's removed, ngOnDestroy runs. --&gt;
+&lt;app-timer *ngIf="showTimer"&gt;&lt;/app-timer&gt;
+&lt;button (click)="showTimer = !showTimer"&gt;Toggle Timer&lt;/button&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>ngOnInit()</code> runs once when the component is first displayed.</li>
+        <br/>
+        <li><code>ngOnDestroy()</code> runs right before the component is removed from the DOM.</li>
+        <br/>
+        <li>Perfect for starting or cleaning up resources like timers, event listeners, or subscriptions.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>The full lifecycle order</b></li>
+    <br/>
+    <ul>
+        <li>Angular calls hooks in this order when a component is created, updated, and destroyed:</li>
+    </ul>
+<pre><code class="language-text">1. ngOnChanges()
+2. ngOnInit()
+3. ngDoCheck()
+4. ngAfterContentInit()
+5. ngAfterContentChecked()
+6. ngAfterViewInit()
+7. ngAfterViewChecked()
+8. ngOnDestroy()
+</code></pre>
+    <br/>
+    <ul>
+        <li>You don't have to implement all of them (just the ones you need).</li>
+        <br/>
+        <li>Each one has a clear purpose in the component's lifecycle.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>ngOnChanges()</b></li>
+    <br/>
+    <ul>
+        <li>Runs whenever an <code>@Input()</code> property changes.</li>
+        <br/>
+        <li>It also runs once right before <code>ngOnInit()</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-counter',
+    template: `&lt;p&gt;Count: {{ count }}&lt;/p&gt;`,
+})
+export class CounterComponent implements OnChanges {
+    @Input() count = 0;
+
+    ngOnChanges(changes: SimpleChanges) {
+        console.log('Changes:', changes);
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-counter [count]="num"&gt;&lt;/app-counter&gt;
+&lt;button (click)="num++"&gt;Increment&lt;/button&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>SimpleChanges</code> tells you what changed, its previous value, and new value.</li>
+        <br/>
+        <li>Useful when reacting to updated inputs from a parent component.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>ngOnInit()</b></li>
+    <br/>
+    <ul>
+        <li>Called once, after Angular initializes all <code>@Input()</code> values.</li>
+        <br/>
+        <li>Use it to set up data, start fetching from APIs, or initialize variables.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">ngOnInit() {
+    console.log('Component ready to use!');
+    this.loadData();
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Think of it as your component's "startup" moment.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>ngDoCheck()</b></li>
+    <br/>
+    <ul>
+        <li>Called during every change detection cycle.</li>
+        <br/>
+        <li>Most apps don't need it, because Angular's normal data binding handles most updates automatically.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">ngDoCheck() {
+    console.log('Change detection running...');
+}
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>ngAfterContentInit() and ngAfterContentChecked()</b></li>
+    <br/>
+    <ul>
+        <li>These run when projected content (via <code>&lt;ng-content&gt;</code>) is first inserted, and after every subsequent check.</li>
+        <br/>
+        <li>Use them when your component needs to interact with projected child content.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">ngAfterContentInit() {
+    console.log('Projected content has been initialized.');
+}
+
+ngAfterContentChecked() {
+    console.log('Projected content checked again.');
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>"Content" means anything that was passed between your component tags in the parent template.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>ngAfterViewInit() and ngAfterViewChecked()</b></li>
+    <br/>
+    <ul>
+        <li>These run when the component's own view (its template) is initialized and rechecked.</li>
+        <br/>
+        <li>Good for code that needs to access the rendered DOM using <code>@ViewChild()</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@ViewChild('box') box!: ElementRef;
+
+ngAfterViewInit() {
+    console.log('Template view ready:', this.box.nativeElement);
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;div #box&gt;Hello box&lt;/div&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Don't try to access DOM elements in <code>ngOnInit()</code> — they're not ready yet. Use <code>ngAfterViewInit()</code> instead.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>ngOnDestroy()</b></li>
+    <br/>
+    <ul>
+        <li>Called right before Angular removes the component from the DOM.</li>
+        <br/>
+        <li>Use it to clean up resources (unsubscribe from Observables, clear timers, detach listeners, etc.).</li>
+    </ul>
+<pre><code class="language-ts line-numbers">ngOnDestroy() {
+    console.log('Cleaning up...');
+    this.subscription.unsubscribe();
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Forgetting cleanup can cause memory leaks, so <code>ngOnDestroy()</code> is important.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Visual summary</b></li>
+<pre><code class="language-text">
+ ┌──────────────────────────────────────┐
+ │ Component Created                    │
+ │  ├─ ngOnChanges()                    │
+ │  ├─ ngOnInit()                       │
+ │  ├─ ngDoCheck()                      │
+ │  ├─ ngAfterContentInit()             │
+ │  ├─ ngAfterContentChecked()          │
+ │  ├─ ngAfterViewInit()                │
+ │  └─ ngAfterViewChecked()             │
+ │                                      │
+ │ Component Updated                    │
+ │  ├─ ngDoCheck()                      │
+ │  ├─ ngAfterContentChecked()          │
+ │  └─ ngAfterViewChecked()             │
+ │                                      │
+ │ Component Destroyed                  │
+ │  └─ ngOnDestroy()                    │
+ └──────────────────────────────────────┘
+</code></pre>
+    <br/>
+    <ul>
+        <li>Angular calls these in the same predictable order every time.</li>
+        <br/>
+        <li>Use them to control setup, updates, and cleanup in your component's life.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
