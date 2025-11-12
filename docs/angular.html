@@ -4015,7 +4015,236 @@ export class SignalDemoComponent {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Control Flow in Angular</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Control flow in Angular templates lets you conditionally render elements, repeat lists, or choose between alternatives — just like <code>if</code>, <code>for</code>, and <code>switch</code> in programming languages.</li>
+        <br/>
+        <li>Before Angular 17, we used structural directives like <code>*ngIf</code>, <code>*ngFor</code>, and <code>*ngSwitch</code>.</li>
+        <br/>
+        <li>Now Angular provides a modern, clearer syntax using <u>control flow blocks</u>:
+            <ul>
+                <li><code>@if</code> / <code>@else</code></li>
+                <li><code>@for</code></li>
+                <li><code>@switch</code> / <code>@case</code> / <code>@default</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>This syntax is cleaner, faster, and works natively with the Angular compiler.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Conditional rendering with @if</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>@if</code> to render elements only when a condition is true.</li>
+    </ul>
+<pre><code class="language-html line-numbers">@if (loggedIn) {
+    &lt;p&gt;Welcome back, {{ username }}!&lt;/p&gt;
+} @else {
+    &lt;p&gt;Please log in to continue.&lt;/p&gt;
+}
+</code></pre>
+<pre><code class="language-ts line-numbers">export class LoginExampleComponent {
+    loggedIn = false;
+    username = 'Hwangfucius';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>@if</code> block conditionally includes or removes elements from the DOM.</li>
+        <li><code>@else</code> is optional and provides an alternate view.</li>
+        <li>Unlike <code>*ngIf</code>, this new syntax doesn't require a wrapper element like <code>&lt;ng-container&gt;</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using @else if</b></li>
+    <br/>
+    <ul>
+        <li>You can chain multiple conditions using <code>@else if</code> just like in JavaScript.</li>
+    </ul>
+<pre><code class="language-html line-numbers">@if (role === 'admin') {
+    &lt;p&gt;Welcome, admin!&lt;/p&gt;
+} @else if (role === 'editor') {
+    &lt;p&gt;Hello, editor!&lt;/p&gt;
+} @else {
+    &lt;p&gt;Guest access only.&lt;/p&gt;
+}
+</code></pre>
+<pre><code class="language-ts line-numbers">export class RoleExampleComponent {
+    role = 'editor';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This makes conditional rendering much clearer than nesting multiple <code>*ngIf</code> blocks.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Repeating elements with @for</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>@for</code> to loop through arrays and render each item.</li>
+    </ul>
+<pre><code class="language-html line-numbers">@for (item of items; track item.id) {
+    &lt;li&gt;{{ item.name }}&lt;/li&gt;
+}
+</code></pre>
+<pre><code class="language-ts line-numbers">export class ListExampleComponent {
+    items = [
+        { id: 1, name: 'Angular' },
+        { id: 2, name: 'React' },
+        { id: 3, name: 'Vue' },
+    ];
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>track</code> clause tells Angular how to identify list items efficiently (similar to <code>trackBy</code> in <code>*ngFor</code>).</li>
+        <li>If the list changes, Angular can reuse DOM elements instead of re-rendering everything.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using index, count, and even/odd values in @for</b></li>
+    <br/>
+    <ul>
+        <li>You can access extra context variables inside a <code>@for</code> block.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;ul&gt;
+    @for (user of users; let i = $index; let count = $count; let even = $even) {
+        &lt;li [class.even]="even"&gt;{{ i + 1 }}/{{ count }}: {{ user }}&lt;/li&gt;
+    }
+&lt;/ul&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class UsersExampleComponent {
+    users = ['Alice', 'Bob', 'Charlie'];
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>$index</code> — the current index (starting from 0).</li>
+        <li><code>$count</code> — total number of items.</li>
+        <li><code>$even</code>, <code>$odd</code> — booleans for alternating styles.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Switching between multiple options with @switch</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>@switch</code> to choose one block to render based on a single expression.</li>
+    </ul>
+<pre><code class="language-html line-numbers">@switch (status) {
+    @case ('loading') {
+        &lt;p&gt;Loading...&lt;/p&gt;
+    }
+    @case ('success') {
+        &lt;p&gt;Data loaded successfully!&lt;/p&gt;
+    }
+    @case ('error') {
+        &lt;p&gt;Something went wrong.&lt;/p&gt;
+    }
+    @default {
+        &lt;p&gt;Idle state.&lt;/p&gt;
+    }
+}
+</code></pre>
+<pre><code class="language-ts line-numbers">export class SwitchExampleComponent {
+    status = 'loading';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>@switch</code> works similarly to JavaScript's <code>switch</code> statement.</li>
+        <li>Only the matching <code>@case</code> block is rendered in the DOM.</li>
+        <li>The <code>@default</code> block is optional but recommended.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Grouping elements with @let</b></li>
+    <br/>
+    <ul>
+        <li><code>@let</code> lets you declare and reuse a local variable inside the template.</li>
+        <li>This is helpful for readability or avoiding repeated expressions.</li>
+    </ul>
+<pre><code class="language-html line-numbers">@let fullName = firstName + ' ' + lastName;
+&lt;p&gt;Hello, {{ fullName }}!&lt;/p&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class LetExampleComponent {
+    firstName = 'Junzhe';
+    lastName = 'Wang';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Unlike a component variable, <code>@let</code> only exists inside the template block where it's declared.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Older syntax: *ngIf, *ngFor, *ngSwitch</b></li>
+    <br/>
+    <ul>
+        <li>Before Angular 17, we wrote:</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;div *ngIf="loggedIn; else loggedOut"&gt;
+    Welcome!
+&lt;/div&gt;
+&lt;ng-template #loggedOut&gt;Please log in.&lt;/ng-template&gt;
+
+&lt;ul&gt;
+    &lt;li *ngFor="let item of items; index as i"&gt;{{ i + 1 }} - {{ item }}&lt;/li&gt;
+&lt;/ul&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The new control flow syntax is easier to read and integrates better with TypeScript expressions.</li>
+        <li>However, <code>*ngIf</code> and its friends still work for backward compatibility.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Combining control flow blocks</b></li>
+    <br/>
+    <ul>
+        <li>You can nest control flow statements as needed.</li>
+    </ul>
+<pre><code class="language-html line-numbers">@if (users.length &gt; 0) {
+    &lt;ul&gt;
+        @for (user of users) {
+            &lt;li&gt;{{ user }}&lt;/li&gt;
+        }
+    &lt;/ul&gt;
+} @else {
+    &lt;p&gt;No users found.&lt;/p&gt;
+}
+</code></pre>
+<pre><code class="language-ts line-numbers">export class NestedExampleComponent {
+    users: string[] = [];
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Angular efficiently updates the DOM when the list or condition changes — you don't need to manage it manually.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
