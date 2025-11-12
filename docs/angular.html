@@ -4731,6 +4731,227 @@ export class SharedPipesModule {}
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Render Templates from a Parent Component with <code>&lt;ng-content&gt;</code> (sorted of repeated)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>&lt;ng-content&gt;</code> tag allows a child component to display <u>content provided by its parent</u>.</li>
+        <br/>
+        <li>This technique is called <u>content projection</u>.</li>
+        <br/>
+        <li>It lets the parent control what appears inside the child component's template — useful for cards, dialogs, alerts, and any reusable layout components.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic example</b></li>
+    <br/>
+    <ul>
+        <li>Imagine a reusable alert component that displays custom text provided by its parent.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-alert',
+    template: `
+        &lt;div class="alert"&gt;
+            &lt;ng-content&gt;&lt;/ng-content&gt;
+        &lt;/div&gt;
+    `,
+    styles: [`.alert { background: #ffe5e5; padding: 1rem; border-radius: 4px; }`],
+    standalone: true,
+})
+export class AlertComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Parent component template --&gt;
+&lt;app-alert&gt;
+    Something went wrong! Please try again.
+&lt;/app-alert&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, <code>&lt;ng-content&gt;</code> is a placeholder where the parent's content will be inserted.</li>
+        <li>The parent's message appears inside the alert box without the child knowing what the message is.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Projecting multiple content areas</b></li>
+    <br/>
+    <ul>
+        <li>You can project multiple parts of the parent's template into specific places using <b>selectors</b>.</li>
+        <li>Use the <code>select</code> attribute to match HTML elements or CSS classes.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-card',
+    template: `
+        &lt;div class="card"&gt;
+            &lt;div class="card-header"&gt;
+                &lt;ng-content select="[card-title]"&gt;&lt;/ng-content&gt;
+            &lt;/div&gt;
+
+            &lt;div class="card-body"&gt;
+                &lt;ng-content&gt;&lt;/ng-content&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    `,
+    styles: [`
+        .card { border: 1px solid #ccc; border-radius: 8px; padding: 1rem; margin: .5rem 0; }
+        .card-header { font-weight: bold; margin-bottom: .5rem; }
+    `],
+    standalone: true,
+})
+export class CardComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Parent component --&gt;
+&lt;app-card&gt;
+    &lt;span card-title&gt;User Info&lt;/span&gt;
+    &lt;p&gt;Name: Alice&lt;/p&gt;
+    &lt;p&gt;Email: alice@example.com&lt;/p&gt;
+&lt;/app-card&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The content inside <code>&lt;span card-title&gt;</code> goes into the header area.</li>
+        <li>The rest of the content is projected into the body area.</li>
+        <li>This gives a lot of flexibility while keeping the component's structure consistent.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Default content fallback</b></li>
+    <br/>
+    <ul>
+        <li>If the parent doesn't provide anything, you can display a default message inside <code>&lt;ng-content&gt;</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-message-box',
+    template: `
+        &lt;div class="message-box"&gt;
+            &lt;ng-content&gt;No message provided.&lt;/ng-content&gt;
+        &lt;/div&gt;
+    `,
+    styles: [`.message-box { border: 1px dashed #888; padding: .5rem; }`],
+    standalone: true,
+})
+export class MessageBoxComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-message-box&gt;&lt;/app-message-box&gt;
+&lt;!-- Renders "No message provided." --&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Anything written between <code>&lt;ng-content&gt;</code> tags acts as fallback content when the parent provides nothing.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Projecting content dynamically</b></li>
+    <br/>
+    <ul>
+        <li>You can combine <code>&lt;ng-content&gt;</code> with Angular control flow directives like <code>@if</code> or <code>@for</code> to conditionally render projected content.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-section',
+    template: `
+        &lt;div class="section"&gt;
+            @if (visible) {
+                &lt;ng-content&gt;&lt;/ng-content&gt;
+            } @else {
+                &lt;p&gt;(Hidden)&lt;/p&gt;
+            }
+        &lt;/div&gt;
+    `,
+    standalone: true,
+})
+export class SectionComponent {
+    visible = true;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The projected content only appears when <code>visible</code> is true.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Lifecycle of projected content</b></li>
+    <br/>
+    <ul>
+        <li>Angular provides special lifecycle hooks for when projected content appears or changes:</li>
+        <ul>
+            <li><code>ngAfterContentInit()</code> — runs once when the content is first inserted.</li>
+            <li><code>ngAfterContentChecked()</code> — runs after every update to the projected content.</li>
+        </ul>
+    </ul>
+<pre><code class="language-ts line-numbers">export class CardComponent implements AfterContentInit, AfterContentChecked {
+    ngAfterContentInit() {
+        console.log('Projected content initialized');
+    }
+
+    ngAfterContentChecked() {
+        console.log('Projected content checked');
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>These hooks let your component react when the parent changes its projected data.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
