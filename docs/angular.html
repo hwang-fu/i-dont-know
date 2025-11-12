@@ -1080,7 +1080,274 @@ app-header, app-footer, app-user-card
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Styling Components</h3>
+<ol>
+    <li><b>Where do component styles live?</b></li>
+    <br/>
+    <ul>
+        <li>You can write styles directly in the component, or in a separate file.</li>
+        <br/>
+        <li>Inline styles (small components):</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-user-card',
+    template: `&lt;div class="card"&gt;User card&lt;/div&gt;`,
+    styles: [`
+        .card {
+            padding: 1rem;
+            border-radius: .5rem;
+            border: 1px solid #ddd;
+        }
+    `],
+})
+export class UserCard {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Separate CSS/SCSS file (bigger components):</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-user-card',
+    templateUrl: './user-card.component.html',
+    styleUrls: ['./user-card.component.css'],
+})
+export class UserCard {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use inline <code>styles</code> for quick examples or tiny components.</li>
+        <br/>
+        <li>Use <code>styleUrls</code> with a <code>.css</code> or <code>.scss</code> file for anything non-trivial.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Component styles are local</b></li>
+    <br/>
+    <ul>
+        <li>By default, styles in a component only apply to that component's template.</li>
+        <br/>
+        <li>This means:
+            <ul>
+                <li>They do not "leak" into other components.</li>
+                <li>You can reuse simple class names like <code>.title</code> in many components without conflicts.</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-a',
+    template: `&lt;h2 class="title"&gt;A&lt;/h2&gt;`,
+    styles: [`.title { color: red; }`],
+})
+export class AComponent {}
+
+@Component({
+    selector: 'app-b',
+    template: `&lt;h2 class="title"&gt;B&lt;/h2&gt;`,
+    styles: [`.title { color: blue; }`],
+})
+export class BComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-a&gt;&lt;/app-a&gt;
+&lt;app-b&gt;&lt;/app-b&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, <code>A</code> is red and <code>B</code> is blue, even though both use the same class name.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Styling the host element with <code>:host</code></b></li>
+    <br/>
+    <ul>
+        <li>The <code>:host</code> selector targets the <u>outer element</u> that holds your component.</li>
+        <br/>
+        <li>Example (similar to your reset button):</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-pill-badge',
+    template: `&lt;ng-content&gt;&lt;/ng-content&gt;`,
+    styles: [`
+        :host {
+            display: inline-block;
+            padding: .2rem .6rem;
+            border-radius: 999px;
+            background: #f0f4ff;
+            color: #1f3b8f;
+            font-size: .8rem;
+        }
+    `],
+    standalone: true,
+})
+export class PillBadge {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-pill-badge&gt;New&lt;/app-pill-badge&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>:host</code> styles the <code>&lt;app-pill-badge&gt;</code> element itself.</li>
+        <br/>
+        <li>Use <code>:host</code> for width, padding, display, border, etc. of the component's root element.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Styling based on host classes: <code>:host(.some-class)</code></b></li>
+    <br/>
+    <ul>
+        <li>You can change styles depending on classes applied to the host element.</li>
+        <br/>
+        <li>Example:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-alert',
+    template: `&lt;ng-content&gt;&lt;/ng-content&gt;`,
+    styles: [`
+        :host {
+            display: block;
+            padding: .75rem 1rem;
+            border-radius: 4px;
+        }
+
+        :host(.info) {
+            background: #e7f1ff;
+            color: #0b4f9c;
+        }
+
+        :host(.error) {
+            background: #ffe5e5;
+            color: #a30000;
+        }
+    `],
+    standalone: true,
+})
+export class AlertComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-alert class="info"&gt;Information&lt;/app-alert&gt;
+&lt;app-alert class="error"&gt;Something went wrong&lt;/app-alert&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The same component can look different based on classes you add.</li>
+        <br/>
+        <li>This pattern is nice for variants like <code>primary</code>, <code>ghost</code>, <code>warning</code>, etc.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Binding classes and styles from TypeScript</b></li>
+    <br/>
+    <ul>
+        <li>You can toggle CSS classes using property bindings.</li>
+        <br/>
+        <li>Simple class binding:</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;button
+    class="btn"
+    [class.btn-primary]="primary"
+    [class.btn-disabled]="disabled"
+&gt;
+    Save
+&lt;/button&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-save-button',
+    templateUrl: './save-button.component.html',
+})
+export class SaveButtonComponent {
+    primary = true;
+    disabled = false;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Style binding works similarly:</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;div [style.opacity]="disabled ? 0.5 : 1"&gt;Content&lt;/div&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use these bindings when styles depend on component state (loading, error, active, etc.).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Component styles vs global styles</b></li>
+    <br/>
+    <ul>
+        <li>Global styles live in files like <code>styles.css</code> at the root of your app.</li>
+        <br/>
+        <li>Use global styles for:
+            <ul>
+                <li>Page background, base font, body margin, etc.</li>
+                <li>Theme variables (colors, spacing, typography).</li>
+                <li>Reset/normalize styles.</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-css line-numbers">/* styles.css */
+html, body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #fafafa;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use component styles for:
+            <ul>
+                <li>Buttons, cards, forms, and layout that belong to one component.</li>
+                <li>Anything that should not affect the whole app.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Light introduction to <code>:host-context()</code></b></li>
+    <br/>
+    <ul>
+        <li><code>:host-context()</code> lets you style a component differently depending on something outside of it.</li>
+        <br/>
+        <li>Example: dark mode class on a parent element:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-box',
+    template: `&lt;ng-content&gt;&lt;/ng-content&gt;`,
+    styles: [`
+        :host {
+            display: block;
+            padding: 1rem;
+            background: white;
+            color: black;
+        }
+
+        :host-context(.dark-mode) {
+            background: #1f2933;
+            color: #f9fafb;
+        }
+    `],
+})
+export class BoxComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;div class="dark-mode"&gt;
+    &lt;app-box&gt;This box appears in dark mode&lt;/app-box&gt;
+&lt;/div&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This is helpful if you have a global "theme" class but still want components to react to it.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
