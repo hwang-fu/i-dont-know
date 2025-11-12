@@ -1789,30 +1789,6 @@ export class CardComponent {}
     <br/>
 
 
-    <li><b>Why use content projection?</b></li>
-    <br/>
-    <ul>
-        <li>It helps you design flexible components that define a structure or style, but not the actual content.</li>
-        <br/>
-        <li>Examples:
-            <ul>
-                <li>Cards, modals, panels, alerts</li>
-                <li>Layouts like headers and sidebars</li>
-            </ul>
-        </li>
-    </ul>
-<pre><code class="language-html line-numbers">&lt;app-alert class="info"&gt;
-    &lt;b&gt;Heads up!&lt;/b&gt; Please check your email.
-&lt;/app-alert&gt;
-</code></pre>
-    <br/>
-    <ul>
-        <li>The <code>app-alert</code> defines the look, and the parent provides the message.</li>
-    </ul>
-    <br/>
-    <br/>
-
-
     <li><b>Projecting multiple content sections</b></li>
     <br/>
     <ul>
@@ -1870,7 +1846,9 @@ export class DialogComponent {}
     </ul>
 <pre><code class="language-html line-numbers">&lt;app-dialog&gt;
     &lt;app-title ngProjectAs="[dialog-title]"&gt;Edit profile&lt;/app-title&gt;
+
     &lt;p&gt;Form fields go here...&lt;/p&gt;
+
     &lt;app-footer ngProjectAs="[dialog-actions]"&gt;
         &lt;button&gt;Close&lt;/button&gt;
     &lt;/app-footer&gt;
@@ -1879,19 +1857,6 @@ export class DialogComponent {}
     <br/>
     <ul>
         <li>Even though the elements are <code>&lt;app-title&gt;</code> and <code>&lt;app-footer&gt;</code>, Angular projects them into the right slots.</li>
-    </ul>
-    <br/>
-    <br/>
-
-
-    <li><b>Styling projected content</b></li>
-    <br/>
-    <ul>
-        <li>You can style projected content, but only from the <b>parent side</b> (because it's the parent's HTML).</li>
-        <br/>
-        <li>Inside the child component, you can style how the <code>&lt;ng-content&gt;</code> container looks — margins, padding, layout, etc. — but not the projected inner elements' styles directly.</li>
-        <br/>
-        <li>Angular keeps encapsulation: the projected content keeps the parent's styles, not the child's.</li>
     </ul>
     <br/>
     <br/>
@@ -1923,7 +1888,217 @@ export class DialogComponent {}
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Component Host Elements</h3>
+<ol>
+    <li><b>What is a host element?</b></li>
+    <br/>
+    <ul>
+        <li>Every Angular component is attached to a real DOM element, this is called its <u>host element</u>.</li>
+        <br/>
+        <li>The host element is the HTML tag where Angular creates your component instance.</li>
+        <br/>
+        <li>Example:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-user-card',
+    template: `&lt;p&gt;User: {{ name }}&lt;/p&gt;`,
+})
+export class UserCardComponent {
+    name = 'Hwangfucius';
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;!-- Parent template --&gt;
+&lt;app-user-card&gt;&lt;/app-user-card&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, the <code>&lt;app-user-card&gt;</code> tag is the <u>host element</u> for the <code>UserCardComponent</code>.</li>
+        <br/>
+        <li>Angular attaches your component's rendered template (<code>&lt;p&gt;User: ...&lt;/p&gt;</code>) inside this element.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Host element vs child elements</b></li>
+    <br/>
+    <ul>
+        <li>The host element is the outer shell of your component.</li>
+        <br/>
+        <li>Everything you write inside the component's template becomes its <u>child elements</u>.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;!-- In the browser --&gt;
+&lt;app-user-card&gt;                     &lt;!-- 👈 host element --&gt;
+    &lt;p&gt;User: Hwangfucius&lt;/p&gt;        &lt;!-- 👈 child content --&gt;
+&lt;/app-user-card&gt;
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Styling the host element</b></li>
+    <br/>
+    <ul>
+        <li>You can style your host element directly from inside the component using the <code>:host</code> selector.</li>
+        <br/>
+        <li>Example:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-alert',
+    template: `&lt;ng-content&gt;&lt;/ng-content&gt;`,
+    styles: [`
+        :host {
+            display: block;
+            padding: 1rem;
+            border-radius: .5rem;
+            background: #f9f9f9;
+        }
+
+        :host(.warning) {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        :host(.error) {
+            background: #f8d7da;
+            color: #842029;
+        }
+    `],
+})
+export class AlertComponent {}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-alert class="warning"&gt;Low battery&lt;/app-alert&gt;
+&lt;app-alert class="error"&gt;System failure&lt;/app-alert&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>:host</code> selector targets the component's own tag — its host element.</li>
+        <br/>
+        <li>Each <code>app-alert</code> element gets styled according to its class.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Binding attributes and classes to the host element</b></li>
+    <br/>
+    <ul>
+        <li>Inside your component class, you can bind properties and attributes directly to the host element using <code>@HostBinding()</code>.</li>
+        <br/>
+        <li>This allows your code to dynamically update how the host element looks or behaves.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, HostBinding, Input } from '@angular/core';
+
+@Component({
+    selector: 'app-status-indicator',
+    template: `&lt;ng-content&gt;&lt;/ng-content&gt;`,
+})
+export class StatusIndicatorComponent {
+    @Input() status: 'online' | 'offline' = 'offline';
+
+    @HostBinding('class')
+    get hostClass(): string {
+        return this.status;
+    }
+
+    @HostBinding('attr.role') role = 'status';
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-status-indicator status="online"&gt;Connected&lt;/app-status-indicator&gt;
+&lt;app-status-indicator status="offline"&gt;Disconnected&lt;/app-status-indicator&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>@HostBinding('class')</code> dynamically sets classes on the host element.</li>
+        <li><code>@HostBinding('attr.role')</code> adds an accessibility attribute directly to the host.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Listening to events on the host</b></li>
+    <br/>
+    <ul>
+        <li>You can also listen for host element events (like <code>click</code>) using <code>@HostListener()</code>.</li>
+        <br/>
+        <li>Example:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, HostListener } from '@angular/core';
+
+@Component({
+    selector: 'app-clickable',
+    template: `&lt;ng-content&gt;&lt;/ng-content&gt;`,
+})
+export class ClickableComponent {
+    @HostListener('click', ['$event'])
+    handleClick(event: MouseEvent) {
+        console.log('Host element clicked!', event);
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-clickable&gt;Click me!&lt;/app-clickable&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Clicking anywhere on the component's host element triggers the listener inside the class.</li>
+        <br/>
+        <li>This is often used for buttons, custom inputs, or clickable cards.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Accessing the host element in code</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes you may need to interact with the real DOM element that hosts your component.</li>
+        <br/>
+        <li>You can inject an <code>ElementRef</code> to access it directly.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, ElementRef } from '@angular/core';
+
+@Component({
+    selector: 'app-box',
+    template: `&lt;ng-content&gt;&lt;/ng-content&gt;`,
+})
+export class BoxComponent {
+    constructor(private host: ElementRef&lt;HTMLElement&gt;) {}
+
+    ngAfterViewInit() {
+        this.host.nativeElement.style.border = '2px solid blue';
+    }
+}
+</code></pre>
+<pre><code class="language-html line-numbers">&lt;app-box&gt;Styled from code&lt;/app-box&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>ElementRef</code> gives you direct access to the DOM node — useful for low-level manipulations.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Difference between host and parent elements</b></li>
+    <br/>
+    <ul>
+        <li>The host element belongs to the parent template, but it's controlled by the component.</li>
+        <br/>
+        <li>The parent element is the one that wraps the component in the DOM, not the same thing as the host.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;div class="wrapper"&gt;         &lt;!-- parent element --&gt;
+    &lt;app-card&gt;&lt;/app-card&gt;     &lt;!-- host element --&gt;
+&lt;/div&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Inside <code>app-card</code>, <code>:host</code> styles apply to <code>&lt;app-card&gt;</code> — not to the outer <code>&lt;div class="wrapper"&gt;</code>.</li>
+        <br/>
+        <li>If you want to react to a parent's class (e.g. a theme), use <code>:host-context(.dark-mode)</code>.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
