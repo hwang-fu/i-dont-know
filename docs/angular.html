@@ -3133,7 +3133,245 @@ addRandom() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Advanced component configuration</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>When you write a component, the <code>@Component()</code> decorator can do much more than just define a template and selector.</li>
+        <br/>
+        <li>Angular components can be customized through many options that control:
+            <ul>
+                <li>How they are compiled and rendered,</li>
+                <li>How they detect data changes,</li>
+                <li>How styles are applied,</li>
+                <li>And what other components, directives, or pipes they can use.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>These advanced configurations give you performance and architectural control.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Standalone components</b></li>
+    <br/>
+    <ul>
+        <li>Starting from Angular 14, you can create components that don't belong to any <code>@NgModule</code>.</li>
+        <br/>
+        <li>You simply mark them with <code>standalone: true</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-hello',
+    standalone: true,
+    template: `&lt;p&gt;Hello from a standalone component!&lt;/p&gt;`,
+})
+export class HelloComponent {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Standalone components can directly import other standalone components, directives, and pipes.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-parent',
+    standalone: true,
+    imports: [HelloComponent],
+    template: `&lt;app-hello&gt;&lt;/app-hello&gt;`,
+})
+export class ParentComponent {}
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Change detection strategies</b></li>
+    <br/>
+    <ul>
+        <li>Angular automatically updates your template when data changes.
+            But you can control how often it checks for changes using <code>changeDetection</code>.
+        </li>
+        <br/>
+        <li>There are two modes:</li>
+        <ul>
+            <li><code>ChangeDetectionStrategy.Default</code> — Angular checks all components below whenever something might have changed.</li>
+            <li><code>ChangeDetectionStrategy.OnPush</code> &nbsp; — Angular only re-checks when <u>input references change</u> or <u>an event happens</u> inside the component.</li>
+        </ul>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, ChangeDetectionStrategy } from '@angular/core';
+
+@Component({
+    selector: 'app-optimized',
+    template: `&lt;p&gt;Optimized Component&lt;/p&gt;`,
+    changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class OptimizedComponent {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use <code>OnPush</code> for better performance, especially in large apps where data doesn't change often.</li>
+        <li>Angular then skips unnecessary checks for unchanged components.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>View encapsulation modes</b></li>
+    <br/>
+    <ul>
+        <li>By default, Angular <b>encapsulates</b> component styles so they only apply to that component's template.</li>
+        <br/>
+        <li>You can control this with <code>encapsulation</code>:</li>
+        <ul>
+            <li><code>ViewEncapsulation.Emulated</code> — (default) Angular emulates Shadow DOM by adding unique attributes to selectors.</li>
+            <li><code>ViewEncapsulation.ShadowDom</code> — uses the browser's real Shadow DOM.</li>
+            <li><code>ViewEncapsulation.None</code> — no encapsulation, styles are global.</li>
+        </ul>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, ViewEncapsulation } from '@angular/core';
+
+@Component({
+    selector: 'app-box',
+    template: `&lt;div&gt;I'm a box&lt;/div&gt;`,
+    styles: [`div { color: red; }`],
+    encapsulation: ViewEncapsulation.None,
+})
+export class BoxComponent {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, the <code>div { color: red; }</code> style will affect every <code>&lt;div&gt;</code> in your app — not just inside this component.</li>
+        <li>Use <code>None</code> for global styles or theming, and <code>ShadowDom</code> for true style isolation.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using providers inside a component</b></li>
+    <br/>
+    <ul>
+        <li>You can declare <u>providers</u> directly in a component.</li>
+        <br/>
+        <li>This is helpful when you want a new service instance for each component.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component } from '@angular/core';
+import { CounterService } from './counter.service';
+
+@Component({
+    selector: 'app-counter',
+    template: `
+        &lt;p&gt;Count: {{ service.count }}&lt;/p&gt;
+        &lt;button (click)="service.increment()"&gt;+&lt;/button&gt;
+    `,
+    providers: [CounterService]
+})
+export class CounterComponent {
+    constructor(public service: CounterService) {}
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Each <code>&lt;app-counter&gt;</code> gets its own instance of <code>CounterService</code>.</li>
+        <li>This is called <u>component-level dependency injection</u>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Controlling change detection manually</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes you want to run change detection yourself — for example, after an external API updates data asynchronously.</li>
+        <br/>
+        <li>You can inject <code>ChangeDetectorRef</code> and call its methods:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, ChangeDetectorRef } from '@angular/core';
+
+@Component({
+    selector: 'app-manual-refresh',
+    template: `
+        &lt;p&gt;Last updated: {{ time }}&lt;/p&gt;
+        &lt;button (click)="refresh()"&gt;Refresh&lt;/button&gt;
+    `
+})
+export class ManualRefreshComponent {
+    time = new Date().toLocaleTimeString();
+
+    constructor(private cdr: ChangeDetectorRef) {}
+
+    refresh() {
+        this.time = new Date().toLocaleTimeString();
+        this.cdr.detectChanges();  // manually trigger view update
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Manual control is rarely needed, but useful when integrating with external libraries that don't trigger Angular's normal checks.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Host bindings and host listeners</b></li>
+    <br/>
+    <ul>
+        <li>These decorators let you bind properties or events directly to the component's host element.</li>
+        <br/>
+        <li>This is considered an advanced configuration because it changes how the component behaves in the DOM.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { Component, HostBinding, HostListener } from '@angular/core';
+
+@Component({
+    selector: 'app-box',
+    template: `&lt;ng-content&gt;&lt;/ng-content&gt;`,
+})
+export class BoxComponent {
+    @HostBinding('class.active') isActive = false;
+
+    @HostListener('click')
+    toggle() {
+        this.isActive = !this.isActive;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Clicking the box toggles the <code>active</code> class on its host element.</li>
+        <li>This lets the component manage its appearance or behavior without external CSS selectors.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Importing dependencies directly</b></li>
+    <br/>
+    <ul>
+        <li>In standalone components, you can import everything the component needs — directives, pipes, or even modules — directly through the <code>imports</code> field.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">import { CommonModule } from '@angular/common';
+
+@Component({
+    selector: 'app-list',
+    standalone: true,
+    imports: [CommonModule],
+    template: `
+        &lt;ul&gt;
+            &lt;li *ngFor="let item of items"&gt;{{ item }}&lt;/li&gt;
+        &lt;/ul&gt;
+    `,
+})
+export class ListComponent {
+    items = ['A', 'B', 'C'];
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Standalone imports make each component self-contained and easy to reuse anywhere in your project.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
