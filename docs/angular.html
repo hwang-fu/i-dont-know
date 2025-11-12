@@ -3379,7 +3379,198 @@ export class ListComponent {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3>Binding dynamic text, properties, and attributes</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Angular templates let you connect your component's data to the HTML view — this is called <b>data binding</b>.</li>
+        <br/>
+        <li>Instead of hard-coding text or attributes, you can bind them dynamically to variables, expressions, or functions.</li>
+        <br/>
+        <li>Angular updates the DOM automatically when the bound data changes, keeping your view and logic in sync.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Interpolating text ({{ }})</b></li>
+    <br/>
+    <ul>
+        <li>The simplest type of binding is text interpolation using double curly braces <code>{{ }}</code>.</li>
+        <br/>
+        <li>It inserts the value of a component property or expression directly into the HTML text.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">@Component({
+    selector: 'app-greeter',
+    template: `
+        &lt;p&gt;Hello, {{ name }}!&lt;/p&gt;
+        &lt;p&gt;Today is {{ date | date:'fullDate' }}.&lt;/p&gt;
+    `,
+})
+export class GreeterComponent {
+    name = 'Junzhe';
+    date = new Date();
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Angular automatically escapes text to prevent security issues (no HTML injection).</li>
+        <li>You can also use pipes (like <code>date</code>) inside interpolation.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Binding to DOM properties</b></li>
+    <br/>
+    <ul>
+        <li>HTML elements have many DOM properties like <code>disabled</code>, <code>checked</code>, <code>value</code>, and <code>hidden</code>.</li>
+        <br/>
+        <li>You can bind them dynamically using square brackets: <code>[property]="expression"</code>.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;button [disabled]="isLoading"&gt;Save&lt;/button&gt;
+&lt;input [value]="username" /&gt;
+&lt;img [src]="imageUrl" [alt]="description" /&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class ExampleComponent {
+    isLoading = true;
+    username = 'Alice';
+    imageUrl = '/assets/avatar.png';
+    description = 'Profile picture';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>When <code>isLoading</code> changes to <code>false</code>, Angular automatically re-enables the button.</li>
+        <li>This is a one-way binding from your component → view.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Binding to attributes</b></li>
+    <br/>
+    <ul>
+        <li>Not all attributes have matching DOM properties (for example, <code>aria-*</code> and <code>data-*</code> attributes).</li>
+        <br/>
+        <li>To bind those, use the <code>attr.</code> prefix:</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;button [attr.aria-label]="label"&gt;Click&lt;/button&gt;
+&lt;div [attr.data-id]="uniqueId"&gt;&lt;/div&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class AttrExampleComponent {
+    label = 'Action button';
+    uniqueId = 12345;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Angular creates or removes the attribute based on the value:
+            <ul>
+                <li>If the bound value is <code>null</code> or <code>undefined</code>, the attribute is removed.</li>
+                <li>If it has a value, it is added or updated.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Use this for accessibility (ARIA), analytics (data-attributes), or SVG properties.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Class and style bindings</b></li>
+    <br/>
+    <ul>
+        <li>You can dynamically change CSS classes or styles with <code>[class]</code> and <code>[style]</code>.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;div [class.active]="isActive"&gt;Active box&lt;/div&gt;
+&lt;div [style.background-color]="color"&gt;Colored box&lt;/div&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class StyleExampleComponent {
+    isActive = true;
+    color = 'lightgreen';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Angular adds or removes the class automatically depending on the boolean expression.</li>
+        <li>You can bind multiple styles or classes using objects:
+<pre><code class="language-html line-numbers">&lt;div [ngClass]="{ active: isActive, highlight: hasFocus }"&gt;&lt;/div&gt;
+&lt;div [ngStyle]="{ 'font-size': size + 'px', color: textColor }"&gt;&lt;/div&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Event binding + property binding = interactivity</b></li>
+    <br/>
+    <ul>
+        <li>To make bindings interactive, combine property binding and event binding.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;input [value]="username" (input)="username = $event.target.value" /&gt;
+&lt;p&gt;Current username: {{ username }}&lt;/p&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class TwoWayComponent {
+    username = 'Guest';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This is manual one-way binding plus an event handler.</li>
+        <li>Angular's <code>[(ngModel)]</code> is just a shorthand for this two-way pattern.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Binding HTML safely</b></li>
+    <br/>
+    <ul>
+        <li>By default, Angular escapes all interpolated text, so tags like <code>&lt;script&gt;</code> or <code>&lt;b&gt;</code> are shown as text — not executed.</li>
+        <br/>
+        <li>If you intentionally want to display HTML, bind to <code>[innerHTML]</code> — but do it carefully.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;div [innerHTML]="htmlSnippet"&gt;&lt;/div&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class HtmlExampleComponent {
+    htmlSnippet = '&lt;b&gt;Bold text&lt;/b&gt; and &lt;i&gt;italic&lt;/i&gt;';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Angular sanitizes unsafe HTML automatically, but for complete trust (e.g. known safe content), you can use <code>DomSanitizer</code>.</li>
+        <li>Be careful — don't bind user-provided HTML directly without sanitization!</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Binding SVG or custom attributes</b></li>
+    <br/>
+    <ul>
+        <li>SVG elements often use attributes that aren't standard HTML properties (like <code>fill</code>, <code>cx</code>, <code>r</code>).</li>
+        <br/>
+        <li>You can bind them just like HTML attributes — Angular handles SVG correctly.</li>
+    </ul>
+<pre><code class="language-html line-numbers">&lt;svg width="100" height="100"&gt;
+    &lt;circle [attr.cx]="50" [attr.cy]="50" [attr.r]="radius" [attr.fill]="color"&gt;&lt;/circle&gt;
+&lt;/svg&gt;
+</code></pre>
+<pre><code class="language-ts line-numbers">export class SvgExampleComponent {
+    radius = 30;
+    color = 'lightblue';
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Angular updates SVG bindings the same way as normal DOM bindings.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
