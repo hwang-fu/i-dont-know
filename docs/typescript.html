@@ -894,6 +894,253 @@ function fail(msg: string): never {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-more-on-functions">More on Functions in TypeScript</h3>
+<ol>
+    <li><b>Function Parameter Types</b></li>
+<pre><code class="language-ts line-numbers">function greet(name: string, age: number): void {
+    console.log(`Hello ${name}, age ${age}`);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Every parameter must have a known type (explicit or inferred).</li>
+        <li>TypeScript enforces parameter count and type correctness.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Optional Parameters</b></li>
+<pre><code class="language-ts line-numbers">function log(message: string, userId?: number) {
+    console.log(message, userId ?? "anonymous");
+}
+
+log("Hello");
+log("Hi", 42);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>?</code> marks a parameter as optional.</li>
+        <li>Typed as <code>T | undefined</code> internally.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Default Parameters</b></li>
+<pre><code class="language-ts line-numbers">function multiply(a: number, b: number = 1) {
+    return a * b;
+}
+
+multiply(5);  // 5
+</code></pre>
+    <br/>
+    <ul>
+        <li>Defaults provide a fallback when the caller omits a parameter.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Rest Parameters</b></li>
+<pre><code class="language-ts line-numbers">function sum(...values: number[]): number {
+    return values.reduce((a, b) =&gt; a + b, 0);
+}
+
+sum(1, 2, 3, 4);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rest parameters allow variable-length arguments.</li>
+        <li>The type must be an array type.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Function Return Types</b></li>
+<pre><code class="language-ts line-numbers">function isEven(n: number): boolean {
+    return n % 2 === 0;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Return types can be inferred, but explicit typing improves clarity.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Anonymous and Arrow Functions</b></li>
+<pre><code class="language-ts line-numbers">const double = (x: number): number =&gt; x * 2;
+
+const logger = function(message: string): void {
+    console.log(message);
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Arrow functions inherit <code>this</code> from their surrounding scope.</li>
+        <li>Anonymous functions are useful for callbacks or inline logic.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Function Overloads</b></li>
+<pre><code class="language-ts line-numbers">function format(value: number): string;
+function format(value: string): string;
+function format(value: number | string) {
+    return `Value: ${value}`;
+}
+
+format(10);
+format("hello");
+</code></pre>
+    <br/>
+    <ul>
+        <li>Overloads define multiple allowed call signatures.</li>
+        <li>The implementation must handle all combined cases.</li>
+        <li>Useful for flexible function APIs.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Function Types</b></li>
+<pre><code class="language-ts line-numbers">type Comparator = (a: number, b: number) =&gt; number;
+
+const compare: Comparator = (x, y) =&gt; x - y;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Function types can be reused via <code>type</code> or <code>interface</code>.</li>
+        <li>This improves consistency across codebases.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Functions as Arguments</b></li>
+<pre><code class="language-ts line-numbers">function applyOperation(a: number, b: number, op: (x: number, y: number) =&gt; number) {
+    return op(a, b);
+}
+
+applyOperation(3, 4, (x, y) =&gt; x + y);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Functional patterns are natural in TypeScript due to strong typing.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generic Functions</b></li>
+<pre><code class="language-ts line-numbers">function identity&lt;T&gt;(value: T): T {
+    return value;
+}
+
+const result = identity&lt;string&gt;("hello");
+</code></pre>
+    <br/>
+    <ul>
+        <li>Generics allow functions to work with any type while preserving type safety.</li>
+        <li>The type parameter <code>&lt;T&gt;</code> is inferred or explicit.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generic Constraints</b></li>
+<pre><code class="language-ts line-numbers">function getLength&lt;T extends { length: number }&gt;(item: T) {
+    return item.length;
+}
+
+getLength("hello");
+getLength([1, 2, 3]);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Constraints restrict which types are allowed as <code>T</code>.</li>
+        <li>This enables more expressive type-safe abstractions.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Contextual Typing</b></li>
+<pre><code class="language-ts line-numbers">const nums = [1, 2, 3];
+
+nums.forEach(n =&gt; console.log(n.toFixed(2)));
+</code></pre>
+    <br/>
+    <ul>
+        <li>TypeScript infers types for anonymous functions based on their context.</li>
+        <li>The callback receives <code>n: number</code> automatically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>this</code> in Functions</b></li>
+<pre><code class="language-ts line-numbers">const obj = {
+    value: 10,
+    getValue() {
+        return this.value; // `this` is obj
+    }
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Functions inside objects infer <code>this</code> automatically.</li>
+        <li>Arrow functions do not bind <code>this</code> — they use the outer value.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Callable and Constructable Objects</b></li>
+<pre><code class="language-ts line-numbers">interface Callable {
+    (msg: string): void;         // callable
+    description: string;         // property
+}
+
+const fn: Callable = (m: string) =&gt; console.log(m);
+fn.description = "Logger function";
+</code></pre>
+    <br/>
+    <ul>
+        <li>Functions in JS can have both call signatures and properties.</li>
+        <li>TypeScript fully supports these patterns using interfaces.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Functions That Return Functions</b></li>
+<pre><code class="language-ts line-numbers">function createMultiplier(factor: number) {
+    return (n: number) =&gt; n * factor;
+}
+
+const double = createMultiplier(2);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Higher-order functions are typed naturally using nested signatures.</li>
+    </ul>
+    <br/>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
