@@ -191,6 +191,7 @@
         <li><a href="#view">View</a></li>
         <li><a href="#materialized-view">Materialized View</a></li>
         <li><a href="#case">CASE Expression</a></li>
+        <li><a href="#coalesce">COALESCE Function</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -5653,7 +5654,222 @@ END
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="coalesce">The COALESCE Function in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>COALESCE</code> is a SQL function that returns the <u>first non-NULL value</u> in a list of expressions.</li>
+        <br/>
+        <li>It is commonly used to handle NULL values, provide defaults, clean data, or avoid NULL-related errors.</li>
+        <br/>
+        <li>PostgreSQL evaluates expressions <u>from left to right</u> and returns the earliest non-NULL result.</li>
+        <br/>
+        <li><code>COALESCE</code> is equivalent to a simple <code>CASE</code> expression but is shorter and more readable.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Syntax</b></li>
+<pre><code class="language-sql line-numbers">COALESCE(value1, value2, value3, ...)
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>value1</code>, <code>value2</code>, <code>value3</code>, ... are evaluated in order.</li>
+        <li>The first value that is not NULL is returned.</li>
+        <li>If all values are NULL, the result is NULL.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic Example</b></li>
+<pre><code class="language-sql line-numbers">SELECT COALESCE(NULL, NULL, 'Hello', 'World');
+</code></pre>
+    <br/>
+    <ul>
+        <li>Returns <code>'Hello'</code>, since it is the first non-NULL value.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using COALESCE to Replace NULL With a Default</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    name,
+    COALESCE(phone, 'No phone number') AS phone_display
+FROM users;
+</code></pre>
+    <br/>
+    <ul>
+        <li>If <code>phone</code> is NULL, it displays a default string instead.</li>
+        <li>Useful for UI, reports, and exported data.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using COALESCE With Numeric Values</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    price,
+    COALESCE(discount_price, price) AS effective_price
+FROM products;
+</code></pre>
+    <br/>
+    <ul>
+        <li>If <code>discount_price</code> is NULL, fallback to original price.</li>
+        <li>Prevents NULL from propagating into calculations.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using COALESCE in Calculations</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    COALESCE(total_sales, 0) / COALESCE(order_count, 1) AS avg_order_value
+FROM seller_stats;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Prevents division by NULL or NULL arithmetic results.</li>
+        <li>Often used in analytics pipelines.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>COALESCE With Multiple Alternatives</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    COALESCE(username, email, phone, 'Unknown User') AS identifier
+FROM users;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The first available non-NULL contact method is selected.</li>
+        <li>If all fields are NULL, <code>'Unknown User'</code> is returned.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>COALESCE vs CASE Expression</b></li>
+<pre><code class="language-sql line-numbers">CASE
+    WHEN value1 IS NOT NULL THEN value1
+    WHEN value2 IS NOT NULL THEN value2
+    ELSE value3
+END
+</code></pre>
+    <br/>
+    <ul>
+        <li>This CASE expression is equivalent to:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">COALESCE(value1, value2, value3)
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>COALESCE</code> is simpler and preferred for NULL-handling.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using COALESCE With Aggregations</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    seller_id,
+    COALESCE(SUM(amount), 0) AS total_sales
+FROM orders
+GROUP BY seller_id;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>SUM()</code> returns NULL when no rows exist.</li>
+        <li>COALESCE ensures numeric aggregates have meaningful defaults.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Handling NULL Dates</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    name,
+    COALESCE(last_login, NOW()) AS effective_last_login
+FROM users;
+</code></pre>
+    <br/>
+    <ul>
+        <li>If a user never logged in, use the current timestamp.</li>
+        <li>Useful for audits and logs.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>COALESCE in ORDER BY</b></li>
+<pre><code class="language-sql line-numbers">SELECT title
+FROM books
+ORDER BY COALESCE(published_year, 0);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Allows ordering while gracefully handling NULL values.</li>
+        <li>NULL is usually treated as larger than all non-NULL values unless COALESCE changes it.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>COALESCE in JOIN Conditions</b></li>
+<pre><code class="language-sql line-numbers">SELECT *
+FROM orders o
+JOIN customers c
+    ON COALESCE(o.customer_id, 0) = c.id;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Can be used to provide fallbacks in join logic.</li>
+        <li>Be careful: this may prevent index usage, lowering performance.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>COALESCE vs NULLIF</b></li>
+    <br/>
+    <ul>
+        <li><code>COALESCE</code> returns the first non-NULL value.</li>
+        <br/>
+        <li><code>NULLIF(a, b)</code> returns NULL if <code>a = b</code>, otherwise returns <code>a</code>.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT
+    COALESCE(NULLIF(status, ''), 'unknown') AS clean_status
+FROM tasks;
+</code></pre>
+    <br/>
+    <ul>
+        <li>NULLIF is often paired with COALESCE to replace “empty” values with defaults.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li><code>COALESCE</code> is extremely fast and evaluated inline per row.</li>
+        <br/>
+        <li>However, avoid COALESCE on indexed columns in JOIN/WHERE/ORDER BY if possible, because:
+            <ul>
+                <li>It may disable index usage</li>
+                <li>It forces PostgreSQL to evaluate the expression for every row</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Using COALESCE in SELECT is always safe and efficient.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
