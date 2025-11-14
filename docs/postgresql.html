@@ -192,6 +192,7 @@
         <li><a href="#materialized-view">Materialized View</a></li>
         <li><a href="#case">CASE Expression</a></li>
         <li><a href="#coalesce">COALESCE Function</a></li>
+        <li><a href="#nullif">NULLIF Function</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -5847,7 +5848,7 @@ FROM tasks;
 </code></pre>
     <br/>
     <ul>
-        <li>NULLIF is often paired with COALESCE to replace “empty” values with defaults.</li>
+        <li>NULLIF is often paired with COALESCE to replace "empty" values with defaults.</li>
     </ul>
     <br/>
     <br/>
@@ -5877,7 +5878,223 @@ FROM tasks;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="nullif">The NULLIF Function in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>NULLIF</code> is a conditional function in PostgreSQL that returns <b>NULL</b> if two values are equal.</li>
+        <br/>
+        <li>If the values are not equal, it returns the first value unchanged.</li>
+        <br/>
+        <li>NULLIF is often used to avoid division-by-zero errors, normalize data, or convert meaningless values into actual NULLs.</li>
+        <br/>
+        <li>NULLIF is frequently used together with <code>COALESCE</code> for advanced NULL-handling logic.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Syntax</b></li>
+<pre><code class="language-sql line-numbers">NULLIF(value1, value2)
+</code></pre>
+    <br/>
+    <ul>
+        <li>If <code>value1 = value2</code>, the result is <code>NULL</code>.</li>
+        <li>If <code>value1 ≠ value2</code>, the result is <code>value1</code>.</li>
+        <li><code>value1</code> is always the return value unless the values match exactly.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic Example</b></li>
+<pre><code class="language-sql line-numbers">SELECT NULLIF(10, 10);   -- returns NULL
+SELECT NULLIF(10, 5);    -- returns 10
+</code></pre>
+    <br/>
+    <ul>
+        <li>NULLIF only checks equality.</li>
+        <li>It does not support &lt;, &gt;, or complex expressions (you would use <code>CASE</code> for that).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Avoiding Division by Zero</b></li>
+    <br/>
+    <ul>
+        <li>The most common use of NULLIF is to prevent division-by-zero errors.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT
+    total_sales / NULLIF(total_orders, 0) AS avg_order_value
+FROM seller_stats;
+</code></pre>
+    <br/>
+    <ul>
+        <li>If <code>total_orders = 0</code>, <code>NULLIF(total_orders, 0)</code> becomes <code>NULL</code>.</li>
+        <li>Thus the result is <code>NULL</code> instead of raising a runtime error.</li>
+        <li>Often paired with <code>COALESCE</code> to provide a fallback:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT
+    COALESCE(total_sales / NULLIF(total_orders, 0), 0) AS avg_order_value
+FROM seller_stats;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, zero is used instead of NULL for readability or reporting.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Cleaning Up Placeholder Values</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes data uses placeholder values like <code>''</code> or <code>'N/A'</code> instead of NULL.</li>
+        <li>NULLIF can convert those placeholder values into true SQL NULLs.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT
+    NULLIF(phone, '') AS clean_phone
+FROM users;
+</code></pre>
+    <br/>
+    <ul>
+        <li>If <code>phone = ''</code>, the result becomes NULL.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Another Example: Converting "unknown" Strings to NULL</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    NULLIF(status, 'unknown') AS clean_status
+FROM tasks;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Useful when CSV imports or old systems store "unknown" as a literal string.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>NULLIF with Numeric Data</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    price,
+    discount,
+    NULLIF(discount, 0) AS valid_discount
+FROM products;
+</code></pre>
+    <br/>
+    <ul>
+        <li>If <code>discount = 0</code>, treat it as NULL (e.g., "no discount").</li>
+        <li>Prevents misleading values in analytics dashboards.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>NULLIF Combined with COALESCE</b></li>
+    <br/>
+    <ul>
+        <li>A common pattern is cleaning values with NULLIF, then providing a fallback using COALESCE.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT
+    COALESCE(NULLIF(username, ''), 'Guest') AS display_name
+FROM accounts;
+</code></pre>
+    <br/>
+    <ul>
+        <li>If username = '', it becomes NULL, and COALESCE replaces it with "Guest".</li>
+        <li>Powerful for cleaning and normalizing inconsistent data.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>NULLIF in ORDER BY</b></li>
+<pre><code class="language-sql line-numbers">SELECT name
+FROM customers
+ORDER BY NULLIF(priority, 0);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Zero priorities become NULL, which sort last unless modified.</li>
+        <li><b>Be cautious</b>: using expressions in <code>ORDER BY</code> may prevent index use.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>NULLIF Inside Aggregations</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    region,
+    SUM(NULLIF(amount, 0)) AS total_revenue
+FROM sales
+GROUP BY region;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This ignores zero values inside the SUM (treats them as NULL).</li>
+        <li>Useful when zeros represent invalid or missing data.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>NULLIF and Type Casting</b></li>
+<pre><code class="language-sql line-numbers">SELECT NULLIF(value::INT, 0)
+FROM data;
+</code></pre>
+    <br/>
+    <ul>
+        <li>NULLIF works with all PostgreSQL data types, including casts.</li>
+        <li>If the casted value matches the comparison, it becomes NULL.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>NULLIF with Multiple Comparisons (Using CASE Instead)</b></li>
+    <br/>
+    <ul>
+        <li><code>NULLIF</code> only checks equality against a single value.</li>
+        <br/>
+        <li>When you need multiple comparisons, use <code>CASE</code>:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CASE
+    WHEN score IN (0, -1, -99) THEN NULL
+    ELSE score
+END
+</code></pre>
+    <br/>
+    <ul>
+        <li>Useful when imported data uses multiple "missing value" codes.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li><code>NULLIF</code> is extremely lightweight — it is evaluated once per row.</li>
+        <br/>
+        <li>Be cautious using <code>NULLIF</code> inside:
+            <ul>
+                <li><code>JOIN</code> conditions</li>
+                <li><code>WHERE</code> clauses</li>
+                <li><code>ORDER BY</code> expressions</li>
+            </ul>
+            because it may prevent index-only scans.
+        </li>
+        <br/>
+        <li><code>NULLIF</code> in <code>SELECT</code> lists has no performance drawback.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
