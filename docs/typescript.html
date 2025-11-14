@@ -1658,11 +1658,249 @@ type CarConstructor = typeof Car;    // constructor function type
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-constructor-vs-instance">Constructor Type vs Instance Type</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>In TypeScript, classes create <u>two types simultaneously</u>:</li>
+        <br/>
+        <ul>
+            <li><b>Instance Type</b> — the type of objects created by <code>new</code>.</li>
+            <li><b>Constructor Type</b> — the type of the class constructor function itself.</li>
+        </ul>
+        <br/>
+        <li>These two types behave differently and are used in different contexts.</li>
+        <br/>
+        <li>Understanding the distinction is essential for dependency injection, factories, generics, and meta-programming patterns.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Instance Type</b></li>
+<pre><code class="language-ts line-numbers">class User {
+    constructor(public id: number, public name: string) {}
+}
+
+let u: User = new User(1, "Alice");
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>User</code> refers to the <u>type of instances</u> created by <code>new User()</code>.</li>
+        <li>This includes all instance properties and methods.</li>
+        <li>It does <u>not</u> include static members or the constructor signature.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Constructor Type</b></li>
+<pre><code class="language-ts line-numbers">type UserConstructor = typeof User;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>typeof User</code> refers to the <b>constructor function</b> itself.</li>
+        <li>This includes:</li>
+        <ul>
+            <li>the <code>new (...args)</code> signature</li>
+            <li>static properties</li>
+            <li>the constructor's parameter types</li>
+        </ul>
+        <br/>
+        <li>Constructor types are useful for passing classes as values.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Comparing Both Types</b></li>
+<pre><code class="language-ts line-numbers">class Car {
+    static company = "Tesla";
+
+    constructor(public model: string) {}
+}
+
+type CarInstance = Car;             // instance type
+type CarConstructor = typeof Car;   // constructor type
+</code></pre>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Instance Type (<code>Car</code>)</th>
+                <th>Constructor Type (<code>typeof Car</code>)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Instance properties</td>
+                <td>✔ Available</td>
+                <td>✘ Not available</td>
+            </tr>
+            <tr>
+                <td>Instance methods</td>
+                <td>✔ Available</td>
+                <td>✘ Not available</td>
+            </tr>
+            <tr>
+                <td>Static members</td>
+                <td>✘ Not available</td>
+                <td>✔ Available</td>
+            </tr>
+            <tr>
+                <td>Constructor signature</td>
+                <td>✘ No</td>
+                <td>✔ Yes</td>
+            </tr>
+            <tr>
+                <td>Used with <code>new</code></td>
+                <td>✘ No</td>
+                <td>✔ Yes</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <br/>
+
+
+    <li><b>Using Constructor Types for Factories</b></li>
+<pre><code class="language-ts line-numbers">function createInstance(ctor: { new (...args: any[]): any }) {
+    return new ctor();
+}
+
+class A { constructor() { console.log("A created"); } }
+class B { constructor() { console.log("B created"); } }
+
+createInstance(A);
+createInstance(B);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Factories often accept constructor types rather than instances.</li>
+        <li>TypeScript enforces that the provided argument supports <code>new</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Typing Class Constructors More Strictly</b></li>
+<pre><code class="language-ts line-numbers">interface UserConstructor {
+    new (id: number, name: string): { id: number; name: string };
+}
+
+function createUser(ctor: UserConstructor) {
+    return new ctor(1, "Alice");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can define detailed constructor signatures using interfaces.</li>
+        <li>This is extremely powerful for plugins, DI containers, and testing.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Static Properties Live on the Constructor Type</b></li>
+<pre><code class="language-ts line-numbers">class Settings {
+    static version = "1.0";
+    theme = "light";
+}
+
+let s: Settings = new Settings();   // instance type
+let C: typeof Settings = Settings;  // constructor type
+
+console.log(C.version); // OK
+console.log(s.theme);   // OK
+</code></pre>
+    <br/>
+    <ul>
+        <li>Static fields belong to the constructor type.</li>
+        <li>Instance fields belong to the instance type.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Constructor Types and Dependency Injection</b></li>
+<pre><code class="language-ts line-numbers">function runService(ctor: { new(): Service }) {
+    const service = new ctor();
+    service.run();
+}
+
+class Service {
+    run() { console.log("Running service..."); }
+}
+
+runService(Service);
+</code></pre>
+    <br/>
+    <ul>
+        <li>DI frameworks frequently accept constructor types to dynamically create instances.</li>
+        <li>TypeScript ensures correctness via <code>new()</code> signatures.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Constructor Types with Generics</b></li>
+<pre><code class="language-ts line-numbers">function create&lt;T&gt;(ctor: { new (...args: any[]): T }): T {
+    return new ctor();
+}
+
+class Logger { log() { console.log("log"); } }
+
+const logger = create(Logger);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Generics ensure the returned instance has the correct type.</li>
+        <li>Used widely in factory abstractions and IoC containers.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>A Class Is Both a Value and a Type</b></li>
+<pre><code class="language-ts line-numbers">class Example {}
+
+type T1 = Example;     // instance type
+const T2 = Example;    // constructor value
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>Example</code> (in a type position) = the instance type.</li>
+        <li><code>Example</code> (in a value position) = the constructor function.</li>
+        <li>This duality is unique compared to many other languages.</li>
+    </ul>
+    <br/>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
 
 <hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
 <!-- * * * * * * * * * * * * * * -->
 
 <footer>
