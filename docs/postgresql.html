@@ -193,6 +193,7 @@
         <li><a href="#case">CASE Expression</a></li>
         <li><a href="#coalesce">COALESCE Function</a></li>
         <li><a href="#nullif">NULLIF Function</a></li>
+        <li><a href="#least-greatest">LEAST and GREATEST</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -6102,7 +6103,205 @@ END
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="least-greatest">The LEAST and GREATEST Functions in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>LEAST</code> and <code>GREATEST</code> are comparison functions in PostgreSQL that return the minimum or maximum value from a list of expressions.</li>
+        <br/>
+        <li>They evaluate all arguments and pick the smallest (<code>LEAST</code>) or largest (<code>GREATEST</code>) value.</li>
+        <br/>
+        <li>Both functions accept <u>two or more arguments</u> and work with:
+            <ul>
+                <li>Numbers</li>
+                <li>Text</li>
+                <li>Dates and timestamps</li>
+                <li>Any comparable data type</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Syntax</b></li>
+<pre><code class="language-sql line-numbers">LEAST(value1, value2, value3, ...)
+GREATEST(value1, value2, value3, ...)
+</code></pre>
+    <br/>
+    <ul>
+        <li>At least two arguments are required.</li>
+        <li>All arguments must be of comparable data types.</li>
+        <li>If any argument is <code>NULL</code>, the result is <code>NULL</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic Examples</b></li>
+<pre><code class="language-sql line-numbers">SELECT LEAST(5, 8, 2, 7);       -- returns 2
+SELECT GREATEST(5, 8, 2, 7);    -- returns 8
+</code></pre>
+    <br/>
+    <ul>
+        <li>Arguments are compared using standard SQL comparison rules.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using LEAST and GREATEST With Text</b></li>
+<pre><code class="language-sql line-numbers">SELECT LEAST('banana', 'apple', 'cherry');    -- returns 'apple'
+SELECT GREATEST('banana', 'apple', 'cherry'); -- returns 'cherry'
+</code></pre>
+    <br/>
+    <ul>
+        <li>Text values are compared lexicographically (dictionary order).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using LEAST and GREATEST With Dates</b></li>
+<pre><code class="language-sql line-numbers">SELECT LEAST('2024-01-01', '2023-12-31');    -- 2023-12-31
+SELECT GREATEST('2024-01-01', '2023-12-31'); -- 2024-01-01
+</code></pre>
+    <br/>
+    <ul>
+        <li>Dates are compared chronologically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Handling NULL Values</b></li>
+<pre><code class="language-sql line-numbers">SELECT LEAST(10, NULL, 5);      -- NULL
+SELECT GREATEST(NULL, 100, 50); -- NULL
+</code></pre>
+    <br/>
+    <ul>
+        <li>If any argument is NULL, the whole function returns NULL.</li>
+        <li>Use <code>COALESCE</code> to avoid NULL propagation:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT LEAST(COALESCE(a, 0), COALESCE(b, 0)) FROM table;
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Clamping Values (Setting Min/Max Boundaries)</b></li>
+    <br/>
+    <ul>
+        <li>LEAST and GREATEST can be combined to restrict a value within a range.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">-- Clamp score to range 0–100
+SELECT LEAST(100, GREATEST(score, 0)) AS clamped_score
+FROM results;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Values &lt; 0 become 0, values &gt; 100 become 100.</li>
+        <li>This is a common technique for input validation.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using LEAST / GREATEST for Conditional Logic</b></li>
+    <br/>
+    <ul>
+        <li>These functions often replace simple CASE expressions.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT
+    salary,
+    GREATEST(salary, 2000) AS minimum_salary
+FROM employees;
+</code></pre>
+    <br/>
+    <ul>
+        <li>If salary is less than 2000, it becomes 2000.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Choosing the Earliest or Latest Timestamp</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    LEAST(start_time, updated_at, created_at) AS earliest_timestamp,
+    GREATEST(start_time, updated_at, created_at) AS latest_timestamp
+FROM logs;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Useful when records track multiple timestamps.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Comparing Columns Across Rows</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    product,
+    LEAST(price_usd, price_eur, price_gbp) AS minimum_price,
+    GREATEST(price_usd, price_eur, price_gbp) AS maximum_price
+FROM products;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Helps unify multiple currency columns or alternative pricing sources.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>LEAST/GREATEST With Derived Expressions</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    id,
+    LEAST(amount * 0.9, amount - 10) AS discounted_price
+FROM orders;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can freely mix arithmetic and functions within argument lists.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using LEAST and GREATEST in ORDER BY</b></li>
+<pre><code class="language-sql line-numbers">SELECT name
+FROM employees
+ORDER BY GREATEST(salary, bonus);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Sorting by “highest compensation component.”</li>
+        <li>Be careful: expressions in ORDER BY may reduce index usage.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li><code>LEAST</code> and <code>GREATEST</code> are extremely fast — evaluated per row, no special overhead.</li>
+        <br/>
+        <li>However, using them in:
+            <ul>
+                <li><code>WHERE</code> clauses</li>
+                <li><code>JOIN</code> conditions</li>
+                <li><code>ORDER BY</code> expressions</li>
+            </ul>
+            may prevent index-only scans because PostgreSQL must compute values for every row.
+        </li>
+        <br/>
+        <li>In <code>SELECT</code> lists, they are completely safe and efficient.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
