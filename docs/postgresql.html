@@ -188,6 +188,7 @@
         <li><a href="#date-time">Date and Time Types</a></li>
         <li><a href="#uuid">UUID Type</a></li>
         <li><a href="#cte">Common Table Expressions (CTE)</a></li>
+        <li><a href="#view">View</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -4975,7 +4976,200 @@ SELECT * FROM temp_data;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="view">Views in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <b>VIEW</b> in PostgreSQL is a <u>virtual table</u> defined by a SQL query.</li>
+        <br/>
+        <li>It behaves like a table but does not store data physically, instead, it runs the underlying query each time the view is accessed.</li>
+        <br/>
+        <li>Views simplify complex queries, improve code readability, and help enforce <u>security</u> by exposing only specific columns or rows.</li>
+        <br/>
+        <li>PostgreSQL also supports <b>materialized views</b>, which store the result physically for faster reads.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">CREATE VIEW view_name AS
+SELECT column1, column2
+FROM table_name
+WHERE condition;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>view_name</code> — the name of the virtual table.</li>
+        <li>The view can then be queried like any normal table using <code>SELECT</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Creating a Simple View</b></li>
+<pre><code class="language-sql line-numbers">CREATE VIEW active_users AS
+SELECT id, name, email
+FROM users
+WHERE is_active = true;
+
+SELECT * FROM active_users;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This view returns only active users without requiring the filter in every query.</li>
+        <li>Views are dynamically updated, changes in underlying tables appear automatically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using Views to Simplify Complex Queries</b></li>
+<pre><code class="language-sql line-numbers">CREATE VIEW monthly_sales AS
+SELECT
+    seller_id,
+    DATE_TRUNC('month', order_date) AS month,
+    SUM(amount)                     AS total_sales
+FROM orders
+GROUP BY seller_id, month;
+
+SELECT * FROM monthly_sales
+WHERE total_sales &gt; 5000;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Views reduce duplication of complex logic (aggregations, joins, calculations).</li>
+        <li>Applications can query the view instead of repeating long SQL statements.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Updating Data Through Views</b></li>
+    <br/>
+    <ul>
+        <li>Some views can be <u>updatable</u>, which means you can run <code>INSERT</code>, <code>UPDATE</code>, or <code>DELETE</code> on them.</li>
+        <br/>
+        <li>A view is updatable when it maps directly to a single table <u>without set operations or aggregates</u>.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE VIEW user_public_info AS
+SELECT id, name, email
+FROM users;
+
+UPDATE user_public_info
+SET name = 'Alice Cooper'
+WHERE id = 5;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This modifies data in the underlying <code>users</code> table.</li>
+        <li>Views involving joins, GROUP BY, DISTINCT, UNION, etc., are usually <u>not updatable</u>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Security and Access Control</b></li>
+    <br/>
+    <ul>
+        <li>Views are often used to restrict sensitive data.</li>
+        <br/>
+        <li>You can grant access to the view while keeping the underlying tables private.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE VIEW user_safe_view AS
+SELECT id, name
+FROM users;
+
+GRANT SELECT ON user_safe_view TO analyst_role;
+REVOKE SELECT ON users FROM analyst_role;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This ensures the role can only see the non-sensitive columns.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Replacing or Dropping a View</b></li>
+<pre><code class="language-sql line-numbers">DROP VIEW IF EXISTS view_name;
+
+CREATE OR REPLACE VIEW view_name AS
+SELECT ...
+FROM ...;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>CREATE OR REPLACE</code> lets you modify the view without dropping permissions.</li>
+        <li>Dropping a view does not affect the underlying data.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Materialized Views</b></li>
+    <br/>
+    <ul>
+        <li>A <u>materialized view</u> stores the query result physically on disk.</li>
+        <br/>
+        <li>Useful for performance when the underlying query is heavy (joins, aggregations, scanning large tables).</li>
+        <br/>
+        <li>But unlike normal views, materialized views must be <u>manually refreshed</u>.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE MATERIALIZED VIEW sales_summary AS
+SELECT seller_id, SUM(amount) AS total_sales
+FROM orders
+GROUP BY seller_id;
+
+-- Read from the materialized view
+SELECT * FROM sales_summary;
+
+-- Refresh when data changes:
+REFRESH MATERIALIZED VIEW sales_summary;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Materialized views behave like cached query results.</li>
+        <li>They significantly speed up analytics on large datasets.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Materialized View with Indexes</b></li>
+<pre><code class="language-sql line-numbers">CREATE MATERIALIZED VIEW monthly_stats AS
+SELECT
+    DATE_TRUNC('month', created_at) AS month,
+    COUNT(*)                        AS total_users
+FROM users
+GROUP BY month;
+
+CREATE INDEX idx_monthly_stats_month ON monthly_stats(month);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Indexes on materialized views improve read performance just like on regular tables.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Advanced: Refreshing Concurrently</b></li>
+    <br/>
+    <ul>
+        <li>To refresh a materialized view <u>without blocking reads</u>, PostgreSQL provides:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">REFRESH MATERIALIZED VIEW CONCURRENTLY sales_summary;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Requires a unique index on the materialized view.</li>
+        <li>Allows reads during the refresh — ideal for production systems.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
