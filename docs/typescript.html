@@ -324,6 +324,335 @@ type Port = typeof DEFAULT_PORT; // type Port = 8080
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-type">The <code>type</code> Operator (Type Aliases) in TypeScript</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>In TypeScript, the <code>type</code> keyword creates a <b>type alias</b>, which is a custom name for any type.</li>
+        <br/>
+        <li>A type alias does not create a new type at runtime. Instead, it provides a readable, reusable label for complex type structures.</li>
+        <br/>
+        <li><code>type</code> is similar to <code>interface</code>, but more powerful in certain use cases (unions, mapped types, utility types).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-ts line-numbers">type AliasName = ExistingType;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>AliasName</code> becomes a new name referring to the right-hand side type.</li>
+        <li>Type aliases improve clarity and reduce duplication.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Type Alias for Primitive Types</b></li>
+<pre><code class="language-ts line-numbers">type ID = number;
+type Username = string;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Primitive aliases improve readability in function signatures.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Type Alias for Object Types</b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name: string;
+    active: boolean;
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Defines a reusable object shape.</li>
+        <li>Common in API response schemas or domain models.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Function Type Alias</b></li>
+<pre><code class="language-ts line-numbers">type Add = (a: number, b: number) =&gt; number;
+
+const sum: Add = (x, y) =&gt; x + y;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Provides a clean, reusable type for a function signature.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Union Types with <code>type</code></b></li>
+<pre><code class="language-ts line-numbers">type Status = 'success' | 'error' | 'loading';
+
+type StringOrNumber = string | number;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Type aliases are the only way (besides literal types) to define union types.</li>
+        <li>Unions are essential for discriminated unions, enums, and input validation.</li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li><b>Intersection Types</b></li>
+<pre><code class="language-ts line-numbers">type HasID = { id: number };
+type HasName = { name: string };
+
+type User = HasID &amp; HasName;
+</code></pre>
+    <br/>
+    <ul>
+        <li>An <b>intersection type</b> (<code>&amp;</code>) merges multiple types into a single combined type.</li>
+        <br/>
+        <li>The resulting type contains <u>all</u> properties from all intersected types.</li>
+        <br/>
+        <li>In the example above, <code>User</code> must have <code>id</code> and <code>name</code>:
+<pre><code class="language-ts line-numbers">const u: User = {
+    id: 1,
+    name: "Alice"
+};
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Intersection with More Types</b></li>
+<pre><code class="language-ts line-numbers">type HasEmail = { email: string };
+
+type Person = HasID &amp; HasName &amp; HasEmail;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>Person</code> must include all properties: <code>id</code>, <code>name</code>, and <code>email</code>.</li>
+        <li>This allows building strong domain models from small reusable pieces.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Intersection Types with Functions</b></li>
+<pre><code class="language-ts line-numbers">type CanLog = { log: () =&gt; void };
+type CanSave = { save: () =&gt; void };
+
+type LoggerSaver = CanLog &amp; CanSave;
+
+const obj: LoggerSaver = {
+    log() { console.log("logging"); },
+    save() { console.log("saving"); }
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Intersection types allow you to build objects that must implement multiple behaviors.</li>
+        <li>This is a common pattern in mixin-based systems.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Merging Object Types (Property Compatibility)</b></li>
+<pre><code class="language-ts line-numbers">type A = { x: number };
+type B = { x: number | string };
+
+type C = A &amp; B;
+// type C = { x: number } &amp; { x: number | string }
+</code></pre>
+    <br/>
+    <ul>
+        <li>When intersecting conflicting property types, TypeScript computes the <u>most specific</u> possible type.</li>
+        <br/>
+        <li>Here:
+            <ul>
+                <li><code>A.x</code> must be <code>number</code></li>
+                <li><code>B.x</code> may be <code>number | string</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>The only valid value that satisfies both is: <code>number</code>
+        </li>
+        <br/>
+        <li>If no overlap exists, the type becomes <code>never</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Intersection Producing <code>never</code> (Incompatible Types)</b></li>
+<pre><code class="language-ts line-numbers">type A = { x: string };
+type B = { x: number };
+
+type Impossible = A &amp; B;  // { x: string &amp; number } → never
+</code></pre>
+    <br/>
+    <ul>
+        <li>A value cannot be <code>string</code> and <code>number</code> at the same time.</li>
+        <br/>
+        <li>Thus the combined property becomes <code>string &amp; number</code>, which resolves to <code>never</code>.</li>
+        <br/>
+        <li>This means <code>Impossible</code> has no possible valid values.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Intersection Types vs Interfaces</b></li>
+    <br/>
+    <ul>
+        <li>Intersection types are compositional — you combine multiple types into bigger ones.</li>
+        <br/>
+        <li>Interfaces use <code>extends</code> (inheritance), while intersections use <code>&amp;</code> (composition).</li>
+        <br/>
+        <li>Example comparison:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">interface A { x: number }
+interface B { y: number }
+
+type C = A &amp; B;
+// Equivalent to:
+interface D extends A, B {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>However, intersections work with:
+            <ul>
+                <li>Unions</li>
+                <li>Function types</li>
+                <li>Primitive types</li>
+                <li>Mapped types</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Therefore, intersection types are more flexible and more expressive than interface inheritance alone.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Type Aliases for Strings, Numbers, or Enums</b></li>
+<pre><code class="language-ts line-numbers">type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+type Port = 80 | 443 | 8080;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Creates powerful compile-time constraints on accepted values.</li>
+        <li>Helps eliminate invalid inputs early.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using <code>typeof</code> with <code>type</code></b></li>
+<pre><code class="language-ts line-numbers">const config = {
+    host: 'localhost',
+    port: 3000
+};
+
+type Config = typeof config;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>type</code> keyword combines perfectly with <code>typeof</code> to derive types from runtime objects.</li>
+        <li>This prevents duplicate definitions and keeps types consistent with real code.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generic Type Aliases</b></li>
+<pre><code class="language-ts line-numbers">type Response&lt;T&gt; = {
+    data: T;
+    error: string | null;
+};
+
+type UserResponse = Response&lt;{ id: number; name: string }&gt;;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Type aliases can be generic and work similarly to generic interfaces.</li>
+        <li>Extremely useful for reusable API or library types.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Mapped Types Using <code>type</code></b></li>
+<pre><code class="language-ts line-numbers">type ReadonlyObject&lt;T&gt; = {
+    readonly [K in keyof T]: T[K];
+};
+
+type FullUser = { id: number; name: string };
+type ReadonlyUser = ReadonlyObject&lt;FullUser&gt;;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Mapped types allow programmatic transformations of types.</li>
+        <li>Type aliases are the foundation for most advanced TS utilities.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Comparison: <code>type</code> vs <code>interface</code></b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th><code>type</code></th>
+                <th><code>interface</code></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Can define unions</td>
+                <td>Yes</td>
+                <td>No</td>
+            </tr>
+            <tr>
+                <td>Can define primitives</td>
+                <td>Yes</td>
+                <td>No</td>
+            </tr>
+            <tr>
+                <td>Supports declaration merging</td>
+                <td>No</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Mapped types</td>
+                <td>Yes</td>
+                <td>Limited</td>
+            </tr>
+            <tr>
+                <td>Extending others</td>
+                <td>With <code>&amp;</code></td>
+                <td>With <code>extends</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>Use <code>type</code> for unions, intersections, and advanced type transformations.</li>
+        <li>Use <code>interface</code> for object shapes needing merging or class implementation.</li>
+    </ul>
+    <br/>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
