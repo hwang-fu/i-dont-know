@@ -1877,6 +1877,62 @@ const T2 = Example;    // constructor value
     </ul>
     <br/>
     <br/>
+
+        <li><b>Constructor Type vs Instance Type</b></li>
+<pre><code class="language-ts line-numbers">class User {
+    static role = "user-class";
+
+    constructor(public id: number, public name: string) {}
+
+    greet() {
+        console.log(`Hello, ${this.name}`);
+    }
+}
+
+// 1) Instance type: "what new User() returns"
+let instance: User = new User(1, "Alice");
+
+instance.id;        // OK - instance property
+instance.name;      // OK - instance property
+instance.greet();   // OK - instance method
+// instance.role;   // Error: 'role' is static (on the constructor, not instance)
+
+
+// 2) Constructor type: "the class itself (function + statics)"
+let Ctor: typeof User = User;
+
+Ctor.role;                          // OK - static property
+const other = new Ctor(2, "Bob");   // OK - calling the constructor
+
+// other has the instance type:
+other.id;           // OK
+other.greet();      // OK
+
+
+// 3) Using constructor type in a factory
+function createAndGreet(ctor: typeof User, id: number, name: string) {
+    const u = new ctor(id, name); // we can 'new' the constructor
+    u.greet();
+}
+
+createAndGreet(User, 3, "Charlie");
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>User</code> (as a type) describes the <b>instance</b> you get from <code>new User(...)</code> (instance fields + methods, no statics, no constructor).</li>
+        <br/>
+        <li><code>typeof User</code> (as a type) describes the <b>constructor</b> itself (the class function):
+            <ul>
+                <li>has <code>new (...)</code> so you can construct instances</li>
+                <li>contains static members like <code>role</code></li>
+                <li>does <b>not</b> have instance fields like <code>id</code> or instance methods like <code>greet()</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Use <code>User</code> when you are talking about objects (instances), and <code>typeof User</code> when you are passing the class itself around (e.g. factories, DI).</li>
+    </ul>
+    <br/>
+    <br/>
 </ol>
 <br/>
 <!-- * * * * * * * * * * * * * * -->
