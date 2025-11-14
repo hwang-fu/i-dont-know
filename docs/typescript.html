@@ -113,6 +113,10 @@
         font-variant-ligatures: none;
     }
 
+    table {
+        font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
+    }
+
     ul > li {
         list-style-type: disc;
     }
@@ -164,6 +168,155 @@
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-typeof">The <code>typeof</code> Operator in TypeScript</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>In TypeScript, <code>typeof</code> is a dual-purpose operator used both at <u>runtime</u> (JavaScript behavior) and at <u>compile time</u> (TypeScript type queries).</li>
+        <br/>
+        <li>At runtime, <code>typeof</code> returns a string describing the JS type of a value.</li>
+        <br/>
+        <li>At compile time, TypeScript uses <code>typeof</code> to extract the <u>type</u> of a variable or function instead of its value.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Runtime <code>typeof</code></b></li>
+    <br/>
+    <ul>
+        <li>Runtime <code>typeof</code> is identical to JavaScript and returns strings:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">console.log(typeof 123);       // "number"
+console.log(typeof 'hello');   // "string"
+console.log(typeof true);      // "boolean"
+console.log(typeof {});        // "object"
+console.log(typeof undefined); // "undefined"
+console.log(typeof null);      // "object"  (quirk of JavaScript)
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Compile-Time <code>typeof</code> (Type Query)</b></li>
+    <br/>
+    <ul>
+        <li>In TypeScript, <code>typeof</code> inside a type context retrieves the <u>type</u> of a value.</li>
+        <br/>
+        <li>This allows you to reuse the type of an existing variable or function.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const user = {
+    id: 1,
+    name: 'Alice',
+    active: true
+};
+
+type User = typeof user;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>User</code> is now exactly the type of the variable <code>user</code>.</li>
+        <li>This avoids manually rewriting types.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using <code>typeof</code> with Functions</b></li>
+<pre><code class="language-ts line-numbers">function createPoint(x: number, y: number) {
+    return { x, y };
+}
+
+type Point = ReturnType&lt;typeof createPoint&gt;;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>typeof createPoint</code> gives you the type of the function object itself.</li>
+        <li><code>ReturnType&lt;...&gt;</code> extracts the return type of that function.</li>
+        <li>This is safer and avoids duplication when the function evolves.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using <code>typeof</code> for Constant Union Types</b></li>
+<pre><code class="language-ts line-numbers">const roles = ['admin', 'user', 'guest'] as const;
+
+type Role = typeof roles[number];
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>typeof roles[number]</code> turns the array into a union: <code>'admin' | 'user' | 'guest'</code>.</li>
+        <li>This pattern is extremely useful for enums and constant lists.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>typeof</code> with Literal Types</b></li>
+<pre><code class="language-ts line-numbers">const DEFAULT_PORT = 8080;
+
+type Port = typeof DEFAULT_PORT; // type Port = 8080
+</code></pre>
+    <br/>
+    <ul>
+        <li>The type of <code>DEFAULT_PORT</code> is the literal type <code>8080</code>, not <code>number</code>.</li>
+        <li>Useful for configuration constants or fixed numeric/string values.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using <code>typeof</code> in Type Guards</b></li>
+<pre><code class="language-ts line-numbers">function logValue(v: string | number) {
+    if (typeof v === 'string') {
+        console.log(v.toUpperCase());
+    } else {
+        console.log(v.toFixed(2));
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>TypeScript understands the runtime <code>typeof</code> check and narrows types accordingly.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Comparison Table</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Context</th>
+                <th>Meaning</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Runtime</td>
+                <td>Returns a string describing JS type</td>
+                <td><code>typeof 123 === 'number'</code></td>
+            </tr>
+            <tr>
+                <td>Compile-Time</td>
+                <td>Returns the TypeScript type of a value</td>
+                <td><code>type T = typeof x</code></td>
+            </tr>
+            <tr>
+                <td>Combined</td>
+                <td>Used for safe type narrowing</td>
+                <td><code>if (typeof v === 'string') ...</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
