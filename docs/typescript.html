@@ -168,7 +168,7 @@
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="ts-typeof">The <code>typeof</code> Operator in TypeScript</h3>
+<h3 id="ts-typeof">The <code>typeof</code> Operator</h3>
 <ol>
     <li><b>Introduction</b></li>
     <br/>
@@ -324,7 +324,7 @@ type Port = typeof DEFAULT_PORT; // type Port = 8080
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="ts-type">The <code>type</code> Operator (Type Aliases) in TypeScript</h3>
+<h3 id="ts-type">The <code>type</code> Operator (Type Aliases)</h3>
 <ol>
     <li><b>Introduction</b></li>
     <br/>
@@ -1348,7 +1348,7 @@ type ReadonlyPoint = {
     <br/>
 
 
-    <li><b>“Object” vs “object” vs “{}”</b></li>
+    <li><b>"Object" vs "object" vs "{}"</b></li>
     <br/>
     <table>
         <thead>
@@ -1378,13 +1378,280 @@ type ReadonlyPoint = {
     </table>
     <br/>
     <ul>
-        <li><code>object</code> is preferred when you want “not a primitive”.</li>
+        <li><code>object</code> is preferred when you want "not a primitive".</li>
         <li><code>{}</code> is extremely permissive and rarely used intentionally.</li>
     </ul>
     <br/>
     <br/>
 </ol>
-<br/><!-- * * * * * * * * * * * * * * -->
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-classes">Classes</h3>
+<ol>
+    <li><b>Basic Class Declaration</b></li>
+<pre><code class="language-ts line-numbers">class User {
+    id: number;
+    name: string;
+
+    constructor(id: number, name: string) {
+        this.id = id;
+        this.name = name;
+    }
+
+    greet() {
+        console.log(`Hello, ${this.name}`);
+    }
+}
+
+const u = new User(1, "Alice");
+u.greet();
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>constructor</code> is invoked when creating an instance.</li>
+        <li>Properties must be declared before assignment unless using parameter properties.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Visibility Modifiers</b></li>
+<pre><code class="language-ts line-numbers">class Person {
+    public name: string;   // accessible everywhere
+    private age: number;   // accessible inside the class only
+    protected id: number;  // accessible inside class + subclasses
+
+    constructor(name: string, age: number, id: number) {
+        this.name = name;
+        this.age = age;
+        this.id = id;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>public</code> — accessible from anywhere (default).</li>
+        <li><code>private</code> — only accessible inside the class.</li>
+        <li><code>protected</code> — accessible in the class and its subclasses.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Read-only Properties</b></li>
+<pre><code class="language-ts line-numbers">class Config {
+    readonly host: string = "localhost";
+    readonly port: number;
+
+    constructor(port: number) {
+        this.port = port;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>readonly</code> prevents reassignment after initialization.</li>
+        <li>Useful for configuration objects and constants.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Parameter Properties (Shorthand)</b></li>
+<pre><code class="language-ts line-numbers">class Point {
+    constructor(
+        public x: number,
+        public y: number
+    ) {}
+}
+
+const p = new Point(10, 20);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Declares and initializes properties directly in the constructor.</li>
+        <li>Reduces boilerplate and improves readability.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Getters and Setters</b></li>
+<pre><code class="language-ts line-numbers">class Rectangle {
+    constructor(private _width: number, private _height: number) {}
+
+    get area() {
+        return this._width * this._height;
+    }
+
+    set width(value: number) {
+        if (value &lt;= 0) throw new Error("Invalid width");
+        this._width = value;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Getters provide computed properties.</li>
+        <li>Setters allow validation upon assignment.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Static Properties and Methods</b></li>
+<pre><code class="language-ts line-numbers">class MathUtils {
+    static PI = 3.14;
+
+    static double(n: number) {
+        return n * 2;
+    }
+}
+
+console.log(MathUtils.PI);
+console.log(MathUtils.double(10));
+</code></pre>
+    <br/>
+    <ul>
+        <li>Static members belong to the class itself, not instances.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Class Inheritance</b></li>
+<pre><code class="language-ts line-numbers">class Animal {
+    constructor(public name: string) {}
+
+    move() {
+        console.log(`${this.name} moves`);
+    }
+}
+
+class Dog extends Animal {
+    bark() {
+        console.log("Woof!");
+    }
+}
+
+const d = new Dog("Buddy");
+d.move();
+d.bark();
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>extends</code> allows one class to inherit from another.</li>
+        <li>Subclasses can access <code>public</code> and <code>protected</code> members.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Method Overriding</b></li>
+<pre><code class="language-ts line-numbers">class Base {
+    greet() {
+        console.log("Hello from Base");
+    }
+}
+
+class Derived extends Base {
+    override greet() {
+        console.log("Hello from Derived");
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>override</code> ensures that a method truly overrides a parent method.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Abstract Classes</b></li>
+<pre><code class="language-ts line-numbers">abstract class Shape {
+    abstract area(): number;
+}
+
+class Circle extends Shape {
+    constructor(public radius: number) { super(); }
+    area() {
+        return Math.PI * this.radius ** 2;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Abstract classes cannot be instantiated.</li>
+        <li>They define required methods that subclasses must implement.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Implementing Interfaces</b></li>
+<pre><code class="language-ts line-numbers">interface Logger {
+    log(message: string): void;
+}
+
+class ConsoleLogger implements Logger {
+    log(msg: string) {
+        console.log(msg);
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Classes can implement interfaces to guarantee method and property structure.</li>
+        <li>Provides compile-time contracts for class behavior.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Constructor Type vs Instance Type</b></li>
+<pre><code class="language-ts line-numbers">class Car {
+    constructor(public brand: string) {}
+}
+
+type CarInstance = Car;              // instance type
+type CarConstructor = typeof Car;    // constructor function type
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>Car</code> refers to the instance type.</li>
+        <li><code>typeof Car</code> refers to the constructor function type.</li>
+        <li>Useful for dependency injection, factories, or meta-programming.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Private Fields (# syntax)</b></li>
+<pre><code class="language-ts line-numbers">class Counter {
+    #count = 0;   // hard private, JS-level
+
+    increment() {
+        this.#count++;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>#private</code> fields are enforced by JavaScript itself.</li>
+        <li>They differ from <code>private</code>, which is enforced by TypeScript only.</li>
+    </ul>
+    <br/>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
 
 
 <hr/>
