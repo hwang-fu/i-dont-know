@@ -189,6 +189,7 @@
         <li><a href="#uuid">UUID Type</a></li>
         <li><a href="#cte">Common Table Expressions (CTE)</a></li>
         <li><a href="#view">View</a></li>
+        <li><a href="#materialized-view">Materialized View</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -5177,7 +5178,225 @@ CREATE INDEX idx_monthly_stats_month ON monthly_stats(month);
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="materialized-view">Materialized Views in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <b>Materialized View</b> (MV) is a database object that stores the <u>physical</u> result of a SQL query.</li>
+        <br/>
+        <li>Unlike normal views (which run the underlying query every time), materialized views improve performance by caching the data.</li>
+        <br/>
+        <li>Materialized views are ideal for <u>heavy analytical queries</u>, <u>aggregations</u>, and <u>large datasets</u>.</li>
+        <br/>
+        <li>They must be <u>manually refreshed</u> to reflect changes in underlying tables.</li>
+        <br/>
+        <li>PostgreSQL supports both normal refresh and <b>CONCURRENT</b> refresh, which avoids blocking reads.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">CREATE MATERIALIZED VIEW view_name AS
+SELECT ...
+FROM ...
+WHERE ...;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The materialized view stores the result of the SELECT at creation time.</li>
+        <li>The data inside the MV does <b>NOT</b> automatically update, so refresh is required.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Creating a Materialized View</b></li>
+<pre><code class="language-sql line-numbers">CREATE MATERIALIZED VIEW monthly_sales AS
+SELECT
+    seller_id,
+    DATE_TRUNC('month', order_date) AS month,
+    SUM(amount)                     AS total_sales
+FROM orders
+GROUP BY seller_id, month;
+
+SELECT * FROM monthly_sales;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Query results are stored physically and retrieved instantly.</li>
+        <li>No recomputation happens until a refresh is triggered.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Refreshing Materialized Views</b></li>
+    <br/>
+    <ul>
+        <li>To update the stored data, call <code>REFRESH MATERIALIZED VIEW</code>:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">REFRESH MATERIALIZED VIEW monthly_sales;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This command <b>locks</b> the MV for reads and writes until refresh is complete.</li>
+        <li>Use it when downtime during refresh is acceptable.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Refreshing Concurrently (Non-blocking)</b></li>
+    <br/>
+    <ul>
+        <li>To avoid blocking reads while refreshing:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">REFRESH MATERIALIZED VIEW CONCURRENTLY monthly_sales;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Allows users to still query the MV during refresh.</li>
+        <li><b>Requires:</b> A <u>unique index</u> on the MV.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE UNIQUE INDEX idx_monthly_sales_unique ON monthly_sales(seller_id, month);</code></pre>
+    <br/>
+    <ul>
+        <li>Use concurrent refresh for production systems where availability matters.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Materialized Views vs Normal Views</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Normal View</th>
+                <th>Materialized View</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Storage</td>
+                <td>No physical storage</td>
+                <td>Stores data physically</td>
+            </tr>
+            <tr>
+                <td>Performance</td>
+                <td>Runs query every time (slow for heavy logic)</td>
+                <td>Fast reads, cached data</td>
+            </tr>
+            <tr>
+                <td>Freshness</td>
+                <td>Always up-to-date</td>
+                <td>Must be refreshed manually</td>
+            </tr>
+            <tr>
+                <td>Use Case</td>
+                <td>Simple abstractions</td>
+                <td>Heavy queries, analytics</td>
+            </tr>
+            <tr>
+                <td>Blocking</td>
+                <td>No refresh needed</td>
+                <td>Refresh blocks reads unless CONCURRENTLY</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <br/>
+
+
+    <li><b>Materialized Views with Indexes</b></li>
+<pre><code class="language-sql line-numbers">CREATE MATERIALIZED VIEW user_summary AS
+SELECT
+    country,
+    COUNT(*) AS user_count
+FROM users
+GROUP BY country;
+
+CREATE INDEX idx_user_summary_country
+ON user_summary(country);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Indexes on materialized views speed up <code>SELECT</code> queries.</li>
+        <li>Indexes persist across refresh operations.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Manually Refreshing Only When Needed</b></li>
+    <br/>
+    <ul>
+        <li>Materialized views are often refreshed:</li>
+        <br/>
+        <ul>
+            <li>Nightly (cron job)</li>
+            <li>Every hour for dashboard updates</li>
+            <li>On-demand when underlying tables change</li>
+            <li>After ETL/ELT batch loading</li>
+        </ul>
+        <br/>
+        <li>PostgreSQL does not auto-refresh — applications decide the refresh schedule.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Dropping a Materialized View</b></li>
+<pre><code class="language-sql line-numbers">DROP MATERIALIZED VIEW IF EXISTS view_name;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Dropping an MV does not affect underlying tables.</li>
+        <li>Indexes on the MV are dropped automatically.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Advanced: Materialized Views with Joins</b></li>
+<pre><code class="language-sql line-numbers">CREATE MATERIALIZED VIEW product_stats AS
+SELECT
+    p.id AS product_id,
+    p.name,
+    COUNT(o.id) AS orders_count,
+    SUM(o.amount) AS total_revenue
+FROM products p
+LEFT JOIN orders o ON o.product_id = p.id
+GROUP BY p.id, p.name;
+
+-- Refresh when needed
+REFRESH MATERIALIZED VIEW product_stats;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Materialized views shine when performing expensive joins repeatedly.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Advanced: Materialized View with WHERE Filters</b></li>
+<pre><code class="language-sql line-numbers">CREATE MATERIALIZED VIEW recent_orders AS
+SELECT *
+FROM orders
+WHERE order_date &gt; NOW() - INTERVAL '30 days';
+</code></pre>
+    <br/>
+    <ul>
+        <li>Useful for windowed datasets (recent data, daily snapshots, etc.).</li>
+        <li>Can be indexed for faster reporting.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
