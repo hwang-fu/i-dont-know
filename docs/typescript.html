@@ -660,7 +660,7 @@ type ReadonlyUser = ReadonlyObject&lt;FullUser&gt;;
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="ts-everyday-types">Everyday Types in TypeScript</h3>
+<h3 id="ts-everyday-types">Everyday Types</h3>
 <ol>
     <li><b>Primitive Types</b></li>
 <pre><code class="language-ts line-numbers">let age: number = 25;
@@ -894,7 +894,7 @@ function fail(msg: string): never {
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="ts-more-on-functions">More on Functions in TypeScript</h3>
+<h3 id="ts-more-on-functions">More on Functions</h3>
 <ol>
     <li><b>Function Parameter Types</b></li>
 <pre><code class="language-ts line-numbers">function greet(name: string, age: number): void {
@@ -1134,6 +1134,257 @@ const double = createMultiplier(2);
 </ol>
 <br/>
 <!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-object-types">Object Types</h3>
+<ol>
+    <li><b>Basic Object Types</b></li>
+<pre><code class="language-ts line-numbers">let user: {
+    id: number;
+    name: string;
+    active: boolean;
+} = {
+    id: 1,
+    name: "Alice",
+    active: true
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>This object must contain all three properties with the correct types.</li>
+        <li>Extra properties are usually not allowed without special typing (see excess property checks).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Optional Properties</b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name?: string;   // optional
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Optional properties may be omitted when creating an object.</li>
+        <li>The type becomes <code>string | undefined</code> internally.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Readonly Properties</b></li>
+<pre><code class="language-ts line-numbers">type Config = {
+    readonly host: string;
+    readonly port: number;
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>readonly</code> prevents properties from being reassigned after initialization.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Nested Object Types</b></li>
+<pre><code class="language-ts line-numbers">type Product = {
+    id: number;
+    details: {
+        name: string;
+        price: number;
+    };
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Object types can be nested to model complex structures.</li>
+        <li>This is common in APIs, form handling, or domain models.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Object Types with Methods</b></li>
+<pre><code class="language-ts line-numbers">type Point = {
+    x: number;
+    y: number;
+    move(dx: number, dy: number): void;
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Methods can be defined directly within object types.</li>
+        <li>TypeScript checks parameter and return types during usage.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Type Aliases for Object Types</b></li>
+<pre><code class="language-ts line-numbers">type Address = {
+    street: string;
+    city: string;
+    country: string;
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Type aliases allow naming reusable object type definitions.</li>
+        <li>They improve readability and reduce duplication.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Intersection-Based Object Composition</b></li>
+<pre><code class="language-ts line-numbers">type HasID = { id: number };
+type HasName = { name: string };
+
+type User = HasID &amp; HasName;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Intersections combine smaller object fragments into larger, more detailed structures.</li>
+        <li>Promotes modular design and DRY principles.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Index Signatures (Dynamic Object Keys)</b></li>
+<pre><code class="language-ts line-numbers">type Scores = {
+    [player: string]: number;
+};
+
+let game: Scores = {
+    Alice: 10,
+    Bob: 8,
+    Charlie: 12
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use index signatures when the keys are unknown ahead of time.</li>
+        <li>Each key must have a value of the specified type.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Excess Property Checks</b></li>
+<pre><code class="language-ts line-numbers">type User = { id: number; name: string };
+
+let u: User = {
+    id: 1,
+    name: "Alice",
+    // age: 30   ❌ Error: extra property
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>TypeScript checks for unexpected properties when assigning literal objects.</li>
+        <li>This catches typos and structural mismatches early.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using <code>in</code> for Object Type Narrowing</b></li>
+<pre><code class="language-ts line-numbers">type Fish = { swim: () =&gt; void };
+type Bird = { fly: () =&gt; void };
+
+function move(animal: Fish | Bird) {
+    if ("swim" in animal) {
+        animal.swim();
+    } else {
+        animal.fly();
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>in</code> operator narrows union object types based on property existence.</li>
+        <li>Useful for discriminated unions and polymorphic behavior.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Object Type Compatibility</b></li>
+<pre><code class="language-ts line-numbers">type Animal = { name: string };
+type Dog = { name: string; bark: () =&gt; void };
+
+let a: Animal = { name: "Spike" };
+let d: Dog = { name: "Buddy", bark() {} };
+
+a = d;   // ✔ OK (Dog has at least the properties Animal requires)
+</code></pre>
+    <br/>
+    <ul>
+        <li>TypeScript uses <b>structural typing</b> — only property shapes matter.</li>
+        <li>Extra properties are allowed when assigning larger objects to smaller ones.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Readonly vs Mutable Object Types</b></li>
+<pre><code class="language-ts line-numbers">type MutablePoint = { x: number; y: number };
+type ReadonlyPoint = {
+    readonly x: number;
+    readonly y: number;
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Readonly object types prevent property reassignment, offering immutability guarantees.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>“Object” vs “object” vs “{}”</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>object</code></td>
+                <td>Any non-primitive value</td>
+                <td><code>{}, [], function() {}</code></td>
+            </tr>
+            <tr>
+                <td><code>Object</code></td>
+                <td>Type of most built-in objects (rarely used)</td>
+                <td><code>new String("x")</code></td>
+            </tr>
+            <tr>
+                <td><code>{}</code></td>
+                <td>Any non-nullish value</td>
+                <td><code>42, "hi", {}</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li><code>object</code> is preferred when you want “not a primitive”.</li>
+        <li><code>{}</code> is extremely permissive and rarely used intentionally.</li>
+    </ul>
+    <br/>
+    <br/>
+</ol>
+<br/><!-- * * * * * * * * * * * * * * -->
 
 
 <hr/>
