@@ -190,6 +190,7 @@
         <li><a href="#cte">Common Table Expressions (CTE)</a></li>
         <li><a href="#view">View</a></li>
         <li><a href="#materialized-view">Materialized View</a></li>
+        <li><a href="#case">CASE Expression</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -5404,7 +5405,247 @@ WHERE order_date &gt; NOW() - INTERVAL '30 days';
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="case">The CASE Expression in PostgreSQL</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>CASE</code> expression in PostgreSQL allows you to perform conditional logic directly inside SQL queries.</li>
+        <br/>
+        <li>It works similarly to <u>if-else</u> statements in programming languages.</li>
+        <br/>
+        <li><code>CASE</code> returns different values depending on evaluated conditions.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>General Syntax</b></li>
+<pre><code class="language-sql line-numbers">CASE
+    WHEN condition1 THEN result1
+    WHEN condition2 THEN result2
+    ...
+    ELSE default_result
+END
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>WHEN</code> clauses are evaluated from top to bottom.</li>
+        <li>The first true condition determines the returned value.</li>
+        <li><code>ELSE</code> is optional; without it, missing matches return <code>NULL</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Simple CASE Expression</b></li>
+    <br/>
+    <ul>
+        <li>Compares a single expression to several possible values.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CASE status
+    WHEN 'A' THEN 'Active'
+    WHEN 'I' THEN 'Inactive'
+    ELSE 'Unknown'
+END
+</code></pre>
+    <br/>
+    <ul>
+        <li>Useful when conditions depend on equality comparisons.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Searched CASE Expression</b></li>
+    <br/>
+    <ul>
+        <li>Allows complex logical conditions.</li>
+        <li>Conditions are evaluated independently.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CASE
+    WHEN amount &gt; 1000 THEN 'High'
+    WHEN amount BETWEEN 500 AND 1000 THEN 'Medium'
+    WHEN amount &gt; 0 THEN 'Low'
+    ELSE 'None'
+END
+</code></pre>
+    <br/>
+    <ul>
+        <li>This form is more flexible and widely used.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Example: Categorizing Orders</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    order_id,
+    amount,
+    CASE
+        WHEN amount &gt; 1000 THEN 'VIP Order'
+        WHEN amount &gt; 100 THEN 'Standard Order'
+        ELSE 'Small Order'
+    END AS order_type
+FROM orders;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This query adds a derived column <code>order_type</code> based on order amount.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using CASE in ORDER BY</b></li>
+<pre><code class="language-sql line-numbers">SELECT name, role
+FROM employees
+ORDER BY
+    CASE
+        WHEN role = 'manager'   THEN 1
+        WHEN role = 'developer' THEN 2
+        ELSE 3
+    END;
+</code></pre>
+    <br/>
+    <ul>
+        <li>CASE allows custom sorting based on business logic.</li>
+        <li>Here, managers appear first, then developers, then everyone else.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using CASE in Aggregation</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    seller_id,
+    SUM(CASE WHEN amount &gt; 500 THEN 1 ELSE 0 END)  AS large_orders,
+    SUM(CASE WHEN amount &lt;= 500 THEN 1 ELSE 0 END) AS small_orders
+FROM orders
+GROUP BY seller_id;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Conditional aggregation is a powerful pattern in reporting and analytics.</li>
+        <li>Counts rows differently depending on CASE conditions.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Handling NULL with CASE</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    name,
+    CASE
+        WHEN phone IS NULL THEN 'No phone'
+        ELSE phone
+    END AS phone_display
+FROM users;
+</code></pre>
+    <br/>
+    <ul>
+        <li>CASE is often used as an alternative to <code>COALESCE</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>CASE with Multiple Conditions</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    product,
+    stock,
+    CASE
+        WHEN stock = 0   THEN 'Out of Stock'
+        WHEN stock &lt;= 10 THEN 'Low Stock'
+        WHEN stock &lt;= 50 THEN 'In Stock'
+        ELSE 'High Stock'
+    END AS stock_level
+FROM products;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Conditions are checked in order, so the order of <code>WHEN</code> clauses matters.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using CASE to Avoid Division by Zero</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    seller_id,
+    total_sales,
+    total_orders,
+    CASE
+        WHEN total_orders = 0 THEN 0
+        ELSE total_sales / total_orders
+    END AS avg_order_value
+FROM seller_stats;
+</code></pre>
+    <br/>
+    <ul>
+        <li>CASE can gracefully guard against runtime errors.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Nested CASE Expressions</b></li>
+<pre><code class="language-sql line-numbers">SELECT
+    name,
+    salary,
+    CASE
+        WHEN salary &gt; 70000 THEN 'Senior'
+        WHEN salary &gt; 40000 THEN
+            CASE
+                WHEN salary &gt; 55000 THEN 'Mid-High'
+                ELSE 'Mid'
+            END
+        ELSE 'Junior'
+    END AS level
+FROM employees;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Nested CASE blocks allow complex conditional transformations.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>CASE Expression Without ELSE</b></li>
+<pre><code class="language-sql line-numbers">CASE
+    WHEN score &gt;= 90 THEN 'A'
+    WHEN score &gt;= 80 THEN 'B'
+END
+</code></pre>
+    <br/>
+    <ul>
+        <li>If no condition matches, result is <code>NULL</code>.</li>
+        <li>For safety, include <code>ELSE</code> in most production SQL.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li>The <code>CASE</code> expression is fast, it is evaluated per row and does not require special indexing.</li>
+        <br/>
+        <li>However, CASE inside:
+            <ul>
+                <li><code>ORDER BY</code></li>
+                <li><code>WHERE</code></li>
+                <li><code>JOIN</code> conditions</li>
+            </ul>
+            can affect query performance because they prevent index-only operations.
+        </li>
+        <br/>
+        <li>Use CASE mainly in <code>SELECT</code> or for computed fields when possible.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
