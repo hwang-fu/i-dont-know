@@ -149,6 +149,7 @@
         <li><a href="#pg-transactions">Transactions</a></li>
         <li><a href="#pg-indexes">Indexes</a></li>
         <li><a href="#pg-composite-types">Composite Types</a></li>
+        <li><a href="#pg-arrays">Arrays</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -10255,7 +10256,7 @@ ON sensor_data USING brin(recorded_at);
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="pg-composite-types">Composite Types in PostgreSQL</h3>
+<h3 id="pg-composite-types">Composite Types</h3>
 <ol>
 
     <li><b>Introduction</b></li>
@@ -10680,6 +10681,656 @@ CREATE TABLE devices (
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-arrays">Arrays</h3>
+<ol>
+    <li>PostgreSQL supports true <u>multi-dimensional array types</u>, allowing any base type (integer, text, composite types, enums, domains, etc.) to be represented as an array.</li>
+    <br/>
+    <br/>
+
+
+    <li>Arrays can be:
+        <ul>
+            <li>1-dimensional (<code>INT[]</code>)</li>
+            <li>multi-dimensional (<code>INT[][]</code>, <code>TEXT[][][]</code>)</li>
+            <li>mixed with composite values (<code>mytype[]</code>)</li>
+        </ul>
+    </li>
+    <br/><br/>
+
+
+    <li><b>Declaring Array Columns</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE products (
+    id       SERIAL PRIMARY KEY,
+    name     TEXT,
+    tags     TEXT[],
+    ratings  INT[],
+    matrix   INT[][]   -- multi-dimensional
+);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Array syntax adds <code>[]</code> to any data type.</li>
+    <li>Arrays can store <code>NULL</code> values per element, and the array itself may also be <code>NULL</code>.</li>
+</ul>
+<br/><br/>
+
+
+
+    <li><b>Array Literals</b></li>
+    <br/>
+    <ul>
+        <li>Values are written using curly braces <code>{}</code>.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">INSERT INTO products(name, tags, ratings)
+VALUES ('Keyboard', '{mechanical,usb}', '{5,4,5}');
+</code></pre>
+
+<br/>
+<ul>
+    <li>Strings inside arrays must be properly quoted:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">'{ "a value", "another value" }'
+</code></pre>
+
+<br/>
+<ul>
+    <li>Escape special characters inside strings:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">'{ "a\\tb", "with \\"quotes\\"" }'
+</code></pre>
+<br/><br/>
+
+
+
+    <li><b>Explicit Casting to Arrays</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT ARRAY[1, 2, 3]::INT[];
+SELECT ARRAY['a', 'b', 'c']::TEXT[];
+</code></pre>
+
+<br/>
+<ul>
+    <li>You can construct multi-dimensional arrays:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT ARRAY[[1,2],[3,4]]::INT[][];
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Accessing Array Elements</b></li>
+    <br/>
+    <ul>
+        <li>Arrays are 1-based indexed!</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT
+    tags[1],
+    ratings[3]
+FROM products
+WHERE id = 1;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Slicing:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT ratings[2:4] FROM products;
+SELECT matrix[1:2][1] FROM products;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Assigning array elements:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">UPDATE products
+SET ratings[2] = 3
+WHERE id = 1;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Array Operators</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL arrays support many operators:</li>
+    </ul>
+
+    <table>
+        <tr><th>Operator</th><th>Description</th><th>Example</th></tr>
+        <tr>
+            <td><code>&amp;&amp;</code></td>
+            <td>Array overlap</td>
+            <td><code>'{a,b}' &amp;&amp; '{b,c}'</code></td>
+        </tr>
+        <tr>
+            <td><code>@&gt;</code></td>
+            <td>Array contains</td>
+            <td><code>'{a,b,c}' @&gt; '{b}'</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;@</code></td>
+            <td>Contained by</td>
+            <td><code>'{b}' &lt;@ '{a,b,c}'</code></td>
+        </tr>
+        <tr>
+            <td><code>||</code></td>
+            <td>Concatenate</td>
+            <td><code>'{a,b}' || '{c,d}'</code></td>
+        </tr>
+        <tr>
+            <td><code>=</code>, <code>&lt;&gt;</code></td>
+            <td>Equality</td>
+            <td><code>'{1,2}' = '{1,2}'</code></td>
+        </tr>
+    </table>
+
+<br/>
+<ul>
+    <li>Examples:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT '{a,b}' &amp;&amp; '{x,a}';        -- true
+SELECT '{a,b,c}' @&gt; '{a,c}';      -- true
+SELECT '{a}' &lt;@ '{a,b,c}';        -- true
+SELECT '{1,2}' || '{3,4}';        -- {1,2,3,4}
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Array Functions</b></li>
+    <br/>
+
+    <table>
+        <tr><th>Function</th><th>Description</th><th>Example</th></tr>
+
+        <tr>
+            <td><code>array_length(arr, dim)</code></td>
+            <td>Length of dimension</td>
+            <td><code>array_length('{1,2,3}', 1)</code></td>
+        </tr>
+
+        <tr>
+            <td><code>array_append(arr, elem)</code></td>
+            <td>Append element</td>
+            <td><code>array_append('{1,2}', 3)</code></td>
+        </tr>
+
+        <tr>
+            <td><code>array_prepend(elem, arr)</code></td>
+            <td>Prepend element</td>
+            <td><code>array_prepend(0, '{1,2}')</code></td>
+        </tr>
+
+        <tr>
+            <td><code>array_cat(a1, a2)</code></td>
+            <td>Concatenate</td>
+            <td><code>array_cat('{1,2}', '{3,4}')</code></td>
+        </tr>
+
+        <tr>
+            <td><code>unnest(arr)</code></td>
+            <td>Expand array to rows</td>
+            <td><code>SELECT unnest('{1,2,3}')</code></td>
+        </tr>
+
+        <tr>
+            <td><code>string_to_array</code></td>
+            <td>Parse string to array</td>
+            <td><code>string_to_array('a,b', ',')</code></td>
+        </tr>
+
+        <tr>
+            <td><code>array_to_string</code></td>
+            <td>Array to delimited text</td>
+            <td><code>array_to_string('{a,b}', ',')</code></td>
+        </tr>
+    </table>
+
+<br/><br/>
+
+
+
+    <li><b>Searching Array Columns Efficiently</b></li>
+    <br/>
+
+    <ul>
+        <li>Searching array columns with <code>&amp;&amp;</code> or <code>@&gt;</code> requires a <u>GIN</u> or <u>GiST</u> index:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_products_tags_gin
+ON products USING gin(tags);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Fast queries:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT *
+FROM products
+WHERE tags @&gt; '{mechanical}';
+
+SELECT *
+FROM products
+WHERE tags &amp;&amp; '{usb,wireless}';
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Comparing Arrays</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT '{1,2}' = '{1,2}';       -- true
+SELECT '{1,2}' &lt;&gt; '{2,1}';      -- true (order matters)
+</code></pre>
+
+<br/>
+<ul>
+    <li>Arrays are order-sensitive.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Multi-Dimensional Arrays</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT ARRAY[
+    [1,2,3],
+    [4,5,6],
+    [7,8,9]
+] AS matrix;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT matrix[2][3] FROM table_name;   -- element access
+</code></pre>
+
+<br/>
+<ul>
+    <li>All sub-arrays must have matching dimensions.</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">-- INVALID:
+SELECT ARRAY[[1,2], [3]];  -- mismatched dimensions
+</code></pre>
+
+<br/><br/>
+
+<li><b>Array Unnesting &amp; Working With Rows</b></li>
+    <br/>
+    <ul>
+        <li><code>unnest()</code> expands an array into a set of rows.</li>
+        <br/>
+        <li>Below we use this sample table:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE products (
+    id     INT,
+    name   TEXT,
+    tags   TEXT[],
+    matrix INT[][]
+);
+
+INSERT INTO products VALUES
+(1, 'Keyboard', '{mechanical,usb,black}', '{{1,2},{3,4}}'),
+(2, 'Mouse',    '{wireless,black}',       '{{5,6},{7,8}}');
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Unnesting a 1-D Array</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT
+    id,
+    unnest(tags) AS tag
+FROM products;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Result:</li>
+</ul>
+
+<table>
+    <tr><th>id</th><th>tag</th></tr>
+    <tr><td>1</td><td>mechanical</td></tr>
+    <tr><td>1</td><td>usb</td></tr>
+    <tr><td>1</td><td>black</td></tr>
+    <tr><td>2</td><td>wireless</td></tr>
+    <tr><td>2</td><td>black</td></tr>
+</table>
+
+<br/><br/>
+
+
+
+    <li><b>Unnesting a Multi-Dimensional Array</b></li>
+    <br/>
+    <ul>
+        <li>Unnesting a 2D array flattens it into a 1D list.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT
+    id,
+    unnest(matrix) AS value
+FROM products;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Result:</li>
+</ul>
+
+<table>
+    <tr><th>id</th><th>value</th></tr>
+    <tr><td>1</td><td>1</td></tr>
+    <tr><td>1</td><td>2</td></tr>
+    <tr><td>1</td><td>3</td></tr>
+    <tr><td>1</td><td>4</td></tr>
+    <tr><td>2</td><td>5</td></tr>
+    <tr><td>2</td><td>6</td></tr>
+    <tr><td>2</td><td>7</td></tr>
+    <tr><td>2</td><td>8</td></tr>
+</table>
+
+<br/><br/>
+
+
+
+    <li><b>Unnesting Multiple Arrays in Parallel</b></li>
+    <br/>
+    <ul>
+        <li>You can unnest two arrays side-by-side using <code>WITH ORDINALITY</code> or <code>SELECT ... FROM unnest(a, b)</code>.</li>
+        <li>Arrays must be the same length.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT
+    id,
+    x,
+    y
+FROM products,
+     unnest(tags, array[1,2,3]) AS t(x, y)
+WHERE id = 1;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Result:</li>
+</ul>
+
+<table>
+    <tr><th>id</th><th>x (tag)</th><th>y (mapped value)</th></tr>
+    <tr><td>1</td><td>mechanical</td><td>1</td></tr>
+    <tr><td>1</td><td>usb</td><td>2</td></tr>
+    <tr><td>1</td><td>black</td><td>3</td></tr>
+</table>
+
+<br/><br/>
+
+
+
+    <li><b>Using Unnest With Ordinality</b></li>
+    <br/>
+    <ul>
+        <li><code>WITH ORDINALITY</code> adds a row number for each element.</li>
+        <li>Useful for preserving order inside arrays.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT
+    id,
+    tag,
+    ord
+FROM products,
+     unnest(tags) WITH ORDINALITY AS t(tag, ord);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Result:</li>
+</ul>
+
+<table>
+    <tr><th>id</th><th>tag</th><th>ord</th></tr>
+    <tr><td>1</td><td>mechanical</td><td>1</td></tr>
+    <tr><td>1</td><td>usb</td><td>2</td></tr>
+    <tr><td>1</td><td>black</td><td>3</td></tr>
+    <tr><td>2</td><td>wireless</td><td>1</td></tr>
+    <tr><td>2</td><td>black</td><td>2</td></tr>
+</table>
+
+<br/><br/>
+
+
+    <li><b>Unnesting and Joining Back to the Table</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT p.id, p.name, t.tag
+FROM products p
+JOIN LATERAL unnest(p.tags) AS t(tag)
+ON true;
+</code></pre>
+
+<br/>
+<ul>
+    <li>This preserves <code>products</code> columns while expanding arrays.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Unnesting Arrays of Composite Types</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TYPE measurement AS (
+    ts   TIMESTAMP,
+    val  NUMERIC
+);
+
+CREATE TABLE devices (
+    id   INT,
+    logs measurement[]
+);
+
+INSERT INTO devices VALUES
+(1, ARRAY[
+    ('2024-01-01 10:00', 20.5)::measurement,
+    ('2024-01-01 11:00', 21.1)::measurement
+]);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT
+    id,
+    (log).ts,
+    (log).val
+FROM devices,
+     unnest(logs) AS t(log);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Result:</li>
+</ul>
+
+<table>
+    <tr><th>id</th><th>ts</th><th>val</th></tr>
+    <tr><td>1</td><td>2024-01-01 10:00</td><td>20.5</td></tr>
+    <tr><td>1</td><td>2024-01-01 11:00</td><td>21.1</td></tr>
+</table>
+
+<br/><br/>
+
+
+
+    <li><b>Arrays of Composite Types</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TYPE measurement AS (
+    ts   TIMESTAMP,
+    temp NUMERIC,
+    hum  NUMERIC
+);
+
+CREATE TABLE device_logs (
+    id      SERIAL PRIMARY KEY,
+    logs    measurement[]
+);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">INSERT INTO device_logs(logs)
+VALUES (ARRAY[
+    ('2024-01-01', 20.5, 30)::measurement,
+    ('2024-01-01', 21.0, 32)::measurement
+]);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Updating Entire Arrays</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">UPDATE products
+SET tags = array_append(tags, 'newtag')
+WHERE id = 1;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">UPDATE products
+SET ratings = ARRAY[5,5,5];
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Deleting Elements From Arrays</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">UPDATE products
+SET tags = array_remove(tags, 'usb')
+WHERE id = 1;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">UPDATE products
+SET ratings = array_replace(ratings, 1, NULL);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Checking If an Element Exists</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM products
+WHERE 'mechanical' = ANY(tags);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM products
+WHERE 5 = ALL(ratings);  -- all values must equal 5
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Dropping an Array Column</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">ALTER TABLE products DROP COLUMN tags;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Real-World Examples</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">-- Tagging system
+CREATE INDEX idx_posts_tags_gin
+ON posts USING gin(tags);
+
+SELECT * FROM posts WHERE tags @&gt; '{sql}';
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Storing daily weather measurements
+CREATE TABLE weather (
+    id    SERIAL,
+    temps NUMERIC[]
+);
+
+INSERT INTO weather(temps)
+VALUES (ARRAY[15.5,16.0,17.2]);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Composite array for sensor logs
+CREATE TYPE logentry AS (ts TIMESTAMP, val NUMERIC);
+
+CREATE TABLE sensors (
+    id     SERIAL,
+    logs   logentry[]
+);
+</code></pre>
+
+<br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
