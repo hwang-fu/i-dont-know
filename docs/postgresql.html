@@ -144,6 +144,7 @@
         <li><a href="#pg-regex">Regular Expression</a></li>
         <li><a href="#pg-similar-to">SIMILAR TO</a></li>
         <li><a href="#pg-full-text-search-basics">Basics on Full Text Search</a></li>
+        <li><a href="#pg-udf">User-defined Functions</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -7046,7 +7047,8 @@ requires = ''
 CREATE OR REPLACE FUNCTION hello_upper(name text)
 RETURNS text
 LANGUAGE sql
-AS $$
+AS
+$$
     SELECT upper(hello(name));
 $$;
 </code></pre>
@@ -8193,7 +8195,496 @@ ORDER BY rank DESC;
 </code></pre>
 <br/>
 </ol>
-<br/
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-udf">User-Defined Functions (UDFs) in PostgreSQL</h3>
+<ol>
+
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL allows you to create your own functions using <u>SQL</u>, <u>PL/pgSQL</u>, <u>PL/Python</u>, <u>PL/Perl</u>, <u>PL/Java</u>, and even <u>C</u>.</li>
+        <br/>
+        <li>User-defined functions (UDFs) are first-class citizens: they can be used in
+            <code>SELECT</code>, <code>JOIN</code>, <code>WHERE</code>, triggers, indexes, and extensions.</li>
+        <br/>
+        <li>Functions can return:
+            <ul>
+                <li>scalar values (INT, TEXT, JSON, etc.)</li>
+                <li>composite types (ROW)</li>
+                <li>TABLE results (set-returning)</li>
+                <li>SETOF anytype</li>
+                <li>void</li>
+            </ul>
+        </li>
+        <br/>
+        <li>PostgreSQL optimizes SQL functions aggressively and often inlines them, making them very fast.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+
+    <li><b>Basic SQL Functions</b></li>
+    <br/>
+    <ul>
+        <li>SQL functions are simple wrappers around SQL expressions.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE FUNCTION add_numbers(a INT, b INT)
+RETURNS INT
+LANGUAGE sql
+AS
+$$
+    SELECT a + b;
+$$;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Executed as:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT add_numbers(10, 20);   -- 30
+</code></pre>
+
+<br/>
+<br/>
+
+
+
+    <li><b>Functions Returning NULL, STRICT Functions</b></li>
+    <br/>
+    <ul>
+        <li><code>STRICT</code> means the function returns <code>NULL</code> immediately if any argument is <code>NULL</code>.</li>
+        <br/>
+        <li>Equivalent to manually checking for <code>NULL</code>.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE FUNCTION multiply(a INT, b INT)
+RETURNS INT
+LANGUAGE sql
+STRICT
+AS
+$$
+    SELECT a * b;
+$$;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Now:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT multiply(NULL, 5);  -- NULL
+</code></pre>
+
+<br/>
+<br/>
+
+
+
+    <li><b>IMMUTABLE, STABLE, VOLATILE</b></li>
+    <br/>
+    <ul>
+        <li>These declarations tell PostgreSQL how predictable your function is:</li>
+    </ul>
+
+    <table>
+        <tr><th>Category</th><th>Description</th><th>Examples</th></tr>
+        <tr>
+            <td><code>IMMUTABLE</code></td>
+            <td>Always returns the same output for the same input</td>
+            <td>pure math, string functions</td>
+        </tr>
+        <tr>
+            <td><code>STABLE</code></td>
+            <td>Same result within a single query, but may change between queries</td>
+            <td>now(), current_setting()</td>
+        </tr>
+        <tr>
+            <td><code>VOLATILE</code></td>
+            <td>Can change anytime, cannot be optimized</td>
+            <td>random(), sequences, updates</td>
+        </tr>
+    </table>
+
+<br/>
+<pre><code class="language-sql line-numbers">CREATE FUNCTION greet(name TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+AS
+$$
+    SELECT 'Hello ' || name;
+$$;
+</code></pre>
+
+<br/>
+<br/>
+
+
+
+    <li><b>PL/pgSQL Functions (Procedural Language)</b></li>
+    <br/>
+    <ul>
+        <li>PL/pgSQL is PostgreSQL&#39;s powerful procedural language: loops, variables, conditions, exceptions.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE FUNCTION factorial(n INT)
+RETURNS INT
+LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    result INT := 1;
+BEGIN
+    IF n &lt; 0 THEN
+        RAISE EXCEPTION 'Negative numbers not allowed';
+    END IF;
+
+    FOR i IN 1..n LOOP
+        result := result * i;
+    END LOOP;
+
+    RETURN result;
+END;
+$$;
+</code></pre>
+
+<br/>
+<pre><code class="language-sql line-numbers">SELECT factorial(5);  -- 120
+</code></pre>
+
+<br/>
+<br/>
+
+
+
+    <li><b>Using Variables, BEGIN...END Blocks</b></li>
+<pre><code class="language-sql line-numbers">CREATE FUNCTION format_user(first TEXT, last TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    full TEXT;
+BEGIN
+    full := initcap(first || ' ' || last);
+    RETURN full;
+END;
+$$;
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Control Structures (IF, CASE, LOOP)</b></li>
+    <br/>
+<pre><code class="language-sql line-numbers">CREATE FUNCTION classify(score INT)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    IF score &gt;= 90 THEN
+        RETURN 'A';
+    ELSIF score &gt;= 80 THEN
+        RETURN 'B';
+    ELSE
+        RETURN 'C';
+    END IF;
+END;
+$$;
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>RETURN QUERY for Set-Returning Functions</b></li>
+    <br/>
+    <ul>
+        <li>You can return multiple rows (like a table).</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE FUNCTION get_users_with_gmail()
+RETURNS TABLE(id INT, email TEXT)
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT id, email FROM users WHERE email LIKE '%@gmail.com';
+END;
+$$;
+</code></pre>
+
+<br/>
+<pre><code class="language-sql line-numbers">SELECT * FROM get_users_with_gmail();
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Returning Custom Composite Types</b></li>
+    <br/>
+<pre><code class="language-sql line-numbers">CREATE TYPE user_info AS (
+    id INT,
+    name TEXT,
+    created TIMESTAMP
+);
+</code></pre>
+
+<br/>
+<pre><code class="language-sql line-numbers">CREATE FUNCTION get_user(uid INT)
+RETURNS user_info
+LANGUAGE sql
+AS
+$$
+    SELECT id, name, created_at
+    FROM users
+    WHERE id = uid;
+$$;
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Functions Returning JSON or JSONB</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE FUNCTION product_json(pid INT)
+RETURNS JSONB
+LANGUAGE sql
+AS
+$$
+    SELECT jsonb_build_object(
+        'id', id,
+        'name', name,
+        'price', price
+    )
+    FROM products
+    WHERE id = pid;
+$$;
+</code></pre>
+
+<br/>
+<br/>
+
+
+
+    <li><b>Security Definer Functions</b></li>
+    <br/>
+    <ul>
+        <li><code>SECURITY DEFINER</code> makes the function run with the privileges of the creator, not the caller.</li>
+        <li>Useful for controlled data access.</li>
+        <li>Dangerous if misused – always restrict the <b>search_path</b>!</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE FUNCTION read_logs()
+RETURNS SETOF logs
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS
+$$
+    SELECT * FROM logs;
+$$;
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Managing search_path Safely</b></li>
+    <br/>
+    <ul>
+        <li>To avoid SQL injection in <code>SECURITY DEFINER</code> functions, always set <b>search_path</b> explicitly:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">ALTER FUNCTION read_logs() SET search_path = public;
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Error Handling and Exception Blocks</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE FUNCTION safe_div(a NUMERIC, b NUMERIC)
+RETURNS NUMERIC
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    RETURN a / b;
+EXCEPTION
+    WHEN division_by_zero THEN
+        RETURN NULL;
+END;
+$$;
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>RAISE Statements</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">RAISE NOTICE 'User %, score %', name, score;
+RAISE WARNING 'Low disk space';
+RAISE EXCEPTION 'Invalid input: %', value;
+</code></pre>
+
+<br/>
+<br/>
+
+
+
+    <li><b>Overloading Functions</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL supports function overloading based on argument types.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE FUNCTION info(x INT) RETURNS TEXT AS $$ SELECT 'int' $$ LANGUAGE sql;
+CREATE FUNCTION info(x TEXT) RETURNS TEXT AS $$ SELECT 'text' $$ LANGUAGE sql;
+
+SELECT info(42);      -- 'int'
+SELECT info('foo');   -- 'text'
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>C-Language Functions (Overview)</b></li>
+    <br/>
+    <ul>
+        <li>C functions provide maximum performance and flexibility.</li>
+        <li>They are compiled into <code>.so</code> libraries and loaded by PostgreSQL.</li>
+        <li>Used for advanced extensions.</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">#include "postgres.h"
+#include "fmgr.h"
+
+PG_MODULE_MAGIC;
+
+PG_FUNCTION_INFO_V1(add_one);
+
+Datum add_one(PG_FUNCTION_ARGS)
+{
+    int32 arg = PG_GETARG_INT32(0);
+    PG_RETURN_INT32(arg + 1);
+}
+</code></pre>
+
+<br/>
+<ul>
+    <li>The SQL wrapper:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">CREATE FUNCTION add_one(int)
+RETURNS int
+AS 'myext', 'add_one'
+LANGUAGE c STRICT;
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Dropping and Replacing Functions</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">DROP FUNCTION add_numbers(INT, INT);
+</code></pre>
+
+<br/>
+<ul>
+    <li>If signature changes, you must drop or use <code>OR REPLACE</code>.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Listing All User-Defined Functions</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT
+    proname,
+    pg_get_functiondef(p.oid)
+FROM pg_proc p
+JOIN pg_namespace n ON p.pronamespace = n.oid
+WHERE n.nspname NOT IN ('pg_catalog', 'information_schema');
+</code></pre>
+
+<br/>
+<br/>
+
+
+
+    <li><b>Practical Real-World UDF Examples</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">-- Normalize email
+CREATE FUNCTION clean_email(e TEXT)
+RETURNS TEXT
+IMMUTABLE
+LANGUAGE sql
+AS
+$$ SELECT lower(trim(e)) $$;
+
+-- Generate URL slug
+CREATE FUNCTION slugify(s TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    RETURN regexp_replace(lower(s), '[^a-z0-9]+', '-', 'g');
+END;
+$$;
+
+-- Increase stock safely
+CREATE FUNCTION add_stock(pid INT, amount INT)
+RETURNS VOID
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    UPDATE products
+    SET stock = stock + amount
+    WHERE id = pid;
+END;
+$$;
+</code></pre>
+
+<br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
