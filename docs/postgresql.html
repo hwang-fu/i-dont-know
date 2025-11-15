@@ -139,6 +139,7 @@
         <li><a href="#pg-nullif">NULLIF Function</a></li>
         <li><a href="#pg-least-greatest">LEAST and GREATEST</a></li>
         <li><a href="#pg-like">Details on LIKE</a></li>
+        <li><a href="#pg-extensions">Extensions</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -6562,7 +6563,305 @@ SELECT * FROM books WHERE title ~ '^[A-F]';
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-extensions">PostgreSQL Extensions</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A PostgreSQL <u>extension</u> is a package that adds extra functionality to the database server.</li>
+        <br/>
+        <li>Extensions can contain:
+            <ul>
+                <li>SQL functions</li>
+                <li>Data types</li>
+                <li>Indexes and operator classes</li>
+                <li>Views, triggers, cast definitions, etc.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>They are managed with commands like <code>CREATE EXTENSION</code>, <code>ALTER EXTENSION</code>, and <code>DROP EXTENSION</code>.</li>
+        <br/>
+        <li>Typical examples: <code>pg_trgm</code>, <code>hstore</code>, <code>uuid-ossp</code>, <code>citext</code>, <code>postgres_fdw</code>.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Concept: Installed vs. Available Extensions</b></li>
+    <br/>
+    <ul>
+        <li><u>Available</u> extension: its files are present on the server (in the PostgreSQL installation), but not yet enabled in the current database.</li>
+        <br/>
+        <li><u>Installed</u> (or "created") extension: registered in the current database via <code>CREATE EXTENSION</code>.</li>
+        <br/>
+        <li>You can list all available extension packages with:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT * FROM pg_available_extensions;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can list all extensions currently installed in your database with:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT * FROM pg_extension;
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Creating an Extension (Enabling It in a Database)</b></li>
+<pre><code class="language-sql line-numbers">CREATE EXTENSION pg_trgm;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This makes the <code>pg_trgm</code> functionality available in the current database.</li>
+        <br/>
+        <li>Extensions are installed <u>per database</u>, not globally, so if you have multiple databases, you must run <code>CREATE EXTENSION</code> in each database where you need it.</li>
+        <br/>
+        <li>You can specify a schema to hold the extension objects:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE EXTENSION pg_trgm WITH SCHEMA extensions;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This is useful to keep extension objects separated from your own application schema.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Listing Extensions and Their Versions</b></li>
+<pre><code class="language-sql line-numbers">-- Installed in current database
+SELECT
+    extname,
+    extversion,
+    extnamespace::regnamespace AS schema_name
+FROM
+    pg_extension
+ORDER BY
+    extname;
+
+-- Available (but maybe not installed)
+SELECT
+    name,
+    default_version,
+    installed_version
+FROM
+    pg_available_extensions
+ORDER BY
+    name;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>default_version</code> is the version shipped with the server.</li>
+        <li><code>installed_version</code> is NULL for extensions not yet created in the database.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Extension Files and Control Files (High-Level)</b></li>
+    <br/>
+    <ul>
+        <li>Each extension is described by:
+            <ul>
+                <li>A <u>.control</u> file &ndash; metadata: name, default version, required settings.</li>
+                <li>One or more <u>.sql</u> files &ndash; contain the SQL commands to create the extension objects.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>These files live in the PostgreSQL installation directories (typically <code>share/extension</code>).</li>
+        <br/>
+        <li>Database users normally do <u>not</u> touch these files directly, they just use <code>CREATE EXTENSION</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Extension Schemas and search_path</b></li>
+    <br/>
+    <ul>
+        <li>When you run <code>CREATE EXTENSION</code> without <code>WITH SCHEMA</code>, the extension is created in the first schema on your <code>search_path</code> that is not a system schema.</li>
+        <br/>
+        <li>To avoid cluttering <code>public</code>, many teams create a dedicated schema:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE SCHEMA IF NOT EXISTS extensions;
+
+CREATE EXTENSION IF NOT EXISTS hstore
+    WITH SCHEMA extensions;
+</code></pre>
+    <br/>
+    <ul>
+        <li>When calling extension functions, you can:
+            <ul>
+                <li>Add the extension schema to <code>search_path</code>, or</li>
+                <li>Use fully qualified names, e.g. <code>extensions.some_extension_function(...)</code>.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Updating Extensions (ALTER EXTENSION)</b></li>
+<pre><code class="language-sql line-numbers">-- Update a single extension to latest version
+ALTER EXTENSION pg_trgm UPDATE;
+
+-- Update to a specific version (if supported)
+ALTER EXTENSION some_ext UPDATE TO '1.2';
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Removing Extensions (DROP EXTENSION)</b></li>
+<pre><code class="language-sql line-numbers">DROP EXTENSION pg_trgm;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This removes all objects created by the extension from the current database.</li>
+        <br/>
+        <li>If you have objects that depend on the extension (e.g., indexes using <code>gin_trgm_ops</code>), you might see dependency errors.</li>
+        <br/>
+        <li>You can use <code>CASCADE</code> (careful!) to drop dependent objects:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">DROP EXTENSION pg_trgm CASCADE;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Always verify what will be dropped before using <code>CASCADE</code> in production.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Common Built-In Extensions</b></li>
+    <br/>
+    <ul>
+        <li><code>pg_trgm</code> &ndash; trigram indexes and similarity search, often used with <code>LIKE</code> / <code>ILIKE</code>.</li>
+        <br/>
+        <li><code>hstore</code> &ndash; key-value text storage in a single column (before JSONB was popular).</li>
+        <br/>
+        <li><code>uuid-ossp</code> &ndash; functions to generate UUIDs (<code>uuid_generate_v4()</code>, etc.).</li>
+        <br/>
+        <li><code>citext</code> &ndash; case-insensitive text type (e.g., for case-insensitive emails).</li>
+        <br/>
+        <li><code>btree_gin</code>, <code>btree_gist</code> &ndash; extra index operator classes.</li>
+        <br/>
+        <li><code>postgres_fdw</code> &ndash; foreign data wrapper for connecting to other PostgreSQL servers.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Extensions Requiring shared_preload_libraries</b></li>
+    <br/>
+    <ul>
+        <li>Some extensions hook deeper into the server and must be loaded at startup via <code>shared_preload_libraries</code> in <code>postgresql.conf</code>.</li>
+        <br/>
+        <li>Examples:
+            <ul>
+                <li><code>pg_stat_statements</code> (query statistics)</li>
+                <li>Some connection poolers, tracking or sampling modules</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Typical flow:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">-- In postgresql.conf (example)
+shared_preload_libraries = 'pg_stat_statements'
+
+-- After server restart, in each database where you want it:
+CREATE EXTENSION pg_stat_statements;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You need file-level access to the server to change <code>postgresql.conf</code>, this is usually a DBA or admin task.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Permissions and Security</b></li>
+    <br/>
+    <ul>
+        <li>Creating or dropping an extension requires <u>superuser</u> or <u>database owner</u> privileges (depending on configuration).</li>
+        <br/>
+        <li>Extensions can:
+            <ul>
+                <li>Run server-side C code</li>
+                <li>Access files and system resources</li>
+            </ul>
+            so installing untrusted third-party extensions can be a security risk.</li>
+        <br/>
+        <li>Only install extensions that come from trusted sources or your platform provider.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Extensions and Backups</b></li>
+    <br/>
+    <ul>
+        <li>When you use <code>pg_dump</code> to export a database with extensions, the dump does <b>not</b> include the extension SQL source code.</li>
+        <br/>
+        <li>Instead, the dump contains a <code>CREATE EXTENSION</code> command, assuming the extension is available on the target server.</li>
+        <br/>
+        <li>Therefore:
+            <ul>
+                <li>Make sure the same extensions (and versions) are installed on the restore server.</li>
+                <li>Otherwise, restoring the dump may fail.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Checking Dependencies Between Extensions and Objects</b></li>
+    <br/>
+    <ul>
+        <li>To see which objects belong to an extension:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT
+    objid::regclass,
+    classid::regclass
+FROM pg_depend d
+JOIN pg_extension e ON d.refobjid = e.oid
+WHERE e.extname = 'pg_trgm';
+</code></pre>
+    <br/>
+    <ul>
+        <li>This is advanced usage, mostly for DBAs who need to audit dependencies.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Practical Workflow Example</b></li>
+    <br/>
+    <ul>
+        <li>Example: enabling <code>pg_trgm</code> for fuzzy search on <code>users(name)</code>:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">-- 1. Create a dedicated schema for extensions (optional)
+CREATE SCHEMA IF NOT EXISTS extensions;
+
+-- 2. Install the pg_trgm extension into that schema
+CREATE EXTENSION IF NOT EXISTS pg_trgm
+WITH SCHEMA extensions;
+
+-- 3. Create a trigram index for LIKE / ILIKE searches
+CREATE INDEX idx_users_name_trgm
+ON users
+USING gin (name extensions.gin_trgm_ops);
+
+-- 4. Now queries like this become much faster:
+SELECT *
+FROM users
+WHERE name ILIKE '%wang%';
+</code></pre>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
