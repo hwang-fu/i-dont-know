@@ -9813,6 +9813,446 @@ SELECT setval('user_id_seq', (SELECT MAX(id) FROM users));
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-indexes">Indexes in PostgreSQL</h3>
+<ol>
+
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>An <u>index</u> in PostgreSQL is a separate data structure used to accelerate row lookups, filtering, sorting, joining, and uniqueness enforcement.</li>
+        <br/>
+        <li>Indexes speed up <code>WHERE</code> clauses, <code>JOIN</code> conditions, <code>ORDER BY</code>, <code>GROUP BY</code>, and <code>distinct queries</code>.</li>
+        <br/>
+        <li>Indexes are <u>not</u> free: maintaining them adds CPU, I/O, and storage overhead on <code>INSERT</code> / <code>UPDATE</code> / <code>DELETE</code>.</li>
+        <br/>
+        <li>PostgreSQL maintains indexes automatically as data changes.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Basic Index Creation</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_users_email
+ON users(email);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Creates a default <u>B-tree index</u>.</li>
+    <li>PostgreSQL chooses B-tree unless you explicitly specify another type.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>The Main Index Types</b></li>
+    <br/>
+
+    <table>
+        <tr><th>Index Type</th><th>Best For</th><th>Notes</th></tr>
+
+        <tr>
+            <td><code>B-tree</code></td>
+            <td>Equality (<code>=</code>) and range (<code>&lt;</code>, <code>&gt;</code>) queries</td>
+            <td>Default index, supports sorting and <code>UNIQUE</code> constraints</td>
+        </tr>
+
+        <tr>
+            <td><code>Hash</code></td>
+            <td>Equality lookups only</td>
+            <td>Rarely used, B-tree is usually faster</td>
+        </tr>
+
+        <tr>
+            <td><code>GIN</code></td>
+            <td>Arrays, JSONB, full-text search</td>
+            <td>Multivalued indexing, slower to update but very fast lookup</td>
+        </tr>
+
+        <tr>
+            <td><code>GiST</code></td>
+            <td>Geometric types, full-text search, ranges</td>
+            <td>Flexible balanced tree framework</td>
+        </tr>
+
+        <tr>
+            <td><code>SP-GiST</code></td>
+            <td>Partitioned search spaces: IP ranges, quadtrees</td>
+            <td>Specialized high-performance search structures</td>
+        </tr>
+
+        <tr>
+            <td><code>BRIN</code></td>
+            <td>Very large tables with natural ordering (timestamps, IDs)</td>
+            <td>Tiny index size, block ranges, extremely fast to build</td>
+        </tr>
+
+        <tr>
+            <td><code>Bloom</code> extension</td>
+            <td>Many-column indexes</td>
+            <td>Probabilistic index; extension: <code>pg_bloom</code></td>
+        </tr>
+    </table>
+
+<br/><br/>
+
+
+
+    <li><b>B-Tree Indexes (Default)</b></li>
+    <br/>
+    <ul>
+        <li>Suitable for equality and range operations:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">WHERE email = 'a@example.com'
+WHERE age &gt; 18
+WHERE price BETWEEN 100 AND 200
+ORDER BY created_at DESC
+</code></pre>
+
+<br/>
+<ul>
+    <li>They support unique constraints:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">CREATE UNIQUE INDEX idx_users_email_unique ON users(email);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Expression Indexes (Function Indexes)</b></li>
+    <br/>
+    <ul>
+        <li>Indexes over expressions let PostgreSQL index computed values.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_users_lower_email
+ON users(LOWER(email));
+</code></pre>
+
+<br/>
+<ul>
+    <li>Query must match the expression:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM users WHERE LOWER(email) = 'a@example.com';
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Partial Indexes (Filtered Indexes)</b></li>
+    <br/>
+    <ul>
+        <li>Indexes only part of a table for performance and space savings.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_active_users
+ON users(email)
+WHERE active = true;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Useful when most rows do not match the condition.</li>
+    <li>Example: indexing only <code>WHERE deleted_at IS NULL</code>.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Multi-Column Indexes</b></li>
+    <br/>
+    <ul>
+        <li>Indexes can contain multiple columns.</li>
+        <li>Column order matters a lot.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_users_last_first
+ON users(last_name, first_name);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Index can be used for:</li>
+    <ul>
+        <li><code>WHERE last_name = ... AND first_name = ...</code></li>
+        <li><code>WHERE last_name = ...</code></li>
+    </ul>
+        <li>But NOT for:</li>
+    <ul>
+        <li><code>WHERE first_name = ...</code></li>
+    </ul>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Index-Only Scans</b></li>
+    <br/>
+    <ul>
+        <li>If all required columns exist in the index, PostgreSQL can avoid accessing the table entirely.</li>
+        <br/>
+        <li>This is faster because:
+            <ul>
+                <li>index pages are smaller than table pages</li>
+                <li>no heap tuple visibility checks needed if page is "all-visible"</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_users_email_only
+ON users(email);
+
+SELECT email FROM users WHERE email LIKE '%@gmail.com';
+</code></pre>
+
+<br/>
+<ul>
+    <li>Requires visibility map bits to be set — <code>VACUUM</code> affects index-only scan performance.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>GIN Indexes</b></li>
+    <br/>
+    <ul>
+        <li>Designed for multivalued data:</li>
+        <ul>
+            <li>Array columns</li>
+            <li>JSONB documents</li>
+            <li>Full-text search</li>
+        </ul>
+        <li>Supports containment operators:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_tags_gin
+ON posts USING gin(tags);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Examples:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM posts WHERE tags &amp;&amp; '{sql}';
+SELECT * FROM posts WHERE tags @&gt; '{programming}';
+SELECT * FROM data WHERE jsonb_data @&gt; '{"user": {"id": 5}}';
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>GiST Indexes</b></li>
+    <br/>
+    <ul>
+        <li>Generalized Search Tree — supports many non-linear data types:</li>
+        <ul>
+            <li>geometric types</li>
+            <li>ranges</li>
+            <li>full-text search</li>
+            <li>ltree hierarchical search</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_ranges_gist
+ON events USING gist(period);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>SP-GiST Indexes</b></li>
+    <br/>
+    <ul>
+        <li>Used for partitioned search spaces such as:</li>
+        <ul>
+            <li>IP addresses (radix trees)</li>
+            <li>geometric quadtrees</li>
+            <li>trie-like structures</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_ip_spgist
+ON ips USING spgist(ip_address);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>BRIN Indexes</b></li>
+    <br/>
+    <ul>
+        <li><b>Block Range Index</b> — extremely tiny and fast to build.</li>
+        <li>Best for very large tables where data is naturally ordered:
+            <ul>
+                <li>timestamps</li>
+                <li>auto-incrementing IDs</li>
+            </ul>
+        </li>
+        <li>Index stores summary values for each 8k block range.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_logs_brin
+ON logs USING brin(timestamp);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Index Bloat</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL never updates index rows in-place.</li>
+        <li>Updates create new index entries.</li>
+        <li>Dead entries accumulate until vacuumed.</li>
+        <li>B-tree indexes are most sensitive to bloat.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">REINDEX INDEX idx_users_email;
+REINDEX TABLE users;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Fillfactor</b></li>
+    <br/>
+    <ul>
+        <li>Defines how full index pages may become.</li>
+        <li>Useful for high-update workloads.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_items_price
+ON items(price)
+WITH (fillfactor = 70);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>NULL Handling in Indexes</b></li>
+    <br/>
+    <ul>
+        <li>B-tree indexes store NULLs and sort them first or last depending on ASC/DESC.</li>
+        <li>Use partial indexes to exclude NULLs:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_not_null_price
+ON items(price)
+WHERE price IS NOT NULL;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Collation-Aware Indexing</b></li>
+    <br/>
+    <ul>
+        <li>Index sorting depends on collation.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_names_collation
+ON people(name COLLATE "de_DE");
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Operator Classes</b></li>
+    <br/>
+    <ul>
+        <li>Index behavior changes depending on operator classes.</li>
+        <li>Example: text pattern ops optimize <code>LIKE 'abc%'</code>.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_users_email_pattern
+ON users(email text_pattern_ops);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Covering Indexes (INCLUDE)</b></li>
+    <br/>
+    <ul>
+        <li>Store extra columns in the index for index-only scans, without affecting index sorting.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_orders_user_date
+ON orders(user_id)
+INCLUDE (order_date);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Dropping Indexes</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">DROP INDEX idx_users_email;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Real-World Index Examples</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">-- Search by email, case-insensitive
+CREATE INDEX idx_users_lower_email
+ON users(LOWER(email));
+
+-- Fast soft-deletes
+CREATE INDEX idx_posts_not_deleted
+ON posts(id)
+WHERE deleted_at IS NULL;
+
+-- Fast JSONB lookup
+CREATE INDEX idx_events_jsonb
+ON events USING gin(data);
+
+-- Speed up sorting queries
+CREATE INDEX idx_logs_ts_desc
+ON logs(timestamp DESC);
+
+-- Range queries on large time-based table
+CREATE INDEX idx_sensor_brin
+ON sensor_data USING brin(recorded_at);
+</code></pre>
+
+<br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
