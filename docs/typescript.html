@@ -5,10 +5,8 @@
     <meta charset="utf-8" />
     <title>TS</title>
 
-    <!-- Theme (pick any from Prism site) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.css">
 
-    <!-- Prism core + Lisp language -->
     <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-core.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js"
             data-prismjs-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs/components/"></script>
@@ -18,8 +16,8 @@
     table {
         border-collapse: collapse;      /* merge borders so you don't get double lines */
         width: 100%;                    /* optional: make it full width */
-        font-family: system-ui, sans-serif;
         font-size: 14px;
+        font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
     }
 
     th {
@@ -41,80 +39,9 @@
         background-color: #f0f8ff;      /* light hover highlight */
     }
 
-    .hl-red {
-        background-color: red;
-    }
-
-    .hl-green {
-        background-color: green;
-    }
-
-    .hl-blue {
-        background-color: blue;
-    }
-
-    .hl-yellow {
-        background-color: yellow;
-    }
-
-    .hl-red-bg {
-        background-color: red;
-    }
-
-    .hl-green-bg {
-        background-color: green;
-    }
-
-    .hl-blue-bg {
-        background-color: blue;
-    }
-
-    .hl-yellow-bg {
-        background-color: yellow;
-    }
-
-    .hl-red-fg {
-        color: red;
-    }
-
-    .hl-green-fg {
-        color: green;
-    }
-
-    .hl-blue-fg {
-        color: blue;
-    }
-
-    .hl-yellow-fg {
-        color: yellow;
-    }
-
-    .hl-grey-fg {
-        color: grey;
-    }
-
-    .hl-black-fg {
-        color: black;
-    }
-
-    .comment {
-        color: grey;
-    }
-
-    .red-underline {
-        text-decoration-line: underline;
-        text-decoration-color: red;
-        text-decoration-thickness: 2px; /* optional: make it a bit thicker */
-        text-underline-offset: 2px;     /* optional: move it slightly down */
-    }
-
     body {
         font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
         font-variant-ligatures: none;
-    }
-
-    table {
-        font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
     }
 
     ul > li {
@@ -1942,7 +1869,369 @@ createAndGreet(User, 3, "Charlie");
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-generics">Generics</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>They are written using angle brackets <code>&lt;T&gt;</code>, <code>&lt;T, U&gt;</code> and can be used on:
+            <ul>
+                <li>functions</li>
+                <li>type aliases</li>
+                <li>interfaces</li>
+                <li>classes</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b>Basic Generic Function</b></li>
+<pre><code class="language-ts line-numbers">function identity&lt;T&gt;(value: T): T {
+    return value;
+}
+
+const a = identity(10);        // T = number
+const b = identity("hello");   // T = string
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>T</code> is a type parameter — a placeholder for "some type".</li>
+        <li>When you call <code>identity</code>, TypeScript infers <code>T</code> from the argument.</li>
+        <li>The function now returns the <u>same type</u> it receives, without losing information.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Explicit vs Inferred Type Arguments</b></li>
+<pre><code class="language-ts line-numbers">identity&lt;number&gt;(123);    // explicit
+identity("hello");        // inferred (T = string)
+</code></pre>
+    <br/>
+    <ul>
+        <li>Usually, TypeScript <u>infers</u> generic types for you.</li>
+        <li>You can specify them explicitly when inference fails or for clarity.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generic Type Aliases</b></li>
+<pre><code class="language-ts line-numbers">type Box&lt;T&gt; = {
+    value: T;
+};
+
+const numberBox: Box&lt;number&gt; = { value: 42 };
+const stringBox: Box&lt;string&gt; = { value: "hi" };
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>Box&lt;T&gt;</code> is a template for a type, you plug in a concrete type for <code>T</code>.</li>
+        <li>This avoids repeating similar structures for different types.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generic Interfaces</b></li>
+<pre><code class="language-ts line-numbers">interface Repository&lt;T&gt; {
+    findById(id: number): T | null;
+    save(entity: T): void;
+}
+
+type User = { id: number; name: string };
+
+const userRepo: Repository&lt;User&gt; = {
+    findById(id) {
+        return { id, name: "Alice" };
+    },
+    save(user) {
+        console.log("Saving", user.name);
+    }
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Interfaces can be generic and represent generic APIs (e.g. repositories, services, collections).</li>
+        <li><code>Repository&lt;User&gt;</code> is a concrete interface where <code>T = User</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generic Classes</b></li>
+<pre><code class="language-ts line-numbers">class Stack&lt;T&gt; {
+    private items: T[] = [];
+
+    push(item: T) {
+        this.items.push(item);
+    }
+
+    pop(): T | undefined {
+        return this.items.pop();
+    }
+}
+
+const numStack = new Stack&lt;number&gt;();
+numStack.push(1);
+numStack.push(2);
+
+const strStack = new Stack&lt;string&gt;();
+strStack.push("a");
+strStack.push("b");
+</code></pre>
+    <br/>
+    <ul>
+        <li>Generic classes are containers that can store values of a configurable type.</li>
+        <li>The same class <code>Stack</code> is reused for many types.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Constrained Generics with <code>extends</code></b></li>
+<pre><code class="language-ts line-numbers">function getLength&lt;T extends { length: number }&gt;(value: T): number {
+    return value.length;
+}
+
+getLength("hello");         // ✔ string has length
+getLength([1, 2, 3]);       // ✔ array has length
+// getLength(123);          // ❌ number has no length
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>T extends { length: number }</code> restricts <code>T</code> to types that have a <code>length</code> property.</li>
+        <li>If you pass a type that doesn't satisfy the constraint, TypeScript errors.</li>
+        <li>Constraints are important for using properties safely in generic code.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Keyof and Indexed Access with Generics</b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name: string;
+};
+
+type UserKey = keyof User;              // "id" | "name"
+
+function getProp&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K] {
+    return obj[key];
+}
+
+const u: User = { id: 1, name: "Alice" };
+
+const idValue = getProp(u, "id");
+const nameValue = getProp(u, "name");
+// getProp(u, "age");                   // ❌ Error: "age" not in "id" | "name"
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>keyof T</code> produces a union of property names of <code>T</code>.</li>
+        <li><code>K extends keyof T</code> ensures <code>key</code> is a valid property name.</li>
+        <li><code>T[K]</code> is an <u>indexed access type</u> — "type of property K on T".</li>
+        <li>This pattern is the basis of many advanced utility types.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Default Type Parameters</b></li>
+<pre><code class="language-ts line-numbers">type ApiResponse&lt;T = unknown&gt; = {
+    data: T;
+    error: string | null;
+};
+
+const r1: ApiResponse = {
+    data: 123,          // T = unknown, but still typed
+    error: null
+};
+
+const r2: ApiResponse&lt;{ id: number }&gt; = {
+    data: { id: 1 },
+    error: null
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>&lt;T = unknown&gt;</code> gives <code>T</code> a default type when the user does not specify one.</li>
+        <li>Similar to default values for function parameters.</li>
+        <li>Useful for APIs where the generic is often omitted.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generic Utility Types (Built-in)</b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name: string;
+    email?: string;
+};
+
+type ReadonlyUser = Readonly&lt;User&gt;;
+type PartialUser = Partial&lt;User&gt;;
+type UserWithoutEmail = Omit&lt;User, "email"&gt;;
+</code></pre>
+    <br/>
+    <ul>
+        <li>TypeScript ships with many generic <b>utility types</b> (all defined using generics):</li>
+        <br/>
+        <table>
+            <thead>
+                <tr>
+                    <th>Utility</th>
+                    <th>Description</th>
+                    <th>Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>Readonly&lt;T&gt;</code></td>
+                    <td>Makes all properties of <code>T</code> readonly</td>
+                    <td><code>Readonly&lt;User&gt;</code></td>
+                </tr>
+                <tr>
+                    <td><code>Partial&lt;T&gt;</code></td>
+                    <td>Makes all properties optional</td>
+                    <td><code>Partial&lt;User&gt;</code></td>
+                </tr>
+                <tr>
+                    <td><code>Pick&lt;T, K&gt;</code></td>
+                    <td>Picks only selected keys</td>
+                    <td><code>Pick&lt;User, "id" | "name"&gt;</code></td>
+                </tr>
+                <tr>
+                    <td><code>Omit&lt;T, K&gt;</code></td>
+                    <td>Removes selected keys</td>
+                    <td><code>Omit&lt;User, "email"&gt;</code></td>
+                </tr>
+                <tr>
+                    <td><code>Record&lt;K, T&gt;</code></td>
+                    <td>Object type with keys <code>K</code> and value type <code>T</code></td>
+                    <td><code>Record&lt;string, number&gt;</code></td>
+                </tr>
+            </tbody>
+        </table>
+        <br/>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generics with Arrays and Promises</b></li>
+<pre><code class="language-ts line-numbers">let nums: Array&lt;number&gt; = [1, 2, 3];
+
+function fetchUser(): Promise&lt;{ id: number; name: string }&gt; {
+    return Promise.resolve({ id: 1, name: "Alice" });
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>Array&lt;T&gt;</code> and <code>Promise&lt;T&gt;</code> are generic types from the standard library.</li>
+        <li><code>Promise&lt;User&gt;</code> means "a promise that eventually yields a <code>User</code>".</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generic Constraints with Multiple Parameters</b></li>
+<pre><code class="language-ts line-numbers">function merge&lt;A extends object, B extends object&gt;(a: A, b: B): A &amp; B {
+    return { ...a, ...b };
+}
+
+const merged = merge(
+    { id: 1, name: "Alice" },
+    { active: true }
+);
+// type of merged: { id: number; name: string } &amp; { active: boolean }
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, <code>A</code> and <code>B</code> must be objects.</li>
+        <li>The result type is an intersection <code>A &amp; B</code>, containing all properties from both arguments.</li>
+        <li>Generics + intersections give powerful composition of object types.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generic "Shape-Preserving" Functions</b></li>
+<pre><code class="language-ts line-numbers">function mapValues&lt;T, U&gt;(
+    obj: T,
+    fn: (value: T[keyof T]) =&gt; U
+): { [K in keyof T]: U } {
+    const result: any = {};
+    for (const key in obj) {
+        result[key] = fn(obj[key]);
+    }
+    return result;
+}
+
+const original = { a: 1, b: 2, c: 3 };
+const doubled = mapValues(original, v =&gt; v * 2);
+// type of doubled: { a: number; b: number; c: number }
+</code></pre>
+    <br/>
+    <ul>
+        <li>This example uses:
+            <ul>
+                <li>generic parameters <code>T</code>, <code>U</code></li>
+                <li><code>keyof T</code> and indexed access</li>
+                <li>a mapped type <code>{ [K in keyof T]: U }</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Generics allow TypeScript to <u>preserve the exact shape</u> of objects while transforming their value types.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>When to Use Generics</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Situation</th>
+                <th>Example</th>
+                <th>Why Generics?</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Reusable container</td>
+                <td><code>Stack&lt;T&gt;</code>, <code>Box&lt;T&gt;</code></td>
+                <td>Same logic for many element types</td>
+            </tr>
+            <tr>
+                <td>Reusable API</td>
+                <td><code>Repository&lt;T&gt;</code></td>
+                <td>One interface for many domain models</td>
+            </tr>
+            <tr>
+                <td>Transforming types</td>
+                <td><code>Readonly&lt;T&gt;</code>, <code>Partial&lt;T&gt;</code></td>
+                <td>Programmatic type manipulation</td>
+            </tr>
+            <tr>
+                <td>Safe property access</td>
+                <td><code>getProp&lt;T, K&gt;(obj, key)</code></td>
+                <td>Prevent typos and invalid keys</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>If you find yourself writing the same function/type for <code>User</code>, <code>Product</code>, <code>Order</code>, etc., it is often a good candidate for generics.</li>
+    </ul>
+    <br/>
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
