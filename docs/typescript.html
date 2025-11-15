@@ -3338,7 +3338,269 @@ type Record&lt;K extends string, T&gt; = {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-infer">The <code>infer</code> Keyword</h3>
+<ol>
+    <li><code>infer</code> is a special keyword used inside <u>conditional types</u> to extract some part of a type and assign it to a new type variable.</li>
+    <br/>
+    <br/>
 
+
+    <li>You can think of <code>infer</code> as "pattern matching for types": if the pattern fits, TypeScript extracts the needed portion.</li>
+    <br/>
+    <br/>
+
+
+    <li><code>infer</code> only works inside conditional types of the form:</li>
+<pre><code class="language-ts line-numbers">T extends SomePattern&lt;infer X&gt; ? Result : Fallback</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic Example: Extracting a Function's Return Type</b></li>
+<pre><code class="language-ts line-numbers">type ReturnTypeOf&lt;T&gt; =
+    T extends (...args: any[]) =&gt; infer R
+        ? R
+        : never;
+
+function foo() {
+    return { id: 1, name: "Alice" };
+}
+
+type R = ReturnTypeOf&lt;typeof foo&gt;;
+// { id: number; name: string }
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here, <code>infer R</code> grabs the return type of the function.</li>
+        <li>If <code>T</code> does not match a function type, the result becomes <code>never</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Extracting Function Parameter Types</b></li>
+<pre><code class="language-ts line-numbers">type FirstArg&lt;T&gt; =
+    T extends (arg: infer A, ...rest: any[]) =&gt; any
+        ? A
+        : never;
+
+type X = FirstArg&lt;(x: number, y: string) =&gt; void&gt;;
+// number
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>infer A</code> binds the type of the first parameter.</li>
+        <li>You can extract more parameters by pattern matching the full function signature.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Extracting Tuple and Array Element Types</b></li>
+<pre><code class="language-ts line-numbers">type ElementOf&lt;T&gt; =
+    T extends (infer U)[] ? U : never;
+
+type A = ElementOf&lt;string[]&gt;;  // string
+type B = ElementOf&lt;number[]&gt;;  // number
+</code></pre>
+    <br/>
+    <ul>
+        <li>The pattern <code>(infer U)[]</code> matches any array type, extracting its element type.</li>
+        <li>This is essential for building reusable collection helpers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Extracting Tuple Element Types With Precision</b></li>
+<pre><code class="language-ts line-numbers">type TupleFirst&lt;T&gt; =
+    T extends [infer A, ...any[]] ? A : never;
+
+type TupleRest&lt;T&gt; =
+    T extends [any, ...infer R] ? R : never;
+
+type T1 = TupleFirst&lt;[1, 2, 3]&gt;;   // 1
+type T2 = TupleRest&lt;[1, 2, 3]&gt;;    // [2, 3]
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can destructure tuples using <code>infer</code> just like JavaScript destructures arrays.</li>
+        <li>This enables flexible tuple manipulation in type-level programming.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Extracting the Resolved Type of a Promise</b></li>
+<pre><code class="language-ts line-numbers">type UnwrapPromise&lt;T&gt; =
+    T extends Promise&lt;infer U&gt; ? U : T;
+
+type P1 = UnwrapPromise&lt;Promise&lt;string&gt;&gt;;  // string
+type P2 = UnwrapPromise&lt;Promise&lt;number&gt;&gt;;  // number
+type P3 = UnwrapPromise&lt;number&gt;;           // number
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>infer U</code> extracts the inner type of a promise.</li>
+        <li>If <code>T</code> is not a promise, the type remains unchanged.</li></li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Extracting Object Property Types</b></li>
+<pre><code class="language-ts line-numbers">type ValueOf&lt;T&gt; =
+    T extends { [K: string]: infer V } ? V : never;
+
+type Obj = { a: number; b: string; };
+
+type V = ValueOf&lt;Obj&gt;;
+// number | string
+</code></pre>
+    <br/>
+    <ul>
+        <li>The pattern matches any property value, collecting all possible ones.</li>
+        <li>This is helpful for map-like objects or enums.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Extracting Constructor Instance Types</b></li>
+<pre><code class="language-ts line-numbers">type InstanceTypeOf&lt;T&gt; =
+    T extends new (...args: any[]) =&gt; infer R
+        ? R
+        : never;
+
+class User {
+    constructor(public id: number) {}
+}
+
+type U = InstanceTypeOf&lt;typeof User&gt;;
+// User
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>infer R</code> captures whatever the constructor returns (the instance type).</li>
+        <li>This is similar to built-in <code>InstanceType&lt;T&gt;</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Inferring Within Nested Structures</b></li>
+<pre><code class="language-ts line-numbers">type ResponseType&lt;T&gt; =
+    T extends { data: infer D } ? D : never;
+
+type Api = {
+    data: {
+        id: number;
+        name: string;
+    }
+};
+
+type R = ResponseType&lt;Api&gt;;
+// { id: number; name: string }
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>infer</code> works inside deeply nested object patterns.</li>
+        <li>This enables type extraction from complex APIs or validation libraries.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Combining <code>infer</code> with Conditional Mapped Types</b></li>
+<pre><code class="language-ts line-numbers">type DeepUnwrapPromise&lt;T&gt; = {
+    [K in keyof T]: T[K] extends Promise&lt;infer U&gt;
+        ? U
+        : T[K];
+};
+
+type Obj = {
+    name: string;
+    age: Promise&lt;number&gt;;
+};
+
+type NewObj = DeepUnwrapPromise&lt;Obj&gt;;
+// { name: string; age: number }
+</code></pre>
+    <br/>
+    <ul>
+        <li>Makes <code>infer</code> extremely powerful in generic transformations.</li>
+        <li>Real-world usage includes ORMs, serializers, schemas, and RPC frameworks.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Recursive Extraction with <code>infer</code></b></li>
+<pre><code class="language-ts line-numbers">type DeepResolve&lt;T&gt; =
+    T extends Promise&lt;infer U&gt;
+        ? DeepResolve&lt;U&gt;
+        : T;
+
+type P = DeepResolve&lt;Promise&lt;Promise&lt;string&gt;&gt;&gt;;
+// string
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>infer</code> supports recursion, enabling deeply nested type transformation.</li>
+        <li>Used in advanced async utilities or libraries like tRPC and Zod.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using <code>infer</code> to Detect Arrays vs Non-Arrays</b></li>
+<pre><code class="language-ts line-numbers">type IsArray&lt;T&gt; =
+    T extends readonly any[] ? true : false;
+
+type A = IsArray&lt;number[]&gt;;             // true
+type B = IsArray&lt;readonly string[]&gt;;    // true
+type C = IsArray&lt;number&gt;;               // false
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can infer tuple vs array vs non-array patterns for strict validation.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary Table</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Pattern</th>
+                <th>Purpose</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>infer R</code> in function patterns</td>
+                <td>Extract return type or parameter type</td>
+                <td><code>(...args) =&gt; infer R</code></td>
+            </tr>
+            <tr>
+                <td><code>infer U</code> in array patterns</td>
+                <td>Extract element type</td>
+                <td><code>(infer U)[]</code></td>
+            </tr>
+            <tr>
+                <td><code>infer A</code> in tuple patterns</td>
+                <td>Extract first, last, or rest elements</td>
+                <td><code>[infer A, ...rest]</code></td>
+            </tr>
+            <tr>
+                <td>Nested <code>infer</code></td>
+                <td>Deep extraction inside objects</td>
+                <td><code>{ data: infer D }</code></td>
+            </tr>
+            <tr>
+                <td>Recursive <code>infer</code></td>
+                <td>Unwrap nested structures</td>
+                <td><code>Promise&lt;Promise&lt;...&gt;&gt;</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
