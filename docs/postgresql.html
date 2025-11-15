@@ -153,6 +153,7 @@
         <li><a href="#pg-enum-types">Enums</a></li>
         <li><a href="#pg-xml">XML</a></li>
         <li><a href="#pg-json">JSON</a></li>
+        <li><a href="#pg-gin">GIN Indexes</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -12499,6 +12500,381 @@ FROM users;
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-gin">GIN Indexes in PostgreSQL</h3>
+<ol>
+    <li><code>GIN</code> stands for <u>Generalized Inverted Index</u>.</li>
+    <br/>
+    <br/>
+
+
+    <li><code>GIN</code> indexes are designed for indexing values that contain multiple components, such as:
+        <ul>
+            <li>arrays</li>
+            <li>JSONB objects</li>
+            <li>documents (full-text search)</li>
+            <li>key-value stores (hstore)</li>
+            <li>trigrams (pg_trgm)</li>
+            <li>range types</li>
+        </ul>
+    </li>
+    <br/>
+    <br/>
+
+
+    <li><code>GIN</code> is optimized for containment queries:
+        <ul>
+            <li><code>@&gt;</code> (contains)</li>
+            <li><code>&amp;&amp;</code> (overlaps)</li>
+            <li><code>?</code>, <code>?|</code>, <code>?&amp;</code> (JSONB and hstore key checks)</li>
+            <li>full-text operators (<code>@@</code>, <code>@@@</code>)</li>
+        </ul>
+    </li>
+    <br/>
+    <br/>
+
+
+    <li><code>GIN</code> indexes are usually much larger than B-tree, but provide excellent query performance on complex data.</li>
+    <br/>
+    <br/>
+
+
+
+    <li><b>How GIN Works Internally</b></li>
+    <br/>
+    <ul>
+        <li><code>GIN</code> indexes store a mapping from <u>value component</u> → <u>row locations</u>.</li>
+        <br/>
+        <li>For example, if a row has <code>tags = '{a,b,c}'</code>, GIN indexes it as:
+            <ul>
+                <li><code>a → row_id</code></li>
+                <li><code>b → row_id</code></li>
+                <li><code>c → row_id</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>This makes <code>GIN</code> extremely efficient for membership / containment operations.</li>
+        <br/>
+        <li><code>GIN</code> stores:
+            <ul>
+                <li>a <u>posting tree</u> for values appearing many times</li>
+                <li>a <u>posting list</u> for values appearing few times</li>
+            </ul>
+        </li>
+        <br/>
+        <li>PostgreSQL chooses dynamically whether to store a list or a tree.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Creating a GIN Index</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_users_tags_gin
+ON users USING gin(tags);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Default operator class depends on the column type.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>GIN Indexes on Arrays</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE products (
+    id   SERIAL,
+    tags TEXT[]
+);
+
+CREATE INDEX idx_products_tags_gin
+ON products USING gin(tags);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Now these queries are extremely fast:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM products WHERE tags @&gt; '{sql}';
+SELECT * FROM products WHERE tags &amp;&amp; '{postgres,sql}';
+</code></pre>
+
+<br/>
+<ul>
+    <li>How it works:
+        <ul>
+            <li>GIN indexes each element individually.</li>
+        </ul>
+    </li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>GIN Indexes on JSONB</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE events (
+    id   SERIAL,
+    data JSONB
+);
+
+CREATE INDEX idx_events_data_gin
+ON events USING gin(data);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM events WHERE data @&gt; '{"type":"login"}';
+SELECT * FROM events WHERE data ? 'user_id';
+SELECT * FROM events WHERE data @&gt; '{"tags":["security"]}';
+</code></pre>
+
+<br/>
+<ul>
+    <li>Supported operators include:
+        <ul>
+            <li><code>@&gt;</code> contains</li>
+            <li><code>? key</code></li>
+            <li><code>?| any_key</code></li>
+            <li><code>?&amp; all_keys</code></li>
+        </ul>
+    </li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>jsonb_path_ops vs default jsonb_ops</b></li>
+    <br/>
+    <ul>
+        <li><code>jsonb_ops</code> (default):</li>
+        <ul>
+            <li>Indexes full JSON structure</li>
+            <li>Supports all JSONB operators</li>
+            <li>Larger index size</li>
+        </ul>
+        <br/>
+        <li><code>jsonb_path_ops</code>:</li>
+        <ul>
+            <li>Indexes only paths → great for <code>@&gt;</code></li>
+            <li>Smaller index</li>
+            <li>Does NOT support <code>?</code>, <code>?|</code>, <code>?&amp;</code></li>
+        </ul>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_events_data_pathops
+ON events USING gin(data jsonb_path_ops);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>GIN for Full-text Search (TSVECTOR)</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE docs (
+    id    SERIAL,
+    body  TEXT
+);
+
+CREATE INDEX idx_docs_tsv
+ON docs USING gin(to_tsvector('english', body));
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM docs
+WHERE to_tsvector('english', body) @@ to_tsquery('security & data');
+</code></pre>
+
+<br/>
+<ul>
+    <li>GIN indexes are usually faster than GiST for full-text search, but larger.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>GIN for hstore</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE EXTENSION hstore;
+
+CREATE TABLE settings (
+    id    SERIAL,
+    attrs hstore
+);
+
+CREATE INDEX idx_settings_attrs
+ON settings USING gin(attrs);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM settings
+WHERE attrs ? 'theme';
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>GIN with pg_trgm (trigram search)</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE EXTENSION pg_trgm;
+
+CREATE INDEX idx_users_name_trgm
+ON users USING gin (name gin_trgm_ops);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Efficient for:</li>
+    <ul>
+        <li><code>LIKE '%term%'</code></li>
+        <li><code>ILIKE '%term%'</code></li>
+        <li>Regex matching</li>
+        <li>Similarity search (<code>%&lt;</code>)</li>
+    </ul>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>GIN Index Options</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_logs_data_gin
+ON logs USING gin(data)
+WITH (fastupdate = on);
+</code></pre>
+
+<br/>
+<ul>
+    <li><b>fastupdate</b>:
+        <ul>
+            <li><code>ON</code> (default): inserts go to a pending list, flushed lazily</li>
+            <li><code>OFF</code>: slower inserts, faster reads</li>
+        </ul>
+    </li>
+
+    <li><b>gin_pending_list_limit</b>:
+        <ul>
+            <li>Controls the size of the pending list</li>
+            <li>Flushed automatically when threshold reached</li>
+        </ul>
+    </li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Maintenance &amp; Reindexing</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">VACUUM (ANALYZE) table_name;
+REINDEX INDEX idx_name;
+</code></pre>
+
+<br/>
+<ul>
+    <li>GIN indexes tend to grow over time because new keys get added but old keys are not deleted immediately.</li>
+    <li>Auto-vacuum manages GIN cleanup, but manual tuning may be needed for large workloads.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Performance Notes</b></li>
+    <br/>
+    <ul>
+        <li>GIN index size is large (sometimes 2–5× table size).</li>
+        <br/>
+        <li>Inserts and updates are slower than B-tree because:
+            <ul>
+                <li>each indexed element is stored separately</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Reads are extremely fast for supported operators.</li>
+        <br/>
+        <li>Best for:
+            <ul>
+                <li>JSONB documents</li>
+                <li>arrays</li>
+                <li>hstore</li>
+                <li>text search</li>
+                <li>similarity search</li>
+            </ul>
+        </li>
+    </ul>
+
+<br/><br/>
+
+
+
+    <li><b>Real-World Examples</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">-- Search logs by JSONB keys
+SELECT * FROM logs
+WHERE data @&gt; '{"status":"error"}';
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Find users with certain tags
+SELECT * FROM users
+WHERE tags &amp;&amp; '{music,sql}';
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Fast full-text search with trigram indexing
+SELECT * FROM documents
+WHERE body ILIKE '%database%';
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Multi-condition JSONB search
+SELECT * FROM events
+WHERE data @&gt; '{"user":{"id":5}}';
+</code></pre>
+
+<br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
