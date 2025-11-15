@@ -154,6 +154,8 @@
         <li><a href="#pg-xml">XML</a></li>
         <li><a href="#pg-json">JSON</a></li>
         <li><a href="#pg-gin">GIN Indexes</a></li>
+        <li><a href="#pg-search-path">Search Path in PostgreSQL</a></li>
+        <li><a href="#pg-cast">Casting</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -12867,6 +12869,699 @@ WHERE data @&gt; '{"user":{"id":5}}';
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-search-path">The <code>search_path</code> in PostgreSQL</h3>
+<ol>
+
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>search_path</code> is a PostgreSQL configuration that determines how unqualified names (tables, functions, types) are resolved.</li>
+        <br/>
+        <li>Whenever you reference an object without a schema name, PostgreSQL searches schemas in the order defined by <code>search_path</code>.</li>
+        <br/>
+        <li>The default value is usually:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SHOW search_path;
+-- "$user", public
+</code></pre>
+
+<br/>
+<ul>
+    <li>This means:
+        <ul>
+            <li>First: a schema named after the current user (rarely exists)</li>
+            <li>Then: the <code>public</code> schema</li>
+        </ul>
+    </li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Why Search Path Matters</b></li>
+    <br/>
+    <ul>
+        <li>Prevents needing fully qualified names like <code>myschema.mytable</code> everywhere.</li>
+        <br/>
+        <li>Affects how:
+            <ul>
+                <li><code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code> resolve tables</li>
+                <li>Functions are resolved</li>
+                <li>Operators are resolved</li>
+                <li>Types are resolved</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Important for:
+            <ul>
+                <li>Multi-schema applications</li>
+                <li>Security (SQL injection risks)</li>
+                <li>Schema-based versioning</li>
+                <li>Extensions</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Setting the Search Path</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SET search_path TO myschema, public;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SET LOCAL search_path TO analytics;
+-- Only for duration of current transaction
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">ALTER DATABASE mydb SET search_path = myschema, public;
+ALTER USER myuser SET search_path = app, public;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Precedence:</li>
+    <ul>
+        <li><code>SET</code> (session-level) overrides user and DB settings</li>
+        <li><code>ALTER USER</code> overrides <code>ALTER DATABASE</code></li>
+    </ul>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>How Object Resolution Works</b></li>
+    <br/>
+    <ul>
+        <li>Given:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SET search_path TO sales, public;
+
+SELECT customers.id FROM customers;
+</code></pre>
+
+<br/>
+<ul>
+    <li>PostgreSQL looks for <code>customers</code> in:</li>
+        <ul>
+            <li>1. <code>sales.customers</code></li>
+            <li>2. <code>public.customers</code></li>
+        </ul>
+</ul>
+
+<br/>
+<ul>
+    <li>If both exist, the earlier schema wins.</li>
+</ul>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT sales.customers.id  -- always resolved exactly
+FROM sales.customers;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Fully qualified names <b>always bypass search_path</b>.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Search Path and Function Resolution</b></li>
+    <br/>
+    <ul>
+        <li>Function lookup also uses search_path.</li>
+        <li>This can lead to ambiguity:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SET search_path TO analytics, public;
+
+SELECT format_date('2024-01-01');
+</code></pre>
+
+<br/>
+<ul>
+    <li>PostgreSQL resolves <code>format_date</code> first in <code>analytics</code>, then <code>public</code>.</li>
+</ul>
+
+<br/>
+<ul>
+    <li>To force a specific function:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT utils.format_date('2024-01-01');
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Search Path and Security</b></li>
+    <br/>
+    <ul>
+        <li>This is one of the most important reasons to understand search_path.</li>
+        <br/>
+        <li><b>If search_path includes a schema writable by untrusted users, they can override functions!</b></li>
+        <br/>
+        <li>Danger example: SQL injection possibility.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SET search_path TO public, malicious_schema;
+
+-- A malicious user creates a function matching your app's name
+CREATE FUNCTION malicious_schema.now() RETURNS timestamp AS $$
+    SELECT '1970-01-01'::timestamp;
+$$ LANGUAGE sql;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Now your application calling <code>SELECT now()</code> executes attacker code!</li>
+</ul>
+
+<br/>
+<ul>
+    <li><b>Best practice:</b></li>
+    <ul>
+        <li>Always put <code>pg_catalog</code> first.</li>
+        <li>Never put writable schemas before trusted ones.</li>
+        <li>For functions, explicitly schema-qualify when safety matters.</li>
+    </ul>
+</ul>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">ALTER ROLE myapp SET search_path = pg_catalog, app, public;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Temporary Tables and Search Path</b></li>
+    <br/>
+    <ul>
+        <li>Temp tables live in a special schema: <code>pg_temp</code>.</li>
+        <br/>
+        <li>PostgreSQL automatically puts <code>pg_temp</code> at the beginning of <code>search_path</code> if any temp tables exist.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE TEMP TABLE t(x int);
+SHOW search_path;
+-- pg_temp, pg_catalog, public
+</code></pre>
+
+<br/>
+<ul>
+    <li>Unqualified names now resolve to the temp table first!</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>search_path for Extensions</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE EXTENSION postgis SCHEMA gis;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Functions from extensions are usually called without qualification.</li>
+    <br/>
+    <li>Make sure the schema containing extension functions is on search_path.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Best Practices</b></li>
+    <br/>
+    <ul>
+        <li><u>Always include</u> <code>pg_catalog</code> <u>first.</u></li>
+        <li>For applications, use: <code>pg_catalog, app_schema</code></li>
+        <li>Do not include schemas writable by untrusted users.</li>
+        <li>Always fully qualify objects inside migrations:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE app.users (...);
+CREATE FUNCTION app.calculate() ...;
+</code></pre>
+
+<br/>
+<ul>
+    <li>This prevents migrations from breaking if <code>search_path</code> changes.</li>
+</ul>
+
+<br/><br/>
+
+
+    <li><b>Real-World Examples</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">-- Application search path
+ALTER ROLE myapp SET search_path = pg_catalog, app, public;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Safely executing migrations
+SET search_path = app;
+ALTER TABLE users ADD COLUMN last_login TIMESTAMP;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Using multiple schemas for versioning
+SET search_path = v2, v1, public;
+SELECT get_customer(5);
+</code></pre>
+
+<br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-cast">Casting &amp; Type Conversion in PostgreSQL</h3>
+<ol>
+
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Casting (type conversion) converts a value from one data type to another.</li>
+        <br/>
+        <li>PostgreSQL supports:
+            <ul>
+                <li><b>explicit casts</b> (written by the user)</li>
+                <li><b>implicit casts</b> (performed automatically)</li>
+                <li><b>function-based casts</b> (custom cast definitions)</li>
+                <li><b>domain casts</b></li>
+            </ul>
+        </li>
+        <br/>
+        <li>PostgreSQL allows casting between:
+            <ul>
+                <li>numeric types</li>
+                <li>character types</li>
+                <li>arrays</li>
+                <li>JSON, XML</li>
+                <li>composite &amp; domain types</li>
+                <li>user-defined types</li>
+            </ul>
+        </li>
+    </ul>
+
+<br/><br/>
+
+
+
+    <li><b>Explicit Casts</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT '123'::INT;
+SELECT CAST('123' AS INT);
+SELECT CAST(5.8 AS NUMERIC(3,1));
+</code></pre>
+
+<br/>
+<ul>
+    <li>Explicit casts always work the same way: the source is interpreted and validated for the target type.</li>
+    <li>If conversion is impossible, PostgreSQL raises an error:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'abc'::INT;
+-- ERROR: invalid input syntax for type integer: "abc"
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>The <code>::</code> Cast Operator</b></li>
+    <br/>
+    <ul>
+        <li>The most common way to cast.</li>
+        <li>Fully equivalent to <code>CAST(expr AS type)</code>.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT now()::DATE;
+SELECT 42::TEXT;
+SELECT '{1,2,3}'::INT[];
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>CAST(expr AS type)</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT CAST(42 AS TEXT);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Useful when:
+        <ul>
+            <li>you want readability in large SQL scripts</li>
+            <li>you want to cast expressions containing <code>:</code> characters</li>
+            <li>you write portable SQL (e.g., for other databases)</li>
+        </ul>
+    </li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Implicit Casts</b></li>
+    <br/>
+    <ul>
+        <li>Implicit casts happen automatically when PostgreSQL can safely convert types.</li>
+        <li>Example: TEXT → INTEGER (if numeric):</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT 10 + '20';
+-- '20' is implicitly cast to INT
+</code></pre>
+
+<br/>
+<ul>
+    <li>Implicit casting rules depend on PostgreSQL’s internal type categories:
+        <ul>
+            <li>numeric</li>
+            <li>string</li>
+            <li>date/time</li>
+            <li>boolean</li>
+            <li>bit string</li>
+        </ul>
+    </li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Cast Precedence &amp; Promotion Rules</b></li>
+    <br/>
+    <ul>
+        <li>When combining different numeric types:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT 1 + 2.5;
+-- 1 is promoted to NUMERIC
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT 1.0 + 2;
+-- 2 becomes NUMERIC
+</code></pre>
+
+<br/>
+<ul>
+    <li>General promotion path:</li>
+</ul>
+
+<table>
+    <tr><th>Source</th><th>Promoted To</th></tr>
+    <tr><td>smallint</td><td>integer</td></tr>
+    <tr><td>integer</td><td>bigint</td></tr>
+    <tr><td>bigint</td><td>numeric</td></tr>
+    <tr><td>real</td><td>double precision</td></tr>
+</table>
+
+<br/>
+<ul>
+    <li>String → other type is allowed only when unambiguous.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Casting JSON &amp; JSONB</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT '{"a":1}'::json;
+SELECT '{"a":1}'::jsonb;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT ('{"n":42}'::jsonb)-&gt;&gt;'n'::INT;
+</code></pre>
+
+<br/>
+<ul>
+    <li>JSON numbers become TEXT when extracting with <code>-&gt;&gt;</code>, so cast manually.</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT (profile-&gt;&gt;'age')::INT;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Casting Arrays</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT ARRAY['1','2','3']::INT[];
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT '{1,2,3}'::INT[];
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT ARRAY[1,2,3]::TEXT[];
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Casting Between Enums and Text</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy');
+
+SELECT 'happy'::mood;
+SELECT 'happy'::mood::TEXT;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Enum → text always succeeds.</li>
+    <li>Text → enum succeeds only if the string matches an enum value.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Casting Composite Types</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TYPE point2d AS (x INT, y INT);
+
+SELECT '(3,4)'::point2d;
+SELECT ROW(5,6)::point2d;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Casting requires matching field order and compatible types.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Domain Casts</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE DOMAIN positive_int INT CHECK (VALUE &gt; 0);
+
+SELECT 5::positive_int;
+SELECT (-1)::positive_int; -- fails check constraint
+</code></pre>
+
+<br/>
+<ul>
+    <li>Domains inherit casts from their base types.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Function-based Casts</b></li>
+    <br/>
+    <ul>
+        <li>You can define your own cast using a function.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE FUNCTION text_to_int_safe(text)
+RETURNS int
+LANGUAGE plpgsql AS $$
+BEGIN
+    RETURN CASE WHEN $1 ~ '^\d+$' THEN $1::int ELSE NULL END;
+END;
+$$;
+
+CREATE CAST (text AS int)
+WITH FUNCTION text_to_int_safe(text)
+AS ASSIGNMENT;
+</code></pre>
+
+<br/>
+<ul>
+    <li><code>AS ASSIGNMENT</code> allows implicit casting when appropriate.</li>
+    <li><code>AS IMPLICIT</code> creates a very permissive implicit cast (rarely recommended).</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Create Your Own Type Casts</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE CAST (point2d AS text)
+WITH FUNCTION point2d_to_text(point2d);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Casts can be:
+        <ul>
+            <li><code>BINARY</code>: memory representation is identical</li>
+            <li><code>WITH FUNCTION</code>: uses a conversion function</li>
+            <li><code>WITHOUT FUNCTION</code>: only allowed for built-ins</li>
+        </ul>
+    </li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Safe Casting vs Unsafe Casting</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT '2024-01-01'::DATE; -- safe
+SELECT 'not-a-date'::DATE; -- error
+</code></pre>
+
+<br/>
+<ul>
+    <li>Avoid implicit casting from TEXT when parsing untrusted input.</li>
+</ul>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT '1; DROP TABLE users;'::INT;
+-- ERROR (safe)
+</code></pre>
+
+<br/>
+<ul>
+    <li>PostgreSQL does *not* execute arbitrary strings inside casts.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Type Casting in Expressions</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT (1 + '2')::INT;  -- implicit then explicit
+SELECT (1 + 2.8)::NUMERIC(4,2);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Explicit cast always wins over PostgreSQL's automatic cast.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Real-World Examples</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">-- Read JSON number as integer
+SELECT (data-&gt;&gt;'count')::INT FROM metrics;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Convert text array to integer array
+SELECT string_to_array('1,2,3', ',')::INT[];
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Cast timestamp to date
+SELECT created_at::DATE FROM orders;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Cast enum to text
+SELECT status::TEXT FROM users;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Format a composite type
+SELECT (ROW(5,6)::point2d).x;
+</code></pre>
+
+<br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
