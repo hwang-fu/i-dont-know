@@ -3025,6 +3025,327 @@ type J = JsonSafe&lt;User&gt;;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-mapped-types">Mapped Types</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Mapped types allow you to take an existing object type and create a new one by <u>applying the same transformation</u> to each property.</li>
+        <br/>
+        <li>The syntax has the form:
+<pre><code class="language-ts line-numbers">{ [K in SomeKeys]: SomeTransformation&lt;T[K]&gt; }</code></pre>
+        </li>
+        <br/>
+        <li>They are the foundation of many built-in TypeScript utilities like <code>Partial</code>, <code>Readonly</code>, <code>Pick</code>, <code>Record</code>, and <code>Required</code>.</li>
+        <br/>
+        <li>You can think of mapped types as "type-level loops" that iterate over keys and build a new shape.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Example</b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name: string;
+};
+
+type OptionalUser = {
+    [K in keyof User]?: User[K];
+};
+// { id?: number; name?: string }
+</code></pre>
+    <br/>
+    <ul>
+        <li>This iterates over all keys of <code>User</code> and makes each property optional.</li>
+        <li><code>keyof User</code> produces the union <code>"id" | "name"</code>.</li>
+        <li><code>User[K]</code> copies the original property type.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Readonly Mapped Types</b></li>
+<pre><code class="language-ts line-numbers">type ReadonlyObject&lt;T&gt; = {
+    readonly [K in keyof T]: T[K];
+};
+
+type Product = {
+    price: number;
+    title: string;
+};
+
+type ReadonlyProduct = ReadonlyObject&lt;Product&gt;;
+// { readonly price: number; readonly title: string }
+</code></pre>
+    <br/>
+    <ul>
+        <li>Mapped types can add or remove modifiers like <code>readonly</code> or <code>?</code>.</li>
+        <li>This pattern is the same one used internally by TypeScript's <code>Readonly&lt;T&gt;</code> utility.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Adding, Removing and Changing Modifiers</b></li>
+    <br/>
+    <ul>
+        <li>You can explicitly add or remove modifiers:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">type Mutable&lt;T&gt; = {
+    -readonly [K in keyof T]: T[K];
+};
+
+type RequiredObject&lt;T&gt; = {
+    [K in keyof T]-?: T[K];
+};
+
+type OptionalObject&lt;T&gt; = {
+    [K in keyof T]?: T[K];
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>+readonly</code> and <code>-readonly</code> (or simply <code>readonly</code>) adjust mutability.</li>
+        <li><code>+?</code> and <code>-?</code> adjust optionality.</li>
+        <li>This allows extremely fine control over type transformations.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Remapping Keys with <code>as</code></b></li>
+    <br/>
+    <ul>
+        <li>You can rename keys while mapping them using <code>as</code> inside mapped types.</li>
+        <li>This feature (introduced in TS 4.1) enables advanced transformations.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">type PrefixKeys&lt;T&gt; = {
+    [K in keyof T as `prefix_${K}`]: T[K];
+};
+
+type Example = {
+    a: number;
+    b: string;
+};
+
+type WithPrefix = PrefixKeys&lt;Example&gt;;
+// { prefix_a: number; prefix_b: string }
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>as</code> allows computed property names, template literal types, and key filtering.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Filtering Keys</b></li>
+    <br/>
+    <ul>
+        <li>Mapped types combined with key remapping can remove certain properties from a type.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">type RemoveMethods&lt;T&gt; = {
+    [K in keyof T as T[K] extends Function ? never : K]: T[K];
+};
+
+type Model = {
+    id: number;
+    save(): void;
+    load(): void;
+};
+
+type DataOnly = RemoveMethods&lt;Model&gt;;
+// { id: number }
+</code></pre>
+    <br/>
+    <ul>
+        <li>Returning <code>never</code> for a key removes it from the resulting type.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Mapping Over Unions</b></li>
+    <br/>
+    <ul>
+        <li>Mapped types also iterate over unions of keys, not only object keys.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">type EventName = "click" | "focus" | "keydown";
+
+type EventMap = {
+    [E in EventName]: { type: E };
+};
+
+type M = EventMap;
+// {
+//   click:   { type: "click" },
+//   focus:   { type: "focus" },
+//   keydown: { type: "keydown" }
+// }
+</code></pre>
+    <br/>
+    <ul>
+        <li>This helps construct strongly typed event maps, command tables, reducers, or configuration objects.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Mapping and Transforming Value Types</b></li>
+    <br/>
+    <ul>
+        <li>Mapped types can transform both keys and values at the same time.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">type Nullable&lt;T&gt; = {
+    [K in keyof T]: T[K] | null;
+};
+
+type User = {
+    id: number;
+    name: string;
+};
+
+type NullableUser = Nullable&lt;User&gt;;
+// { id: number | null; name: string | null }
+</code></pre>
+    <br/>
+    <ul>
+        <li>This is common for database schemas, partial updates, or form defaults.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Mapped Types Combined with Conditional Types</b></li>
+    <br/>
+    <ul>
+        <li>Mapped types often appear together with conditional types for advanced logic.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">type Serialize&lt;T&gt; = {
+    [K in keyof T]: T[K] extends Function
+        ? never
+        : T[K] extends object
+            ? Serialize&lt;T[K]&gt;
+            : T[K];
+};
+
+type Model = {
+    id: number;
+    flags: { admin: boolean };
+    save(): void;
+};
+
+type S = Serialize&lt;Model&gt;;
+// { id: number; flags: { admin: boolean } }
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can recursively transform each property depending on its type.</li>
+        <li>This unlocks extremely expressive type manipulation patterns.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Constructing Dictionary Types</b></li>
+<pre><code class="language-ts line-numbers">type Dictionary&lt;K extends string, V&gt; = {
+    [P in K]: V;
+};
+
+type UserRoles = Dictionary&lt;"admin" | "user" | "guest", boolean&gt;;
+// { admin: boolean; user: boolean; guest: boolean }
+</code></pre>
+    <br/>
+    <ul>
+        <li>This pattern is used extensively in settings objects, configuration tables, registry maps, and permission systems.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Built-In Mapped Type Utilities</b></li>
+    <br/>
+    <ul>
+        <li>Many TS built-ins are implemented as mapped types:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">type Partial&lt;T&gt; = {
+    [K in keyof T]?: T[K];
+};
+
+type Required&lt;T&gt; = {
+    [K in keyof T]-?: T[K];
+};
+
+type Readonly&lt;T&gt; = {
+    readonly [K in keyof T]: T[K];
+};
+
+type Record&lt;K extends string, T&gt; = {
+    [P in K]: T;
+};
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Understanding mapped types is essential to understanding how these built-ins work.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Explanation</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Key iteration</td>
+                <td>Iterate over keys with <code>keyof</code></td>
+                <td><code>[K in keyof T]</code></td>
+            </tr>
+            <tr>
+                <td>Property copying</td>
+                <td>Reusing existing types</td>
+                <td><code>T[K]</code></td>
+            </tr>
+            <tr>
+                <td>Modifier changes</td>
+                <td>Add/remove <code>readonly</code> / <code>?</code></td>
+                <td><code>+readonly</code>, <code>-?</code></td>
+            </tr>
+            <tr>
+                <td>Key remapping</td>
+                <td>Rename or filter keys</td>
+                <td><code>as ...</code></td>
+            </tr>
+            <tr>
+                <td>Union mapping</td>
+                <td>Build objects from unions</td>
+                <td><code>[K in "a" | "b"]</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
