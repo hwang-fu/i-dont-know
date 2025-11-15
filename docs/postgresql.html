@@ -145,6 +145,7 @@
         <li><a href="#pg-similar-to">SIMILAR TO</a></li>
         <li><a href="#pg-full-text-search-basics">Basics on Full Text Search</a></li>
         <li><a href="#pg-udf">User-defined Functions</a></li>
+        <li><a href="#pg-procedures">Stored Procedures</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -8559,8 +8560,10 @@ RAISE EXCEPTION 'Invalid input: %', value;
         <li>PostgreSQL supports function overloading based on argument types.</li>
     </ul>
 
-<pre><code class="language-sql line-numbers">CREATE FUNCTION info(x INT) RETURNS TEXT AS $$ SELECT 'int' $$ LANGUAGE sql;
-CREATE FUNCTION info(x TEXT) RETURNS TEXT AS $$ SELECT 'text' $$ LANGUAGE sql;
+<pre><code class="language-sql line-numbers">CREATE FUNCTION info(x INT) RETURNS TEXT AS
+$$ SELECT 'int' $$ LANGUAGE sql;
+CREATE FUNCTION info(x TEXT) RETURNS TEXT AS
+$$ SELECT 'text' $$ LANGUAGE sql;
 
 SELECT info(42);      -- 'int'
 SELECT info('foo');   -- 'text'
@@ -8675,6 +8678,401 @@ $$;
 </code></pre>
 
 <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-procedures">Stored Procedures</h3>
+<ol>
+
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL distinguishes between <u>functions</u> and <u>stored procedures</u>.</li>
+        <br/>
+        <li>Procedures were introduced in PostgreSQL&nbsp;11 and allow:
+            <ul>
+                <li><u>transaction control</u> inside procedure body (<code>COMMIT</code>, <code>ROLLBACK</code>),</li>
+                <li>autonomous units of work,</li>
+                <li>calls via <code>CALL</code> instead of <code>SELECT</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Procedures do <u>not</u> return values (no <code>RETURNS</code> clause).</li>
+        <br/>
+        <li>They are ideal for batch jobs, maintenance tasks, cleanup routines, ETL steps, or anything requiring transaction boundaries.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">CREATE PROCEDURE procedure_name(arg1 type1, arg2 type2)
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    -- logic
+END;
+$$;
+</code></pre>
+
+<br/>
+<ul>
+    <li>No <code>RETURNS</code> clause is allowed.</li>
+    <li>Execution uses <code>CALL</code>:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">CALL procedure_name(value1, value2);
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Core Differences Between PROCEDURE and FUNCTION</b></li>
+    <br/>
+    <table>
+        <tr><th>Feature</th><th>FUNCTION</th><th>PROCEDURE</th></tr>
+        <tr>
+            <td>Returns values</td>
+            <td>Yes (scalar, composite, set)</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Executed with</td>
+            <td><code>SELECT</code> or <code>PERFORM</code></td>
+            <td><code>CALL</code></td>
+        </tr>
+        <tr>
+            <td>Transaction control</td>
+            <td><u>No</u></td>
+            <td><u>Yes</u>(<code>COMMIT</code> / <code>ROLLBACK</code>)</td>
+        </tr>
+        <tr>
+            <td>Parallel safety</td>
+            <td>Declarative (<code>IMMUTABLE</code> / <code>STABLE</code> / <code>VOLATILE</code>)</td>
+            <td>Not applicable</td>
+        </tr>
+        <tr>
+            <td>Use cases</td>
+            <td>Reusable expressions, business logic</td>
+            <td>Batch jobs, maintenance tasks, ETL</td>
+        </tr>
+    </table>
+<br/>
+<br/>
+
+
+
+    <li><b>Simple Stored Procedure Example</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE PROCEDURE log_message(msg TEXT)
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    INSERT INTO logs(message, created_at)
+    VALUES (msg, NOW());
+END;
+$$;
+
+CALL log_message('Hello from procedure!');
+</code></pre>
+
+<br/>
+<ul>
+    <li>Side effects (<code>INSERT</code> / <code>UPDATE</code> / <code>DELETE</code>) are typically the goal of a procedure.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Procedures With Transaction Control</b></li>
+    <br/>
+    <ul>
+        <li>This is the biggest reason to use procedures.</li>
+        <li>You can <code>COMMIT</code> / <code>ROLLBACK</code> inside the procedure body.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE PROCEDURE batch_insert()
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    INSERT INTO events(data) VALUES ('step 1');
+    COMMIT;   -- commit early
+
+    INSERT INTO events(data) VALUES ('step 2');
+    ROLLBACK; -- rollback this part
+
+    INSERT INTO events(data) VALUES ('step 3');
+END;
+$$;
+
+CALL batch_insert();
+</code></pre>
+
+<br/>
+<ul>
+    <li><mark>NOTE</mark>: Only <u>top-level</u> <code>CALL</code> allows transaction control.
+        Procedures cannot be called from inside a function with <code>COMMIT</code> / <code>ROLLBACK</code>.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Using IN, OUT, INOUT Parameters</b></li>
+    <br/>
+    <ul>
+        <li>Procedures may return data via <code>OUT</code> or <code>INOUT</code> parameters.</li>
+        <li>This is the only way they can output values.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE PROCEDURE add_and_double(
+    IN a INT,
+    IN b INT,
+    OUT sum_val INT,
+    OUT double_sum INT
+)
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    sum_val := a + b;
+    double_sum := (a + b) * 2;
+END;
+$$;
+
+CALL add_and_double(3, 5, NULL, NULL);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Client tools will show OUT values as a result set.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Using INOUT Parameters</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE PROCEDURE increment(INOUT x INT)
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    x := x + 1;
+END;
+$$;
+
+CALL increment(10);   -- returns 11
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Procedures With Dynamic SQL (EXECUTE)</b></li>
+    <br/>
+    <ul>
+        <li>Useful for administrative tasks, partition management, dynamic operations.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE PROCEDURE drop_table_if_exists(tname TEXT)
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(tname);
+END;
+$$;
+
+CALL drop_table_if_exists('old_data');
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Procedures and Exception Handling</b></li>
+    <br/>
+    <ul>
+        <li>Procedures support full PL/pgSQL exception blocks.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE PROCEDURE safe_insert(val INT)
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    INSERT INTO numbers(num) VALUES (val);
+EXCEPTION
+    WHEN unique_violation THEN
+        RAISE NOTICE 'Duplicate ignored: %', val;
+END;
+$$;
+
+CALL safe_insert(10);
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Procedures Calling Other Procedures</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE PROCEDURE outer_proc()
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    CALL inner_proc();
+END;
+$$;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Nested CALLs are allowed.</li>
+    <li>But only the top-level CALL controls transactions.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Procedures vs DO Blocks</b></li>
+    <br/>
+    <table>
+        <tr><th>Feature</th><th>PROCEDURE</th><th>DO Block</th></tr>
+        <tr>
+            <td>Persistence</td>
+            <td>Stored permanently</td>
+            <td>Temporary (inline execution)</td>
+        </tr>
+        <tr>
+            <td>Transaction control</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Parameters</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Used in extensions</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+    </table>
+
+<br/>
+<br/>
+
+
+
+    <li><b>Replacing and Dropping Procedures</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">DROP PROCEDURE log_message(TEXT);
+
+CREATE OR REPLACE PROCEDURE log_message(TEXT) ...
+</code></pre>
+
+<br/>
+<ul>
+    <li>PostgreSQL identifies procedures by <b>name + argument types</b>.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Listing All Procedures</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT
+    p.proname,
+    pg_get_function_arguments(p.oid) AS args,
+    n.nspname AS schema
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE p.prokind = 'p';     -- 'p' = procedure
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Security Considerations</b></li>
+    <br/>
+    <ul>
+        <li><code>SECURITY DEFINER</code> works for procedures too.</li>
+        <li>Always set <b>search_path</b> explicitly to avoid SQL injection:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">ALTER PROCEDURE log_message(TEXT)
+SET search_path = public;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Be cautious with dynamic SQL inside SECURITY DEFINER procedures.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Real-World Example: ETL Batch Job</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE PROCEDURE nightly_etl()
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    -- Step 1: staging load
+    INSERT INTO staging SELECT * FROM raw_data;
+    COMMIT;
+
+    -- Step 2: transformations
+    UPDATE staging SET cleaned = TRUE WHERE data LIKE '%ok%';
+    COMMIT;
+
+    -- Step 3: merge into production
+    INSERT INTO production SELECT * FROM staging;
+    COMMIT;
+
+    -- Step 4: cleanup
+    TRUNCATE staging;
+END;
+$$;
+
+CALL nightly_etl();
+</code></pre>
+
+<br/>
+<ul>
+    <li>Each ETL phase is committed independently.</li>
+    <li>Impossible to implement with functions.</li>
+</ul>
+<br/>
+
 </ol>
 <br/>
 <!-- * * * * * * * * * * * * * * -->
