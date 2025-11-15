@@ -115,6 +115,7 @@
         <li><a href="#rust-constants">Constants</a></li>
         <li><a href="#rust-variable-bindings">Variable Bindings</a></li>
         <li><a href="#rust-types">Types</a></li>
+        <li><a href="#rust-conversion">Conversion</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -2721,6 +2722,317 @@ let slice: &amp;[u8] = s.as_bytes();
             </tr>
         </tbody>
     </table>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-conversion">Conversion</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Rust enforces <u>explicit</u> and <u>type-safe</u> conversions to avoid unexpected behavior.</li>
+        <br/>
+        <li>Unlike languages such as C/C++, Rust does <u>not</u> perform implicit numeric conversions (e.g. <code>i32</code> → <code>i64</code>).</li>
+        <br/>
+        <li>Rust provides several mechanisms for converting values:
+            <ul>
+                <li><code>as</code> keyword for primitive casts</li>
+                <li><code>From</code> and <code>Into</code> traits for safe and idiomatic conversions</li>
+                <li><code>TryFrom</code> and <code>TryInto</code> for fallible conversions</li>
+                <li>String conversions (<code>to_string</code>, <code>parse</code>, <code>format!</code>)</li>
+                <li>Reference conversions (<code>AsRef</code>, <code>AsMut</code>)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Casting with <code>as</code></b></li>
+<pre><code class="language-rust line-numbers">let a = 10_i32;
+let b = a as i64;       // widen
+let c = 300_u16 as u8;  // truncate
+let d = 3.14_f32 as i32;
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>as</code> keyword performs:
+            <ul>
+                <li>numeric casts</li>
+                <li>pointer casts (*unsafe*)</li>
+                <li>enum-to-integer casts</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>WARNING:</b> numeric casts may cause truncation:</li>
+<pre><code class="language-rust line-numbers">let x = 1000_u16 as u8; // 1000 % 256 = 232
+</code></pre>
+        <li>Use <code>TryFrom</code> for safe checking (see below).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The <code>From</code> Trait (Preferred for Safe Conversions)</b></li>
+<pre><code class="language-rust line-numbers">let s = String::from("hello");
+let v = Vec::from([1, 2, 3]);
+let n = i32::from(42_u8);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>From</code> guarantees <u>infallible</u> conversion — it cannot fail.</li>
+        <li>If a conversion is always possible, Rust implements <code>From</code> for it.</li>
+        <li>Common examples:
+            <ul>
+                <li><code>String::from(&amp;str)</code></li>
+                <li><code>Vec::from(array)</code></li>
+                <li><code>i32::from(u8)</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The <code>Into</code> Trait (Auto-Implemented from <code>From</code>)</b></li>
+<pre><code class="language-rust line-numbers">fn greet(name: impl Into&lt;String&gt;) {
+    let s: String = name.into();
+    println!("Hello {}", s);
+}
+
+greet("Alice");              // &amp;str   → String
+greet(String::from("Bob"));  // String → String
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>Into</code> is the inverse of <code>From</code>:</li>
+        <li>If <code>From&lt;A&gt; for B</code> is implemented, then <code>Into&lt;B&gt; for A</code> is automatically implemented.</li>
+        <li>Use <code>Into</code> in function parameters to accept flexible input types.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Fallible Conversions: <code>TryFrom</code> and <code>TryInto</code></b></li>
+<pre><code class="language-rust line-numbers">use std::convert::TryFrom;
+
+let x: u8  = 200;
+let result = i8::try_from(x);
+
+match result {
+    Ok(n)  =&gt; println!("n = {}", n),
+    Err(e) =&gt; println!("Error: {}", e),
+}
+</code></pre>
+
+<pre><code class="language-rust line-numbers">use std::convert::TryInto;
+
+let val: i16 = (-5).try_into().unwrap(); // will panic!
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use these traits when conversion <u>may fail</u>.</li>
+        <li>Returns <code>Result&lt;T, E&gt;</code>.</li>
+        <li>Never use <code>as</code> for fallible situations unless you want truncation.</li>
+    </ul>
+    <br/><br/><br/>
+
+
+    <li><b>String Conversions</b></li><br/>
+
+    <b>A. To</b> <code>String</code>
+<pre><code class="language-rust line-numbers">let n  = 123;
+let s1 = n.to_string();
+let s2 = format!("Number: {}", n);
+let s3: String = "hello".into();
+</code></pre>
+    <br/>
+    <ul>
+        <li>Any type implementing <code>Display</code> or <code>Debug</code> also implements <code>ToString</code>.</li>
+        <li><code>format!</code> is the most flexible method.</li>
+    </ul>
+
+    <br/><br/>
+
+    <b>B. From</b> <code>String</code> <b>(Parsing)</b>
+<pre><code class="language-rust line-numbers">let s = "42";
+let n: i32 = s.parse().unwrap();
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>parse()</code> uses the <code>FromStr</code> trait.</li>
+        <li>Returns <code>Result&lt;T, E&gt;</code>.</li>
+        <li>Valid for:
+            <ul>
+                <li>numbers</li>
+                <li>booleans</li>
+                <li>IPs</li>
+                <li>custom types implementing <code>FromStr</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+    <b>C. String Slice &lt;-&gt; String</b>
+<pre><code class="language-rust line-numbers">let s: &amp;str = "hello";
+let owned: String = s.to_string();
+
+let another: &amp;str = &amp;owned;    // &amp;String → &amp;str
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>&amp;String</code> automatically coerces to <code>&amp;str</code> (one of Rust’s few implicit conversions).</li>
+    </ul>
+    <br/><br/><br/>
+
+
+    <li><b>Reference Conversions: <code>AsRef</code> and <code>AsMut</code></b></li>
+<pre><code class="language-rust line-numbers">fn print_bytes<T: AsRef&lt;[u8]&gt;>(input: T) {
+    let bytes = input.as_ref();
+    println!("{:?}", bytes);
+}
+
+print_bytes("hello");            // &amp;str → &amp;[u8]
+print_bytes(String::from("hi")); // String → &amp;[u8]
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>AsRef</code> is used for cheap reference conversions. Commonly used in APIs requiring flexible inputs.</li>
+        <li><code>AsMut</code> is the mutable twin of <code>AsRef</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Pointer Conversions (Unsafe)</b></li>
+<pre><code class="language-rust line-numbers">let x = 10;
+let ptr = &amp;x as *const i32;
+let addr = ptr as usize;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rust allows pointer conversion using <code>as</code>, but <u>dereferencing raw pointers is unsafe</u>.</li>
+        <li>These conversions are required for:
+            <ul>
+                <li>FFI (C interop)</li>
+                <li>Low-level memory manipulation</li>
+                <li>Embedded and systems programming</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Enum Discriminant Conversions</b></li>
+<pre><code class="language-rust line-numbers">#[repr(u8)]
+enum Status {
+    Ok    = 1,
+    Error = 2,
+}
+
+let x = Status::Ok as u8;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Enums can be cast to integers using <code>as</code>.</li>
+        <li>Use <code>#[repr(...)]</code> to control the layout for FFI or embedded systems.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Custom Conversion Implementations</b></li>
+<pre><code class="language-rust line-numbers">struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl From&lt;(i32, i32)&gt; for Point {
+    fn from(t: (i32, i32)) -&gt; Self {
+        Point { x: t.0, y: t.1 }
+    }
+}
+
+let p = Point::from((3, 4));
+</code></pre>
+    <br/>
+    <ul>
+        <li>Implement <code>From</code> for infallible conversions.</li>
+        <li>Implement <code>TryFrom</code> for conversions that may fail.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of Rust Conversion Mechanisms</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Mechanism</th>
+                <th>Description</th>
+                <th>Fallible?</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>as</code></td>
+                <td>Primitive casts, sometimes unsafe</td>
+                <td>No (may truncate)</td>
+                <td><code>x as u8</code></td>
+            </tr>
+            <tr>
+                <td><code>From</code></td>
+                <td>Idiomatic, guaranteed success</td>
+                <td>No</td>
+                <td><code>String::from(&amp;str)</code></td>
+            </tr>
+            <tr>
+                <td><code>Into</code></td>
+                <td>Auto-implemented reciprocal of <code>From</code></td>
+                <td>No</td>
+                <td><code>let s: String = str.into()</code></td>
+            </tr>
+            <tr>
+                <td><code>TryFrom</code></td>
+                <td>Checked conversions</td>
+                <td>Yes</td>
+                <td><code>i8::try_from(200)</code></td>
+            </tr>
+            <tr>
+                <td><code>TryInto</code></td>
+                <td>Auto-implemented reciprocal of <code>TryFrom</code></td>
+                <td>Yes</td>
+                <td><code>(-5).try_into()</code></td>
+            </tr>
+            <tr>
+                <td><code>parse()</code></td>
+                <td>String parsing via <code>FromStr</code></td>
+                <td>Yes</td>
+                <td><code>"42".parse()</code></td>
+            </tr>
+            <tr>
+                <td><code>AsRef</code></td>
+                <td>Cheap reference conversion</td>
+                <td>No</td>
+                <td><code>path.as_ref()</code></td>
+            </tr>
+            <tr>
+                <td><code>AsMut</code></td>
+                <td>Mutable reference conversion</td>
+                <td>No</td>
+                <td><code>buf.as_mut()</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/>
+    <ul>
+        <li>Use <code>as</code> for simple numeric casts, <code>From/Into</code> for idiomatic conversions, and <code>TryFrom/TryInto</code> wherever failure is possible.</li>
+    </ul>
     <br/><br/>
 
 </ol>
