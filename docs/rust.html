@@ -1270,6 +1270,278 @@ s.push_str(" World");
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-structs">Structs</h3>
+<ol>
+    <li>In Rust, a <u>struct</u> is a custom data type that groups related values together.</li>
+    <br/>
+    <li>Structs are similar to classes in other languages but without inheritance.</li>
+    <br/>
+    <li>Rust provides several types of structs:
+        <ul>
+            <li><b>Classic struct</b> (named fields)</li>
+            <li><b>Tuple struct</b></li>
+            <li><b>Unit-like struct</b></li>
+        </ul>
+    </li>
+    <br/><br/>
+
+
+    <li><b>Classic Structs (Named Fields)</b></li>
+<pre><code class="language-rust line-numbers">struct User {
+    id: u32,
+    name: String,
+    active: bool,
+}
+
+fn main() {
+    let u = User {
+        id: 1,
+        name: String::from("Alice"),
+        active: true,
+    };
+
+    println!("Name: {}", u.name);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Fields must be initialized when creating the struct.</li>
+        <li>Order of fields during initialization does not matter.</li>
+        <li>Ownership rules apply: values like <code>String</code> are moved into the struct.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Mutable Struct Instances</b></li>
+<pre><code class="language-rust line-numbers">let mut user = User {
+    id: 1,
+    name: String::from("Alice"),
+    active: true,
+};
+
+user.name = String::from("Bob");
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use <code>mut</code> to modify struct fields.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Field Init Shorthand</b></li>
+<pre><code class="language-rust line-numbers">let id = 1;
+let name = String::from("Alice");
+
+let user = User {
+    id,
+    name,
+    active: true,
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>If local variable names match field names, Rust allows shorter syntax.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Struct Update Syntax</b></li>
+<pre><code class="language-rust line-numbers">let user1 = User {
+    id: 1,
+    name: String::from("Alice"),
+    active: true,
+};
+
+let user2 = User {
+    name: String::from("Bob"),
+    ..user1
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>..user1</code> copies all remaining fields from <code>user1</code>.</li>
+        <li>Moves fields unless they implement <code>Copy</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Tuple Structs</b></li>
+<pre><code class="language-rust line-numbers">struct Color(u8, u8, u8);
+struct Point(f64, f64);
+
+fn main() {
+    let c = Color(255, 0, 128);
+    let p = Point(10.5, 3.2);
+
+    println!("Red = {}", c.0);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Tuple structs act like tuples but with type names.</li>
+        <li>Useful when giving meaning to tuple data.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Unit-Like Structs</b></li>
+<pre><code class="language-rust line-numbers">struct Marker;
+
+fn main() {
+    let m = Marker;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Contain no data.</li>
+        <li>Often used as markers, traits, or zero-sized types.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Implementing Methods for Structs</b></li>
+<pre><code class="language-rust line-numbers">struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+    fn area(&amp;self) -&gt; u32 {
+        self.width * self.height
+    }
+}
+
+fn main() {
+    let rect = Rectangle { width: 10, height: 20 };
+    println!("Area: {}", rect.area());
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Methods are defined inside an <code>impl</code> block.</li>
+        <li><code>&amp;self</code> means the method borrows the struct immutably.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Mutable Methods</b></li>
+<pre><code class="language-rust line-numbers">impl Rectangle {
+    fn double_size(&amp;mut self) {
+        self.width *= 2;
+        self.height *= 2;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>&amp;mut self</code> means the method can modify the struct.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Associated Functions (Static Methods)</b></li>
+<pre><code class="language-rust line-numbers">impl Rectangle {
+    fn new(width: u32, height: u32) -&gt; Self {
+        Self { width, height }
+    }
+}
+
+let rect = Rectangle::new(5, 10);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Associated functions use <code>Self</code> to construct new instances.</li>
+        <li>Equivalent to "static factory methods" in other languages.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Debug Printing with <code>#[derive(Debug)]</code></b></li>
+<pre><code class="language-rust line-numbers">#[derive(Debug)]
+struct User {
+    id: u32,
+    name: String,
+}
+
+fn main() {
+    let u = User { id: 1, name: "Alice".into() };
+    println!("{:?}", u);
+    println!("{:#?}", u); // pretty-print
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Enables debug formatting using <code>{:?}</code> and <code>{:#?}</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Ownership and Structs</b></li>
+<pre><code class="language-rust line-numbers">struct User {
+    name: String,
+}
+
+let u1 = User { name: String::from("Alice") };
+let u2 = u1;                // move occurs
+// println!("{}", u1.name); // ERROR: moved
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rust moves ownership when assigning or passing structs that contain heap data.</li>
+        <li>Types implementing <code>Copy</code> (e.g., <code>i32</code>) behave differently.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Struct Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Struct Type</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Classic</td>
+                <td>Named fields</td>
+                <td><code>struct User { id: u32 }</code></td>
+            </tr>
+            <tr>
+                <td>Tuple</td>
+                <td>Unnamed fields</td>
+                <td><code>struct Point(i32, i32)</code></td>
+            </tr>
+            <tr>
+                <td>Unit-like</td>
+                <td>No fields</td>
+                <td><code>struct Marker;</code></td>
+            </tr>
+            <tr>
+                <td>With methods</td>
+                <td>Use <code>impl</code> for methods</td>
+                <td><code>impl User { fn new() {} }</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>Structs are the main building blocks for modeling data in Rust.</li>
+        <li>Combine them with <code>impl</code> blocks for powerful and expressive types.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
