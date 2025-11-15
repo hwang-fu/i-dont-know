@@ -652,6 +652,329 @@ fn c() {}
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-formatted-print">Formatted Print</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Rust provides a powerful and type-safe formatting system through <code>println!</code>, <code>print!</code>, <code>format!</code>, and related macros.</li>
+        <br/>
+        <li>The formatting engine is part of the <code>std::fmt</code> module and uses <u>traits</u> like <code>Display</code> and <code>Debug</code> to render values.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic Printing</b></li>
+<pre><code class="language-rust line-numbers">fn main() {
+    println!("Hello, world!");
+    print!("No newline here");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>println!</code> appends a newline, <code>print!</code> does not.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Printing with Placeholder <code>{}</code></b></li>
+<pre><code class="language-rust line-numbers">fn main() {
+    let name = "Alice";
+    let age = 30;
+
+    println!("Name: {}, Age: {}", name, age);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>{}</code> is a placeholder for values implementing the <code>Display</code> trait.</li>
+        <li>Strings, numbers, chars, and many built-in types support <code>Display</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Debug Formatting (<code>{:?}</code>)</b></li>
+<pre><code class="language-rust line-numbers">#[derive(Debug)]
+struct User {
+    id: u32,
+    name: String,
+}
+
+fn main() {
+    let u = User { id: 1, name: "Alice".into() };
+    println!("{:?}", u);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>{:?}</code> requires the <code>Debug</code> trait.</li>
+        <li>Use <code>{:#?}</code> for pretty-printed (multi-line) debug output.</li>
+    </ul>
+<pre><code class="language-rust line-numbers">println!("{:#?}", u);  // pretty debug
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Named Arguments</b></li>
+<pre><code class="language-rust line-numbers">println!("x = {x}, y = {y}", x = 5, y = 10);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Named arguments improve clarity in complex prints.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Positional Arguments</b></li>
+<pre><code class="language-rust line-numbers">println!("{0} + {0} = {1}", 5, 10);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use numeric indices to reuse arguments.</li>
+        <li><code>{0}</code> refers to the first argument, <code>{1}</code> to the second.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Formatting Numbers</b></li>
+<pre><code class="language-rust line-numbers">println!("{:b}", 10);   // binary
+println!("{:o}", 10);   // octal
+println!("{:x}", 255);  // hex (lower)
+println!("{:X}", 255);  // hex (upper)
+println!("{:e}", 10.5); // scientific
+</code></pre>
+    <br/>
+    <ul>
+        <li>Format specifiers after a colon (<code>:</code>) control number formatting.</li>
+        <li>Supported types depend on the <code>Display</code> or <code>Debug</code> implementation.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Padding and Alignment</b></li>
+<pre><code class="language-rust line-numbers">println!("{:&gt;10}", 42);   // right-align
+println!("{:<10}", 42);   // left-align
+println!("{:^10}", 42);   // center-align
+</code></pre>
+    <br/>
+    <ul>
+        <li>Numbers specify the width of the formatted field.</li>
+        <li>Alignment is controlled before the width:
+            <ul>
+                <li><code>&lt;</code> left-align</li>
+                <li><code>&gt;</code> right-align</li>
+                <li><code>^</code> center</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Custom Fill Characters</b></li>
+<pre><code class="language-rust line-numbers">println!("{:*^10}", "hi");   // ****hi****
+println!("{:-&lt;10}", "rust"); // rust------
+</code></pre>
+    <br/>
+    <ul>
+        <li>The first character before the alignment specifier becomes the fill.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Floating-Point Precision</b></li>
+<pre><code class="language-rust line-numbers">println!("{:.2}", 3.14159);   // 3.14
+println!("{:8.3}", 3.14159);  // '   3.142' (width + precision)
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>.2</code> means 2 digits after the decimal.</li>
+        <li>You can combine precision with width.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Format Strings with <code>format!</code></b></li>
+<pre><code class="language-rust line-numbers">let msg = format!("Hello, {}", "world");
+println!("{}", msg);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>format!</code> works like <code>println!</code> but returns a <code>String</code> instead of printing.</li>
+        <li>Useful for building messages, logs, or UI output.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Printing to stderr (<code>eprintln!</code>)</b></li>
+<pre><code class="language-rust line-numbers">eprintln!("This is an error message.");
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>eprintln!</code> prints to standard error instead of stdout.</li>
+        <li>Important for error reporting when stdout is used for program output.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Implementing <code>Display</code> for Custom Types</b></li>
+<pre><code class="language-rust line-numbers">use std::fmt;
+
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter&lt;'_&gt;) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+fn main() {
+    let p = Point { x: 3, y: 4 };
+    println!("{}", p);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Implement <code>Display</code> when you want clean, user-friendly printing.</li>
+        <li><code>Debug</code> (<code>{:?}</code>) is for debugging — <code>Display</code> (<code>{}</code>) is for end-users.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Useful Escape Sequences</b></li>
+<pre><code class="language-rust line-numbers">println!("Line 1\nLine 2");
+println!("Tab\tSeparated");
+println!("Quote: \"text\"");
+println!("Backslash: \\");
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rust supports common escape sequences from C-like languages.</li>
+        <li>Newlines, tabs, quotes, and backslashes must be escaped.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Raw Strings (No Escaping)</b></li>
+<pre><code class="language-rust line-numbers">println!(r"Path: C:\Users\Alice\Documents");
+println!(r#"He said, "Hello!""#);
+println!(r##"Multiple # signs can be used"##);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Raw strings start with <code>r"..."</code> or <code>r#"..."#</code>.</li>
+        <li>Add more <code>#</code> signs when your string contains both quotes and <code>#</code> characters.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Format Specifier Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Specifier</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>{}</code></td>
+                <td>Display</td>
+                <td><code>"{}"</code></td>
+            </tr>
+            <tr>
+                <td><code>{:?}</code></td>
+                <td>Debug</td>
+                <td><code>"{:?}"</code></td>
+            </tr>
+            <tr>
+                <td><code>{:#?}</code></td>
+                <td>Pretty Debug</td>
+                <td><code>"{:#?}"</code></td>
+            </tr>
+            <tr>
+                <td><code>{:b}</code></td>
+                <td>Binary</td>
+                <td><code>10 → 1010</code></td>
+            </tr>
+            <tr>
+                <td><code>{:x}</code></td>
+                <td>Hex (lowercase)</td>
+                <td><code>255 → ff</code></td>
+            </tr>
+            <tr>
+                <td><code>{:X}</code></td>
+                <td>Hex (uppercase)</td>
+                <td><code>255 → FF</code></td>
+            </tr>
+            <tr>
+                <td><code>{:o}</code></td>
+                <td>Octal</td>
+                <td><code>10 → 12</code></td>
+            </tr>
+            <tr>
+                <td><code>{:.N}</code></td>
+                <td>Floating precision</td>
+                <td><code>3.14</code></td>
+            </tr>
+            <tr>
+                <td><code>{:width}</code></td>
+                <td>Minimum field width</td>
+                <td><code>"{:5}"</code></td>
+            </tr>
+            <tr>
+                <td><code>{:&lt;}</code></td>
+                <td>Left align</td>
+                <td><code>"{:&lt;10}"</code></td>
+            </tr>
+            <tr>
+                <td><code>{:&gt;}</code></td>
+                <td>Right align</td>
+                <td><code>"{:&gt;10}"</code></td>
+            </tr>
+            <tr>
+                <td><code>{:^}</code></td>
+                <td>Center align</td>
+                <td><code>"{:^10}"</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>Formatted output in Rust is powerful, flexible, and entirely type-checked at compile time.</li>
+        <li>Understanding <code>{}</code>, <code>{:?}</code>, and format specifiers unlocks rich console logging and string formatting.</li>
+    </ul>
+    <br/>
+    <br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
