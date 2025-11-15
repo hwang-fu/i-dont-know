@@ -140,6 +140,8 @@
         <li><a href="#pg-least-greatest">LEAST and GREATEST</a></li>
         <li><a href="#pg-like">Details on LIKE</a></li>
         <li><a href="#pg-extensions">Extensions</a></li>
+        <li><a href="#pg-create-extensions">How to Create Extensions</a></li>
+        <li><a href="#pg-regex">Regular Expression</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -6862,6 +6864,655 @@ WHERE name ILIKE '%wang%';
     <br/>
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-create-extensions">Creating Your Own PostgreSQL Extensions</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>You can create your own PostgreSQL extensions to package functions, types, operators, and other database objects into a reusable module.</li>
+        <br/>
+        <li>Extensions can be:
+            <ul>
+                <li><b>SQL-only</b> &ndash; written purely in SQL and procedural languages (PL/pgSQL, PL/Perl, etc.).</li>
+                <li><b>C-based</b> &ndash; contain compiled C code in a shared library (<code>.so</code>, <code>.dll</code>).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Once packaged as an extension, users only need <code>CREATE EXTENSION my_ext;</code> instead of running long SQL scripts manually.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>High-Level Steps</b></li>
+    <br/>
+    <ul>
+        <li>Create a <u>control file</u> (<code>my_ext.control</code>) describing the extension.</li>
+        <br/>
+        <li>Create one or more <u>SQL script files</u> (<code>my_ext--1.0.sql</code>, <code>my_ext--1.0--1.1.sql</code>, etc.).</li>
+        <br/>
+        <li>(Optional) Build a <u>shared library</u> in C (<code>my_ext.so</code>) if you need low-level functions.</li>
+        <br/>
+        <li>Install these files into PostgreSQL's <code>share/extension</code> (and <code>lib</code> for C code).</li>
+        <br/>
+        <li>Enable the extension in a database using <code>CREATE EXTENSION</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Directory Locations</b></li>
+    <br/>
+    <ul>
+        <li>To find where extension files should be placed, use <code>pg_config</code> on the server:</li>
+    </ul>
+<pre><code class="language-bash line-numbers">pg_config --sharedir   # usually contains share/extension
+pg_config --pkglibdir  # usually contains shared libraries (.so/.dll)
+</code></pre>
+    <br/>
+    <ul>
+        <li><u>SQL scripts</u> and <u>.control</u> files go into <code>$sharedir/extension</code>.</li>
+        <br/>
+        <li><u>Shared libraries</u> go into <code>$pkglibdir</code>.</li>
+        <br/>
+        <li>On managed services (cloud providers), you usually cannot install your own C extensions, but you can still create SQL-only extensions if they allow it.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Creating a Simple SQL-only Extension: Example</b></li>
+    <br/>
+    <ul>
+        <li>Suppose we want an extension <code>hello_ext</code> that adds a function <code>hello(name)</code>.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">-- File: hello_ext--1.0.sql
+CREATE OR REPLACE FUNCTION hello(name text)
+RETURNS text
+LANGUAGE sql
+AS
+$$
+    SELECT 'Hello, ' || name || '!'::text;
+$$;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This SQL script defines the objects that will be created when the extension is installed.</li>
+        <br/>
+        <li>The file name must follow the pattern <code>&lt;extname&gt;--&lt;version&gt;.sql</code>, here <code>hello_ext--1.0.sql</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Writing the Control File (.control)</b></li>
+    <br/>
+    <ul>
+        <li>Create a file named <code>hello_ext.control</code> in <code>share/extension</code>:</li>
+    </ul>
+<pre><code class="language-sql line-numbers"># File: hello_ext.control
+comment = 'Simple hello extension example'
+default_version = '1.0'
+relocatable = true
+schema = public
+requires = ''
+</code></pre>
+    <br/>
+    <ul>
+        <li><b>Fields:</b></li>
+        <ul>
+            <li><code>comment</code> &ndash; short description of the extension.</li>
+            <li><code>default_version</code> &ndash; version used when you run <code>CREATE EXTENSION hello_ext;</code>.</li>
+            <li><code>relocatable</code> &ndash; if <code>true</code>, the extension can be moved to another schema using <code>ALTER EXTENSION ... SET SCHEMA</code>.</li>
+            <li><code>schema</code> &ndash; default schema where objects will be installed (often <code>public</code>).</li>
+            <li><code>requires</code> &ndash; comma-separated list of other extensions that must be installed first (or empty string).</li>
+        </ul>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Installing the Files</b></li>
+    <br/>
+    <ul>
+        <li>Copy the files to the appropriate directory on the server:</li>
+    </ul>
+<pre><code class="language-bash line-numbers">cp hello_ext.control   $(pg_config --sharedir)/extension/
+cp hello_ext--1.0.sql  $(pg_config --sharedir)/extension/
+</code></pre>
+    <br/>
+    <ul>
+        <li>After this, PostgreSQL knows that an extension named <code>hello_ext</code> is available.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Creating the Extension in a Database</b></li>
+    <br/>
+    <ul>
+        <li>Connect to the database where you want to use the extension:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE EXTENSION hello_ext;
+</code></pre>
+    <br/>
+    <ul>
+        <li>This runs <code>hello_ext--1.0.sql</code> and registers the extension in <code>pg_extension</code>.</li>
+    </ul>
+<pre><code class="language-sql line-numbers">SELECT hello('Hwangfucius');
+-- Result: 'Hello, Hwangfucius!'
+</code></pre>
+    <br/>
+    <ul>
+        <li>If you want the extension objects in a specific schema:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION hello_ext WITH SCHEMA extensions;
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Versioning and Upgrade Scripts</b></li>
+    <br/>
+    <ul>
+        <li>Suppose we want to add a new function and bump the extension to version <code>1.1</code>.</li>
+        <br/>
+        <li>Steps:</li>
+        <ul>
+            <li>Update the control file's <code>default_version</code> to <code>'1.1'</code>.</li>
+            <li>Add a new SQL script <code>hello_ext--1.0--1.1.sql</code> with the migration.</li>
+        </ul>
+    </ul>
+<pre><code class="language-sql line-numbers"># File: hello_ext.control (updated)
+comment = 'Simple hello extension example'
+default_version = '1.1'
+relocatable = true
+schema = public
+requires = ''
+</code></pre>
+<pre><code class="language-sql line-numbers">-- File: hello_ext--1.0--1.1.sql
+-- Migration from 1.0 to 1.1
+
+CREATE OR REPLACE FUNCTION hello_upper(name text)
+RETURNS text
+LANGUAGE sql
+AS $$
+    SELECT upper(hello(name));
+$$;
+</code></pre>
+    <br/>
+    <ul>
+        <li>To upgrade an existing installation:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">ALTER EXTENSION hello_ext UPDATE TO '1.1';
+</code></pre>
+    <br/>
+    <ul>
+        <li>PostgreSQL runs <code>hello_ext--1.0--1.1.sql</code> automatically when upgrading from version 1.0.</li>
+        <br/>
+        <li>You can chain multiple upgrade scripts:
+            <ul>
+                <li><code>hello_ext--1.0--1.1.sql</code></li>
+                <li><code>hello_ext--1.1--1.2.sql</code></li>
+                <li>...</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>C-based Extensions (Overview Only)</b></li>
+    <br/>
+    <ul>
+        <li>For performance-sensitive logic or low-level features, you can write C functions and expose them as an extension.</li>
+        <br/>
+        <li>Typical structure:</li>
+    </ul>
+<pre><code class="language-bash line-numbers">hello_ext/
+  hello_ext.c
+  hello_ext.control
+  hello_ext--1.0.sql
+  Makefile
+</code></pre>
+    <br/>
+    <ul>
+        <li>The C file defines server functions using PostgreSQL's C API:</li>
+    </ul>
+<pre><code class="language-c line-numbers">/* hello_ext.c (simplified example) */
+#include "postgres.h"
+#include "fmgr.h"
+
+PG_MODULE_MAGIC;
+
+PG_FUNCTION_INFO_V1(hello_c);
+
+Datum
+hello_c(PG_FUNCTION_ARGS)
+{
+    text *name = PG_GETARG_TEXT_PP(0);
+    text *prefix = cstring_to_text("Hello, ");
+    text *result = catenate_text(prefix, name); /* pseudo helper */
+    PG_RETURN_TEXT_P(result);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The SQL file registers the function:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">-- hello_ext--1.0.sql
+CREATE FUNCTION hello_c(name text)
+RETURNS text
+AS 'hello_ext', 'hello_c'
+LANGUAGE c
+STRICT;
+</code></pre>
+    <br/>
+    <ul>
+        <li>You build and install the module using <code>make</code> and <code>make install</code> (with PostgreSQL's extension build system).</li>
+        <br/>
+        <li>This requires PostgreSQL server headers and build tools, and is typically done by DBAs or server admins.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Relocatable vs Non-Relocatable Extensions</b></li>
+    <br/>
+    <ul>
+        <li><b>Relocatable</b> extensions (<code>relocatable = true</code>) can be moved to a different schema:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">ALTER EXTENSION hello_ext SET SCHEMA extensions;
+</code></pre>
+    <br/>
+    <ul>
+        <li><b>Non-relocatable</b> extensions set <code>relocatable = false</code> and often specify a fixed schema using the <code>schema</code> parameter.</li>
+        <br/>
+        <li>Non-relocatable is safer if your SQL scripts include hard-coded schema-qualified names.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Dependencies Between Extensions</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>requires</code> in the control file to depend on other extensions:</li>
+    </ul>
+<pre><code class="language-sql line-numbers"># File: my_ext.control
+comment = 'My extension using pg_trgm'
+default_version = '1.0'
+relocatable = true
+requires = 'pg_trgm'
+</code></pre>
+    <br/>
+    <ul>
+        <li>PostgreSQL ensures the required extensions are installed first.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Testing and Debugging Your Extension</b></li>
+    <br/>
+    <ul>
+        <li>Use a dedicated test database:</li>
+    </ul>
+<pre><code class="language-sql line-numbers">CREATE DATABASE ext_test;
+\c ext_test
+
+CREATE EXTENSION hello_ext;
+SELECT hello('Test');
+</code></pre>
+    <br/>
+    <ul>
+        <li>If something goes wrong, you can:
+            <ul>
+                <li>Drop and recreate the test database.</li>
+                <li>Adjust your SQL or control files, reinstall, and test again.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>For C-based extensions, server logs are essential for debugging crashes or errors.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-regex">Regular Expressions in PostgreSQL</h3>
+<ol>
+
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Regex in PostgreSQL is much more powerful than <code>LIKE</code> or <code>SIMILAR TO</code>, supporting character classes, anchors, quantifiers, alternation, and grouping.</li>
+        <br/>
+        <li>PostgreSQL uses <u>advanced (extended) POSIX regex</u>, which is similar to Perl-style regex but not identical.</li>
+        <br/>
+        <li>Regex operators can be used in <code>WHERE</code>, <code>SELECT</code>, <code>CHECK</code> constraints, and more.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+
+    <li><b>Regex Matching Operators</b></li>
+    <br/>
+    <table>
+        <tr><th>Operator</th><th>Description</th><th>Case Sensitivity</th></tr>
+        <tr><td><code>~</code></td><td>String matches regular expression</td><td>Sensitive</td></tr>
+        <tr><td><code>~*</code></td><td>String matches regular expression</td><td>Insensitive</td></tr>
+        <tr><td><code>!~</code></td><td>String does NOT match regular expression</td><td>Sensitive</td></tr>
+        <tr><td><code>!~*</code></td><td>String does NOT match regular expression</td><td>Insensitive</td></tr>
+    </table>
+
+<pre><code class="language-sql line-numbers">SELECT 'Hello123' ~ '^[A-Za-z]+$';   -- FALSE
+SELECT 'Hello'    ~ '^[A-Za-z]+$';   -- TRUE
+SELECT 'hello'    ~* 'HELLO';        -- TRUE (case-insensitive)
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Basic Regex Syntax</b></li>
+    <br/>
+    <ul>
+        <li><code>.</code> – any single character</li>
+        <li><code>*</code> – zero or more occurrences</li>
+        <li><code>+</code> – one or more occurrences</li>
+        <li><code>?</code> – zero or one</li>
+        <li><code>|</code> – alternation</li>
+        <li><code>()</code> – grouping</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'abc123' ~ '^[a-z]+[0-9]+$';  -- TRUE
+SELECT 'cat'    ~ 'c(at|ut)';         -- TRUE
+SELECT 'cut'    ~ 'c(at|ut)';         -- TRUE
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Character Classes</b></li>
+    <br/>
+    <ul>
+        <li><code>[abc]</code> – match 'a' or 'b' or 'c'</li>
+        <li><code>[^abc]</code> – any character except a/b/c</li>
+        <li><code>[0-9]</code> – any digit</li>
+        <li><code>[A-Za-z]</code> – any letter</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT '5'   ~ '^[0-9]$';       -- TRUE
+SELECT 'g'   ~ '^[^0-9]$';      -- TRUE
+SELECT 'ü'   ~ '^[A-Za-z]$';    -- FALSE (ASCII only!)
+</code></pre>
+
+<br/>
+<ul>
+    <li><b>Important:</b> POSIX classes with ASCII ranges do not match non-ASCII letters.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>POSIX Character Classes (Locale-Aware)</b></li>
+    <br/>
+    <table>
+        <tr><th>Class</th><th>Description</th></tr>
+        <tr><td><code>[:alpha:]</code></td><td>Letters (locale aware)</td></tr>
+        <tr><td><code>[:digit:]</code></td><td>Digits</td></tr>
+        <tr><td><code>[:alnum:]</code></td><td>Letters and digits</td></tr>
+        <tr><td><code>[:space:]</code></td><td>Whitespace</td></tr>
+        <tr><td><code>[:lower:]</code></td><td>Lowercase letters</td></tr>
+        <tr><td><code>[:upper:]</code></td><td>Uppercase letters</td></tr>
+    </table>
+
+<pre><code class="language-sql line-numbers">SELECT 'ä' ~ '^[[:alpha:]]+$';   -- TRUE (depends on locale)
+</code></pre>
+
+<br/>
+<ul>
+    <li>POSIX classes are much more Unicode-friendly than <code>[A-Za-z]</code>.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Anchors</b></li>
+    <br/>
+    <ul>
+        <li><code>^</code> – start of string</li>
+        <li><code>$</code> – end of string</li>
+        <li><code>\b</code> – word boundary (POSIX subset)</li>
+        <li><code>\&lt;</code> – start of word</li>
+        <li><code>\&gt;</code> – end of word</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'postgresql' ~ '^post';     -- TRUE
+SELECT 'postgresql' ~ 'sql$';      -- TRUE
+SELECT 'cat dog'    ~ '\bdog\b';   -- TRUE
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Quantifiers</b></li>
+    <br/>
+    <ul>
+        <li><code>a*</code> – zero or more</li>
+        <li><code>a+</code> – one or more</li>
+        <li><code>a?</code> – zero or one</li>
+        <li><code>a{3}</code> – exactly 3</li>
+        <li><code>a{2,5}</code> – between 2 and 5</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'hellooo' ~ 'o{2,}';   -- TRUE
+SELECT 'ho'      ~ 'o{2,}';   -- FALSE
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Grouping and Alternation</b></li>
+    <br/>
+<pre><code class="language-sql line-numbers">SELECT 'gray'  ~ 'gr(a|e)y';  -- TRUE
+SELECT 'grey'  ~ 'gr(a|e)y';  -- TRUE
+</code></pre>
+<br/>
+<ul>
+    <li>Parentheses group expressions.</li>
+    <li><code>|</code> allows alternatives.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Using Regex in WHERE Clauses</b></li>
+    <br/>
+<pre><code class="language-sql line-numbers">SELECT *
+FROM users
+WHERE email ~ '^[a-z0-9._%+-]+@example\.com$';
+</code></pre>
+
+<br/>
+<ul>
+    <li>Use <code>~*</code> for case-insensitive search:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">WHERE name ~* '^(junzhe|wang)$';
+</code></pre>
+
+<br/>
+<br/>
+
+
+
+    <li><b>Regex in SELECT (search inside strings)</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT
+    regexp_matches('abc123xyz', '[0-9]+');
+</code></pre>
+
+<br/>
+<ul>
+    <li>Returns matching substring(s) as an array.</li>
+</ul>
+
+<br/>
+<br/>
+
+
+
+    <li><b>Regex Functions and Operators</b></li>
+    <br/>
+    <table>
+        <tr><th>Function</th><th>Description</th></tr>
+        <tr><td><code>regexp_matches()</code></td><td>Return all matches as text arrays</td></tr>
+        <tr><td><code>regexp_replace()</code></td><td>Find &amp; replace using regex</td></tr>
+        <tr><td><code>regexp_split_to_array()</code></td><td>Split text using regex</td></tr>
+        <tr><td><code>regexp_split_to_table()</code></td><td>Split into table rows</td></tr>
+    </table>
+
+<pre><code class="language-sql line-numbers">SELECT regexp_replace('abc123', '[0-9]', '#', 'g');
+-- Result: 'abc###'
+</code></pre>
+
+<br/>
+<br/>
+
+
+
+    <li><b>Escaping Characters in Regex</b></li>
+    <br/>
+    <ul>
+        <li>Inside regex, metacharacters like <code>.</code>, <code>[ ]</code>, <code>+</code>, <code>*</code>, <code>?</code>, <code>|</code> must be escaped with <code>\</code>.</li>
+        <br/>
+        <li>Inside SQL strings, <code>\</code> itself may need escaping depending on settings!</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT '3+4' ~ '3\+4';     -- match literal +
+SELECT 'a.b' ~ 'a\.b';     -- match literal dot
+</code></pre>
+
+<br/>
+<ul>
+    <li>If <code>standard_conforming_strings = off</code>, you must double the backslashes.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Dollar-Quoted Strings to Avoid Escaping</b></li>
+    <br/>
+    <ul>
+        <li>To avoid complex escaping issues, use dollar-quoted literals:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT '3+4' ~ $re$3\+4$re$;
+</code></pre>
+
+<br/>
+<ul>
+    <li>This is the preferred method for regex-heavy code.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Extracting Multiple Matches</b></li>
+    <br/>
+<pre><code class="language-sql line-numbers">SELECT regexp_matches(
+    'a1 b2 c3',
+    '([a-z])([0-9])',
+    'g'
+);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Flag <code>'g'</code> returns all match groups.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li>Regex is CPU-intensive.</li>
+        <br/>
+        <li><b>Regex cannot use B-tree indexes</b> (except for fixed-prefix anchors <code>^text</code>).</li>
+        <br/>
+        <li>For fast substring / fuzzy search, use <code>pg_trgm</code> extension:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE EXTENSION pg_trgm;
+
+CREATE INDEX idx_users_name_trgm
+    ON users USING gin (name gin_trgm_ops);
+
+SELECT * FROM users WHERE name ~ 'wang';
+</code></pre>
+
+<br/>
+<ul>
+    <li>Trigram indexes accelerate many regex operations automatically.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Regex vs LIKE vs SIMILAR TO</b></li>
+    <br/>
+    <table>
+        <tr><th>Feature</th><th>LIKE</th><th>SIMILAR TO</th><th>Regex (~)</th></tr>
+        <tr><td>Wildcard power</td><td>Low</td><td>Medium</td><td>High</td></tr>
+        <tr><td>Performs complex validation</td><td>No</td><td>Somewhat</td><td>Yes</td></tr>
+        <tr><td>Index support</td><td>Only prefix</td><td>No</td><td>No (except pg_trgm)</td></tr>
+        <tr><td>Syntax complexity</td><td>Very easy</td><td>Medium</td><td>High</td></tr>
+    </table>
+
+<br/>
+<ul>
+    <li>Regex is the most powerful but most expensive.</li>
+</ul>
+<br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
