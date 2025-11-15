@@ -2474,6 +2474,297 @@ updateSetting("pageSize", 20);          // ✔ OK
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-indexed-access">Indexed Access Types (<code>T[K]</code>)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Indexed access types let you look up the type of a property by its key, using the syntax <code>T[K]</code>.</li>
+        <br/>
+        <li>You can think of <code>T</code> as an object type, and <code>K</code> as a property name (or union of names).</li>
+        <br/>
+        <li>Indexed access types are pure <u>type-level</u> operations, they do not exist at runtime.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic Example: Single Property</b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name: string;
+    active: boolean;
+};
+
+type UserIdType = User["id"];       // number
+type UserNameType = User["name"];   // string
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Using Unions as Index Keys</b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name: string;
+    active: boolean;
+};
+
+type IdOrName = User["id" | "name"];    // number | string
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Combining with <code>keyof</code>: All Property Values</b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name: string;
+    active: boolean;
+};
+
+type UserKey = keyof User;          // "id" | "name" | "active"
+type UserValue = User[UserKey];     // number | string | boolean
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Working with Arrays and Tuples</b></li>
+<pre><code class="language-ts line-numbers">type Numbers = number[];
+
+type Element = Numbers[number];
+// type Element = number
+
+type Point = [number, number, number];
+
+type PointIndex = keyof Point;
+// type PointIndex = "0" | "1" | "2" | "length" | ...
+
+type PointElement = Point[number];
+// type PointElement = number
+</code></pre>
+    <br/>
+    <ul>
+        <li>For arrays, <code>T[number]</code> gives "element type".</li>
+        <li>For tuples, <code>T[number]</code> gives a union of all element types.</li>
+        <li>This is how built-in helpers like <code>ReturnType</code> and <code>Parameters</code> work internally.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Nested Indexed Access</b></li>
+<pre><code class="language-ts line-numbers">type Product = {
+    id: number;
+    details: {
+        name: string;
+        price: number;
+    };
+};
+
+type ProductDetails = Product["details"];
+// { name: string; price: number; }
+
+type ProductPrice = Product["details"]["price"];
+// number
+</code></pre>
+    <br/>
+    <ul>
+        <li>Indexed access can be chained to drill into nested types.</li>
+        <li>This is useful when you want types for deep properties without manually rewriting them.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Indexed Access with Generics</b></li>
+<pre><code class="language-ts line-numbers">type GetPropType&lt;T, K extends keyof T&gt; = T[K];
+
+type User = {
+    id: number;
+    name: string;
+};
+
+type UserIdType   = GetPropType&lt;User, "id"&gt;;   // number
+type UserNameType = GetPropType&lt;User, "name"&gt;; // string
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Shape-Preserving Functions with <code>T[K]</code></b></li>
+<pre><code class="language-ts line-numbers">function pluck&lt;T, K extends keyof T&gt;(obj: T, keys: K[]): T[K][] {
+    return keys.map(k =&gt; obj[k]);
+}
+
+type User = {
+    id: number;
+    name: string;
+    active: boolean;
+};
+
+const u: User = { id: 1, name: "Alice", active: true };
+
+const values = pluck(u, ["id", "name"]);
+// type of values: (number | string)[]
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>T[K]</code> represents the type of elements in the returned array.</li>
+        <li>The compiler knows that:
+            <ul>
+                <li><code>keys</code> contains valid property names of <code>T</code></li>
+                <li>and each element of <code>values</code> is the type of the corresponding property</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using Indexed Access in Utility Types</b></li>
+<pre><code class="language-ts line-numbers">type PickProps&lt;T, K extends keyof T&gt; = {
+    [P in K]: T[P];
+};
+
+type User = {
+    id: number;
+    name: string;
+    email: string;
+};
+
+type BasicUser = PickProps&lt;User, "id" | "name"&gt;;
+// { id: number; name: string; }
+</code></pre>
+    <br/>
+    <ul>
+        <li>Mapped types often use <code>T[P]</code> on the right-hand side to copy property types.</li>
+        <li>This pattern is the basis for built-in utilities like <code>Pick</code>, <code>Omit</code>, <code>Readonly</code>, and <code>Partial</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Extracting the Type of a Method</b></li>
+<pre><code class="language-ts line-numbers">type Service = {
+    start(): void;
+    stop(code: number): void;
+};
+
+type StartType = Service["start"];    // () =&gt; void
+type StopType = Service["stop"];      // (code: number) =&gt; void
+</code></pre>
+    <br/>
+    <ul>
+        <li>Indexed access works for methods as well: you get the function type.</li>
+        <li>This is handy when you want to re-use or transform method signatures.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Value Type of a Dictionary</b></li>
+<pre><code class="language-ts line-numbers">type Dictionary = Record&lt;string, number&gt;;
+
+type DictValue = Dictionary[string];
+// type DictValue = number
+</code></pre>
+    <br/>
+    <ul>
+        <li>For "map-like" types, <code>T[string]</code> or <code>T[number]</code> gives you the value type.</li>
+        <li>This is frequently used in libraries dealing with key-value objects.</li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li><b>Indexed Access and Readonly Transformations</b></li>
+<pre><code class="language-ts line-numbers">type ReadonlyObject&lt;T&gt; = {
+    readonly [K in keyof T]: T[K];
+};
+
+type User = {
+    id: number;
+    name: string;
+};
+
+type ReadonlyUser = ReadonlyObject&lt;User&gt;;
+// { readonly id: number; readonly name: string; }
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>T[K]</code> copies the original property type from <code>T</code> into the new object.</li>
+        <li>Here only the modifier (<code>readonly</code>) changes — the underlying property types stay exactly the same.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Index Signatures for Dynamic String Keys</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes you don't know the exact property names in advance, but you do know that <u>all keys are strings</u> and <u>all values share the same type</u>.</li>
+        <br/>
+        <li>In that case, you can declare an <u>index signature</u> such as <code>[key: string]: string</code> to express:
+            <ul>
+                <li>"any <code>string</code> can be used as a property name"</li>
+                <li>"each property must store a <code>string</code>"</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Index signatures are the TypeScript way to model dictionary/map objects, including keys with spaces, dashes, or other special characters.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">type StringMap = {
+    // NOTE: the name `key` here is arbitrary, you can use any identifiers here.
+    [key: string]: string;
+};
+
+const m: StringMap = {
+    "user name": "Alice",
+    "user-email": "a@example.com",
+};
+
+const a = m["user name"];   // string
+const b = m["user-email"];  // string
+// const c = m["age"];      // string | undefined (runtime)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Any valid JavaScript string can be used as a key: <code>"user name"</code>, <code>"user-email"</code>, <code>"x.y.z"</code>, etc.</li>
+        <br/>
+        <li>Because such keys are not valid identifiers, you must use <u>bracket notation</u>:
+            <ul>
+                <li><code>m["user name"]</code> ✔ valid</li>
+                <li><code>m.user name</code> ✘ syntax error</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The index signature ensures that every property value inside a <code>StringMap</code> is always a <code>string</code>, regardless of how unusual the key is.</li>
+        <br/>
+        <li>You can also express this pattern using the built-in utility: <code>Record&lt;string, string&gt;</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
