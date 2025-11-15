@@ -142,6 +142,7 @@
         <li><a href="#pg-extensions">Extensions</a></li>
         <li><a href="#pg-create-extensions">How to Create Extensions</a></li>
         <li><a href="#pg-regex">Regular Expression</a></li>
+        <li><a href="#pg-similar-to">SIMILAR TO</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -7512,7 +7513,312 @@ SELECT * FROM users WHERE name ~ 'wang';
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-similar-to">The SIMILAR TO Operator in PostgreSQL</h3>
+<ol>
 
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>SIMILAR TO</code> is a SQL-standard pattern matching operator that combines aspects of <code>LIKE</code> and regular expressions.</li>
+        <br/>
+        <li>It is more powerful than <code>LIKE</code> but less powerful (and less flexible) than PostgreSQL's regex operators (<code>~</code>, <code>~*</code>).</li>
+        <br/>
+        <li><code>SIMILAR TO</code> uses a <u>regex-like syntax</u> but still follows SQL-standard rules, not POSIX rules.</li>
+        <br/>
+        <li>It is rarely used in real-world PostgreSQL development because regex operators are more intuitive and consistent.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-sql line-numbers">value SIMILAR TO pattern
+value NOT SIMILAR TO pattern
+</code></pre>
+
+<br/>
+<ul>
+    <li>Returns TRUE if <code>value</code> matches the SQL-standard regex-like <code>pattern</code>.</li>
+    <li>Returns FALSE otherwise.</li>
+    <li>Returns NULL if either operand is NULL.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Fundamental Rules of SIMILAR TO</b></li>
+    <br/>
+    <ul>
+        <li><code>%</code> – matches zero or more characters (like <code>LIKE</code>).</li>
+        <li><code>_</code> – matches exactly one character.</li>
+        <li><code>|</code> – regex alternation operator.</li>
+        <li><code>()</code> – grouping for alternation.</li>
+        <li><code>[]</code> – character classes.</li>
+        <li>ESCAPE clause can be used to escape metacharacters.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'cat' SIMILAR TO '(cat|dog)';   -- TRUE
+SELECT 'dog' SIMILAR TO '(cat|dog)';   -- TRUE
+SELECT 'frog' SIMILAR TO '(cat|dog)';  -- FALSE
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>SIMILAR TO vs LIKE</b></li>
+    <br/>
+    <table>
+        <tr><th>Feature</th><th>LIKE</th><th>SIMILAR TO</th></tr>
+        <tr><td>Alternation</td><td>No</td><td>Yes (<code>|</code>)</td></tr>
+        <tr><td>Grouping</td><td>No</td><td>Yes</td></tr>
+        <tr><td>Character classes</td><td>No</td><td>Yes</td></tr>
+        <tr><td>Complex validation</td><td>No</td><td>Possible</td></tr>
+        <tr><td>Case sensitivity</td><td>Sensitive</td><td>Sensitive only (no ILIKE equivalent)</td></tr>
+    </table>
+
+<br/>
+<ul>
+    <li>In short: <code>SIMILAR TO</code> = <code>LIKE</code> + basic regex.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Alternation (|) and Grouping</b></li>
+    <br/>
+<pre><code class="language-sql line-numbers">SELECT 'apple'  SIMILAR TO '(apple|banana|cherry)';  -- TRUE
+SELECT 'guava'  SIMILAR TO '(apple|banana|cherry)';  -- FALSE
+</code></pre>
+
+<br/>
+<ul>
+    <li>Grouping with parentheses is required for alternation.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Character Classes</b></li>
+    <br/>
+<pre><code class="language-sql line-numbers">SELECT 'a' SIMILAR TO '[abc]';     -- TRUE
+SELECT 'd' SIMILAR TO '[abc]';     -- FALSE
+SELECT '5' SIMILAR TO '[0-9]';     -- TRUE
+</code></pre>
+<br/>
+<ul>
+    <li>Similar to regex classes, but with SQL-standard semantics.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Wildcard Behavior</b></li>
+    <br/>
+    <ul>
+        <li><code>%</code> = zero or more characters.</li>
+        <li><code>_</code> = exactly one character.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'hello' SIMILAR TO 'h%';    -- TRUE
+SELECT 'hello' SIMILAR TO 'h_llo'; -- TRUE
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Anchoring Rules (Implicit Anchors)</b></li>
+    <br/>
+    <ul>
+        <li>Unlike POSIX regex, <code>SIMILAR TO</code> patterns act like the entire string is implicitly wrapped with <code>^ ... $</code>.</li>
+        <br/>
+        <li>Meaning: <b>SIMILAR TO always matches the entire string</b>. Partial matches are not allowed unless you use <code>%</code>.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'hello' SIMILAR TO 'ell';    -- FALSE (must match whole string)
+SELECT 'hello' SIMILAR TO '%ell%';  -- TRUE
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Complex Validation Example</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT '2024-10-15' SIMILAR TO '[0-9]{4}-[0-9]{2}-[0-9]{2}';  -- TRUE
+SELECT '2024/10/15' SIMILAR TO '[0-9]{4}-[0-9]{2}-[0-9]{2}';  -- FALSE
+</code></pre>
+
+<br/>
+<ul>
+    <li><code>SIMILAR TO</code> supports repetition with curly braces too.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Using SIMILAR TO With NOT</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT 'abc' NOT SIMILAR TO '[0-9]+';   -- TRUE
+</code></pre>
+
+<br/>
+<ul>
+    <li>Behaves similarly to <code>NOT LIKE</code> and <code>!~</code>.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Escaping Special Characters</b></li>
+    <br/>
+
+<ul>
+    <li>Special characters that require escaping:
+        <ul>
+            <li><code>%</code>, <code>_</code> (as in LIKE)</li>
+            <li><code>( )</code></li>
+            <li><code>|</code></li>
+            <li><code>[ ]</code></li>
+            <li><code>{ }</code></li>
+        </ul>
+    </li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'a+b' SIMILAR TO 'a\+b';  -- match literal +
+</code></pre>
+
+<br/>
+<ul>
+    <li>You can specify a custom escape character:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'a+b' SIMILAR TO 'a#+' ESCAPE '#';
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>SIMILAR TO is Fully Anchored</b></li>
+    <br/>
+    <ul>
+        <li>Unlike regular expressions, SIMILAR TO matches the <b>entire</b> string unless <code>%</code> or <code>_</code> is used.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'abc'   SIMILAR TO 'a.*';    -- FALSE
+SELECT 'abc'   SIMILAR TO 'a%';     -- TRUE
+</code></pre>
+
+<br/>
+<ul>
+    <li>This difference surprises many users!</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Combining Conditions</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT *
+FROM logs
+WHERE message SIMILAR TO '%(ERROR|WARN|FATAL)%';
+</code></pre>
+
+<br/>
+<ul>
+    <li>Good for basic multi-pattern filtering.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>SIMILAR TO vs Regex Operators (~)</b></li>
+    <br/>
+    <table>
+        <tr><th>Feature</th><th>SIMILAR TO</th><th>Regex (~)</th></tr>
+        <tr><td>Power level</td><td>Medium</td><td>High</td></tr>
+        <tr><td>Performance</td><td>Medium</td><td>Lower (heavier)</td></tr>
+        <tr><td>Anchored matching</td><td>Always full string</td><td>Optional</td></tr>
+        <tr><td>Unicode support</td><td>Limited</td><td>Full POSIX regex support</td></tr>
+        <tr><td>Syntax</td><td>SQL-standard</td><td>POSIX regex syntax</td></tr>
+        <tr><td>Alternation</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>Complex patterns</td><td>Limited</td><td>Very strong</td></tr>
+    </table>
+
+<br/>
+<ul>
+    <li>Regex (<code>~</code>) is almost always preferred for non-trivial pattern matching.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li><code>SIMILAR TO</code> does <b>not</b> use indexes unless the pattern starts with a fixed prefix.</li>
+        <br/>
+        <li>Like regex and LIKE with wildcards, it can be slow on large text columns.</li>
+        <br/>
+        <li>To optimize substring search, use <code>pg_trgm</code>:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE EXTENSION pg_trgm;
+
+CREATE INDEX idx_logs_msg_trgm
+ON logs USING gin (message gin_trgm_ops);
+
+SELECT * FROM logs
+WHERE message SIMILAR TO '%fail%';
+</code></pre>
+
+<br/>
+<ul>
+    <li>Trigram indexes dramatically improve performance.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Practical Examples</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">-- Validate YYYY-MM-DD
+SELECT '2024-12-31' SIMILAR TO '[0-9]{4}-[0-9]{2}-[0-9]{2}';
+
+-- Match emails ending in .com or .net
+SELECT 'test@example.com' SIMILAR TO '%@(.*)\.(com|net)';
+
+-- Validate integer or decimal
+SELECT '123.45' SIMILAR TO '[0-9]+(\.[0-9]+)?';
+
+-- Match strings starting with A–F
+SELECT 'Apple' SIMILAR TO '[A-F]%';
+</code></pre>
+
+<br/>
+<ul>
+    <li>Use SIMILAR TO for SQL-standard pattern matching where full regex is not required.</li>
+</ul>
+<br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
