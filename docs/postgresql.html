@@ -12051,7 +12051,454 @@ FROM books b,
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-json">JSON and JSONB Types in PostgreSQL</h3>
+<ol>
+    <li>PostgreSQL provides two native JSON types: <u>json</u> and <u>jsonb</u>.</li>
+    <br/><br/>
 
+
+    <li>Both can store arbitrary structured JSON documents:
+        <ul>
+            <li>objects (<code>{"key": "value"}</code>)</li>
+            <li>arrays (<code>[1,2,3]</code>)</li>
+            <li>nested structure</li>
+            <li>null / booleans / numbers / strings</li>
+        </ul>
+    </li>
+    <br/><br/>
+
+
+    <li>The key difference is:
+        <ul>
+            <li><u>json</u>: stored as text, no preprocessing</li>
+            <li><u>jsonb</u>: stored in a binary format, parsed, canonicalized</li>
+        </ul>
+    </li>
+    <br/><br/>
+
+
+    <li>Modern PostgreSQL applications use <u>jsonb</u> almost exclusively.</li>
+    <br/><br/>
+
+
+
+    <li><b>json vs jsonb</b></li>
+    <br/>
+
+    <table>
+        <tr><th>Feature</th><th>json</th><th>jsonb</th></tr>
+
+        <tr>
+            <td>Storage</td>
+            <td>Exact text</td>
+            <td>Binary parsed structure</td>
+        </tr>
+
+        <tr>
+            <td>Duplicate Keys</td>
+            <td>Preserved</td>
+            <td>Last key wins</td>
+        </tr>
+
+        <tr>
+            <td>Whitespace</td>
+            <td>Preserved</td>
+            <td>Discarded</td>
+        </tr>
+
+        <tr>
+            <td>Indexing</td>
+            <td>No</td>
+            <td>GIN/GiST indexes supported</td>
+        </tr>
+
+        <tr>
+            <td>Modification</td>
+            <td>Slower</td>
+            <td>Faster operations and path queries</td>
+        </tr>
+
+        <tr>
+            <td>Sort Order</td>
+            <td>N/A</td>
+            <td>Stable order</td>
+        </tr>
+    </table>
+
+<br/>
+<ul>
+    <li>Unless exact text preservation matters, choose <u>jsonb</u>.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Creating JSON Columns</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE users (
+    id      SERIAL PRIMARY KEY,
+    profile JSONB
+);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">INSERT INTO users(profile)
+VALUES ('{"name": "Alice", "age": 30, "skills": ["sql","python"]}');
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Accessing JSON Fields</b></li>
+    <br/>
+
+    <table>
+        <tr><th>Operator</th><th>Description</th></tr>
+
+        <tr>
+            <td><code>-&gt;</code></td>
+            <td>Get JSON value (object or array) by key or index (returns JSON)</td>
+        </tr>
+
+        <tr>
+            <td><code>-&gt;&gt;</code></td>
+            <td>Get value as text</td>
+        </tr>
+
+        <tr>
+            <td><code>#&gt;</code></td>
+            <td>Get JSON from a path array</td>
+        </tr>
+
+        <tr>
+            <td><code>#&gt;&gt;</code></td>
+            <td>Get text from a path array</td>
+        </tr>
+    </table>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT
+    profile-&gt;'name' AS name_json,
+    profile-&gt;&gt;'name' AS name_text,
+    profile-&gt;'skills'-&gt;0 AS first_skill
+FROM users;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Using path arrays
+SELECT profile#&gt;'{address, city}' FROM users;
+SELECT profile#&gt;&gt;'{address, zip}' FROM users;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Updating JSONB Fields</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">-- Replace a key
+UPDATE users
+SET profile = jsonb_set(profile, '{age}', '31'::jsonb)
+WHERE id = 1;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Add new key
+UPDATE users
+SET profile = jsonb_set(profile, '{email}', '"a@example.com"', true);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Update nested arrays
+UPDATE users
+SET profile = jsonb_set(profile, '{skills,1}', '"postgresql"')
+WHERE id = 1;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Deleting Fields</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">UPDATE users
+SET profile = profile - 'age';
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">UPDATE users
+SET profile = profile #- '{skills,0}';
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>JSONB Containment Operators</b></li>
+    <br/>
+
+    <table>
+        <tr><th>Operator</th><th>Meaning</th><th>Example</th></tr>
+
+        <tr>
+            <td><code>@&gt;</code></td>
+            <td>Contains</td>
+            <td><code>'{"a":1,"b":2}' @&gt; '{"a":1}'</code></td>
+        </tr>
+
+        <tr>
+            <td><code>&lt;@</code></td>
+            <td>Contained by</td>
+            <td><code>'[1,2]' &lt;@ '[1,2,3]'</code></td>
+        </tr>
+
+        <tr>
+            <td><code>?</code></td>
+            <td>Key exists</td>
+            <td><code>'{"a":1}' ? 'a'</code></td>
+        </tr>
+
+        <tr>
+            <td><code>?|</code></td>
+            <td>Any key exists</td>
+            <td><code>'{"a":1,"b":2}' ?| '{a,c}'</code></td>
+        </tr>
+
+        <tr>
+            <td><code>?&amp;</code></td>
+            <td>All keys exist</td>
+            <td><code>'{"a":1,"b":2}' ?&amp; '{a,b}'</code></td>
+        </tr>
+    </table>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM users
+WHERE profile @&gt; '{"skills": ["sql"]}';
+</code></pre>
+
+<br/>
+<ul>
+    <li><b>Important:</b> JSONB array containment checks require exact match unless additional operators are used.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Querying Inside JSON Arrays</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM users
+WHERE profile-&gt;'skills' ? 'python';
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM users
+WHERE 'sql' = ANY(jsonb_array_elements_text(profile-&gt;'skills'));
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Indexing JSONB</b></li>
+    <br/>
+
+    <ul>
+        <li><b>GIN indexes</b> are the standard choice for JSONB.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_users_profile_gin
+ON users USING gin(profile);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Efficient for:</li>
+    <ul>
+        <li><code>@&gt;</code> containment</li>
+        <li>path operations</li>
+        <li>key-existence operators</li>
+    </ul>
+</ul>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM users
+WHERE profile @&gt; '{"age": 30}';
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Expression Indexes on JSON Fields</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_users_city
+ON users ((profile#&gt;&gt;'{address,city}'));
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT *
+FROM users
+WHERE profile#&gt;&gt;'{address,city}' = 'Berlin';
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Converting Between JSON, JSONB, and TEXT</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT '{"a":1}'::jsonb;
+SELECT profile::json;
+SELECT profile::text;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT to_json(ARRAY[1,2,3]);
+SELECT jsonb_pretty(profile) FROM users;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Aggregating to JSON</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT json_agg(profile) FROM users;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT jsonb_build_object('count', COUNT(*), 'users', jsonb_agg(id))
+FROM users;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Building JSON Documents</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT jsonb_build_object(
+    'name', name,
+    'skills', skills,
+    'age', age
+)
+FROM employees;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>JSONB Path Queries (<code>@</code> SQL/JSON)</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL supports SQL/JSON path expressions:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT jsonb_path_query(profile, '$.skills[*] ? (@ == "sql")')
+FROM users;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM users
+WHERE jsonb_path_exists(profile, '$.age ? (@ &gt; 20)');
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Performance Notes</b></li>
+    <br/>
+    <ul>
+        <li>jsonb is optimized for:
+            <ul>
+                <li>searching</li>
+                <li>indexing</li>
+                <li>containment</li>
+                <li>updates</li>
+            </ul>
+        </li>
+        <br/>
+        <li>json is faster for:
+            <ul>
+                <li>pure text I/O</li>
+                <li>storing raw API responses</li>
+            </ul>
+        </li>
+        <br/>
+        <li>GIN indexes may become large; consider <code>jsonb_path_ops</code> for containment-only indexes.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_users_profile_pathops
+ON users USING gin(profile jsonb_path_ops);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Real-World Examples</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">-- Find users in a specific city
+SELECT * FROM users
+WHERE profile#&gt;&gt;'{address,city}' = 'Berlin';
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Check if user has a skill
+SELECT * FROM users
+WHERE profile-&gt;'skills' ? 'postgresql';
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Merge JSON objects
+SELECT profile || '{"active":true}'::jsonb
+FROM users;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Build a complete API response
+SELECT jsonb_build_object(
+    'status', 'ok',
+    'timestamp', now(),
+    'data', jsonb_agg(profile)
+)
+FROM users;
+</code></pre>
+
+<br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
