@@ -222,7 +222,7 @@ edition = "2021"
 </code></pre>
     <br/>
     <ul>
-        <li>By default, Cargo builds in <b>debug mode</b> (fast compile, slower runtime).</li>
+        <li>By default, Cargo builds in <u>debug mode</u> (fast compile, slower runtime).</li>
         <br/>
         <li>Build artifacts are placed under <code>target/debug/</code>:</li>
     </ul>
@@ -260,7 +260,7 @@ Hello, world!
 </code></pre>
     <br/>
     <ul>
-        <li><code>--lib</code> creates a <b>library crate</b> instead of a binary.</li>
+        <li><code>--lib</code> creates a <u>library crate</u> instead of a binary.</li>
         <br/>
         <li>Layout is slightly different:</li>
     </ul>
@@ -307,7 +307,7 @@ $ cargo build --release
         <li>Debug artifacts: <code>target/debug/...</code></li>
         <li>Release artifacts: <code>target/release/...</code></li>
         <br/>
-        <li>Use <code>--release</code> when you care about <b>performance</b> (benchmarks, production builds).</li>
+        <li>Use <code>--release</code> when you care about <u>performance</u> (benchmarks, production builds).</li>
     </ul>
     <br/>
     <br/>
@@ -399,6 +399,252 @@ fn main() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-comments">Comments in Rust</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Rust supports several kinds of comments, each serving a different purpose:</li>
+        <br/>
+        <ul>
+            <li><b>Line comments</b> — for normal explanations</li>
+            <li><b>Block comments</b> — for multi-line notes or temporarily disabling code</li>
+            <li><b>Documentation comments</b> — generate HTML docs and appear in <code>rustdoc</code></li>
+        </ul>
+        <br/>
+        <li>Comments are ignored by the compiler (except documentation comments, which are processed by <code>rustdoc</code>).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Line Comments (<code>//</code>)</b></li>
+<pre><code class="language-rust line-numbers">// This is a single-line comment
+let x = 10; // you can also put comments at the end of a line
+</code></pre>
+    <br/>
+    <ul>
+        <li>Starts with <code>//</code> and continues until the end of the line.</li>
+        <li>Most common form of comments in Rust.</li>
+        <li>Great for explaining logic or adding short descriptions.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Block Comments (<code>/* ... */</code>)</b></li>
+<pre><code class="language-rust line-numbers">/*
+   This is a block comment.
+   It can span multiple lines.
+*/
+let x = 5;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Useful for larger explanations or temporarily disabling code.</li>
+        <li>Can contain nested block comments — Rust supports nesting!</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">/*
+    Outer comment
+    /*
+        Nested comment — valid!
+    */
+*/
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This makes large-scale commenting-out safer compared to languages like C/C++.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Documentation Comments (<code>///</code> and <code>//! </code>)</b></li>
+    <br/>
+    <ul>
+        <li>Rust has two styles of documentation comments:</li>
+        <ul>
+            <li><b><code>///</code></b> — for documenting items <u>that follow</u>.</li>
+            <li><b><code>//! </code></b> — for documenting containers (crate/module) <u>from within</u>.</li>
+        </ul>
+        <br/>
+        <li>They support Markdown formatting and are used by <code>rustdoc</code> to generate HTML documentation.</li>
+    </ul>
+    <br/>
+
+    <li><b>Documentation for Functions (<code>///</code>)</b></li>
+<pre><code class="language-rust line-numbers">/// Adds two numbers together.
+///
+/// # Examples
+/// ```
+/// let sum = add(2, 3);
+/// assert_eq!(sum, 5);
+/// ```
+fn add(a: i32, b: i32) -&gt; i32 {
+    a + b
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Supports Markdown sections like:</li>
+        <ul>
+            <li><code># Examples</code></li>
+            <li><code># Panics</code></li>
+            <li><code># Safety</code></li>
+            <li><code># Errors</code></li>
+        </ul>
+        <br/>
+        <li>The examples are actually <u>compiled and tested</u> when running <code>cargo test</code>!</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Documentation for Modules or Crates (<code>//! </code>)</b></li>
+<pre><code class="language-rust line-numbers">//! This is documentation for the entire module or crate.
+//! It describes the purpose and structure at a high level.
+
+//! You typically put this at the top of `lib.rs` or inside a module.
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>//! </code> comments apply to the <u>enclosing item</u> (crate or module).</li>
+        <li>Ideal for explaining architecture or high-level concepts.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Inner vs Outer Documentation Comments</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Kind</th>
+                <th>Syntax</th>
+                <th>Applies To</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Outer doc</td>
+                <td><code>///</code></td>
+                <td>Item that follows</td>
+            </tr>
+            <tr>
+                <td>Inner doc</td>
+                <td><code>//! </code></td>
+                <td>Enclosing module or crate</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <br/>
+
+
+    <li><b>Doc Comments Support Markdown</b></li>
+<pre><code class="language-rust line-numbers">/// # Title
+/// - Bullet point
+/// - Another
+///
+/// `inline code`
+///
+/// ```rust
+/// let x = 5;
+/// println!("{}", x);
+/// ```
+fn demo() {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This Markdown is rendered into HTML when running <code>cargo doc</code>.</li>
+        <li>You can use bold, italic, links, headings, code blocks, and tables.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Generate Docs and Open Them</b></li>
+<pre><code class="language-bash line-numbers">$ cargo doc --open
+</code></pre>
+    <br/>
+    <ul>
+        <li>Builds documentation using <code>rustdoc</code> and opens it in your browser.</li>
+        <li>Includes documentation for your dependencies too.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Temporary Disabling Code with Block Comments</b></li>
+<pre><code class="language-rust line-numbers">/*
+fn calculate() {
+    // temporarily disabled
+}
+*/
+</code></pre>
+    <br/>
+    <ul>
+        <li>Because Rust supports nested block comments, disabling large sections is safe:</li>
+    </ul>
+<pre><code class="language-rust line-numbers">/*
+fn a() {}
+
+/*
+fn b() {}
+*/
+
+fn c() {}
+*/
+</code></pre>
+    <br/>
+    <ul>
+        <li>Unlike C/C++, nested comments won't break the code.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Choosing the Right Comment Style</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Use Case</th>
+                <th>Style</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Explain a line of code</td>
+                <td><code>//</code></td>
+                <td><code>// explanation</code></td>
+            </tr>
+            <tr>
+                <td>Explain a block or disable code</td>
+                <td><code>/* ... */</code></td>
+                <td><code>/* long comment */</code></td>
+            </tr>
+            <tr>
+                <td>Document a function/struct/enum</td>
+                <td><code>///</code></td>
+                <td><code>/// Adds two numbers</code></td>
+            </tr>
+            <tr>
+                <td>Document a module/crate</td>
+                <td><code>//! </code></td>
+                <td><code>//! Top-level docs</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
@@ -406,6 +652,7 @@ fn main() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
