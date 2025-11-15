@@ -836,7 +836,7 @@ struct Point {
 }
 
 impl fmt::Display for Point {
-    fn fmt(&amp;self, f: &amp;mut fmt::Formatter&amp;lt;'_&amp;gt;) -&gt; fmt::Result {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter&lt;'_&gt;) -&gt; fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
     }
 }
@@ -961,6 +961,302 @@ println!(r##"Multiple # signs can be used"##);
     <ul>
         <li>Formatted output in Rust is powerful, flexible, and entirely type-checked at compile time.</li>
         <li>Understanding <code>{}</code>, <code>{:?}</code>, and format specifiers unlocks rich console logging and string formatting.</li>
+    </ul>
+    <br/>
+    <br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-primitives">Primitives in Rust</h3>
+<ol>
+    <li>Rust provides a set of <b>primitive types</b> (built-in types) that form the foundation of all Rust programs.</li>
+    <br/>
+    <li>Primitives are:
+        <ul>
+            <li><u>Copy</u> by default (except types containing heap allocations)</li>
+            <li>Fast and efficient</li>
+        </ul>
+    </li>
+    <br/>
+    <li>Primitive categories include:
+        <ul>
+            <li>Scalar types</li>
+            <li>Compound types</li>
+            <li>Special types</li>
+        </ul>
+    </li>
+    <br/>
+    <br/>
+
+
+    <li><b>Integer Types</b></li>
+<pre><code class="language-rust line-numbers">let a: i32 = 10;    // signed 32-bit integer
+let b: u64 = 20;    // unsigned 64-bit integer
+let c = 100usize;   // machine pointer-sized unsigned integer
+</code></pre>
+    <br/>
+    <ul>
+        <li>Integer sizes:</li>
+        <ul>
+            <li><code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code>, <code>i128</code>, <code>isize</code></li>
+            <li><code>u8</code>, <code>u16</code>, <code>u32</code>, <code>u64</code>, <code>u128</code>, <code>usize</code></li>
+        </ul>
+        <br/>
+        <li><code>isize</code> and <code>usize</code> depend on platform pointer width (32-bit or 64-bit).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Number Literals</b></li>
+<pre><code class="language-rust line-numbers">let dec = 98_222;
+let hex = 0xff;
+let oct = 0o77;
+let bin = 0b1111_0000;
+let byte = b'A'; // u8 only
+</code></pre>
+    <br/>
+    <ul>
+        <li>Underscores improve readability (<code>98_222</code>).</li>
+        <li><code>b'A'</code> is a byte literal (<code>u8</code>).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Floating-Point Types</b></li>
+<pre><code class="language-rust line-numbers">let x = 3.14f32;    // 32-bit float
+let y: f64 = 2.718; // 64-bit float (default)
+</code></pre>
+    <br/>
+    <ul>
+        <li>Floats use IEEE-754 format.</li>
+        <li><code>f64</code> is the default because it is more precise.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Boolean</b></li>
+<pre><code class="language-rust line-numbers">let is_active: bool = true;
+let is_valid = false;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Boolean values: <code>true</code>, <code>false</code>.</li>
+        <li>Used in conditions (<code>if</code>, <code>while</code>, etc.).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Character (Unicode Scalar Value)</b></li>
+<pre><code class="language-rust line-numbers">let a = 'A';
+let heart = '❤';
+let chinese = '中';
+let emoji = '🚀';
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>char</code> is <u>4 bytes</u> and stores a Unicode scalar value.</li>
+        <li>Supports emoji and all languages.</li>
+        <li>Not a byte — that is <code>u8</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Tuples</b></li>
+<pre><code class="language-rust line-numbers">let tup: (i32, f64, bool) = (10, 3.14, true);
+
+let (x, y, z) = tup;  // destructuring
+
+println!("y = {}", tup.1);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Tuples group values of different types.</li>
+        <li>Access with dot syntax (<code>tup.1</code>).</li>
+        <li>Useful for returning multiple values.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Arrays</b></li>
+<pre><code class="language-rust line-numbers">let nums: [i32; 3] = [1, 2, 3];
+let zeros = [0; 5]; // [0, 0, 0, 0, 0]
+</code></pre>
+    <br/>
+    <ul>
+        <li>Arrays have:
+            <ul>
+                <li>elements of the same type</li>
+                <li>fixed length</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Length is part of the type (<code>[i32; 3]</code>).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Slices</b></li>
+<pre><code class="language-rust line-numbers">let arr = [1, 2, 3, 4];
+let slice: &amp;[i32] = &amp;arr[1..3];  // [2, 3]
+</code></pre>
+    <br/>
+    <ul>
+        <li>Slices are <u>references</u> to contiguous sequences.</li>
+        <li><code>&amp;arr[..]</code> = slice of whole array.</li>
+        <li>Slices do not own data, they borrow.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>String Slices</b></li>
+<pre><code class="language-rust line-numbers">let s: &amp;str = "Hello";      // string slice
+let part = &amp;s[0..2];        // slice bytes, careful with UTF-8
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>&amp;str</code> is an immutable UTF-8 string slice.</li>
+        <li>Remember Rust strings are UTF-8 — slicing must align with char boundaries.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Owned String (<code>String</code>)</b></li>
+<pre><code class="language-rust line-numbers">let mut s = String::from("Hello");
+s.push_str(" World");
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>String</code> owns the heap-allocated text.</li>
+        <li>Growable and mutable.</li>
+        <li>Frequently used in application code.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Special Primitive: Unit (<code>()</code>)</b></li>
+<pre><code class="language-rust line-numbers">fn do_something() {
+    // returns () implicitly
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>()</code> is a type with exactly one value: <code>()</code>.</li>
+        <li>Used as the default return type for functions that return nothing.</li>
+        <li>Similar to <code>void</code> in other languages but still a real type.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Special Primitive: Never (<code>!</code>)</b></li>
+<pre><code class="language-rust line-numbers">fn fail() -&gt; ! {
+    panic!("Something went wrong");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>!</code> represents computations that never return.</li>
+        <li>Examples:
+            <ul>
+                <li><code>panic!</code></li>
+                <li>infinite loops</li>
+                <li>functions that always <code>return Err</code> or <code>exit</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Primitive Type Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Integer</td>
+                <td><code>i*, u*</code></td>
+                <td>Signed/unsigned integers</td>
+            </tr>
+            <tr>
+                <td>Float</td>
+                <td><code>f32, f64</code></td>
+                <td>Floating-point numbers</td>
+            </tr>
+            <tr>
+                <td>Boolean</td>
+                <td><code>bool</code></td>
+                <td><code>true</code>, <code>false</code></td>
+            </tr>
+            <tr>
+                <td>Character</td>
+                <td><code>char</code></td>
+                <td>Unicode scalar value</td>
+            </tr>
+            <tr>
+                <td>Tuple</td>
+                <td><code>(T1, T2, ...)</code></td>
+                <td>Fixed-size heterogeneous values</td>
+            </tr>
+            <tr>
+                <td>Array</td>
+                <td><code>[T; N]</code></td>
+                <td>Fixed-size homogeneous values</td>
+            </tr>
+            <tr>
+                <td>Slice</td>
+                <td><code>&amp;[T]</code></td>
+                <td>View into contiguous memory</td>
+            </tr>
+            <tr>
+                <td>String Slice</td>
+                <td><code>&amp;str</code></td>
+                <td>UTF-8 string reference</td>
+            </tr>
+            <tr>
+                <td>Owned String</td>
+                <td><code>String</code></td>
+                <td>Growable heap string</td>
+            </tr>
+            <tr>
+                <td>Unit</td>
+                <td><code>()</code></td>
+                <td>No meaningful value</td>
+            </tr>
+            <tr>
+                <td>Never</td>
+                <td><code>!</code></td>
+                <td>Function never returns</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>These primitives form the basis of all memory, data, and control flow in Rust programs.</li>
+        <li>Understanding them is essential for mastering ownership, lifetime rules, and type safety.</li>
     </ul>
     <br/>
     <br/>
