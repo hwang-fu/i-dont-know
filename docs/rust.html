@@ -1542,6 +1542,278 @@ let u2 = u1;                // move occurs
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-enums">Enums</h3>
+<ol>
+    <li>Rust's <b>enum</b> (short for *enumeration*) is one of its most powerful and expressive features.</li>
+    <br/>
+    <li>Enums allow you to define a type that can be one of several variants.</li>
+    <br/>
+    <li>Unlike enums in languages like C, Rust enums can store <u>data inside each variant</u>.</li>
+    <br/>
+    <li>Combined with <code>match</code>, enums enable expressive and type-safe control flow.</li>
+    <br/><br/>
+
+
+    <li><b>Basic Enum</b></li>
+<pre><code class="language-rust line-numbers">enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+fn main() {
+    let d = Direction::Up;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Each variant is namespaced under the enum type: <code>Direction::Up</code>.</li>
+        <li>Variants have no associated data in this form.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Enums with Data</b></li>
+<pre><code class="language-rust line-numbers">enum Message {
+    Quit,                    // no data
+    Move { x: i32, y: i32 }, // named fields
+    Write(String),           // tuple-like
+    ChangeColor(u8, u8, u8), // tuple-like with multiple values
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rust enums can contain:
+            <ul>
+                <li>struct-like variants</li>
+                <li>tuple-like variants</li>
+                <li>unit variants</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Enums with <code>match</code></b></li>
+<pre><code class="language-rust line-numbers">fn process(msg: Message) {
+    match msg {
+        Message::Quit           =&gt; println!("Quit"),
+        Message::Move { x, y }  =&gt; println!("Move to ({}, {})", x, y),
+        Message::Write(text)    =&gt; println!("Text: {}", text),
+        Message::ChangeColor(r, g, b) =&gt;
+            println!("Color change: ({}, {}, {})", r, g, b),
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>match</code> enforces exhaustive handling.</li>
+        <li>Pattern matching allows extraction of data from variants.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Enum with Methods</b></li>
+<pre><code class="language-rust line-numbers">enum Shape {
+    Circle(f64),
+    Rectangle { w: f64, h: f64 },
+}
+
+impl Shape {
+    fn area(&amp;self) -&gt; f64 {
+        match self {
+            Shape::Circle(r)          =&gt; std::f64::consts::PI * r * r,
+            Shape::Rectangle { w, h } =&gt; w * h,
+        }
+    }
+}
+
+fn main() {
+    let c = Shape::Circle(3.0);
+    println!("Area: {}", c.area());
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Enums can have <code>impl</code> blocks just like structs.</li>
+        <li>Methods receive <code>self</code>, <code>&amp;self</code>, or <code>&amp;mut self</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The <code>Option&lt;T&gt;</code> Enum</b></li>
+<pre><code class="language-rust line-numbers">enum Option&lt;T&gt; {
+    Some(T),
+    None,
+}
+
+let x: Option&lt;i32&gt; = Some(10);
+let y: Option&lt;i32&gt; = None;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rust does not have null.</li>
+        <li><code>Option&lt;T&gt;</code> is the safe alternative.</li>
+        <li>It prevents null pointer errors at compile time.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Matching on Option</b></li>
+<pre><code class="language-rust line-numbers">fn print_number(n: Option&lt;i32&gt;) {
+    match n {
+        Some(value) =&gt; println!("Value = {}", value),
+        None        =&gt; println!("No value"),
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>match</code> is used to safely handle both possibilities.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b><code>if let</code> for Convenience</b></li>
+<pre><code class="language-rust line-numbers">let n = Some(10);
+
+if let Some(value) = n {
+    println!("Value = {}", value);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>if let</code> handles one pattern and ignores others.</li>
+        <li>Useful for simple matches.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The <code>Result&lt;T, E&gt;</code> Enum</b></li>
+<pre><code class="language-rust line-numbers">enum Result&lt;T, E&gt; {
+    Ok(T),
+    Err(E),
+}
+
+fn divide(a: f64, b: f64) -&gt; Result&lt;f64, String&gt; {
+    if b == 0.0 {
+        Err(String::from("Divide by zero"))
+    } else {
+        Ok(a / b)
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>Result</code> is Rust's standard error-handling type.</li>
+        <li><code>Ok</code> stores success values.</li>
+        <li><code>Err</code> stores error values.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>C-like Enums (Discriminants)</b></li>
+<pre><code class="language-rust line-numbers">enum Status {
+    Ready = 1,
+    Busy  = 2,
+    Error = 3,
+}
+
+let x = Status::Busy as i32;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Variants may have explicit integer values.</li>
+        <li>Useful for FFI, bitflags, or low-level work.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Enums with <code>#[derive]</code></b></li>
+<pre><code class="language-rust line-numbers">#[derive(Debug, Clone, Copy)]
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>derive</code> enables traits like:
+            <ul>
+                <li><code>Debug</code></li>
+                <li><code>Copy</code></li>
+                <li><code>Clone</code></li>
+                <li><code>Eq</code></li>
+                <li><code>Hash</code></li>
+            </ul>
+        </li>
+        <li>Useful when variants have no owned heap data.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Enum Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Enum Feature</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Unit Variant</td>
+                <td>No data</td>
+                <td><code>Quit</code></td>
+            </tr>
+            <tr>
+                <td>Tuple Variant</td>
+                <td>Unnamed fields</td>
+                <td><code>Write(String)</code></td>
+            </tr>
+            <tr>
+                <td>Struct Variant</td>
+                <td>Named fields</td>
+                <td><code>Move { x: i32, y: i32 }</code></td>
+            </tr>
+            <tr>
+                <td>Methods on Enums</td>
+                <td>Via <code>impl</code> block</td>
+                <td><code>fn area(&amp;self)</code></td>
+            </tr>
+            <tr>
+                <td><code>Option&lt;T&gt;</code></td>
+                <td>Nullable alternative</td>
+                <td><code>Some(10), None</code></td>
+            </tr>
+            <tr>
+                <td><code>Result&lt;T, E&gt;</code></td>
+                <td>Error handling</td>
+                <td><code>Ok(x), Err(e)</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>Enums allow modeling of all possible states of a value in a type-safe way.</li>
+        <li>They work seamlessly with <code>match</code> and pattern matching.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
