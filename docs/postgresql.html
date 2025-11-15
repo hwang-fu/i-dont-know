@@ -156,6 +156,7 @@
         <li><a href="#pg-gin">GIN Indexes</a></li>
         <li><a href="#pg-search-path">Search Path in PostgreSQL</a></li>
         <li><a href="#pg-cast">Casting</a></li>
+        <li><a href="#pg-triggers">Triggers</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -13047,7 +13048,8 @@ SELECT format_date('2024-01-01');
 <pre><code class="language-sql line-numbers">SET search_path TO public, malicious_schema;
 
 -- A malicious user creates a function matching your app's name
-CREATE FUNCTION malicious_schema.now() RETURNS timestamp AS $$
+CREATE FUNCTION malicious_schema.now() RETURNS timestamp AS
+$$
     SELECT '1970-01-01'::timestamp;
 $$ LANGUAGE sql;
 </code></pre>
@@ -13433,7 +13435,8 @@ SELECT (-1)::positive_int; -- fails check constraint
 
 <pre><code class="language-sql line-numbers">CREATE FUNCTION text_to_int_safe(text)
 RETURNS int
-LANGUAGE plpgsql AS $$
+LANGUAGE plpgsql AS
+$$
 BEGIN
     RETURN CASE WHEN $1 ~ '^\d+$' THEN $1::int ELSE NULL END;
 END;
@@ -13561,23 +13564,480 @@ SELECT (ROW(5,6)::point2d).x;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-triggers">Triggers in PostgreSQL</h3>
+<ol>
 
-<!-- * * * * * * * * * * * * * * -->
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <u>trigger</u> is a special database object that automatically executes a function when a table event occurs.</li>
+        <br/>
+        <li>Trigger events include:
+            <ul>
+                <li><code>INSERT</code></li>
+                <li><code>UPDATE</code></li>
+                <li><code>DELETE</code></li>
+                <li><code>TRUNCATE</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Triggers can run:
+            <ul>
+                <li><code>BEFORE</code> the statement</li>
+                <li><code>AFTER</code> the statement</li>
+                <li><code>INSTEAD OF</code> the statement (for views)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Triggers call a <u>trigger function</u> (a function with <code>RETURNS trigger</code>), written in SQL or PL/pgSQL.</li>
+    </ul>
+
+<br/><br/>
 
 
-<hr/>
+
+    <li><b>Types of Triggers</b></li>
+    <br/>
+
+    <table>
+        <tr><th>Type</th><th>Description</th></tr>
+
+        <tr>
+            <td><b>Row-Level Trigger</b></td>
+            <td>Executed once per affected row. Has access to <code>OLD</code> and <code>NEW</code> records.</td>
+        </tr>
+
+        <tr>
+            <td><b>Statement-Level Trigger</b></td>
+            <td>Executed once per SQL statement, regardless of how many rows are modified.</td>
+        </tr>
+
+        <tr>
+            <td><b>BEFORE Trigger</b></td>
+            <td>Can validate or modify <code>NEW</code> data before writing to the table.</td>
+        </tr>
+
+        <tr>
+            <td><b>AFTER Trigger</b></td>
+            <td>Runs after the change is committed to the table; cannot modify <code>NEW</code>.</td>
+        </tr>
+
+        <tr>
+            <td><b>INSTEAD OF Trigger</b></td>
+            <td>Replaces default behavior on views.</td>
+        </tr>
+    </table>
+
+<br/><br/>
 
 
-<!-- * * * * * * * * * * * * * * -->
 
-<!-- * * * * * * * * * * * * * * -->
+    <li><b>Trigger Function Basics</b></li>
+    <br/>
+    <ul>
+        <li>A trigger function must return <code>RETURNS trigger</code>.</li>
+        <br/>
+        <li>For <b>BEFORE</b> row-level triggers:
+            <ul><li>return <code>NEW</code> to continue</li></ul>
+        </li>
+        <li>For <b>BEFORE DELETE</b>:
+            <ul><li>return <code>OLD</code></li></ul>
+        </li>
+        <li>For <b>AFTER</b> triggers:
+            <ul><li>the return value is ignored</li></ul>
+        </li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE FUNCTION set_created_at()
+RETURNS trigger AS
+$$
+BEGIN
+    NEW.created_at := now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+</code></pre>
+
+<br/><br/>
 
 
-<hr/>
+
+    <li><b>Creating a Trigger</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TRIGGER set_timestamp
+BEFORE INSERT ON users
+FOR EACH ROW
+EXECUTE FUNCTION set_created_at();
+</code></pre>
+
+<br/>
+<ul>
+    <li>When inserting into <code>users</code>, <code>created_at</code> is automatically set.</li>
+</ul>
+
+<br/><br/>
 
 
-<!-- * * * * * * * * * * * * * * -->
 
+    <li><b>Accessing OLD and NEW</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">NEW.column_name -- the new row (for INSERT/UPDATE)
+OLD.column_name -- the old row (for UPDATE/DELETE)
+</code></pre>
+
+<br/>
+<ul>
+    <li><b>INSERT:</b> only <code>NEW</code> exists</li>
+    <li><b>UPDATE:</b> both <code>NEW</code> and <code>OLD</code></li>
+    <li><b>DELETE:</b> only <code>OLD</code></li>
+</ul>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">IF NEW.amount &lt;= 0 THEN
+    RAISE EXCEPTION 'Amount must be positive';
+END IF;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>BEFORE vs AFTER</b></li>
+    <br/>
+
+    <table>
+        <tr><th>Type</th><th>Usage</th></tr>
+
+        <tr>
+            <td><b>BEFORE</b></td>
+            <td>
+                <ul>
+                    <li>Validate data</li>
+                    <li>Modify <code>NEW</code> values</li>
+                    <li>Reject rows with <code>RAISE EXCEPTION</code></li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td><b>AFTER</b></td>
+            <td>
+                <ul>
+                    <li>Audit logging</li>
+                    <li>Notification</li>
+                    <li>Complex cross-table updates</li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+
+<br/><br/>
+
+
+
+    <li><b>Row-Level vs Statement-Level</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">FOR EACH ROW       -- fires once per row
+FOR EACH STATEMENT -- fires once per statement
+</code></pre>
+
+<br/>
+<ul>
+    <li>Use statement triggers for:
+        <ul>
+            <li>audit counters</li>
+            <li>accumulation</li>
+            <li>constraint-like logic</li>
+        </ul>
+    </li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>INSTEAD OF Triggers (for Views)</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE VIEW user_view AS
+SELECT id, name FROM users;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Normally views are not writable unless PostgreSQL can auto-expand them.</li>
+    <li><code>INSTEAD OF</code> triggers allow custom insert/update/delete behavior.</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE FUNCTION user_view_insert()
+RETURNS trigger AS
+$$
+BEGIN
+    INSERT INTO users(name) VALUES(NEW.name);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER user_view_ins
+INSTEAD OF INSERT ON user_view
+FOR EACH ROW
+EXECUTE FUNCTION user_view_insert();
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Constraint Triggers vs Normal Triggers</b></li>
+    <br/>
+
+    <table>
+        <tr><th>Type</th><th>Characteristics</th></tr>
+
+        <tr>
+            <td><b>Normal Trigger</b></td>
+            <td>Fires immediately during statement execution</td>
+        </tr>
+
+        <tr>
+            <td><b>Constraint Trigger</b></td>
+            <td>
+                <ul>
+                    <li>Uses <code>DEFERRABLE</code></li>
+                    <li>Can fire at end of transaction</li>
+                    <li>Useful for foreign-key-like logic</li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">CREATE CONSTRAINT TRIGGER trg_name
+AFTER INSERT ON orders
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE FUNCTION check_order();
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Transition Tables (Statement-Level AFTER Triggers)</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL allows capturing the <b>set of changed rows</b>:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">REFERENCING NEW TABLE AS newrows
+REFERENCING OLD TABLE AS oldrows
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">CREATE TRIGGER bulk_update_audit
+AFTER UPDATE ON accounts
+REFERENCING OLD TABLE AS oldset NEW TABLE AS newset
+FOR EACH STATEMENT
+EXECUTE FUNCTION audit_bulk_update();
+</code></pre>
+
+<br/>
+<ul>
+    <li>The function can run:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM newset;
+SELECT * FROM oldset;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Enabling and Disabling Triggers</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">ALTER TABLE users DISABLE TRIGGER set_timestamp;
+ALTER TABLE users ENABLE TRIGGER set_timestamp;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">ALTER TABLE users DISABLE TRIGGER ALL;
+ALTER TABLE users ENABLE TRIGGER ALL;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Superusers may disable system triggers using <code>ALTER TABLE ... DISABLE TRIGGER ALL</code>.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Trigger Execution Order</b></li>
+    <br/>
+    <ul>
+        <li>If multiple triggers exist for the same event, PostgreSQL fires them in <u>alphabetical order by trigger name</u>.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE TRIGGER a_before BEFORE INSERT ON t ...
+CREATE TRIGGER z_before BEFORE INSERT ON t ...
+-- a_before fires before z_before
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Recursive Triggers &amp; Avoiding Infinite Loops</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE FUNCTION update_total()
+RETURNS trigger AS
+$$
+BEGIN
+    UPDATE accounts SET total = total + NEW.amount
+    WHERE id = NEW.account_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+</code></pre>
+
+<br/>
+<ul>
+    <li>This can cause infinite recursion if <code>accounts</code> also has an <code>UPDATE</code> trigger.</li>
+</ul>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Use WHEN clause to guard
+CREATE TRIGGER safe_trigger
+BEFORE UPDATE ON accounts
+FOR EACH ROW
+WHEN (OLD.total IS DISTINCT FROM NEW.total)
+EXECUTE FUNCTION update_total();
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li>Triggers can slow down:
+            <ul>
+                <li>large bulk inserts</li>
+                <li>ETL pipelines</li>
+                <li>high-throughput OLTP workloads</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Prefer:
+            <ul>
+                <li>statement-level triggers when possible</li>
+                <li>batch processing instead of row-by-row logic</li>
+                <li>avoiding heavy work inside triggers (use queues, NOTIFY/LISTEN)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>AFTER triggers have consistent view of committed data.</li>
+        <li>BEFORE triggers must be fast since they block write operations.</li>
+    </ul>
+
+<br/><br/>
+
+
+
+    <li><b>Real-World Examples</b></li>
+    <br/>
+
+    <b>1. Auto-updating <code>updated_at</code></b>
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE FUNCTION touch_row()
+RETURNS trigger AS
+$$
+BEGIN
+    NEW.updated_at := now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER users_touch
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION touch_row();
+</code></pre>
+
+<br/><br/>
+
+    <b>2. Audit log table</b>
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE FUNCTION audit_insert()
+RETURNS trigger AS
+$$
+BEGIN
+    INSERT INTO audit(table_name, row_data, action, ts)
+    VALUES(TG_TABLE_NAME, row_to_json(NEW), 'insert', now());
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER audit_users
+AFTER INSERT ON users
+FOR EACH ROW
+EXECUTE FUNCTION audit_insert();
+</code></pre>
+
+<br/><br/>
+
+    <b>3. Automatically maintain a denormalized counter</b>
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE FUNCTION inc_post_count()
+RETURNS trigger AS
+$$
+BEGIN
+    UPDATE authors SET post_count = post_count + 1
+    WHERE id = NEW.author_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER posts_count_inc
+AFTER INSERT ON posts
+FOR EACH ROW
+EXECUTE FUNCTION inc_post_count();
+</code></pre>
+
+<br/><br/>
+
+    <b>4. Prevent updates on archived rows</b>
+<pre><code class="language-sql line-numbers">CREATE OR REPLACE FUNCTION prevent_update_archived()
+RETURNS trigger AS
+$$
+BEGIN
+    IF OLD.archived THEN
+        RAISE EXCEPTION 'Cannot update archived row';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER no_update_archived
+BEFORE UPDATE ON documents
+FOR EACH ROW
+EXECUTE FUNCTION prevent_update_archived();
+</code></pre>
+
+<br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
