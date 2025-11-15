@@ -2476,15 +2476,17 @@ updateSetting("pageSize", 20);          // ✔ OK
 <!-- * * * * * * * * * * * * * * -->
 <h3 id="ts-indexed-access">Indexed Access Types (<code>T[K]</code>)</h3>
 <ol>
-    <li><b>Introduction</b></li>
+    <li>Indexed access types let you look up the type of a property by its key, using the syntax <code>T[K]</code>.</li>
     <br/>
-    <ul>
-        <li>Indexed access types let you look up the type of a property by its key, using the syntax <code>T[K]</code>.</li>
-        <br/>
-        <li>You can think of <code>T</code> as an object type, and <code>K</code> as a property name (or union of names).</li>
-        <br/>
-        <li>Indexed access types are pure <u>type-level</u> operations, they do not exist at runtime.</li>
-    </ul>
+    <br/>
+
+
+    <li>You can think of <code>T</code> as an object type, and <code>K</code> as a property name (or union of names).</li>
+    <br/>
+    <br/>
+
+
+    <li>Indexed access types are pure <u>type-level</u> operations, they do not exist at runtime.</li>
     <br/>
     <br/>
 
@@ -2757,7 +2759,265 @@ const b = m["user-email"];  // string
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-conditional-types">Conditional Types</h3>
+<ol>
+    <li>Conditional types allow TypeScript to express logic inside the type system.</li>
+    <br/>
+    <br/>
 
+
+    <li>The syntax resembles a JavaScript ternary, but applies entirely at compile time:</li>
+<pre><code class="language-ts line-numbers">T extends U ? X : Y</code></pre>
+    It means: "If <code>T</code> is assignable to <code>U</code>, then the resulting type is <code>X</code>, otherwise <code>Y</code>."
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic Syntax</b></li>
+<pre><code class="language-ts line-numbers">type IsString&lt;T&gt; = T extends string ? "yes" : "no";
+
+type A = IsString&lt;string&gt;;   // "yes"
+type B = IsString&lt;number&gt;;   // "no"
+</code></pre>
+    <br/>
+    <ul>
+        <li>If <code>T</code> fits the constraint <code>string</code>, the type becomes <code>"yes"</code>.</li>
+        <li>Otherwise it becomes <code>"no"</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Conditional Types with Generics</b></li>
+<pre><code class="language-ts line-numbers">type Boxed&lt;T&gt; =
+    T extends number ? { value: number } :
+    T extends string ? { value: string } :
+    { value: T };
+
+type X = Boxed&lt;number&gt;;   // { value: number }
+type Y = Boxed&lt;string&gt;;   // { value: string }
+type Z = Boxed&lt;boolean&gt;;  // { value: boolean }
+</code></pre>
+    <br/>
+    <ul>
+        <li>Generic conditional types allow you to branch based on the shape or category of <code>T</code>.</li>
+        <li>This is often used in API schemas or serialization libraries.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Distributive Conditional Types</b></li>
+    <br/>
+    <ul>
+        <li>When the checked type <code>T</code> is a union, conditional types automatically distribute over each member.</li>
+        <br/>
+        <li>This is one of the most powerful and surprising features of the TypeScript type system.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">type ToArray&lt;T&gt; = T extends any ? T[] : never;
+
+type A = ToArray&lt;string | number&gt;;
+// A = string[] | number[]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Each union member is processed individually, producing a union of results.</li>
+        <li>This is useful for mapping or filtering unions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Filtering Unions</b></li>
+<pre><code class="language-ts line-numbers">type ExtractString&lt;T&gt; = T extends string ? T : never;
+
+type R = ExtractString&lt;string | number | boolean&gt;;
+// R = string
+</code></pre>
+    <br/>
+    <ul>
+        <li>Conditional types can "pick out" parts of a union.</li>
+        <li><code>never</code> removes branches, so only <code>string</code> remains.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Excluding Types</b></li>
+<pre><code class="language-ts line-numbers">type ExcludeNumber&lt;T&gt; = T extends number ? never : T;
+
+type R = ExcludeNumber&lt;string | number | boolean&gt;;
+// R = string | boolean
+</code></pre>
+    <br/>
+    <ul>
+        <li>Conditional types can remove specific members from a union.</li>
+        <li>This is exactly how the built-in <code>Exclude&lt;T, U&gt;</code> utility is implemented.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Inferring Types Using <code>infer</code></b></li>
+    <br/>
+    <ul>
+        <li>Conditional types can extract (infer) parts of a type automatically.</li>
+        <li><code>infer</code> introduces a type variable whose type is deduced from the structure of the input.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">type ReturnTypeOf&lt;T&gt; =
+    T extends (...args: any[]) =&gt; infer R
+        ? R
+        : never;
+
+function foo() {
+    return { id: 1, name: "Alice" };
+}
+
+type R = ReturnTypeOf&lt;typeof foo&gt;;
+// { id: number; name: string }
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>infer R</code> captures the return type of the function.</li>
+        <li>This mechanism powers many of TypeScript's built-in helpers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Inferring Tuple and Array Element Types</b></li>
+<pre><code class="language-ts line-numbers">type ElementOf&lt;T&gt; =
+    T extends (infer U)[] ? U : never;
+
+type A = ElementOf&lt;string[]&gt;;   // string
+type B = ElementOf&lt;number[]&gt;;   // number
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>infer U</code> extracts the element type of an array.</li>
+        <li>Useful for generic collections and serialization utilities.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Inferring Function Parameters</b></li>
+<pre><code class="language-ts line-numbers">type FirstArg&lt;T&gt; =
+    T extends (arg: infer A, ...rest: any[]) =&gt; any
+        ? A
+        : never;
+
+type F = FirstArg&lt;(x: number, y: string) =&gt; void&gt;;
+// number
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can pattern-match function signatures and pull out their components.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Conditional Types with <code>readonly</code> and Mutability Checks</b></li>
+<pre><code class="language-ts line-numbers">type IsReadonlyArray&lt;T&gt; = T extends readonly any[] ? true : false;
+
+type A = IsReadonlyArray&lt;readonly number[]&gt;;   // true
+type B = IsReadonlyArray&lt;number[]&gt;;            // false
+</code></pre>
+    <br/>
+    <ul>
+        <li>Conditional types enable "meta" checks such as immutability, tuple-ness, or structure validation.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Real-World Example: Extracting a Promise's Resolved Type</b></li>
+<pre><code class="language-ts line-numbers">type UnwrapPromise&lt;T&gt; = T extends Promise&lt;infer U&gt; ? U : T;
+
+type A = UnwrapPromise&lt;Promise&lt;number&gt;&gt;;     // number
+type B = UnwrapPromise&lt;Promise&lt;string&gt;&gt;;     // string
+type C = UnwrapPromise&lt;number&gt;;              // number
+</code></pre>
+    <br/>
+    <ul>
+        <li>Used in async utils, API clients, or testing frameworks.</li>
+        <li>If it's a Promise, unwrap it; otherwise, keep the type as-is.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Real-World Example: JSON Serialization Type</b></li>
+<pre><code class="language-ts line-numbers">type JsonSafe&lt;T&gt; =
+    T extends string | number | boolean | null
+        ? T
+        : T extends (infer U)[]
+            ? JsonSafe&lt;U&gt;[]
+            : T extends object
+                ? { [K in keyof T]: JsonSafe&lt;T[K]&gt; }
+                : never;
+
+type User = {
+    id: number;
+    name: string;
+    flags: boolean[];
+};
+
+type J = JsonSafe&lt;User&gt;;
+// {
+//   id: number;
+//   name: string;
+//   flags: boolean[];
+// }
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Shows how complex data can be recursively transformed at type level.</li>
+        <li>Conditional types allow for branching logic at each structural level.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary Table</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Purpose</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Basic condition</td>
+                <td>Choose between two types</td>
+                <td><code>T extends U ? A : B</code></td>
+            </tr>
+            <tr>
+                <td>Distributive behavior</td>
+                <td>Map each union member</td>
+                <td><code>(A | B) extends X ? Y : Z</code></td>
+            </tr>
+            <tr>
+                <td><code>infer</code> keyword</td>
+                <td>Extract parts of a type</td>
+                <td><code>infer R</code></td>
+            </tr>
+            <tr>
+                <td>Filtering unions</td>
+                <td>Keep or remove union members</td>
+                <td><code>string | never</code></td>
+            </tr>
+            <tr>
+                <td>Recursive conditional types</td>
+                <td>Transform deep structures</td>
+                <td>JSON-safe types</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
