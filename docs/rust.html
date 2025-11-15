@@ -113,6 +113,7 @@
         <li><a href="#rust-structs">Structs</a></li>
         <li><a href="#rust-enums">Enums</a></li>
         <li><a href="#rust-constants">Constants</a></li>
+        <li><a href="#rust-variable-bindings">Variable Bindings</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -2111,6 +2112,265 @@ const SIXTEEN: i32 = square(4);
     </ul>
     <br/>
     <br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-variable-bindings">Variable Bindings</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>In Rust, variables are created using <code>let</code> and are called <u>bindings</u>.</li>
+        <br/>
+        <li>Bindings are immutable by default, meaning their value cannot be changed after assignment.</li>
+        <br/>
+        <li>Rust encourages immutability for safety and ease of reasoning, but allows mutation with <code>mut</code> when needed.</li>
+        <br/>
+        <li>Bindings can also use patterns, shadowing, type annotations, and destructuring.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Immutable Binding</b></li>
+<pre><code class="language-rust line-numbers">let x = 10;
+println!("x = {}", x);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>let x = 10;</code> binds <code>x</code> to the value <code>10</code>.</li>
+        <li>The binding is immutable — <code>x</code> cannot be changed after this point.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Mutable Binding</b></li>
+<pre><code class="language-rust line-numbers">let mut count = 0;
+count += 1;
+println!("count = {}", count);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>mut</code> allows changing the value of the binding.</li>
+        <li>Mutation affects only the binding, not necessarily the value's ownership rules.</li>
+        <li>Use mutation only when necessary.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Type Annotations</b></li>
+<pre><code class="language-rust line-numbers">let x: i32 = 42;
+let name: &amp;str = "Alice";
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rust usually infers types automatically.</li>
+        <li>Type annotations are needed when:
+            <ul>
+                <li>Type inference is ambiguous.</li>
+                <li>You want to guide or constrain the type.</li>
+                <li>Working with generics or traits.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Shadowing</b></li>
+<pre><code class="language-rust line-numbers">let x = 5;
+let x = x + 1;   // shadows the previous x
+{
+    let x = x * 2;
+    println!("x inside block = {}", x); // 12
+}
+println!("x outside block = {}", x);     // 6
+</code></pre>
+    <br/>
+    <ul>
+        <li>Shadowing allows creating a <u>new binding</u> with the same name.</li>
+        <li>The new binding <u>replaces</u> the previous one within that scope.</li>
+        <li>Unlike <code>mut</code>, shadowing can change:
+            <ul>
+                <li>the type</li>
+                <li>the mutability</li>
+                <li>the structure of the value</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Shadowing is useful for transformations:</li>
+<pre><code class="language-rust line-numbers">let spaces = "    ";
+let spaces = spaces.len();
+</code></pre>
+        <li>Here, a <code>&amp;str</code> becomes a <code>usize</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Destructuring Bindings</b></li>
+<pre><code class="language-rust line-numbers">let (a, b, c) = (1, 2, 3);
+println!("a = {}, b = {}, c = {}", a, b, c);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rust allows <u>pattern matching</u> in variable bindings.</li>
+        <li>Patterns include:
+            <ul>
+                <li>Tuples</li>
+                <li>Structs</li>
+                <li>Enums</li>
+                <li>Nested patterns</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Point { x: i32, y: i32 }
+
+let p = Point { x: 10, y: 20 };
+let Point { x, y } = p;
+println!("x = {}, y = {}", x, y);
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Use <code>_</code> to ignore values:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let (x, _) = (10, 99);
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Binding by Reference</b></li>
+<pre><code class="language-rust line-numbers">let x     = 10;
+let ref_x = &amp;x;
+
+println!("ref_x = {}", ref_x);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Bindings can store references.</li>
+        <li>You can also destructure references:</li>
+<pre><code class="language-rust line-numbers">let value = 5;
+let &amp;ref_to_value = &amp;value;
+
+println!("{}", ref_to_value); // 5
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Mutable References as Bindings</b></li>
+<pre><code class="language-rust line-numbers">let mut x = 10;
+let y     = &amp;mut x;
+*y += 5;
+println!("x = {}", x);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Mutable references require the original binding to be <code>mut</code>.</li>
+        <li>The borrowchecker enforces rules: only <u>one</u> mutable reference allowed at a time.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Binding with <code>match</code> Patterns</b></li>
+<pre><code class="language-rust line-numbers">let numbers = vec![1, 2, 3];
+
+match numbers.as_slice() {
+    [first, .., last] =&gt; println!("first = {}, last = {}", first, last),
+    _                 =&gt; println!("Too short"),
+}
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Using <code>let</code> in <code>if</code> and <code>while let</code></b></li>
+<pre><code class="language-rust line-numbers">if let Some(n) = Some(5) {
+    println!("n = {}", n);
+}
+</code></pre>
+
+<pre><code class="language-rust line-numbers">let mut v = vec![1, 2, 3];
+
+while let Some(n) = v.pop() {
+    println!("popped {}", n);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>if let</code> is for matching a single pattern.</li>
+        <li><code>while let</code> runs repeatedly as long as the pattern matches.</li>
+        <li>Both rely on variable binding through patterns.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Freezing via Immutable Binding</b></li>
+<pre><code class="language-rust line-numbers">let mut x = 10;
+let y     = &amp;x;
+
+println!("y = {}", y);
+
+// x += 1; // ERROR: x frozen while y exists
+</code></pre>
+    <br/>
+    <ul>
+        <li>An immutable reference "freezes" the original variable: it cannot be mutated while the reference exists.</li>
+        <li>Rules enforced by the borrowchecker guarantee safe access.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of Variable Binding Rules</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Binding Feature</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Immutable by default</td>
+                <td>Cannot change value</td>
+                <td><code>let x = 5;</code></td>
+            </tr>
+            <tr>
+                <td>Mutable binding</td>
+                <td>Explicit <code>mut</code> required</td>
+                <td><code>let mut x = 5;</code></td>
+            </tr>
+            <tr>
+                <td>Shadowing</td>
+                <td>Create new binding with same name</td>
+                <td><code>let x = x + 1;</code></td>
+            </tr>
+            <tr>
+                <td>Pattern binding</td>
+                <td>Destructure tuples, structs, enums</td>
+                <td><code>let (a, b) = pair;</code></td>
+            </tr>
+            <tr>
+                <td>Move semantics</td>
+                <td>Non-Copy values move on assignment</td>
+                <td><code>let t = s;</code></td>
+            </tr>
+            <tr>
+                <td>Binding references</td>
+                <td>Store <code>&amp;</code> or <code>&amp;mut</code></td>
+                <td><code>let r = &amp;x;</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
 
 </ol>
 <br/>
