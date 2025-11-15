@@ -13,6 +13,15 @@
     <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.js"></script>
 
 <style>
+    /* Make comments grey */
+    .token.comment {
+        color: #888;
+    }
+
+    .token.keyword {
+        font-weight: 500;
+    }
+
     table {
         border-collapse: collapse;      /* merge borders so you don't get double lines */
         width: 100%;                    /* optional: make it full width */
@@ -2232,6 +2241,240 @@ const doubled = mapValues(original, v =&gt; v * 2);
     <br/>
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-keyof">The <code>keyof</code> Type Operator</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>keyof</code> is a TypeScript <u>type operator</u> that produces a union of the property names of a type.</li>
+        <br/>
+        <li>It is used only in <u>type positions</u> (not at runtime).</li>
+        <br/>
+        <li>Together with indexed access types (<code>T[K]</code>) and generics, <code>keyof</code> is one of the core building blocks for advanced typing.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Basic Usage with Object Types</b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name: string;
+    active: boolean;
+};
+
+type UserKeys = keyof User;
+// type UserKeys = "id" | "name" | "active"
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>keyof User</code> becomes a union of all property names on <code>User</code>.</li>
+        <li>Here, <code>UserKeys</code> can only be <code>"id"</code>, <code>"name"</code>, or <code>"active"</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using <code>keyof</code> to Type-Safe Property Access</b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name: string;
+};
+
+function getProp&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K] {
+    return obj[key];
+}
+
+const u: User = { id: 1, name: "Alice" };
+
+const id = getProp(u, "id");      // type: number
+const name = getProp(u, "name");  // type: string
+// getProp(u, "age");             // ❌ Error: "age" not in "id" | "name"
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>K extends keyof T</code> ensures that <code>key</code> is a valid property name of <code>T</code>.</li>
+        <li><code>T[K]</code> gives the type of that property, fully type-safe.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>keyof</code> with Index Signatures</b></li>
+<pre><code class="language-ts line-numbers">type Scores = {
+    [player: string]: number;
+};
+
+type ScoreKey = keyof Scores;
+// type ScoreKey = string | number
+</code></pre>
+    <br/>
+    <ul>
+        <li>For string index signatures, <code>keyof</code> usually becomes <code>string | number</code> because JS object keys are treated as strings internally.</li>
+        <br/>
+        <li>This is why you often see <code>Record&lt;string, T&gt;</code> together with <code>keyof</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>keyof</code> with Arrays and Tuples</b></li>
+<pre><code class="language-ts line-numbers">type Numbers = number[];
+
+type NumbersKey = keyof Numbers;
+// type NumbersKey = number | "length" | "push" | "pop" | ...
+
+type Point = [number, number];
+
+type PointKey = keyof Point;
+// type PointKey = "0" | "1" | "length" | ...
+</code></pre>
+    <br/>
+    <ul>
+        <li>For normal arrays, <code>keyof</code> includes numeric indexes (<code>number</code>) and array methods like <code>"length"</code>, <code>"push"</code>, etc.</li>
+        <br/>
+        <li>For tuples, <code>keyof</code> includes <u>string literal indices</u> like <code>"0"</code>, <code>"1"</code>, plus common array members.</li>
+        <br/>
+        <li>Because of this, you usually use <code>number</code> (or explicit indices) to index tuples instead of <code>keyof</code> directly.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>keyof</code> and Unions of Object Types</b></li>
+<pre><code class="language-ts line-numbers">type Cat = { meow: () =&gt; void; name: string };
+type Dog = { bark: () =&gt; void; name: string };
+
+type Pet = Cat | Dog;
+type PetKeys = keyof Pet;
+// type PetKeys = "name"  | "meow" | "bark"
+</code></pre>
+    <br/>
+    <ul>
+        <li>For unions of object types, <code>keyof</code> gives the <b>union of all keys</b>.</li>
+        <li>Here, <code>Pet</code> might have <code>"meow"</code> (for <code>Cat</code>) or <code>"bark"</code> (for <code>Dog</code>), and always <code>"name"</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>keyof</code> and Intersections</b></li>
+<pre><code class="language-ts line-numbers">type A = { id: number; name: string };
+type B = { name: string; active: boolean };
+
+type AB = A &amp; B;
+type ABKeys = keyof AB;
+// type ABKeys = "id" | "name" | "active"
+</code></pre>
+    <br/>
+    <ul>
+        <li>For intersections, the resulting type has <u>all</u> properties, so <code>keyof</code> gives the union of those keys.</li>
+        <li>Intersections are often used with <code>keyof</code> to model combined domains.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>keyof</code> Special Cases: <code>any</code> and <code>never</code></b></li>
+<pre><code class="language-ts line-numbers">type KAny = keyof any;      // string | number | symbol
+type KNever = keyof never;  // never
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>keyof any</code> is defined as <code>string | number | symbol</code> (all possible property key types).</li>
+        <br/>
+        <li><code>keyof never</code> is <code>never</code>, because there is no value of type <code>never</code>, and thus no keys.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Combining <code>keyof</code> with Indexed Access Types</b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name: string;
+    active: boolean;
+};
+
+type UserKey = keyof User;    // "id" | "name" | "active"
+type UserValue = User[UserKey];
+// type UserValue = number | string | boolean
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>User[UserKey]</code> means "the union of the types of all properties of <code>User</code>".</li>
+        <li>This pattern is useful when you want "any value from this object type".</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Building Utility Types with <code>keyof</code></b></li>
+<pre><code class="language-ts line-numbers">type User = {
+    id: number;
+    name: string;
+    email?: string;
+};
+
+type PickProps&lt;T, K extends keyof T&gt; = {
+    [P in K]: T[P];
+};
+
+type UserBasic = PickProps&lt;User, "id" | "name"&gt;;
+// type UserBasic = { id: number; name: string; }
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>K extends keyof T</code> ensures we only pick existing keys.</li>
+        <li><code>[P in K]: T[P]</code> (a mapped type) uses <code>keyof</code> and indexed access to build new object shapes.</li>
+        <li>Many built-in utilities like <code>Pick</code>, <code>Omit</code>, <code>Readonly</code>, and <code>Partial</code> are defined using <code>keyof</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using <code>keyof</code> to Constrain APIs</b></li>
+<pre><code class="language-ts line-numbers">type Settings = {
+    theme: "light" | "dark";
+    language: "en" | "de";
+    pageSize: number;
+};
+
+function updateSetting&lt;K extends keyof Settings&gt;(
+    key: K,
+    value: Settings[K]
+) {
+    // ...
+}
+
+updateSetting("theme", "dark");         // ✔ OK
+updateSetting("pageSize", 20);          // ✔ OK
+// updateSetting("language", "fr");     // ❌ Error: "fr" not assignable to "en" | "de"
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>keyof</code> lets the function accept only valid setting names.</li>
+        <li><code>Settings[K]</code> forces the value to match the exact type for that key.</li>
+        <li>This pattern is extremely common for config APIs, Redux-like stores, or form updaters.</li>
+    </ul>
+    <br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
