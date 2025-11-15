@@ -150,6 +150,7 @@
         <li><a href="#pg-indexes">Indexes</a></li>
         <li><a href="#pg-composite-types">Composite Types</a></li>
         <li><a href="#pg-arrays">Arrays</a></li>
+        <li><a href="#pg-enum-types">Enums</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -11330,7 +11331,363 @@ CREATE TABLE sensors (
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-enum-types">ENUM Types in PostgreSQL</h3>
+<ol>
 
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>An <code>ENUM</code> in PostgreSQL is a user-defined data type consisting of a fixed set of text labels.</li>
+        <br/>
+        <li>ENUMs are schema-bound, versioned, and persistent types, and may be used in any table, composite type, or function.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Creating an ENUM Type</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TYPE order_status AS ENUM (
+    'pending',
+    'processing',
+    'shipped',
+    'delivered',
+    'cancelled'
+);
+</code></pre>
+
+<br/>
+<ul>
+    <li>The order of values matters for comparisons: <code>'pending' &lt; 'processing'</code>.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Using ENUM Types in Tables</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE orders (
+    id      SERIAL PRIMARY KEY,
+    product TEXT,
+    status  order_status NOT NULL
+);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">INSERT INTO orders(product, status)
+VALUES ('Laptop', 'pending');
+</code></pre>
+
+<br/>
+<ul>
+    <li>Using an invalid value results in an error:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">INSERT INTO orders(product, status)
+VALUES ('Laptop', 'waiting');   -- ERROR: invalid input value for enum
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Ordering and Comparison</b></li>
+    <br/>
+    <ul>
+        <li>ENUM comparison is based on the order defined during type creation.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'pending' &lt; 'processing';     -- true
+SELECT 'delivered' &gt; 'shipped';      -- true
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT * FROM orders
+ORDER BY status;
+</code></pre>
+
+<br/>
+<ul>
+    <li>This sorts according to the type definition, not alphabetical order.</li>
+</ul>
+<br/><br/>
+
+
+
+    <li><b>Changing ENUM Types</b></li>
+    <br/>
+    <ul>
+        <li>Cannot remove or rename existing values directly (dangerous to data integrity).</li>
+        <br/>
+        <li>You <b>can</b> add new values:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">ALTER TYPE order_status ADD VALUE 'returned';
+</code></pre>
+
+<br/>
+<ul>
+    <li>Append at a specific position:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">ALTER TYPE order_status ADD VALUE 'awaiting_payment'
+BEFORE 'pending';
+
+ALTER TYPE order_status ADD VALUE 'archived'
+AFTER 'cancelled';
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Renaming an ENUM Value</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">ALTER TYPE order_status RENAME VALUE 'pending' TO 'awaiting';
+</code></pre>
+
+<br/>
+<ul>
+    <li>Safe operation; modifies system catalog only.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Dropping an ENUM Type</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">DROP TYPE order_status;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Fails if objects still use the type.</li>
+    <li>Use <code>CASCADE</code> with caution:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">DROP TYPE order_status CASCADE;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>ENUM Arrays</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE tickets (
+    id       SERIAL PRIMARY KEY,
+    labels   order_status[]
+);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">INSERT INTO tickets(labels)
+VALUES ('{pending,shipped}');
+</code></pre>
+
+<br/>
+<ul>
+    <li>Array operations apply normally:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'shipped' = ANY(labels) FROM tickets;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Using ENUMs in Composite Types</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TYPE product_info AS (
+    name   TEXT,
+    status order_status
+);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT (ROW('Tablet','pending')::product_info).status;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>ENUM Type Casting and Implicit Behavior</b></li>
+    <br/>
+    <ul>
+        <li>ENUM labels are text-like but require explicit casting in some cases.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT 'pending'::order_status;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Implicit cast test:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT status = 'pending' FROM orders;    -- works (implicit)
+</code></pre>
+
+<br/>
+<ul>
+    <li>But some operations require explicit casts:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT ARRAY['pending','shipped'];            -- ERROR
+SELECT ARRAY['pending'::order_status,'shipped'::order_status];
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>ENUM vs CHECK Constraints</b></li>
+    <br/>
+
+    <table>
+        <tr><th>Approach</th><th>Pros</th><th>Cons</th></tr>
+
+        <tr>
+            <td><b>ENUM Type</b></td>
+            <td>
+                <ul>
+                    <li>Faster comparisons</li>
+                    <li>Compact storage</li>
+                    <li>Ordered</li>
+                    <li>Strong type enforcement</li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li>Hard to remove/rename values</li>
+                    <li>Schema migration overhead</li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td><b>CHECK constraint</b></td>
+            <td>
+                <ul>
+                    <li>Easier to modify</li>
+                    <li>No global type coupling</li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li>More storage</li>
+                    <li>No meaningful ordering</li>
+                    <li>Duplicate constraints across tables</li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+
+<br/><br/>
+
+
+
+    <li><b>Performance Considerations</b></li>
+    <br/>
+    <ul>
+        <li><code>ENUM</code> = and comparison operations are faster than <code>TEXT</code> because values are internally integers.</li>
+        <br/>
+        <li><code>ENUM</code>s index extremely well with B-tree indexes:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_orders_status ON orders(status);
+</code></pre>
+<br/><br/>
+
+
+
+    <li><b>Migrating ENUM Values Safely</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">ALTER TYPE order_status ADD VALUE 'in_transit';
+</code></pre>
+
+<br/>
+<ul>
+    <li>You <b>cannot remove</b> ENUM values.</li>
+    <li>You cannot change their order after creation.</li>
+</ul>
+
+<br/>
+<ul>
+    <li>Best practice for major schema migration:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">-- 1. Rename old enum
+ALTER TYPE order_status RENAME TO order_status_old;
+
+-- 2. Create new enum with correct values
+CREATE TYPE order_status AS ENUM ('pending','processing','...');
+
+-- 3. Convert columns
+ALTER TABLE orders
+ALTER COLUMN status TYPE order_status
+USING status::TEXT::order_status;
+
+-- 4. Drop old enum
+DROP TYPE order_status_old;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Real-World Examples</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">-- User roles
+CREATE TYPE user_role AS ENUM ('user','moderator','admin');
+
+CREATE TABLE users (
+    id    SERIAL,
+    name  TEXT,
+    role  user_role NOT NULL DEFAULT 'user'
+);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Ticket priorities with ordering
+CREATE TYPE priority AS ENUM ('low','medium','high','urgent');
+
+SELECT * FROM tickets ORDER BY priority;   -- correct severity order
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Payment status usage
+CREATE TYPE payment_status AS ENUM ('created','paid','refunded');
+
+CREATE TABLE invoices (
+    id      SERIAL,
+    amount  NUMERIC,
+    status  payment_status
+);
+</code></pre>
+
+<br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
