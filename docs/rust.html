@@ -112,6 +112,7 @@
         <li><a href="#rust-primitives">Primitive</a></li>
         <li><a href="#rust-structs">Structs</a></li>
         <li><a href="#rust-enums">Enums</a></li>
+        <li><a href="#rust-constants">Constants</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -1828,6 +1829,288 @@ enum Direction {
         <li>They work seamlessly with <code>match</code> and pattern matching.</li>
     </ul>
     <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-constants">Constants in Rust</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Rust provides <code>const</code> and <code>static</code> for defining values that are known for the entire program runtime.</li>
+        <br/>
+        <li>They differ from <code>let</code> bindings:
+            <ul>
+                <li><code>let</code> creates variables on the stack (by default immutable, but can be <code>mut</code>).</li>
+                <li><code>const</code> creates inlined compile-time constants.</li>
+                <li><code>static</code> creates a single <u>global memory location</u> with a fixed address.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Both <code>const</code> and <code>static</code> must have an explicit type annotation and a value that can be evaluated at compile time.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Defining a <code>const</code> Value</b></li>
+<pre><code class="language-rust line-numbers">const MAX_POINTS: u32 = 100_000;
+const PI: f64 = 3.141_592_653_589;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>const</code> items:
+            <ul>
+                <li>Must have a type: <code>MAX_POINTS: u32</code>.</li>
+                <li>Must be initialized with a compile-time expression.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>By convention, constant names use <b>SCREAMING_SNAKE_CASE</b> (<code>MAX_POINTS</code>, <code>DEFAULT_TIMEOUT</code>).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Constants vs <code>let</code> Variables</b></li>
+<pre><code class="language-rust line-numbers">const MAX_USERS: u32 = 1_000;
+
+fn main() {
+    let current_users = 10;    // runtime variable
+    println!("Current: {}, max: {}", current_users, MAX_USERS);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>MAX_USERS</code> is usable <u>everywhere</u> in the crate where it is visible, including in other <code>const</code> expressions and array sizes.</li>
+        <br/>
+        <li><code>let current_users</code>:
+            <ul>
+                <li>Lives only in <code>main</code>.</li>
+                <li>Is created at runtime.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Constants are often used for:
+            <ul>
+                <li>Configuration values</li>
+                <li>Array lengths</li>
+                <li>Compile-time flags and limits</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Scope of Constants</b></li>
+<pre><code class="language-rust line-numbers">const GLOBAL_LIMIT: u32 = 10_000;
+
+fn main() {
+    const LOCAL_FACTOR: u32 = 2;
+    println!("Global = {}, local = {}", GLOBAL_LIMIT, LOCAL_FACTOR);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>const</code> can be declared:
+            <ul>
+                <li>At the module/root level (like <code>GLOBAL_LIMIT</code>).</li>
+                <li>Inside functions (like <code>LOCAL_FACTOR</code>).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Scope rules are similar to <code>let</code> bindings: a <code>const</code> defined in a function is visible only inside that function.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Constants in Types and Array Sizes</b></li>
+<pre><code class="language-rust line-numbers">const ROWS: usize = 3;
+const COLS: usize = 4;
+
+fn main() {
+    let matrix: [[i32; COLS]; ROWS] = [[0; COLS]; ROWS];
+    println!("Matrix has {} rows and {} cols", ROWS, COLS);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Constants can be used in:
+            <ul>
+                <li>Array lengths</li>
+                <li>Generic parameters</li>
+                <li>Other <code>const</code> expressions</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This is something <code>let</code> bindings cannot do, because they are not available at compile time.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>static</code> Variables (Global Storage)</b></li>
+<pre><code class="language-rust line-numbers">static APP_NAME: &amp;str = "My Rust App";
+static MAX_CONNECTIONS: u32 = 1024;
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>static</code> defines a <u>single location in memory</u> with a fixed address.</li>
+        <br/>
+        <li>Properties of <code>static</code> items:
+            <ul>
+                <li>Have a <code>'static</code> lifetime (live for the entire duration of the program).</li>
+                <li>May be accessed from anywhere in the program where they are visible.</li>
+                <li>Must have a type annotation and a compile-time initializer, just like <code>const</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>A common pattern is to store a <code>&amp;'static str</code>:
+<pre><code class="language-rust line-numbers">static WELCOME: &amp;str = "Welcome to Rust!";
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>static mut</code> and Safety</b></li>
+<pre><code class="language-rust line-numbers">static mut COUNTER: u32 = 0;
+
+fn main() {
+    unsafe {
+        COUNTER += 1;
+        println!("COUNTER = {}", COUNTER);
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>static mut</code> allows mutable global state.</li>
+        <br/>
+        <li>However, reading or writing a <code>static mut</code> is <b>unsafe</b>:
+            <ul>
+                <li>Requires an <code>unsafe</code> block.</li>
+                <li>Can easily introduce data races in concurrent code.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Recommended approach:
+            <ul>
+                <li>Avoid <code>static mut</code> when possible.</li>
+                <li>Prefer safe wrappers like <code>Mutex&lt;T&gt;</code>, <code>RwLock&lt;T&gt;</code> or atomic types in <code>std::sync</code> and <code>std::sync::atomic</code> inside a <code>static</code>.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Using <code>static</code> with Interior Mutability</b></li>
+<pre><code class="language-rust line-numbers">use std::sync::Mutex;
+
+static COUNTER: Mutex&lt;u32&gt; = Mutex::new(0);
+
+fn main() {
+    let mut n = COUNTER.lock().unwrap();
+    *n += 1;
+    println!("COUNTER = {}", *n);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here <code>COUNTER</code> is <b>not</b> <code>mut</code>, but the data <u>inside</u> the <code>Mutex</code> can change.</li>
+        <br/>
+        <li>This pattern:
+            <ul>
+                <li>Stays thread-safe.</li>
+                <li>Avoids <code>unsafe</code>.</li>
+                <li>Is the idiomatic way to represent mutable global state.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>const fn</code> and Computed Constants</b></li>
+<pre><code class="language-rust line-numbers">const fn square(x: i32) -&gt; i32 {
+    x * x
+}
+
+const FOUR: i32 = square(2);
+const SIXTEEN: i32 = square(4);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>const fn</code> defines a function that can be evaluated at compile time (under certain rules).</li>
+        <br/>
+        <li>Such functions can be used in:
+            <ul>
+                <li><code>const</code> initializers</li>
+                <li><code>static</code> initializers</li>
+                <li>Array sizes and other compile-time contexts</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Not all operations are allowed inside <code>const fn</code>, but the set of allowed operations grows with newer Rust versions.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Summary: <code>const</code> vs <code>static</code> vs <code>let</code></b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Keyword</th>
+                <th>When Evaluated</th>
+                <th>Storage</th>
+                <th>Mutability</th>
+                <th>Typical Use</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>let</code></td>
+                <td>Runtime</td>
+                <td>Stack (or moved to heap inside types)</td>
+                <td>Immutable by default, can be <code>mut</code></td>
+                <td>Normal variables, function-local state</td>
+            </tr>
+            <tr>
+                <td><code>const</code></td>
+                <td>Compile time</td>
+                <td>Inlined, no single fixed address</td>
+                <td>Always immutable</td>
+                <td>Global configuration, array sizes, generic parameters</td>
+            </tr>
+            <tr>
+                <td><code>static</code></td>
+                <td>Compile-time initialization</td>
+                <td>Single fixed memory location</td>
+                <td>Immutable by default, <code>static mut</code> is unsafe</td>
+                <td>Global data with <code>'static</code> lifetime</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>Use <code>let</code> for ordinary values, <code>const</code> for compile-time constants, and <code>static</code> only when you truly need a global memory location.</li>
+        <li>For mutable global state, prefer safe wrappers (like <code>Mutex</code> or atomics) inside <code>static</code> instead of <code>static mut</code>.</li>
+    </ul>
+    <br/>
+    <br/>
 
 </ol>
 <br/>
