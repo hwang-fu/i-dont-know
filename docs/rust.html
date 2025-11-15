@@ -114,6 +114,7 @@
         <li><a href="#rust-enums">Enums</a></li>
         <li><a href="#rust-constants">Constants</a></li>
         <li><a href="#rust-variable-bindings">Variable Bindings</a></li>
+        <li><a href="#rust-types">Types</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -2258,6 +2259,7 @@ println!("ref_x = {}", ref_x);
         <li>You can also destructure references:</li>
 <pre><code class="language-rust line-numbers">let value = 5;
 let &amp;ref_to_value = &amp;value;
+// let ref_to_value = value;  // same end result for Copy types
 
 println!("{}", ref_to_value); // 5
 </code></pre>
@@ -2367,6 +2369,355 @@ println!("y = {}", y);
                 <td>Binding references</td>
                 <td>Store <code>&amp;</code> or <code>&amp;mut</code></td>
                 <td><code>let r = &amp;x;</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-types">Types</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Rust is a <u>statically typed</u> language, meaning every value has a known type at compile time.</li>
+        <br/>
+        <li>Most types fall into these categories:
+            <ul>
+                <li>Primitive types</li>
+                <li>Compound types</li>
+                <li>User-defined types (structs, enums)</li>
+                <li>Reference types</li>
+                <li>Function and closure types</li>
+                <li>Generic and trait object types</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Type Inference</b></li>
+<pre><code class="language-rust line-numbers">let x    = 10;          // inferred as i32
+let name = "Alice";     // inferred as &amp;str
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Annotating Types Explicitly</b></li>
+<pre><code class="language-rust line-numbers">let x: i64 = 100;
+let flag: bool = true;
+let scores: [i32; 3] = [10, 20, 30];
+</code></pre>
+    <br/>
+    <ul>
+        <li>Type annotations follow the pattern: <code>let name: Type</code>.</li>
+        <li>Annotations improve clarity and integration in complex codebases.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Type Aliases</b></li>
+<pre><code class="language-rust line-numbers">type Kilometers = i32;
+
+let distance: Kilometers = 50;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Aliases introduce new names for existing types.</li>
+        <li>This does <u>not</u> create a new type — only a new label.</li>
+        <li>Useful for readability, domain-specific naming, or complex types.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">type Result&lt;T&gt; = std::result::Result&lt;T, String&gt;;
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Primitive Types (Built-in)</b></li>
+    <br/>
+    <ul>
+        <li>Primitive types include:
+            <ul>
+                <li>Integers: <code>i8</code>.. <code>i128</code>, <code>u8</code>.. <code>u128</code>, <code>isize</code>, <code>usize</code></li>
+                <li>Floating: <code>f32</code>, <code>f64</code></li>
+                <li>Boolean: <code>bool</code></li>
+                <li>Character: <code>char</code></li>
+                <li>Tuples: <code>(T1, T2, ...)</code></li>
+                <li>Arrays: <code>[T; N]</code></li>
+                <li>Slices: <code>&amp;[T]</code></li>
+                <li>String slice: <code>&amp;str</code></li>
+                <li>String: <code>String</code></li>
+                <li>Unit: <code>()</code></li>
+                <li>Never: <code>!</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Primitive types are covered in detail in the “Primitives” chapter.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Compound Types</b></li>
+<pre><code class="language-rust line-numbers">let tup: (i32, &amp;str) = (10, "Hi");
+let arr: [u8; 4] = [1, 2, 3, 4];
+</code></pre>
+    <br/>
+    <ul>
+        <li>Compound types group multiple values together.</li>
+        <li>Rust supports tuples and arrays as built-in compound types.</li>
+        <li>More expressive types can be created with structs and enums.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>User-Defined Types</b></li>
+<pre><code class="language-rust line-numbers">struct User {
+    id: u32,
+    name: String,
+}
+
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+type Id = u64;
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Reference Types</b></li>
+<pre><code class="language-rust line-numbers">let x = 10;
+let r1: &amp;i32 = &amp;x;
+
+let mut y = 20;
+let r2: &amp;mut i32 = &amp;mut y;
+</code></pre>
+    <br/>
+    <ul>
+        <li>References allow borrowing values without taking ownership.</li>
+        <br/>
+        <li>Two main reference types:
+            <ul>
+                <li><code>&amp;T</code> — shared reference (immutable)</li>
+                <li><code>&amp;mut T</code> — mutable reference</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Rules enforced by borrowchecker ensure memory safety:
+            <ul>
+                <li>Any number of immutable borrows</li>
+                <li>Exactly one mutable borrow</li>
+                <li>Mutable and immutable borrows cannot coexist</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Function Types</b></li>
+<pre><code class="language-rust line-numbers">fn add(a: i32, b: i32) -&gt; i32 {
+    a + b
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Function items have a unique type based on their signature.</li>
+        <li>They can be referenced using <code>fn</code> pointer types:</li>
+<pre><code class="language-rust line-numbers">let f: fn(i32, i32) -&gt; i32 = add;
+println!("{}", f(3, 4));
+</code></pre>
+        <li>Function types:
+            <ul>
+                <li>Are zero-sized</li>
+                <li>Can be passed around like values</li>
+                <li>Useful for callbacks and functional programming patterns</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Closure Types</b></li>
+<pre><code class="language-rust line-numbers">let add = |x: i32, y: i32| x + y;
+println!("{}", add(2, 3));
+</code></pre>
+    <br/>
+    <ul>
+        <li>Closures capture their environment.</li>
+        <li>Different closure traits:
+            <ul>
+                <li><code>Fn</code> — captures immutably</li>
+                <li><code>FnMut</code> — captures mutably</li>
+                <li><code>FnOnce</code> — consumes captured values</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Closures have unique anonymous types generated by the compiler.</li>
+        <li>Used heavily in iterator pipelines and functional patterns.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Generic Types</b></li>
+<pre><code class="language-rust line-numbers">struct Point&lt;T&gt; {
+    x: T,
+    y: T,
+}
+
+let p = Point { x: 1.0, y: 2.0 };
+</code></pre>
+    <br/>
+    <ul>
+        <li>Generics allow writing code that works with many types.</li>
+        <br/>
+        <li>Rust performs monomorphization:
+            <ul>
+                <li>The compiler generates concrete specialized versions.</li>
+                <li>No runtime overhead.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Generics appear in:
+            <ul>
+                <li>Structs</li>
+                <li>Enums</li>
+                <li>Functions</li>
+                <li>Traits</li>
+                <li>Implementations</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Trait Object Types (<code>dyn Trait</code>)</b></li>
+<pre><code class="language-rust line-numbers">trait Speak {
+    fn speak(&amp;self);
+}
+
+struct Dog;
+impl Speak for Dog {
+    fn speak(&amp;self) { println!("Woof"); }
+}
+
+let animal: &amp;dyn Speak = &amp;Dog;
+animal.speak();
+</code></pre>
+    <br/>
+    <ul>
+        <li>Trait objects enable dynamic dispatch through <code>dyn Trait</code>.</li>
+        <br/>
+        <li>Used when:
+            <ul>
+                <li>The exact type is not known at compile time.</li>
+                <li>You need heterogeneous collections of different types.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Requires the trait to be <u>object-safe</u>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Never Type (<code>!</code>)</b></li>
+<pre><code class="language-rust line-numbers">fn crash() -&gt; ! {
+    panic!("boom");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>!</code> means a function never returns.</li>
+        <li>Used for:
+            <ul>
+                <li>panics</li>
+                <li>infinite loops</li>
+                <li>process termination</li>
+            </ul>
+        </li>
+        <li>The never type can coerce into any other type.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Type Coercions</b></li>
+<pre><code class="language-rust line-numbers">let s: &amp;str = "Hello";
+let slice: &amp;[u8] = s.as_bytes();
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rust performs very limited implicit coercions.</li>
+        <br/>
+        <li>Allowed coercions:
+            <ul>
+                <li><code>&amp;String</code> → <code>&amp;str</code></li>
+                <li><code>&amp;Vec&lt;T&gt;</code> → <code>&amp;[T]</code></li>
+                <li><code>T</code> → <code>dyn Trait</code> (trait object)</li>
+                <li><code>! </code> → any type</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Unlike languages like C/C++, Rust does not do:
+            <ul>
+                <li>integer promotions</li>
+                <li>implicit float conversions</li>
+                <li>pointer arithmetic</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of Rust Type Categories</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Examples</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Primitive</td>
+                <td>Built-in low-level types</td>
+                <td><code>i32</code>, <code>bool</code>, <code>char</code>, <code>&amp;str</code></td>
+            </tr>
+            <tr>
+                <td>User-defined</td>
+                <td>Custom structs, enums, aliases</td>
+                <td><code>struct User</code>, <code>enum Option</code></td>
+            </tr>
+            <tr>
+                <td>Reference</td>
+                <td>Borrows without ownership</td>
+                <td><code>&amp;T</code>, <code>&amp;mut T</code></td>
+            </tr>
+            <tr>
+                <td>Function / Closure</td>
+                <td>Callable values</td>
+                <td><code>fn(i32)-&gt;i32</code>, <code>Fn</code> closures</td>
+            </tr>
+            <tr>
+                <td>Generic</td>
+                <td>Parameterized types</td>
+                <td><code>Vec&lt;T&gt;</code>, <code>Option&lt;T&gt;</code></td>
+            </tr>
+            <tr>
+                <td>Trait objects</td>
+                <td>Dynamic dispatch</td>
+                <td><code>dyn Write</code>, <code>dyn Display</code></td>
             </tr>
         </tbody>
     </table>
