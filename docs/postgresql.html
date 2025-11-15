@@ -146,6 +146,7 @@
         <li><a href="#pg-full-text-search-basics">Basics on Full Text Search</a></li>
         <li><a href="#pg-udf">User-defined Functions</a></li>
         <li><a href="#pg-procedures">Stored Procedures</a></li>
+        <li><a href="#pg-transactions">Transactions</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -9082,7 +9083,390 @@ CALL nightly_etl();
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-transactions">Transactions, COMMIT, and ROLLBACK in PostgreSQL</h3>
+<ol>
 
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <u>transaction</u> in PostgreSQL is a group of SQL statements executed as a single unit of work.</li>
+        <br/>
+        <li>A transaction guarantees the 4 ACID properties:
+            <ul>
+                <li><u>A</u>tomicity – all-or-nothing</li>
+                <li><u>C</u>onsistency – no broken constraints</li>
+                <li><u>I</u>solation – one transaction doesn't see another's partial changes</li>
+                <li><u>D</u>urability – committed data is guaranteed to persist</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You control a transaction with two commands:
+            <ul>
+                <li><code>COMMIT</code> – permanently save changes</li>
+                <li><code>ROLLBACK</code> – undo changes since the last <code>BEGIN</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Transactions isolate incomplete work from other users until finalized.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+
+    <li><b>Starting a Transaction</b></li>
+    <br/>
+<pre><code class="language-sql line-numbers">BEGIN;
+-- or: START TRANSACTION;
+</code></pre>
+
+<br/>
+<ul>
+    <li>All subsequent SQL statements become part of this transaction until explicitly ended.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>COMMIT: Saving All Changes</b></li>
+    <br/>
+    <ul>
+        <li><code>COMMIT</code> finalizes the transaction and permanently writes changes to the database.</li>
+        <li>Once committed, changes <u>cannot be undone</u> (unless you start a new compensating transaction).</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">BEGIN;
+
+UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+
+COMMIT;   -- both updates permanently saved
+</code></pre>
+
+<br/>
+<br/>
+
+
+
+    <li><b>ROLLBACK: Undoing All Changes</b></li>
+    <br/>
+    <ul>
+        <li><code>ROLLBACK</code> cancels the entire transaction and reverts all statements back to the state before <code>BEGIN</code>.</li>
+        <li>No data is modified if rollback occurs.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">BEGIN;
+
+UPDATE products SET stock = stock - 10 WHERE id = 100;
+UPDATE products SET stock = stock + 10 WHERE id = 200;
+
+ROLLBACK;   -- both updates undone
+</code></pre>
+
+<br/>
+<ul>
+    <li>Even if multiple statements executed successfully, <code>ROLLBACK</code> erases all of them from the current transaction.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Autocommit Behavior</b></li>
+    <br/>
+    <ul>
+        <li>By default, PostgreSQL runs in <u>autocommit mode</u>:
+            <ul>
+                <li>each individual statement is its own transaction</li>
+                <li>and is automatically committed after execution</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">UPDATE users SET name = 'A';   -- auto-committed immediately
+</code></pre>
+
+<br/>
+<ul>
+    <li>To use multi-statement transactions, you must explicitly begin them using <code>BEGIN</code>.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Combining Multiple Operations</b></li>
+    <br/>
+    <ul>
+        <li>Transactions allow complex multi-step logic to behave atomically.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">BEGIN;
+
+INSERT INTO orders(user_id, total) VALUES (7, 250);
+INSERT INTO order_items(order_id, product_id, qty)
+VALUES (currval('orders_id_seq'), 42, 3);
+
+-- If anything goes wrong:
+-- ROLLBACK;
+
+COMMIT;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Either <b>both</b> <code>INSERT</code>s happen or neither.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Savepoints: Partial Rollback</b></li>
+    <br/>
+    <ul>
+        <li><u>Savepoints</u> allow you to roll back part of a transaction without canceling the whole thing.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">BEGIN;
+
+UPDATE accounts SET balance = balance - 500 WHERE id = 1;
+
+SAVEPOINT s1;
+
+UPDATE accounts SET balance = balance + 500 WHERE id = 99; -- account 99 doesn&#39;t exist
+
+ROLLBACK TO s1;  -- undo only second update
+
+COMMIT;
+</code></pre>
+
+<br/>
+<ul>
+    <li><code>ROLLBACK TO</code> does not end the transaction, only rewinds to that savepoint.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Transaction Behavior in Functions</b></li>
+    <br/>
+    <ul>
+        <li>Functions (<code>CREATE FUNCTION</code>) <u>cannot</u> use <code>COMMIT</code> or <code>ROLLBACK</code>.</li>
+        <li>They run inside the caller's transaction boundary.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">-- INVALID inside functions:
+COMMIT;
+ROLLBACK;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Functions must behave atomically.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Transaction Behavior in Procedures</b></li>
+    <br/>
+    <ul>
+        <li>Procedures (<code>CREATE PROCEDURE</code>) <u>can</u> use transaction control.</li>
+        <li>They are invoked with <code>CALL</code> at the top level.</li>
+        <li>This is the main difference from functions.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE PROCEDURE demo()
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    INSERT INTO logs(msg) VALUES ('step 1');
+    COMMIT;   -- allowed
+
+    INSERT INTO logs(msg) VALUES ('step 2');
+    ROLLBACK; -- undo step 2 only
+
+    INSERT INTO logs(msg) VALUES ('step 3'); -- part of new transaction
+END;
+$$;
+
+CALL demo();
+</code></pre>
+
+<br/>
+<br/>
+
+    <li><b>Transaction Isolation Levels</b></li>
+    <br/>
+    <ul>
+        <li>Transaction isolation levels define <u>what data a transaction can see</u> while other transactions are running concurrently.</li>
+        <br/>
+        <li>PostgreSQL implements isolation using <u>MVCC (Multi-Version Concurrency Control)</u>, which gives each transaction a consistent <u>snapshot</u> of the database.</li>
+        <br/>
+        <li>The isolation level determines:
+            <ul>
+                <li>whether the transaction sees other transactions' updates,</li>
+                <li>whether rows can appear or disappear during the transaction,</li>
+                <li>whether reading the same row twice always yields the same value,</li>
+                <li>whether anomalies (dirty reads, write skew, phantom rows) are allowed.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You set the isolation level per transaction:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+-- work inside transaction
+
+COMMIT;
+</code></pre>
+
+<br/>
+<ul>
+    <li>PostgreSQL supports three standard isolation levels:</li>
+</ul>
+
+<table>
+    <tr>
+        <th>Isolation Level</th>
+        <th>Description (Detailed)</th>
+    </tr>
+
+    <tr>
+        <td><code>READ COMMITTED</code></td>
+        <td>
+            <ul>
+                <li>This is the <u>default</u> isolation level in PostgreSQL.</li>
+                <li>Each individual SQL statement sees a snapshot of data committed <u>before that statement began</u>.</li>
+                <li>If another transaction commits in-between your statements, your next statement will see the new data.</li>
+                <li>Prevents <u>dirty reads</u> (you never see uncommitted data).</li>
+                <li>Allows <u>non-repeatable reads</u>:
+                    <br/>The same row queried twice may return different values if another transaction modifies and commits it between your statements.</li>
+                <li>Allows <u>phantom reads</u>:
+                    <br/>Repeated <code>SELECT</code> queries may return more or fewer rows.</li>
+                <li>Snapshot: <u>one snapshot per statement</u>.</li>
+            </ul>
+        </td>
+    </tr>
+
+    <tr>
+        <td><code>REPEATABLE READ</code></td>
+        <td>
+            <ul>
+                <li>The transaction sees a <u>single consistent snapshot</u> taken when the transaction begins.</li>
+                <li>No matter what other transactions commit during your transaction, your reads stay the same.</li>
+                <li>Prevents:
+                    <ul>
+                        <li><u>dirty reads</u>: never see uncommitted data</li>
+                        <li><u>non-repeatable reads</u>: reading the same row twice always gives the same result</li>
+                    </ul>
+                </li>
+                <li>Allows <u>phantom reads</u>:
+                    <br/>A repeated query on ranges may still return additional rows depending on the situation.</li>
+                <li>May allow <u>write skew anomalies</u> (a type of race condition) unless <code>SERIALIZABLE</code> is used.</li>
+                <li>Snapshot: <u>one snapshot for the entire transaction</u>.</li>
+            </ul>
+        </td>
+    </tr>
+
+    <tr>
+        <td><code>SERIALIZABLE</code></td>
+        <td>
+            <ul>
+                <li>The strongest isolation level — ensures the database behaves <u>as if transactions were executed one by one, sequentially</u>, even though they run concurrently.</li>
+                <li>Automatically prevents:
+                    <ul>
+                        <li><u>dirty reads</u></li>
+                        <li><u>non-repeatable reads</u></li>
+                        <li><u>phantom reads</u></li>
+                        <li><u>write skew anomalies</u></li>
+                    </ul>
+                </li>
+                <li>Requires PostgreSQL to automatically detect dangerous conflicts.</li>
+                <li>If two concurrent transactions could lead to a serialization anomaly, PostgreSQL <u>aborts one</u> with:</li>
+            </ul>
+            <pre><code class="language-sql line-numbers">ERROR: could not serialize access due to read/write dependencies</code></pre>
+            <ul>
+                <li>Your application must <u>retry</u> the entire transaction.</li>
+                <li>Snapshot: similar to <code>REPEATABLE READ</code>, but with extra checks using <u>predicate locks</u> to avoid anomalies.</li>
+            </ul>
+        </td>
+    </tr>
+</table>
+
+    <br/>
+    <br/>
+
+    <li><b>What Happens During Errors?</b></li>
+    <br/>
+    <ul>
+        <li>Any unhandled SQL error causes the current transaction to become <u>aborted</u>.</li>
+        <li>You cannot continue until you <code>ROLLBACK</code>.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">BEGIN;
+
+INSERT INTO a VALUES (1);
+INSERT INTO a VALUES (1);  -- duplicate key error, transaction aborted
+
+-- Now ANY statement will error until ROLLBACK is issued
+
+ROLLBACK;   -- reset state
+</code></pre>
+<br/>
+<br/>
+
+
+
+    <li><b>Real-World Example: Bank Transfer</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">BEGIN;
+
+UPDATE accounts SET balance = balance - 500 WHERE id = 1;
+UPDATE accounts SET balance = balance + 500 WHERE id = 2;
+
+COMMIT;   -- transfer completed
+</code></pre>
+
+<br/>
+<ul>
+    <li>Guarantees that money is never lost or created.</li>
+</ul>
+<br/>
+<br/>
+
+
+
+    <li><b>Real-World Example: Repairing Data</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">BEGIN;
+
+DELETE FROM logs WHERE created_at &lt; NOW() - INTERVAL &#39;90 days&#39;;
+
+-- Oops, wrong condition?
+ROLLBACK;
+
+-- try again
+BEGIN;
+DELETE FROM logs WHERE created_at &lt; NOW() - INTERVAL &#39;30 days&#39;;
+COMMIT;
+</code></pre>
+
+<br/>
+<br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
