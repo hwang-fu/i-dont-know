@@ -151,6 +151,8 @@
         <li><a href="#pg-composite-types">Composite Types</a></li>
         <li><a href="#pg-arrays">Arrays</a></li>
         <li><a href="#pg-enum-types">Enums</a></li>
+        <li><a href="#pg-xml">XML</a></li>
+        <li><a href="#pg-json">JSON</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -11688,6 +11690,368 @@ CREATE TABLE invoices (
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="pg-xml">The <code>xml</code> Type in PostgreSQL</h3>
+<ol>
+    <li>PostgreSQL provides a native <code>xml</code> data type that stores well-formed XML documents or fragments.</li>
+    <br/><br/>
+
+
+    <li>It supports:
+        <ul>
+            <li>XML parsing and validation</li>
+            <li>XPath queries</li>
+            <li>XML construction functions</li>
+            <li>Schema validation (XSD)</li>
+            <li>Conversions between XML, TEXT, and JSON</li>
+        </ul>
+    </li>
+    <br/><br/>
+
+
+    <li>The <code>xml</code> type stores the document in text form but performs structure validation according to XML standards.</li>
+    <br/><br/>
+
+
+
+    <li><b>Declaring XML Columns</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE books (
+    id      SERIAL PRIMARY KEY,
+    title   TEXT,
+    metadata XML
+);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Insert XML using string literals:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">INSERT INTO books(title, metadata)
+VALUES (
+    'Dune',
+    '&lt;book&gt;&lt;author&gt;Herbert&lt;/author&gt;&lt;year&gt;1965&lt;/year&gt;&lt;/book&gt;'
+);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Invalid XML raises an error:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">INSERT INTO books(metadata)
+VALUES ('&lt;bad xml&gt;');   -- ERROR: not well-formed XML
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>XML Parsing and Validation</b></li>
+    <br/>
+    <ul>
+        <li>The <code>xml</code> type validates structure during inserts and casts.</li>
+        <li>To enforce more rules (DTD, XSD), use validation functions.</li>
+    </ul>
+
+<br/><br/>
+
+
+
+    <li><b>Constructing XML with <code>XMLPARSE</code></b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT XMLPARSE(DOCUMENT '&lt;root&gt;&lt;a&gt;1&lt;/a&gt;&lt;/root&gt;');
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT XMLPARSE(CONTENT '&lt;a&gt;value&lt;/a&gt;');
+</code></pre>
+
+<br/>
+<ul>
+    <li><code>DOCUMENT</code>: requires a single top-level element.</li>
+    <li><code>CONTENT</code>: allows fragments.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Converting TEXT to XML and XML to TEXT</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT '&lt;tag&gt;hello&lt;/tag&gt;'::xml;
+SELECT xmlserialize(CONTENT metadata AS TEXT) FROM books;
+</code></pre>
+
+<br/>
+<ul>
+    <li><code>xmlserialize</code> is the SQL-standard way to convert XML back to text.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Extracting Data with XPath</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL implements XPath 1.0 via <code>xpath()</code>.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT xpath('/book/author/text()', metadata)
+FROM books;
+</code></pre>
+
+<br/>
+<ul>
+    <li>Returns an array of XML values.</li>
+    <li>To get a scalar text:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">SELECT (xpath('/book/year/text()', metadata))[1]::text
+FROM books;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Querying XML with Namespaces</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT xpath(
+    'declare default element namespace "http://example.com/book";
+     /book/author/text()',
+    metadata
+)
+FROM books;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Constructing XML with <code>xmlelement</code>, <code>xmlforest</code>, <code>xmlconcat</code></b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT xmlelement(
+    NAME book,
+    xmlelement(NAME title, 'Dune'),
+    xmlelement(NAME year, 1965)
+);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT xmlforest(
+    title AS title,
+    'Frank Herbert' AS author
+);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT xmlconcat(
+    '&lt;a&gt;1&lt;/a&gt;'::xml,
+    '&lt;b&gt;2&lt;/b&gt;'::xml
+);
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>Using <code>XMLTABLE</code> (SQL Standard)</b></li>
+    <br/>
+    <ul>
+        <li><code>XMLTABLE</code> treats XML like a relational table.</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT *
+FROM XMLTABLE(
+    '/book'
+    PASSING '&lt;book&gt;&lt;title&gt;Dune&lt;/title&gt;&lt;year&gt;1965&lt;/year&gt;&lt;/book&gt;'::xml
+    COLUMNS
+        title TEXT PATH 'title',
+        year  INT  PATH 'year'
+);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Output:</li>
+</ul>
+
+<table>
+    <tr><th>title</th><th>year</th></tr>
+    <tr><td>Dune</td><td>1965</td></tr>
+</table>
+
+<br/><br/>
+
+
+
+    <li><b>XML Schema Validation (XSD)</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">SELECT xml_is_well_formed_document(metadata);
+SELECT xmlvalidate(metadata, '...xsd contents...'::xml);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Schema validation requires extensions or external tools depending on PostgreSQL version and build.</li>
+</ul>
+
+<br/><br/>
+
+
+
+    <li><b>Indexing XML Data</b></li>
+    <br/>
+    <ul>
+        <li>PostgreSQL does <b>not</b> natively index XML structure.</li>
+        <li>You can index extracted values using expression indexes:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_books_author
+ON books ((xpath('/book/author/text()', metadata))[1]);
+</code></pre>
+
+<br/>
+<ul>
+    <li>Or convert XML to JSONB and index via GIN:</li>
+</ul>
+
+<pre><code class="language-sql line-numbers">CREATE INDEX idx_books_jsonb
+ON books USING gin (xml_to_jsonb(metadata));
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>XML Escaping Rules</b></li>
+    <br/>
+    <ul>
+        <li>Inside XML, escape special characters:</li>
+    </ul>
+
+<table>
+    <tr><th>Character</th><th>Escape</th></tr>
+    <tr><td><code>&lt;</code></td><td><code>&amp;lt;</code></td></tr>
+    <tr><td><code>&gt;</code></td><td><code>&amp;gt;</code></td></tr>
+    <tr><td><code>&amp;</code></td><td><code>&amp;amp;</code></td></tr>
+    <tr><td><code>"</code></td><td><code>&amp;quot;</code></td></tr>
+    <tr><td><code>'</code></td><td><code>&amp;apos;</code></td></tr>
+</table>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">SELECT '&lt;tag value=&quot;hello&quot;/&gt;'::xml;
+</code></pre>
+
+<br/><br/>
+
+
+
+    <li><b>XML vs JSON</b></li>
+    <br/>
+    <table>
+        <tr><th>Feature</th><th>XML</th><th>JSONB</th></tr>
+
+        <tr>
+            <td>Data Model</td>
+            <td>Tree with attributes, namespaces, mixed content</td>
+            <td>Key-value, arrays, no attributes</td>
+        </tr>
+
+        <tr>
+            <td>Schema</td>
+            <td>DTD/XSD support</td>
+            <td>JSON Schema (external)</td>
+        </tr>
+
+        <tr>
+            <td>Indexing</td>
+            <td>Expression-only</td>
+            <td>Native GIN indexing</td>
+        </tr>
+
+        <tr>
+            <td>Use Cases</td>
+            <td>Interoperability, legacy systems, SOAP</td>
+            <td>APIs, logs, analytics</td>
+        </tr>
+    </table>
+
+<br/><br/>
+
+
+
+    <li><b>Real-World Examples</b></li>
+    <br/>
+
+<pre><code class="language-sql line-numbers">-- Book metadata
+INSERT INTO books(title, metadata) VALUES (
+    'Hyperion',
+    '&lt;book&gt;&lt;author&gt;Simmons&lt;/author&gt;&lt;year&gt;1989&lt;/year&gt;&lt;/book&gt;'
+);
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Extracting author names
+SELECT title,
+       (xpath('/book/author/text()', metadata))[1]::text AS author
+FROM books;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Converting a relational row to XML
+SELECT xmlelement(
+    NAME book,
+    xmlforest(title, metadata)
+)
+FROM books;
+</code></pre>
+
+<br/>
+
+<pre><code class="language-sql line-numbers">-- Using XMLTABLE for report generation
+SELECT b.title, x.year
+FROM books b,
+     XMLTABLE(
+         '/book'
+         PASSING b.metadata
+         COLUMNS year INT PATH 'year'
+     ) AS x;
+</code></pre>
+
+<br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
