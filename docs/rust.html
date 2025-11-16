@@ -126,6 +126,7 @@
         <li><a href="#rust-while-let">While Let</a></li>
         <li><a href="#rust-methods">Methods</a></li>
         <li><a href="#rust-closures">Closures</a></li>
+        <li><a href="#rust-higher-order-functions">Higher Order Functions</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -5658,7 +5659,234 @@ thread::spawn(move || {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-higher-order-functions">Higher-Order Functions</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <u>higher-order function</u> (HOF) is any function that does one or both of the following:</li>
+        <ul>
+            <li>Accepts another function or closure as an argument</li>
+            <li>Returns a function or closure</li>
+        </ul>
+        <br/>
+        <li>They power iterator adapters (<code>map</code>, <code>filter</code>, <code>fold</code>), callback-based APIs, and clean abstraction patterns.</li>
+    </ul>
+    <br/><br/>
 
+
+    <li><b>Accepting a Closure as an Argument</b></li>
+<pre><code class="language-rust line-numbers">fn apply&lt;F&gt;(f: F)
+where
+    F: Fn(),
+{
+    f();
+}
+
+apply(|| println!("Hello from closure"));
+</code></pre>
+    <br/>
+    <ul>
+        <li>The function <code>apply</code> takes any <code>Fn()</code> closure and executes it.</li>
+        <li>Traits <code>Fn</code>, <code>FnMut</code>, and <code>FnOnce</code> decide how closures capture variables.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Passing Closures with Parameters</b></li>
+<pre><code class="language-rust line-numbers">fn compute&lt;F&gt;(op: F, a: i32, b: i32) -&gt; i32
+where
+    F: Fn(i32, i32) -&gt; i32,
+{
+    op(a, b)
+}
+
+let sum = compute(|x, y| x + y, 2, 3);
+println!("{}", sum); // 5
+</code></pre>
+    <br/>
+    <ul>
+        <li>Higher-order functions enable behavior injection instead of hard-coded logic.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Returning a Closure</b></li>
+    <br/>
+    <ul>
+        <li>Because closures have unique types, Rust returns them using <code>impl Fn</code>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn make_multiplier(x: i32) -&gt; impl Fn(i32) -&gt; i32 {
+    move |y| x * y
+}
+
+let times3 = make_multiplier(3);
+
+println!("{}", times3(10)); // 30
+</code></pre>
+    <br/>
+    <ul>
+        <li>Using <code>move</code> ensures the closure captures <code>x</code> by value.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Returning Different Closures Based on Conditions</b></li>
+<pre><code class="language-rust line-numbers">fn choose(op: &amp;str) -&gt; impl Fn(i32, i32) -&gt; i32 {
+    match op {
+        "add" =&gt; |a, b| a + b,
+        "mul" =&gt; |a, b| a * b,
+        _ =&gt; |_, _| 0,
+    }
+}
+
+let adder = choose("add");
+println!("{}", adder(2, 3)); // 5
+</code></pre>
+    <br/>
+    <ul>
+        <li>HOFs can dynamically create and return behaviors.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Higher-Order Functions with Iterators</b></li>
+<pre><code class="language-rust line-numbers">let nums = vec![1, 2, 3, 4];
+
+let even_squares: Vec&lt;i32&gt; = nums
+    .into_iter()
+    .filter(|x| x % 2 == 0)
+    .map(|x| x * x)
+    .collect();
+
+println!("{:?}", even_squares); // [4, 16]
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>map</code>, <code>filter</code>, <code>fold</code>, and many others are higher-order functions.</li>
+        <li>They take closures and return new iterators.</li>
+        <li>This enables expressive, chainable pipelines.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>fold: The Most General HOF</b></li>
+<pre><code class="language-rust line-numbers">let sum = (1..=5).fold(0, |acc, x| acc + x);
+
+println!("{}", sum); // 15
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>fold</code> accumulates values based on a closure.</li>
+        <li>Expressive and extremely flexible.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Closures vs Function Pointers</b></li>
+    <br/>
+    <ul>
+        <li>Higher-order functions may accept either closures or function pointers.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn add(a: i32, b: i32) -&gt; i32 { a + b }
+
+fn operate&lt;F&gt;(f: F) -&gt; i32
+where
+    F: Fn(i32, i32) -&gt; i32,
+{
+    f(3, 4)
+}
+
+println!("{}", operate(add));        // works
+println!("{}", operate(|x, y| x*y)); // works
+</code></pre>
+    <br/>
+    <ul>
+        <li>Function pointers automatically coerce to <code>Fn</code>-trait closures.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Higher-Order Functions with Generics</b></li>
+<pre><code class="language-rust line-numbers">fn transform_all&lt;T, F&gt;(items: Vec&lt;T&gt;, f: F) -&gt; Vec&lt;T&gt;
+where
+    F: Fn(T) -&gt; T,
+{
+    items.into_iter().map(f).collect()
+}
+
+let nums = vec![1, 2, 3];
+let doubled = transform_all(nums, |x| x * 2);
+
+println!("{:?}", doubled); // [2, 4, 6]
+</code></pre>
+    <br/>
+    <ul>
+        <li>HOFs work with generics to provide powerful reusable patterns.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using HOFs as Callbacks</b></li>
+<pre><code class="language-rust line-numbers">fn notify&lt;F&gt;(msg: &amp;str, f: F)
+where
+    F: Fn(&amp;str),
+{
+    f(msg);
+}
+
+notify("Warning!", |text| println!("[LOG]: {}", text));
+</code></pre>
+    <br/>
+    <ul>
+        <li>Great for logging layers, hooks, and event handlers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of Higher-Order Functions</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Accept functions</td>
+                <td>HOFs can take closures or function pointers as arguments</td>
+            </tr>
+            <tr>
+                <td>Return functions</td>
+                <td>HOFs may return closures using <code>impl Fn</code></td>
+            </tr>
+            <tr>
+                <td>Used in iterators</td>
+                <td><code>map</code>, <code>filter</code>, <code>fold</code> are all HOFs</td>
+            </tr>
+            <tr>
+                <td>Enable declarative style</td>
+                <td>Clean, chainable, functional pipelines</td>
+            </tr>
+            <tr>
+                <td>Flexible capture rules</td>
+                <td>Closures can capture variables via <code>&amp;</code>, <code>&amp;mut</code>, or <code>move</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>Higher-order functions make Rust expressive, modular, and functional when needed.</li>
+        <li>They are central to iterator chains, callback-based APIs, and composable logic.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
