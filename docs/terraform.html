@@ -119,6 +119,8 @@
     <h2>📘 Terraform Documentation Index</h2>
     <ul style="line-height: 1.8;">
         <li><a href="#tf-what-is-terraform">What Is Terraform?</a></li>
+        <li><a href="#terraform-lifecycle">Life Cycle</a></li>
+        <li><a href="#terraform-cli">CLI</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -523,6 +525,320 @@ output "instance_id" {
                 <td><code>ignore_changes</code></td>
                 <td>Ignore drift on specific attributes</td>
                 <td>Provider-controlled fields, timestamps</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-cli">Terraform CLI (Command Line Interface)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The Terraform CLI is the primary way developers interact with Terraform.</li>
+        <br/>
+        <li>All Terraform workflows rely on the CLI, especially when working locally or inside CI/CD pipelines.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Command Structure</b></li>
+    <br/>
+
+<pre><code class="language-bash line-numbers">$ terraform &lt;command&gt; [options]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ terraform apply -auto-approve
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Essential Terraform CLI Commands</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Command</th>
+                <th>Description</th>
+                <th>Usage</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>terraform init</code></td>
+                <td>Initializes a working directory</td>
+                <td>Download providers and set up backend</td>
+            </tr>
+            <tr>
+                <td><code>terraform plan</code></td>
+                <td>Show proposed changes</td>
+                <td>Preview before apply</td>
+            </tr>
+            <tr>
+                <td><code>terraform apply</code></td>
+                <td>Apply the plan (create/update/destroy)</td>
+                <td>Deploy infrastructure</td>
+            </tr>
+            <tr>
+                <td><code>terraform destroy</code></td>
+                <td>Destroy managed resources</td>
+                <td>Cleanup infrastructure</td>
+            </tr>
+            <tr>
+                <td><code>terraform validate</code></td>
+                <td>Check module syntax</td>
+                <td>Catches errors before running plan</td>
+            </tr>
+            <tr>
+                <td><code>terraform fmt</code></td>
+                <td>Format <code>.tf</code> files</td>
+                <td>Enforce consistent style</td>
+            </tr>
+            <tr>
+                <td><code>terraform providers</code></td>
+                <td>Show used providers</td>
+                <td>Dependency inspection</td>
+            </tr>
+            <tr>
+                <td><code>terraform version</code></td>
+                <td>Show Terraform version</td>
+                <td>Debug/build info</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b><code>terraform init</code></b></li>
+    <br/>
+    <ul>
+        <li>Must be run once per project (or when providers/backends change).</li>
+        <li>Downloads provider plugins.</li>
+        <li>Initializes backend for state storage.</li>
+        <li>Sets up module dependencies.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ terraform init
+Initializing the backend...
+Initializing provider plugins...
+Terraform has been successfully initialized!
+</code></pre>
+    <br/><br/>
+
+
+    <li><b><code>terraform plan</code></b></li>
+    <br/>
+    <ul>
+        <li>Shows what Terraform <u>would</u> do.</li>
+        <li>No resources are changed.</li>
+        <li>Output includes:
+            <ul>
+                <li>additions</li>
+                <li>changes</li>
+                <li>destructions</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ terraform plan
+Plan: 1 to add, 0 to change, 0 to destroy.
+</code></pre>
+    <br/><br/>
+
+
+    <li><b><code>terraform apply</code></b></li>
+    <br/>
+    <ul>
+        <li>Executes the plan and modifies infrastructure.</li>
+        <li>Default behavior requires user confirmation.</li>
+        <li>Use <code>-auto-approve</code> in automation.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ terraform apply
+Do you want to perform these actions?
+  Enter a value: yes
+</code></pre>
+    <br/><br/>
+
+
+    <li><b><code>terraform destroy</code></b></li>
+    <br/>
+    <ul>
+        <li>Destroys all resources managed by Terraform.</li>
+        <li>Useful for cleaning up dev environments.</li>
+        <li>Confirmation required unless <code>-auto-approve</code> is used.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ terraform destroy -auto-approve
+</code></pre>
+    <br/><br/>
+
+
+    <li><b><code>terraform validate</code></b></li>
+    <br/>
+    <ul>
+        <li>Checks configuration syntax.</li>
+        <li>Verifies that the files are internally consistent.</li>
+        <li>Does not check cloud provider availability.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ terraform validate
+Success! The configuration is valid.
+</code></pre>
+    <br/><br/>
+
+
+    <li><b><code>terraform fmt</code></b></li>
+    <br/>
+    <ul>
+        <li>Formats all Terraform files (<code>.tf</code> / <code>.tfvars</code>) to standard style.</li>
+        <li>Keeps code clean in team environments.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ terraform fmt
+</code></pre>
+    <br/><br/>
+
+
+    <li><b><code>terraform show</code></b></li>
+    <br/>
+    <ul>
+        <li>Displays the current state or a saved plan.</li>
+        <li>Useful for debugging and documentation.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ terraform show
+
+# aws_instance.example:
+resource "aws_instance" "example" {
+    ami           = "ami-123456"
+    instance_type = "t2.micro"
+}
+</code></pre>
+    <br/><br/>
+
+
+    <li><b><code>terraform graph</code></b></li>
+    <br/>
+    <ul>
+        <li>Outputs a dependency graph in DOT format (Graphviz).</li>
+        <li>Useful for visualizing relationships between resources.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ terraform graph | dot -Tpng &gt; graph.png
+</code></pre>
+    <br/><br/>
+
+
+    <li><b><code>terraform state</code> Commands</b></li>
+    <br/>
+    <ul>
+        <li>The <code>terraform state</code> family manages state files.</li>
+    </ul>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Command</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>state list</code></td>
+                <td>List resources in state</td>
+            </tr>
+            <tr>
+                <td><code>state show</code></td>
+                <td>Show details for a resource</td>
+            </tr>
+            <tr>
+                <td><code>state pull</code></td>
+                <td>Download remote state</td>
+            </tr>
+            <tr>
+                <td><code>state push</code></td>
+                <td>Upload state manually</td>
+            </tr>
+            <tr>
+                <td><code>state rm</code></td>
+                <td>Remove resource from state</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b><code>terraform import</code></b></li>
+    <br/>
+    <ul>
+        <li>Add existing real-world resources to Terraform state.</li>
+        <li>Useful when migrating to Terraform-managed infrastructure.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ terraform import aws_instance.example i-1234567890abcdef0
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Useful CLI Options</b></li>
+    <br/>
+
+<pre><code class="language-bash line-numbers">-auto-approve        # Skip yes/no prompt
+-refresh=false       # Skip refreshing state
+-target=&lt;address&gt;    # Apply a specific resource
+-var name=value      # Pass variable
+-var-file=file.tfvars
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Summary of Terraform CLI</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Main Commands</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Setup</td>
+                <td><code>init</code>, <code>fmt</code>, <code>validate</code></td>
+            </tr>
+            <tr>
+                <td>Execution</td>
+                <td><code>plan</code>, <code>apply</code>, <code>destroy</code></td>
+            </tr>
+            <tr>
+                <td>State Management</td>
+                <td><code>state</code>, <code>show</code>, <code>list</code>, <code>pull</code>, <code>push</code></td>
+            </tr>
+            <tr>
+                <td>Migration</td>
+                <td><code>import</code></td>
+            </tr>
+            <tr>
+                <td>Debugging</td>
+                <td><code>graph</code>, <code>providers</code>, <code>version</code></td>
             </tr>
         </tbody>
     </table>
