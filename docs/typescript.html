@@ -126,6 +126,7 @@
         <li><a href="#ts-mapped-types">Mapped Types</a></li>
         <li><a href="#ts-infer">The <code>infer</code> Keyword</a></li>
         <li><a href="#ts-template-literal-types">Template Literal Types</a></li>
+        <li><a href="#ts-modules">Modules</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3868,6 +3869,278 @@ let id2: BrandedID = "123abc";      // Error
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-modules">Modules in TypeScript</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A module is simply any file that contains at least one of:</li>
+        <ul>
+            <li><code>export</code></li>
+            <li><code>import</code></li>
+        </ul>
+        <br/>
+        <li>Each file with exports becomes its own module and has its own scope.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Named Exports</b></li>
+<pre><code class="language-ts line-numbers">// math.ts
+export const PI = 3.14;
+export function add(a: number, b: number) {
+    return a + b;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use named exports when you want to export multiple things from a file.</li>
+        <li>Import them by name:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import { PI, add } from "./math";
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Renaming Exports and Imports to Avoid Conflicts or for Clarity</b></li>
+<pre><code class="language-ts line-numbers">// utils.ts
+export function calculate() {}
+</code></pre>
+
+<pre><code class="language-ts line-numbers">import { calculate as calc } from "./utils";
+calc();
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Default Exports</b></li>
+<pre><code class="language-ts line-numbers">// greet.ts
+export default function greet(name: string) {
+    return `Hello ${name}`;
+}
+</code></pre>
+
+<pre><code class="language-ts line-numbers">import greet from "./greet";
+greet("Alice");
+</code></pre>
+    <br/>
+    <ul>
+        <li>A file can have only one default export.</li>
+        <li>Default exports can be imported with any name.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Mixing Default and Named Exports</b></li>
+<pre><code class="language-ts line-numbers">// server.ts
+export default function connect() {}
+export const PORT = 8080;
+</code></pre>
+
+<pre><code class="language-ts line-numbers">import connect, { PORT } from "./server";
+</code></pre>
+    <br/>
+    <ul>
+        <li>A module may export both a default export and named exports.</li>
+        <li>Import syntax clearly distinguishes them.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Re-exporting</b></li>
+<pre><code class="language-ts line-numbers">// math.ts
+export const PI = 3.14;
+export const E = 2.718;
+</code></pre>
+
+<pre><code class="language-ts line-numbers">// constants.ts
+export * from "./math";
+</code></pre>
+
+<pre><code class="language-ts line-numbers">import { PI } from "./constants";
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>export *</code> re-exports everything from another module.</li>
+        <li>Useful for building "barrel files".</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Re-exporting with Renaming</b></li>
+<pre><code class="language-ts line-numbers">export { PI as PI_VALUE } from "./math";
+</code></pre>
+    <br/>
+    <ul>
+        <li>Allows reorganizing a module's public API.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Importing Everything</b></li>
+<pre><code class="language-ts line-numbers">import * as utils from "./utils";
+
+utils.log("Hello");
+utils.debug("Test");
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use <code>* as</code> to import all exports under a namespace.</li>
+        <li>Useful when a module exports many small members.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Type-Only Imports and Exports</b></li>
+<pre><code class="language-ts line-numbers">export type User = {
+    id: number;
+    name: string;
+};
+</code></pre>
+
+<pre><code class="language-ts line-numbers">import type { User } from "./types";
+
+let u: User = { id: 1, name: "Alice" };
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>import type</code> ensures that the import is removed at compile time.</li>
+        <li>Helps reduce emitted JavaScript bundle size.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Type-Only Re-exports</b></li>
+<pre><code class="language-ts line-numbers">export type { User } from "./types";
+</code></pre>
+    <br/>
+    <ul>
+        <li>Re-exports type information without producing JavaScript code.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>ES Modules vs CommonJS (in Node)</b></li>
+    <br/>
+    <ul>
+        <li>TypeScript supports both module systems:
+            <ul>
+                <li><u>ESM</u> (ECMAScript Modules):
+                    <code>import</code> / <code>export</code>
+                </li>
+                <li><u>CommonJS</u> (older Node.js):
+                    <code>require()</code> / <code>module.exports</code>
+                </li>
+            </ul>
+        </li>
+        <br/>
+        <li>Set target in <code>tsconfig.json</code>:
+<pre><code class="language-json line-numbers">{
+    "compilerOptions": {
+        "module": "ESNext"
+    }
+}
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>export = and import = require()</b> (CommonJS interoperability)</li>
+<pre><code class="language-ts line-numbers">const fs = require("fs");
+export = fs;
+</code></pre>
+
+<pre><code class="language-ts line-numbers">import fs = require("fs");
+</code></pre>
+    <br/>
+    <ul>
+        <li>This syntax exists for compatibility with CommonJS modules.</li>
+        <li>Use ESM-style modules in modern TypeScript whenever possible.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Barrel Files (Index Files)</b></li>
+<pre><code class="language-ts line-numbers">// index.ts
+export * from "./math";
+export * from "./utils";
+export * from "./types";
+</code></pre>
+
+<pre><code class="language-ts line-numbers">import { add, PI, User } from "./index";
+</code></pre>
+    <br/>
+    <ul>
+        <li>Barrel files collect exports from many files into a single entry point.</li>
+        <li>Common in React, Angular, and backend Node projects.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of Modules in TypeScript</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Usage</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Named exports</td>
+                <td>Export multiple items</td>
+                <td><code>export const x = 1;</code></td>
+            </tr>
+            <tr>
+                <td>Default export</td>
+                <td>One main export per module</td>
+                <td><code>export default fn;</code></td>
+            </tr>
+            <tr>
+                <td>Namespace import</td>
+                <td>Group all exports</td>
+                <td><code>import * as A from "./a"</code></td>
+            </tr>
+            <tr>
+                <td>Type-only imports</td>
+                <td>Avoid emitting JS</td>
+                <td><code>import type { T }</code></td>
+            </tr>
+            <tr>
+                <td>Re-exporting</td>
+                <td>Forward exports</td>
+                <td><code>export * from "./a"</code></td>
+            </tr>
+            <tr>
+                <td>Barrel files</td>
+                <td>Centralized exports</td>
+                <td><code>index.ts</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
