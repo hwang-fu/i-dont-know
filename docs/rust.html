@@ -118,6 +118,7 @@
         <li><a href="#rust-conversion">Conversion</a></li>
         <li><a href="#rust-if-else">If / Else</a></li>
         <li><a href="#rust-loop">Loop</a></li>
+        <li><a href="#rust-while">While</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -3648,6 +3649,212 @@ loop {
     </ul>
     <br/><br/>
 
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-while">while</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>while</code> loop runs as long as its condition evaluates to <code>true</code>.</li>
+        <br/>
+        <li>Unlike <code>loop</code>, <code>while</code> ends automatically once its condition becomes false.</li>
+        <br/>
+        <li>The condition must be a boolean (<code>bool</code>).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic while loop</b></li>
+<pre><code class="language-rust line-numbers">let mut n = 1;
+
+while n &lt;= 5 {
+    println!("{}", n);
+    n += 1;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This prints numbers from <code>1</code> to <code>5</code>.</li>
+        <li>Once <code>n</code> becomes <code>6</code>, the condition becomes false and iteration stops.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using break in a while loop</b></li>
+<pre><code class="language-rust line-numbers">let mut x = 0;
+
+while x &lt; 10 {
+    if x == 4 {
+        break; // stop the loop early
+    }
+    println!("{}", x);
+    x += 1;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>break</code> exits the loop immediately.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using continue in while</b></li>
+<pre><code class="language-rust line-numbers">let mut x = 0;
+
+while x &lt; 5 {
+    x += 1;
+
+    if x % 2 == 0 {
+        continue; // skip even numbers
+    }
+
+    println!("{}", x);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>continue</code> skips the current iteration and jumps to the next one.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Countdown example</b></li>
+<pre><code class="language-rust line-numbers">let mut count = 3;
+
+while count &gt; 0 {
+    println!("{}", count);
+    count -= 1;
+}
+
+println!("Lift off!");
+</code></pre>
+    <br/>
+    <ul>
+        <li>Classic countdown pattern.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>while with conditions that change inside the loop</b></li>
+<pre><code class="language-rust line-numbers">let mut temperature = 20;
+
+while temperature &lt; 25 {
+    println!("Heating... {}", temperature);
+    temperature += 1;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Conditions often depend on values updated inside the loop body.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>while as an alternative to some for loops</b></li>
+<pre><code class="language-rust line-numbers">let arr = [10, 20, 30, 40];
+let mut i = 0;
+
+while i &lt; arr.len() {
+    println!("{}", arr[i]);
+    i += 1;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This mimics classical <code>for</code>-loops from languages like C or Java.</li>
+        <li>But in Rust, <code>for</code> is usually preferred for iteration.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>while let (pattern-based iteration)</b></li>
+<pre><code class="language-rust line-numbers">let mut opt = Some(3);
+
+while let Some(x) = opt {
+    println!("{}", x);
+    opt = if x &gt; 1 { Some(x - 1) } else { None };
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>while let</code> continues looping as long as the pattern matches.</li>
+        <li>Very useful for popping or consuming items gradually.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using while let with collections</b></li>
+<pre><code class="language-rust line-numbers">let mut stack = vec![1, 2, 3];
+
+while let Some(top) = stack.pop() {
+    println!("Popped: {}", top);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>Vec::pop()</code> returns <code>Some(value)</code> until the vector is empty.</li>
+        <li>When it becomes <code>None</code>, the loop stops.</li>
+        <li>This is idiomatic Rust.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Labelled while loops</b></li>
+<pre><code class="language-rust line-numbers">'outer: while true {
+    let mut x = 0;
+
+    while x &lt; 5 {
+        if x == 2 {
+            break 'outer; // exit the outer loop
+        }
+        x += 1;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Labels allow you to control which loop you break from.</li>
+        <li>Useful in nested loops with complex logic.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Infinite while loop (not recommended)</b></li>
+<pre><code class="language-rust line-numbers">while true {
+    println!("Running...");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Works, but using <code>loop</code> is more idiomatic for deliberate infinite loops.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>while for waiting on conditions</b></li>
+<pre><code class="language-rust line-numbers">let mut ready = false;
+
+while !ready {
+    println!("Waiting...");
+    // check some condition...
+    ready = true; // simulate becoming ready
+}
+
+println!("Ready!");
+</code></pre>
+    <br/>
+    <ul>
+        <li>Often used with hardware events, threads, or async tasks (though async uses <code>await</code> instead).</li>
+    </ul>
+    <br/><br/>
 </ol>
 <br/>
 <!-- * * * * * * * * * * * * * * -->
