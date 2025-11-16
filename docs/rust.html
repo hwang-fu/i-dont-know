@@ -127,6 +127,7 @@
         <li><a href="#rust-methods">Methods</a></li>
         <li><a href="#rust-closures">Closures</a></li>
         <li><a href="#rust-higher-order-functions">Higher Order Functions</a></li>
+        <li><a href="#rust-diverging-functions">Diverging Functions</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -5882,6 +5883,224 @@ notify("Warning!", |text| println!("[LOG]: {}", text));
     <ul>
         <li>Higher-order functions make Rust expressive, modular, and functional when needed.</li>
         <li>They are central to iterator chains, callback-based APIs, and composable logic.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-diverging-functions">Diverging Functions</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <u>diverging function</u> in Rust is a function that <u>never returns</u>.</li>
+        <br/>
+        <li>Such a function has the special return type <code>!</code>, called the <u>never type</u>.</li>
+        <br/>
+        <li>Diverging functions are used for:
+            <ul>
+                <li>fatal errors</li>
+                <li>infinite event loops</li>
+                <li>type-level reasoning</li>
+                <li>unreachable logic</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Syntax of a Diverging Function</b></li>
+<pre><code class="language-rust line-numbers">fn never_returns() -&gt; ! {
+    panic!("This function never returns");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The return type <code>!</code> signifies that control flow never reaches the end.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Infinite Loops as Diverging Functions</b></li>
+<pre><code class="language-rust line-numbers">fn forever() -&gt; ! {
+    loop {
+        println!("Running forever...");
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The function never exits the <code>loop</code>, so the return type is <code>!</code>.</li>
+        <li>This is often used in embedded systems or event-driven environments.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Diverging Functions in Error Handling</b></li>
+<pre><code class="language-rust line-numbers">fn expect_value(v: Option&lt;i32&gt;) -&gt; i32 {
+    match v {
+        Some(n) =&gt; n,
+        None =&gt; panic!("Expected a value"),
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>panic!</code> is itself a diverging function.</li>
+        <li>This allows <code>match</code> to return <code>i32</code> even though one branch never returns.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The Never Type as a "Bottom Type"</b></li>
+    <br/>
+    <ul>
+        <li><code>!</code> can coerce into any other type.</li>
+        <li>This is because <code>!</code> has no valid value — it never actually exists.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let x: i32 = {
+    panic!("crash"); // type is `!` but coerced to i32
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Expressions that never produce a value can still be used where a value is expected.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Diverging Functions for Exhaustive Matching</b></li>
+<pre><code class="language-rust line-numbers">enum Never {}
+
+fn impossible(n: Never) -&gt; ! {
+    match n {} // no variants, so this match is exhaustive
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>Never</code> enum has no variants — it is uninhabitable.</li>
+        <li>This function can never be called, so its return type is <code>!</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Useful for Marking Unreachable Code</b></li>
+<pre><code class="language-rust line-numbers">fn handle(value: Result&lt;i32, &amp;str&gt;) -&gt; i32 {
+    match value {
+        Ok(v) =&gt; v,
+        Err(_) =&gt; unreachable!("Error should never occur"),
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>unreachable!()</code> is a diverging macro that returns <code>!</code>.</li>
+        <li>It signals logic that should not be reachable, both for humans and the compiler.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Never Type in Control Flow</b></li>
+<pre><code class="language-rust line-numbers">fn compute(flag: bool) -&gt; i32 {
+    if flag {
+        return 10;
+    } else {
+        panic!("bad flag"); // type = !
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>panic!</code> branch becomes type-compatible with <code>i32</code> because <code>!</code> can coerce into any type.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Never Type in Matches</b></li>
+<pre><code class="language-rust line-numbers">let mut iter = vec![1].into_iter();
+
+match iter.next() {
+    Some(v) =&gt; println!("{}", v),
+    None =&gt; { continue; } // continue is diverging
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>continue</code>, <code>break</code>, and <code>return</code> all produce <code>!</code>.</li>
+        <li>Therefore they are legal where other value types are expected.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Common Diverging Constructs</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Expression</th>
+                <th>Type</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>panic!()</code></td>
+                <td><code>!</code></td>
+                <td>Terminates the program</td>
+            </tr>
+            <tr>
+                <td><code>loop { ... }</code></td>
+                <td><code>!</code></td>
+                <td>Infinite loop</td>
+            </tr>
+            <tr>
+                <td><code>continue</code></td>
+                <td><code>!</code></td>
+                <td>Exits current loop iteration</td>
+            </tr>
+            <tr>
+                <td><code>break</code> (no value)</td>
+                <td><code>!</code></td>
+                <td>Exits the loop immediately</td>
+            </tr>
+            <tr>
+                <td><code>return</code></td>
+                <td><code>!</code></td>
+                <td>Leaves the function</td>
+            </tr>
+            <tr>
+                <td><code>unimplemented!()</code>, <code>todo!()</code></td>
+                <td><code>!</code></td>
+                <td>Marks incomplete code</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b>Summary of Diverging Functions</b></li>
+    <br/>
+    <ul>
+        <li>Diverging functions return <code>!</code>, the never type.</li>
+        <li>They never complete normally — they loop forever or abort execution.</li>
+        <li><code>!</code> can coerce into any other type, making it flexible in control-flow expressions.</li>
+        <li>Used widely in:
+            <ul>
+                <li>error handling</li>
+                <li>infinite loops</li>
+                <li>exhaustive matching</li>
+                <li>unreachable paths</li>
+            </ul>
+        </li>
+        <li>The never type is a powerful tool for the type system and compiler optimizations.</li>
     </ul>
     <br/><br/>
 
