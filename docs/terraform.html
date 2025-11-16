@@ -322,7 +322,214 @@ output "instance_id" {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-lifecycle">Terraform Resource Lifecycle</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Every Terraform <code>resource</code> has a <u>lifecycle</u> — a set of rules controlling how Terraform creates, updates, and destroys it.</li>
+        <br/>
+        <li>You can use the <code>lifecycle</code> block inside a resource to modify Terraform's default behavior.</li>
+    </ul>
+    <br/><br/>
 
+
+    <li><b>The <code>lifecycle</code> Block Structure</b></li>
+
+<pre><code class="language-hcl line-numbers">resource "aws_instance" "example" {
+  ami           = "ami-123456"
+  instance_type = "t2.micro"
+
+  lifecycle {
+    create_before_destroy = false
+    prevent_destroy       = false
+    ignore_changes        = []
+  }
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The <code>lifecycle</code> block works inside <code>resource</code> definitions only.</li>
+        <li>It modifies how Terraform handles changes, updates, and destruction.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b><code>create_before_destroy</code></b></li>
+    <br/>
+    <ul>
+        <li>Normally Terraform does:
+            <ul>
+                <li>destroy the old resource</li>
+                <li>then create a new one</li>
+            </ul>
+        </li>
+        <br/>
+        <li><code>create_before_destroy = true</code> reverses this order:
+            <ul>
+                <li>create new resource <u>first</u></li>
+                <li>destroy the old one <u>after</u></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Useful when:
+            <ul>
+                <li>you want zero downtime</li>
+                <li>your resource cannot be deleted before a replacement exists</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">lifecycle {
+  create_before_destroy = true
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b><code>prevent_destroy</code></b></li>
+    <br/>
+    <ul>
+        <li>Protects a resource from <u>accidental deletion</u>.</li>
+        <li>If Terraform needs to destroy it, the <code>apply</code> will abort with an error.</li>
+        <br/>
+        <li>Commonly used for:
+            <ul>
+                <li>production databases</li>
+                <li>S3 buckets containing critical data</li>
+                <li>shared networks</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">lifecycle {
+  prevent_destroy = true
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>To override, you must temporarily remove <code>prevent_destroy</code> or force destruction with <code>-target</code> flags.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b><code>ignore_changes</code></b></li>
+    <br/>
+    <ul>
+        <li>Tells Terraform to <u>ignore drift</u> on certain fields.</li>
+        <li>Useful when some fields are updated by:
+            <ul>
+                <li>cloud providers</li>
+                <li>external scripts</li>
+                <li>manually modified settings</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Prevents Terraform from trying to "fix" changes you don’t want overwritten.</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">lifecycle {
+  ignore_changes = [
+    tags,
+    metadata,
+  ]
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Supports:
+            <ul>
+                <li>single attribute</li>
+                <li>multiple attributes</li>
+                <li><code>ignore_changes = all</code> (dangerous!)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Full Lifecycle Example</b></li>
+
+<pre><code class="language-hcl line-numbers">resource "aws_instance" "server" {
+  ami           = "ami-123456"
+  instance_type = "t3.micro"
+
+  lifecycle {
+    create_before_destroy = true
+    prevent_destroy       = false
+    ignore_changes        = [
+      tags["last_updated"],
+      user_data,
+    ]
+  }
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This resource:
+            <ul>
+                <li>gets replaced without downtime</li>
+                <li>can be destroyed normally</li>
+                <li>does not react to changes in <code>user_data</code> or <code>tags.last_updated</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Lifecycle vs Depends On</b></li>
+    <br/>
+    <ul>
+        <li>Lifecycle provides <u>behavior customization</u>.</li>
+        <li><code>depends_on</code> enforces <u>ordering</u> between resources.</li>
+        <br/>
+        <li>They work together but serve different purposes.</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">resource "aws_eip" "ip" {
+  depends_on = [aws_instance.server]
+}
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Setting</th>
+                <th>Description</th>
+                <th>Common Use Case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>create_before_destroy</code></td>
+                <td>Create replacement before destroying old resource</td>
+                <td>Zero downtime deployments</td>
+            </tr>
+            <tr>
+                <td><code>prevent_destroy</code></td>
+                <td>Protect resource from deletion</td>
+                <td>Critical databases, S3 buckets</td>
+            </tr>
+            <tr>
+                <td><code>ignore_changes</code></td>
+                <td>Ignore drift on specific attributes</td>
+                <td>Provider-controlled fields, timestamps</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
