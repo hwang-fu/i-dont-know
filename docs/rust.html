@@ -123,6 +123,7 @@
         <li><a href="#rust-match">Match</a></li>
         <li><a href="#rust-if-let">If Let</a></li>
         <li><a href="#rust-let-else">Let Else</a></li>
+        <li><a href="#rust-while-let">While Let</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -4914,6 +4915,217 @@ println!("Sum = {}", sum);
     <br/>
     <ul>
         <li>Useful for step-by-step validation pipelines.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-while-let">while let</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>while let</code> is a control-flow construct that repeatedly matches a pattern as long as it continues to succeed.</li>
+        <br/>
+        <li>It is especially useful for:
+            <ul>
+                <li>Iterators</li>
+                <li>Processing <code>Option</code> values</li>
+                <li>Handling <code>Result</code> types in loops</li>
+                <li>State machines or stream parsing</li>
+            </ul>
+        </li>
+        <br/>
+        <li>It is syntactic sugar for a <code>loop</code> + <code>if let</code> + <code>break</code> combination.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic while let Example</b></li>
+<pre><code class="language-rust line-numbers">let mut stack = vec![1, 2, 3];
+
+while let Some(top) = stack.pop() {
+    println!("Popped: {}", top);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>stack.pop()</code> returns <code>Some(value)</code> until the vector is empty.</li>
+        <li>When it returns <code>None</code>, the loop stops automatically.</li>
+        <li>No need for a manual <code>break</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Equivalent to loop + if let</b></li>
+<pre><code class="language-rust line-numbers">let mut stack = vec![1, 2, 3];
+
+loop {
+    if let Some(top) = stack.pop() {
+        println!("Popped: {}", top);
+    } else {
+        break;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>while let</code> is more concise and idiomatic for this pattern.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Matching tuples with while let</b></li>
+<pre><code class="language-rust line-numbers">let mut iter = (0..5).enumerate();
+
+while let Some((index, value)) = iter.next() {
+    println!("#{} = {}", index, value);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can destructure complex values inside the loop header.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>while let with Result&lt;T, E&gt;</b></li>
+<pre><code class="language-rust line-numbers">let mut input = vec!["10", "x", "20"].into_iter();
+
+while let Some(s) = input.next() {
+    let Ok(n) = s.parse::&lt;i32&gt;() else {
+        println!("Skipping invalid number: {}", s);
+        continue;
+    };
+
+    println!("Parsed: {}", n);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Here <code>while let</code> drives iteration, while <code>let else</code> handles parsing.</li>
+        <li>You may combine both constructs effectively.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>while let with state machines</b></li>
+<pre><code class="language-rust line-numbers">enum State {
+    Start,
+    Number(i32),
+    End,
+}
+
+let mut state = Some(State::Start);
+
+while let Some(s) = state {
+    match s {
+        State::Start =&gt; {
+            println!("Starting...");
+            state = Some(State::Number(42));
+        }
+        State::Number(n) =&gt; {
+            println!("Number: {}", n);
+            state = Some(State::End);
+        }
+        State::End =&gt; {
+            println!("Finished.");
+            state = None;
+        }
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>while let</code> loops until <code>state</code> becomes <code>None</code>.</li>
+        <li>Extremely useful for designing simple state machines.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Processing I/O lines</b></li>
+<pre><code class="language-rust line-numbers">use std::io::{self, BufRead};
+
+let stdin = io::stdin();
+let mut lines = stdin.lock().lines();
+
+while let Some(Ok(line)) = lines.next() {
+    println!("Input: {}", line);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Real-world example: reading input until EOF.</li>
+        <li>Combines pattern matching with loop control.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>while let with references</b></li>
+<pre><code class="language-rust line-numbers">let numbers = vec![10, 20, 30];
+let mut iter = numbers.iter();
+
+while let Some(&amp;n) = iter.next() {
+    println!("n = {}", n);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>&amp;n</code> destructures a <code>&amp;i32</code> reference into an <code>i32</code> value.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>while let vs for loop</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Use while let when...</th>
+                <th>Use for when...</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>You must destructure <code>Option</code> or <code>Result</code>.</td>
+                <td>You have a simple iterator.</td>
+            </tr>
+            <tr>
+                <td>You want to stop upon <code>None</code>.</td>
+                <td>You want to iterate exactly once over each element.</td>
+            </tr>
+            <tr>
+                <td>You have stateful logic controlling <code>next()</code>.</td>
+                <td>Your iterations are independent and clean.</td>
+            </tr>
+            <tr>
+                <td>You need flexible custom loop breaking.</td>
+                <td>Standard iteration is sufficient.</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b>Summary of while let</b></li>
+    <br/>
+    <ul>
+        <li><code>while let</code> repeatedly matches a pattern until it fails.</li>
+        <li>Perfect for iterators, stacks, parsing, and state machines.</li>
+        <li>A more concise alternative to:
+            <ul>
+                <li><code>loop</code> + <code>if let</code> + <code>break</code></li>
+                <li>or a <code>match</code> inside a loop</li>
+            </ul>
+        </li>
+        <li>Supports full pattern matching, destructuring, references, and tuple patterns.</li>
     </ul>
     <br/><br/>
 
