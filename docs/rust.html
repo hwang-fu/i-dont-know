@@ -124,6 +124,7 @@
         <li><a href="#rust-if-let">If Let</a></li>
         <li><a href="#rust-let-else">Let Else</a></li>
         <li><a href="#rust-while-let">While Let</a></li>
+        <li><a href="#rust-methods">Methods</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -5128,6 +5129,270 @@ while let Some(&amp;n) = iter.next() {
         <li>Supports full pattern matching, destructuring, references, and tuple patterns.</li>
     </ul>
     <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-methods">Methods</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <u>method</u> in Rust is a function defined inside an <code>impl</code> block and associated with a specific type (struct, enum, or trait).</li>
+        <br/>
+        <li>Unlike a normal function, a method always has:
+            <ul>
+                <li>a <u>receiver</u> parameter (<code>self</code>, <code>&amp;self</code>, or <code>&amp;mut self</code>)</li>
+                <li>access to the instance it is called on</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Methods allow types to encapsulate behavior, similar to OOP languages, but without inheritance.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Defining a Method</b></li>
+<pre><code class="language-rust line-numbers">struct Point {
+    x: f64,
+    y: f64,
+}
+
+impl Point {
+    fn distance_from_origin(&amp;self) -&gt; f64 {
+        (self.x.powi(2) + self.y.powi(2)).sqrt()
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Methods are placed inside an <code>impl</code> block.</li>
+        <li><code>&amp;self</code> borrows the instance immutably.</li>
+        <li>Call it like this:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let p = Point { x: 3.0, y: 4.0 };
+println!("{}", p.distance_from_origin());
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>The Receiver: self, &amp;self, &amp;mut self</b></li>
+    <br/>
+    <ul>
+        <li>Methods may take the following receivers:</li>
+    </ul>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Receiver</th>
+                <th>Description</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>self</code></td>
+                <td>takes ownership</td>
+                <td>method consumes the instance</td>
+            </tr>
+            <tr>
+                <td><code>&amp;self</code></td>
+                <td>immutable borrow</td>
+                <td>method reads but cannot modify</td>
+            </tr>
+            <tr>
+                <td><code>&amp;mut self</code></td>
+                <td>mutable borrow</td>
+                <td>method can modify the instance</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b>Methods with &amp;mut self</b></li>
+<pre><code class="language-rust line-numbers">impl Point {
+    fn move_by(&amp;mut self, dx: f64, dy: f64) {
+        self.x += dx;
+        self.y += dy;
+    }
+}
+
+let mut p = Point { x: 1.0, y: 2.0 };
+p.move_by(5.0, -1.0);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Only mutable instances can call methods with <code>&amp;mut self</code>.</li>
+        <li>Rust enforces borrowing rules strictly.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Methods with self (consuming)</b></li>
+<pre><code class="language-rust line-numbers">impl Point {
+    fn into_tuple(self) -&gt; (f64, f64) {
+        (self.x, self.y)
+    }
+}
+
+let p = Point { x: 3.0, y: 4.0 };
+let t = p.into_tuple(); // p is moved and cannot be used again
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use <code>self</code> when a method should take ownership.</li>
+        <li>Common for builder patterns and transformation methods.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Multiple impl Blocks</b></li>
+<pre><code class="language-rust line-numbers">impl Point {
+    fn x(&amp;self) -&gt; f64 { self.x }
+}
+
+impl Point {
+    fn y(&amp;self) -&gt; f64 { self.y }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>A type can have many <code>impl</code> blocks.</li>
+        <li>Useful for separating functionality into logical sections.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Associated Functions vs Methods</b></li>
+<pre><code class="language-rust line-numbers">impl Point {
+    fn new(x: f64, y: f64) -&gt; Self {
+        Self { x, y }
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Associated functions have no <code>self</code> parameter.</li>
+        <li>Called with <code>Point::new()</code>, not on an instance.</li>
+        <li>Commonly used for constructors.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let p = Point::new(1.0, 2.0);
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Chaining Methods</b></li>
+<pre><code class="language-rust line-numbers">struct Counter { n: i32 }
+
+impl Counter {
+    fn new() -&gt; Self {
+        Self { n: 0 }
+    }
+
+    fn inc(&amp;mut self) -&gt; &amp;mut Self {
+        self.n += 1;
+        self
+    }
+}
+
+let mut c = Counter::new();
+c.inc().inc().inc();
+</code></pre>
+    <br/>
+    <ul>
+        <li>Return <code>&amp;mut Self</code> to support fluent APIs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Methods on Enums</b></li>
+<pre><code class="language-rust line-numbers">enum Shape {
+    Circle(f64),
+    Rect { w: f64, h: f64 },
+}
+
+impl Shape {
+    fn area(&amp;self) -&gt; f64 {
+        match self {
+            Shape::Circle(r) =&gt; std::f64::consts::PI * r * r,
+            Shape::Rect { w, h } =&gt; w * h,
+        }
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Enums can have methods just like structs.</li>
+        <li>Supports full pattern matching inside methods.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Method Syntax Sugar: p.method() == Type::method(&amp;p)</b></li>
+<pre><code class="language-rust line-numbers">p.distance_from_origin();
+
+// Is equivalent to:
+Point::distance_from_origin(&amp;p);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rust automatically inserts:
+            <ul>
+                <li><code>&amp;</code></li>
+                <li><code>&amp;mut</code></li>
+                <li>or ownership moves</li>
+            </ul>
+            depending on the method signature.</li>
+        <br/>
+        <li>This is called <b>automatic referencing and dereferencing</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Methods with Generic Parameters</b></li>
+<pre><code class="language-rust line-numbers">struct Wrapper&lt;T&gt; {
+    value: T,
+}
+
+impl&lt;T&gt; Wrapper&lt;T&gt; {
+    fn get(&amp;self) -&gt; &amp;T {
+        &amp;self.value
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Methods can be generic, just like functions.</li>
+        <li>Generic types appear on the <code>impl</code> block.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Methods with where Clauses</b></li>
+<pre><code class="language-rust line-numbers">impl&lt;T&gt; Wrapper&lt;T&gt;
+where
+    T: std::fmt::Display,
+{
+    fn show(&amp;self) {
+        println!("{}", self.value);
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Allows restricting methods to types that satisfy trait bounds.</li>
+    </ul>
+    <br/>
 
 </ol>
 <br/>
