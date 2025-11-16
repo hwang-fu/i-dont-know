@@ -125,6 +125,7 @@
         <li><a href="#rust-let-else">Let Else</a></li>
         <li><a href="#rust-while-let">While Let</a></li>
         <li><a href="#rust-methods">Methods</a></li>
+        <li><a href="#rust-closures">Closures</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -5396,6 +5397,268 @@ where
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-closures">Closures</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <u>closure</u> in Rust is an anonymous function that can capture values from its surrounding environment.</li>
+        <br/>
+        <li>Closures are similar to:
+            <ul>
+                <li>lambda expressions (Python, Java, C++)</li>
+                <li>blocks (Swift)</li>
+                <li>arrow functions (JavaScript)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>They are often used for:
+            <ul>
+                <li>inline logic</li>
+                <li>callbacks</li>
+                <li>short computations</li>
+                <li>functional-style programming</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Closures are defined using the <code>|args| expression</code> syntax.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Closure Syntax</b></li>
+<pre><code class="language-rust line-numbers">let add = |a, b| a + b;
+
+println!("{}", add(2, 3)); // 5
+</code></pre>
+    <br/>
+    <ul>
+        <li>No type annotations needed — Rust infers the types.</li>
+        <li>Closures can be stored in variables and called like functions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Closures Capturing Environment</b></li>
+<pre><code class="language-rust line-numbers">let x = 10;
+
+let show = || println!("x = {}", x);
+
+show();
+</code></pre>
+    <br/>
+    <ul>
+        <li>The closure automatically captures <code>x</code> by reference.</li>
+        <li>Rust chooses the capture mode based on usage.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Capture by Mutable Reference</b></li>
+<pre><code class="language-rust line-numbers">let mut counter = 0;
+
+let mut increment = || {
+    counter += 1;
+};
+
+increment();
+increment();
+
+println!("{}", counter); // 2
+</code></pre>
+    <br/>
+    <ul>
+        <li>Because the closure mutates <code>counter</code>, the closure itself must be mutable.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Capture by Move (Moving Ownership)</b> </li>
+<pre><code class="language-rust line-numbers">let s = String::from("hello");
+
+let closure = move || {
+    println!("inside: {}", s);
+};
+
+closure();
+
+// println!("{}", s); // ERROR: moved into closure
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>move</code> forces the closure to take ownership of captured variables.</li>
+        <li>Useful when closures are passed to new threads.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Type Annotations for Closures</b></li>
+<pre><code class="language-rust line-numbers">let multiply = |a: i32, b: i32| -&gt; i32 {
+    a * b
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Usually unnecessary, but required when Rust cannot infer types.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Closures as Function Parameters</b></li>
+<pre><code class="language-rust line-numbers">fn apply&lt;F&gt;(f: F)
+where
+    F: Fn(),
+{
+    f();
+}
+
+apply(|| println!("Hello"));
+</code></pre>
+    <br/>
+    <ul>
+        <li>Closures implement one of the function traits:
+            <ul>
+                <li><code>Fn</code></li>
+                <li><code>FnMut</code></li>
+                <li><code>FnOnce</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The Three Closure Traits</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Trait</th>
+                <th>Capture Style</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>Fn</code></td>
+                <td>&amp;T (immutable borrow)</td>
+                <td>Used for closures that don't modify captured values</td>
+            </tr>
+            <tr>
+                <td><code>FnMut</code></td>
+                <td>&amp;mut T (mutable borrow)</td>
+                <td>Used for closures that modify captured variables</td>
+            </tr>
+            <tr>
+                <td><code>FnOnce</code></td>
+                <td>T (move)</td>
+                <td>Used for closures that consume captured variables</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>Every closure implements exactly one of these traits.</li>
+        <li><code>FnOnce</code> is the "lowest" trait — all closures implement it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Returning Closures</b></li>
+    <br/>
+    <ul>
+        <li>Closures have unique types, so returning them requires <u>impl Trait</u>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn make_adder(x: i32) -&gt; impl Fn(i32) -&gt; i32 {
+    move |y| x + y
+}
+
+let add10 = make_adder(10);
+println!("{}", add10(5)); // 15
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Closures in Iterator Adapters</b></li>
+<pre><code class="language-rust line-numbers">let nums = vec![1, 2, 3];
+
+let doubled: Vec&lt;i32&gt; = nums.iter()
+    .map(|x| x * 2)
+    .collect();
+
+println!("{:?}", doubled); // [2, 4, 6]
+</code></pre>
+    <br/>
+    <ul>
+        <li>Closures are essential for functional-style iterator chains.</li>
+        <li><code>map</code>, <code>filter</code>, <code>fold</code>, and many others rely heavily on closures.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Closures in Threads</b></li>
+<pre><code class="language-rust line-numbers">use std::thread;
+
+let s = String::from("hello");
+
+thread::spawn(move || {
+    println!("{}", s);
+});
+</code></pre>
+    <br/>
+    <ul>
+        <li>Threads require <code>move</code> closures to ensure captured values are owned.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Closures vs Functions</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Closures</th>
+                <th>Functions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Can capture environment</td>
+                <td>Cannot capture any outside variable</td>
+            </tr>
+            <tr>
+                <td>Anonymous, inline</td>
+                <td>Named, standalone</td>
+            </tr>
+            <tr>
+                <td>Type inferred automatically</td>
+                <td>Types must be explicit</td>
+            </tr>
+            <tr>
+                <td>Implement Fn / FnMut / FnOnce</td>
+                <td>Functions are <code>fn</code> pointers</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
