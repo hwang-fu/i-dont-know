@@ -133,6 +133,7 @@
         <li><a href="#rust-use">Keyword <code>use</code> in Rust</a></li>
         <li><a href="#rust-crates">Crates</a></li>
         <li><a href="#rust-attributes">Attributes</a></li>
+        <li><a href="#rust-custom-attributes-beginner">Defining Custom Attributes (Beginners Level)</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -7477,7 +7478,230 @@ pub extern "C" fn my_entry() {}
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-custom-attributes-beginner">Defining Custom Attributes in Rust (Beginner Level)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Rust does not allow you to freely invent new attributes “out of nowhere.”</li>
+        <br/>
+        <li>Custom attributes can only be created through:
+            <ul>
+                <li><u>procedural macros</u> (derive macros, attribute macros, function-like macros)</li>
+                <li><u>external crates</u> that expose their own attributes</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This means that when you write a new attribute, you are actually writing a <u>macro</u>.</li>
+        <br/>
+        <li>Beginner-level rule:
+            You can only define new attributes inside a library crate using <u>procedural macros</u>.
+        </li>
+    </ul>
+    <br/><br/>
 
+
+    <li><b>Three Kinds of Procedural Macros that Create Attributes</b></li>
+    <br/>
+    <ul>
+        <li><b>Derive macro</b> (creates attributes like <code>#[derive(MyTrait)]</code>)</li>
+        <li><b>Attribute macro</b> (creates attributes like <code>#[my_attribute]</code>)</li>
+        <li><b>Function-like macro</b> (not an attribute, but part of procedural macros)</li>
+    </ul>
+    <br/>
+    <ul>
+        <li>At beginner level, we focus mainly on <u>derive macros</u> and <u>attribute macros</u>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Project Setup for Custom Attributes</b></li>
+    <br/>
+    <ul>
+        <li>To define custom attributes, you must create a crate of type <code>proc-macro</code>.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ cargo new my_macros --lib
+$ cd my_macros
+
+# Edit Cargo.toml to enable procedural macros
+</code></pre>
+
+<pre><code class="language-toml line-numbers">[lib]
+proc-macro = true
+</code></pre>
+    <br/>
+    <ul>
+        <li>This declares the crate as a “macro crate”, allowing it to define custom attributes.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example 1: Creating a Simple Derive Macro</b> (easiest form)</li>
+<pre><code class="language-rust line-numbers">// my_macros/src/lib.rs
+
+use proc_macro::TokenStream;
+
+#[proc_macro_derive(HelloMacro)]
+pub fn hello_macro(_input: TokenStream) -&gt; TokenStream {
+    // At beginner level, return nothing or simple message
+    // A real macro would inspect and modify the input code.
+    TokenStream::new()
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This lets you write:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">// in another crate:
+
+use my_macros::HelloMacro;
+
+#[derive(HelloMacro)]
+struct User;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This compiles but does nothing yet — good for beginners to test setup.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example 2: A Very Simple Attribute Macro</b></li>
+<pre><code class="language-rust line-numbers">// inside my_macros/src/lib.rs
+
+use proc_macro::TokenStream;
+
+#[proc_macro_attribute]
+pub fn debug_message(_attr: TokenStream, item: TokenStream) -&gt; TokenStream {
+    println!("debug_message attribute was used!");
+    item  // return the original item unchanged
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Now you can write:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">// in a binary or library crate
+
+use my_macros::debug_message;
+
+#[debug_message]
+fn greet() {
+    println!("Hello!");
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This macro prints a message at compile-time when used.</li>
+        <li>It does nothing to the function itself (beginner-friendly example).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example 3: Attribute Macro That Modifies Code (Still Beginner Level)</b></li>
+<pre><code class="language-rust line-numbers">// my_macros/src/lib.rs
+
+use proc_macro::TokenStream;
+use quote::quote;
+use syn;
+
+#[proc_macro_attribute]
+pub fn make_public(_attr: TokenStream, item: TokenStream) -&gt; TokenStream {
+    let mut ast = syn::parse_macro_input!(item as syn::ItemFn);
+    ast.vis = syn::Visibility::Public;
+
+    let expanded = quote! { #ast };
+    expanded.into()
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Usage:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use my_macros::make_public;
+
+#[make_public]
+fn secret() {
+    println!("This is now public!");
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This macro turns <code>fn secret()</code> into <code>pub fn secret()</code>.</li>
+        <li>This is a gentle example of modifying syntax trees.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How Custom Attributes Work Internally (Beginner Explanation)</b></li>
+    <br/>
+    <ul>
+        <li>Rust passes the item (function, struct, etc.) to your macro as a <code>TokenStream</code>, which is a sequence of tokens: identifiers, keywords, literals, braces</li>
+        <br/>
+        <li>Your macro:
+            <ul>
+                <li><u>reads</u> the input tokens</li>
+                <li><u>may modify</u> them (optional)</li>
+                <li><u>returns</u> new code back to the compiler</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Popular crates that help:
+            <ul>
+                <li><code>syn</code> — parses Rust code into a syntax tree</li>
+                <li><code>quote</code> — converts syntax tree back to tokens</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Limitations of Custom Attributes</b></li>
+    <br/>
+    <ul>
+        <li>You cannot arbitrarily attach attributes unless they correspond to actual procedural macros.</li>
+        <li>You must put custom macros in a <code>proc-macro</code> crate.</li>
+        <li>Beginner-level macros often:
+            <ul>
+                <li>modify visibility</li>
+                <li>auto-generate trivial functions</li>
+                <li>add print/debug statements</li>
+                <li>derive simple traits</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li>Custom attributes in Rust are created using <u>procedural macros</u>.</li>
+        <li>You must use a <code>proc-macro</code> crate.</li>
+        <li>Two forms of attribute macros:
+            <ul>
+                <li><code>#[derive(MyTrait)]</code> — derive macros</li>
+                <li><code>#[my_attribute]</code> — attribute macros</li>
+            </ul>
+        </li>
+        <li>They operate on Rust code represented as token streams.</li>
+        <li>Beginner-level macros can modify visibility or add simple behaviors.</li>
+        <li>Popular crates <code>syn</code> and <code>quote</code> make macros easier to write.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
