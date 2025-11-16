@@ -120,6 +120,7 @@
         <li><a href="#rust-loop">Loop</a></li>
         <li><a href="#rust-while">While</a></li>
         <li><a href="#rust-for-range">For and Range</a></li>
+        <li><a href="#rust-match">Match</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -4186,6 +4187,345 @@ println!("{:?}", slice);
         <li>Ranges are powerful tools for index-free iteration.</li>
         <li>Together, they provide safe, expressive, and concise looping patterns for everyday Rust programming.</li>
     </ul>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-match">match</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>match</code> is Rust’s powerful pattern-matching expression.</li>
+        <br/>
+        <li>It compares a value against multiple patterns and executes the code of the first matching arm.</li>
+        <br/>
+        <li><u>match must be exhaustive</u> — all possible cases must be handled.</li>
+        <br/>
+        <li><code>match</code> is an expression and can return a value.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic match</b></li>
+<pre><code class="language-rust line-numbers">let n = 3;
+
+match n {
+    1 =&gt; println!("one"),
+    2 =&gt; println!("two"),
+    3 =&gt; println!("three"),
+    _ =&gt; println!("something else"),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>_</code> is the wildcard pattern: matches anything.</li>
+        <li>The match is exhaustive because <code>_</code> handles all remaining cases.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>match is an expression</b></li>
+<pre><code class="language-rust line-numbers">let n = 5;
+
+let description = match n {
+    1 =&gt; "one",
+    2 =&gt; "two",
+    3 =&gt; "three",
+    _ =&gt; "other",
+};
+
+println!("{}", description);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Both arms must produce the same type (<code>&amp;str</code> here).</li>
+        <li>No semicolon inside arms unless you want to return <code>()</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Matching ranges</b></li>
+<pre><code class="language-rust line-numbers">let age = 20;
+
+match age {
+    0..=12  =&gt; println!("child"),
+    13..=19 =&gt; println!("teenager"),
+    _       =&gt; println!("adult"),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Range patterns are inclusive: <code>0..=12</code>.</li>
+        <li>Great for numerical classification.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Multiple patterns with |</b></li>
+<pre><code class="language-rust line-numbers">let c = 'a';
+
+match c {
+    'a' | 'e' | 'i' | 'o' | 'u' =&gt; println!("vowel"),
+    _ =&gt; println!("consonant or other"),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>|</code> acts like logical OR for matching.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Matching Option&lt;T&gt;</b></li>
+<pre><code class="language-rust line-numbers">let x: Option&lt;i32&gt; = Some(10);
+
+match x {
+    Some(n) =&gt; println!("value = {}", n),
+    None    =&gt; println!("no value"),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>Option</code> is the standard way Rust handles nullability.</li>
+        <li>The match destructures the enum and extracts its data.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Matching Result&lt;T, E&gt;</b></li>
+<pre><code class="language-rust line-numbers">let r: Result&lt;i32, &amp;str&gt; = Ok(42);
+
+match r {
+    Ok(v)  =&gt; println!("Success: {}", v),
+    Err(e) =&gt; println!("Error: {}", e),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Used extensively in Rust error handling.</li>
+        <li>Patterns extract inner values.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Binding matched values</b></li>
+<pre><code class="language-rust line-numbers">let n = 7;
+
+match n {
+    1 =&gt; println!("one"),
+    2 =&gt; println!("two"),
+    other =&gt; println!("something else: {}", other),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>other</code> binds whatever value is matched.</li>
+        <li>Equivalent to <code>_</code> but binds the value for use.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Pattern guards</b></li>
+<pre><code class="language-rust line-numbers">let n = 10;
+
+match n {
+    x if x % 2 == 0 =&gt; println!("even"),
+    _ =&gt; println!("odd"),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><u>Pattern guards</u> add an extra boolean condition.</li>
+        <li>Useful for additional filtering beyond pattern structure.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Destructuring tuples</b></li>
+<pre><code class="language-rust line-numbers">let pair = (3, -3);
+
+match pair {
+    (0, y) =&gt; println!("x is zero, y = {}", y),
+    (x, 0) =&gt; println!("y is zero, x = {}", x),
+    (x, y) =&gt; println!("x = {}, y = {}", x, y),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Matches structure and extracts values at the same time.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Destructuring structs</b></li>
+<pre><code class="language-rust line-numbers">struct Point { x: i32, y: i32 }
+
+let p = Point { x: 3, y: 7 };
+
+match p {
+    Point { x: 0, y } =&gt; println!("on y-axis at {}", y),
+    Point { x, y: 0 } =&gt; println!("on x-axis at {}", x),
+    Point { x, y }     =&gt; println!("({}, {})", x, y),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Allows destructuring only some fields or matching specific ones.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Match an enum with data</b></li>
+<pre><code class="language-rust line-numbers">enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+}
+
+let msg = Message::Move { x: 3, y: 5 };
+
+match msg {
+    Message::Quit =&gt; println!("Quit"),
+    Message::Move { x, y } =&gt; println!("Move to ({}, {})", x, y),
+    Message::Write(text) =&gt; println!("Message: {}", text),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This is one of Rust’s strongest features — enum pattern matching.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Matching references</b></li>
+<pre><code class="language-rust line-numbers">let x = 5;
+
+match &amp;x {
+    &amp;1 =&gt; println!("one"),
+    &amp;n =&gt; println!("something else: {}", n),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Patterns must match the reference type.</li>
+        <li>Use <code>&amp;</code> in patterns to dereference.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Ignoring parts of a pattern</b></li>
+<pre><code class="language-rust line-numbers">let pair = (10, 20);
+
+match pair {
+    (x, _) =&gt; println!("first = {}", x),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>_</code> ignores the second value.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Deep destructuring</b></li>
+<pre><code class="language-rust line-numbers">let data = (Some(3), 10);
+
+match data {
+    (Some(x), y) =&gt; println!("x = {}, y = {}", x, y),
+    (None, y)    =&gt; println!("no x, y = {}", y),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Patterns can match deeply nested structures.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Match with return values</b></li>
+<pre><code class="language-rust line-numbers">let n = 10;
+
+let result = match n {
+    0 =&gt; "zero",
+    1 =&gt; "one",
+    _ =&gt; "many",
+};
+
+println!("{}", result);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Because <code>match</code> is an expression, you can return results directly.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of match</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Basic matching</td>
+                <td>Compare values to patterns</td>
+                <td><code>match x { 1 =&gt; ... }</code></td>
+            </tr>
+            <tr>
+                <td>Wildcard</td>
+                <td>Catches all unmatched cases</td>
+                <td><code>_ =&gt; ...</code></td>
+            </tr>
+            <tr>
+                <td>Ranges</td>
+                <td>Match inclusive ranges</td>
+                <td><code>0..=10</code></td>
+            </tr>
+            <tr>
+                <td>Multiple patterns</td>
+                <td>OR conditions</td>
+                <td><code>'a' | 'b'</code></td>
+            </tr>
+            <tr>
+                <td>Enums</td>
+                <td>Destructure and match variants</td>
+                <td><code>Message::Move { x, y }</code></td>
+            </tr>
+            <tr>
+                <td>Guards</td>
+                <td>Apply extra conditions</td>
+                <td><code>x if x % 2 == 0</code></td>
+            </tr>
+            <tr>
+                <td>Bindings</td>
+                <td>Store matched value</td>
+                <td><code>n =&gt; ...</code></td>
+            </tr>
+            <tr>
+                <td>Destructuring</td>
+                <td>Break apart structs/tuples</td>
+                <td><code>(x, y)</code></td>
+            </tr>
+            <tr>
+                <td>Expressions</td>
+                <td>Return values from match</td>
+                <td><code>let t = match x { ... }</code></td>
+            </tr>
+        </tbody>
+    </table>
     <br/><br/>
 
 </ol>
