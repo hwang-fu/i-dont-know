@@ -112,12 +112,209 @@
 
 
 <hr/>
-<h1>Title</h1>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<nav id="toc" style="margin-bottom: 2rem;">
+    <h2>📘 Terraform Documentation Index</h2>
+    <ul style="line-height: 1.8;">
+        <li><a href="#tf-what-is-terraform">What Is Terraform?</a></li>
+    </ul>
+</nav>
+<!-- * * * * * * * * * * * * * * -->
+
+
 <hr/>
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="tf-what-is-terraform">What Is Terraform?</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>Terraform</code> is an open-source <u>Infrastructure as Code (IaC)</u> tool created by HashiCorp.</li>
+        <br/>
+        <li>It allows you to <u>define, provision, and manage infrastructure</u>
+            across multiple cloud providers using a declarative configuration language (HCL — HashiCorp Configuration Language).</li>
+        <br/>
+        <li>Instead of clicking in cloud dashboards, you write code describing your infrastructure — Terraform takes care of creating, updating, and deleting resources safely.</li>
+    </ul>
+    <br/><br/>
 
+
+    <li><b>Key Characteristics</b></li>
+    <br/>
+    <ul>
+        <li>You describe <u>what</u> you want, not <u>how</u> to do it.</li>
+        <li>Supports many providers:
+            <ul>
+                <li>AWS, Azure, Google Cloud</li>
+                <li>Alibaba Cloud, Oracle Cloud</li>
+                <li>Kubernetes</li>
+                <li>GitHub, Cloudflare, Datadog, etc.</li>
+            </ul>
+        </li>
+        <li>Safe <u>execution plan</u> via <code>terraform plan</code>.</li>
+        <li>Manages <u>dependencies</u> between resources automatically.</li>
+        <li>Uses a <u>state file</u> to track real-world infrastructure.</li>
+        <li>Works well in CI/CD pipelines.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Terraform Workflow</b></li>
+    <br/>
+    <ul>
+        <li>Terraform follows a simple but powerful 4-step workflow:</li>
+    </ul>
+
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Step</th>
+                <th>Description</th>
+                <th>Command</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><b>1. Write</b></td>
+                <td>Write <code>.tf</code> files describing infrastructure.</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td><b>2. Init</b></td>
+                <td>Download providers and initialize the project.</td>
+                <td><code>terraform init</code></td>
+            </tr>
+            <tr>
+                <td><b>3. Plan</b></td>
+                <td>Show what Terraform will create, modify, or destroy.</td>
+                <td><code>terraform plan</code></td>
+            </tr>
+            <tr>
+                <td><b>4. Apply</td>
+                <td>Perform the actual infrastructure change.</td>
+                <td><code>terraform apply</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b>A Simple Terraform Example</b></li>
+    <br/>
+    <p>This example creates an AWS EC2 instance.</p>
+
+<pre><code class="language-hcl line-numbers">provider "aws" {
+  region = "eu-central-1"
+}
+
+resource "aws_instance" "example" {
+  ami           = "ami-12345678"
+  instance_type = "t2.micro"
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>provider</code> block tells Terraform which cloud provider to use.</li>
+        <li><code>resource</code> block describes an actual cloud object.</li>
+        <li><code>aws_instance.example</code> becomes a managed resource in the Terraform state.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Terraform State</b></li>
+    <br/>
+    <ul>
+        <li>Terraform stores infrastructure details in a file called <code>terraform.tfstate</code>.</li>
+        <br/>
+        <li>This file tracks:
+            <ul>
+                <li>resource IDs</li>
+                <li>connections between resources</li>
+                <li>current configuration applied</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This allows Terraform to detect changes and update resources safely.</li>
+        <br/>
+        <li>In teams, the state is usually stored remotely (S3, Azure Blob, Terraform Cloud).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Terraform Language (HCL)</b></li>
+    <br/>
+    <ul>
+        <li>Terraform uses <u>HCL (HashiCorp Configuration Language)</u>, which is:</li>
+        <ul>
+            <li>easy to read</li>
+            <li>block-based</li>
+            <li>supports variables, loops, functions, expressions</li>
+        </ul>
+        <br/>
+        <li>Examples of HCL blocks:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">variable "project_name" {
+  type = string
+}
+
+output "instance_id" {
+  value = aws_instance.example.id
+}
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Common Terraform Terminology</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Term</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>provider</code></td>
+                <td>Plugin to manage a service (e.g., AWS, Azure).</td>
+            </tr>
+            <tr>
+                <td><code>resource</code></td>
+                <td>A cloud object (VM, network, DB, etc.).</td>
+            </tr>
+            <tr>
+                <td><code>data source</code></td>
+                <td>Read existing infrastructure.</td>
+            </tr>
+            <tr>
+                <td><code>module</code></td>
+                <td>Reusable grouping of Terraform files.</td>
+            </tr>
+            <tr>
+                <td><code>state</code></td>
+                <td>The file storing real-world infrastructure details.</td>
+            </tr>
+            <tr>
+                <td><code>plan</code></td>
+                <td>Preview of actions before applying changes.</td>
+            </tr>
+            <tr>
+                <td><code>apply</code></td>
+                <td>Run the actual changes.</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
