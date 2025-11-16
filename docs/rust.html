@@ -130,6 +130,7 @@
         <li><a href="#rust-diverging-functions">Diverging Functions</a></li>
         <li><a href="#rust-modules">Modules</a></li>
         <li><a href="#rust-module-visibility">Visibility in Module</a></li>
+        <li><a href="#rust-crates">Crates</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -6615,7 +6616,240 @@ fn main() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-crates">Crates in Rust</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <u>crate</u> is the fundamental compilation unit in Rust.</li>
+        <br/>
+        <li>A crate can be:
+            <ul>
+                <li>a <u>binary crate</u> — produces an executable (contains <code>fn main()</code>)</li>
+                <li>a <u>library crate</u> — produces reusable functionality without requiring <code>main</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>All Rust programs consist of one or more crates.</li>
+        <li>A crate defines a <u>root module</u> (<code>main.rs</code> or <code>lib.rs</code>) from which the module tree grows.</li>
+    </ul>
+    <br/><br/>
 
+
+    <li><b>Binary Crates</b></li>
+    <br/>
+    <ul>
+        <li>Binary crates compile into executable files.</li>
+        <li>They must contain a <code>main()</code> function as an entry point.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/
+└── main.rs
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// main.rs
+fn main() {
+    println!("Hello from a binary crate!");
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Running <code>cargo build</code> produces <code>target/debug/&lt;crate-name&gt;</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Library Crates</b></li>
+    <br/>
+    <ul>
+        <li>Library crates do not have <code>main()</code>.</li>
+        <li>They expose public APIs using <code>pub</code> items.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/
+└── lib.rs
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// lib.rs
+pub fn greet(name: &amp;str) {
+    println!("Hello, {}!", name);
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Other crates can depend on this library and call <code>lib::greet()</code>.</li>
+        <li>Running <code>cargo test</code> also tests <code>lib.rs</code> contents.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Project Structure: One Package, Multiple Crates</b></li>
+    <br/>
+    <ul>
+        <li>A Cargo package (a directory with <code>Cargo.toml</code>) can contain:
+            <ul>
+                <li>0 or 1 library crate</li>
+                <li>0 or many binary crates</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/
+├── lib.rs       # library crate
+├── main.rs      # default binary crate
+└── bin/
+    ├── tool1.rs # binary crate 1
+    └── tool2.rs # binary crate 2
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>A single package can therefore ship multiple executables and one optional library.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The Crate Root</b></li>
+    <br/>
+    <ul>
+        <li>The crate root is the source file that <u>defines the root of the module tree</u>.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/main.rs  # crate root for binary crate
+src/lib.rs   # crate root for library crate
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The crate root:
+            <ul>
+                <li>contains top-level items</li>
+                <li>includes submodules using <code>mod</code></li>
+                <li>defines what is exposed publicly</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Cargo.toml Defines the Crate</b></li>
+<pre><code class="language-toml line-numbers">[package]
+name = "my_project"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = "1.0"
+rand = "0.8"
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>Cargo.toml</code> describes crate metadata and dependencies.</li>
+        <li>Crate name inside <code>package.name</code> is used when publishing.</li>
+        <li>Dependencies listed become accessible inside code through <code>use</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>External Crates</b></li>
+<pre><code class="language-rust line-numbers">use rand::Rng;
+
+fn main() {
+    let n: u32 = rand::thread_rng().gen_range(1..=10);
+    println!("{}", n);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>An external crate becomes available after you list it in <code>Cargo.toml</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Preludes and the Name `crate`</b></li>
+    <br/>
+    <ul>
+        <li><code>crate</code> refers to the current crate root.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">crate::utils::math::add(2, 3);
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is an absolute path inside the current crate.</li>
+        <li>Useful when writing libraries.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Crates.io and Publishing</b></li>
+    <br/>
+    <ul>
+        <li>Rust’s public package registry is <u>crates.io</u>.</li>
+        <li>You can publish your library crates to share them with the world.</li>
+        <li>Binary crates can also be published (for distribution via <code>cargo install</code>).</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ cargo publish
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Requires an account and API token.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Building and Running Crates</b></li>
+<pre><code class="language-bash line-numbers">$ cargo build         # build the crate
+$ cargo build --release
+$ cargo run           # binary crates only
+$ cargo test          # test library + binaries
+$ cargo doc --open    # generate and open crate docs
+</code></pre>
+    <br/>
+    <ul>
+        <li>All actions operate at the crate level.</li>
+        <li>Documentation includes both your crate and its dependencies.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Crates vs Modules</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Level</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Crate</td>
+                <td>Compilation Unit</td>
+                <td>Produces a binary or library</td>
+            </tr>
+            <tr>
+                <td>Module</td>
+                <td>Namespace Unit</td>
+                <td>Organizes code inside a crate</td>
+            </tr>
+            <tr>
+                <td>Package</td>
+                <td>Project Unit</td>
+                <td>Contains <code>Cargo.toml</code> and zero/many crates</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
