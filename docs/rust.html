@@ -3867,7 +3867,329 @@ println!("Ready!");
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-for-range"><code>for</code> and Range</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>for</code> loop in Rust is used to iterate over items in a sequence.</li>
+        <br/>
+        <li>Unlike C/Java style loops, Rust <u>does not</u> use index-based counting automatically.</li>
+        <br/>
+        <li>Instead, <code>for</code> iterates over anything that implements the <code>IntoIterator</code> trait, including:
+            <ul>
+                <li>ranges</li>
+                <li>arrays</li>
+                <li>vectors</li>
+                <li>strings</li>
+                <li>custom iterator types</li>
+            </ul>
+        </li>
+        <br/>
+        <li>It is safe, avoids indexing errors, and is the idiomatic way to loop in Rust.</li>
+    </ul>
+    <br/><br/>
 
+
+    <li><b>Basic for loop with a range</b></li>
+<pre><code class="language-rust line-numbers">for i in 0..5 {
+    println!("{}", i);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>0..5</code> is a range from <u>0 to 4</u> (end is exclusive).</li>
+        <li>This prints: <code>0 1 2 3 4</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Inclusive range</b></li>
+<pre><code class="language-rust line-numbers">for i in 0..=5 {
+    println!("{}", i);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>0..=5</code> includes the end value.</li>
+        <li>This prints: <code>0 1 2 3 4 5</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Reverse iteration using rev()</b></li>
+<pre><code class="language-rust line-numbers">for i in (1..5).rev() {
+    println!("{}", i);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Prints: <code>4 3 2 1</code></li>
+        <li>Ranges must be in parentheses when using methods like <code>rev()</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Iterating over an array</b></li>
+<pre><code class="language-rust line-numbers">let arr = [10, 20, 30];
+
+for value in arr {
+    println!("{}", value);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rust copies each element for simple types (like <code>i32</code>).</li>
+        <li>For non-<code>Copy</code> types, values are moved (ownership transferred).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Iterating over a vector by reference</b></li>
+<pre><code class="language-rust line-numbers">let v = vec![10, 20, 30];
+
+for value in &amp;v {
+    println!("{}", value);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>&v</code> borrows the vector instead of moving it.</li>
+        <li>Inside the loop, <code>value</code> is of type <code>&i32</code>.</li>
+        <li>The vector remains usable after the loop.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Mutable iteration over a vector</b></li>
+<pre><code class="language-rust line-numbers">let mut v = vec![1, 2, 3];
+
+for value in &mut v {
+    *value *= 2;
+}
+
+println!("{:?}", v);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>&mut v</code> gives mutable references to elements.</li>
+        <li>You must dereference <code>*value</code> to modify.</li>
+        <li>Result: <code>[2, 4, 6]</code></li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Enumerating index and value</b></li>
+<pre><code class="language-rust line-numbers">let arr = ["a", "b", "c"];
+
+for (index, value) in arr.iter().enumerate() {
+    println!("{}: {}", index, value);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>.iter()</code> borrows elements.</li>
+        <li><code>.enumerate()</code> gives (index, value) pairs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Iterating over characters in a string</b></li>
+<pre><code class="language-rust line-numbers">let s = "Hello";
+
+for c in s.chars() {
+    println!("{}", c);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>.chars()</code> iterates Unicode scalar values (<code>char</code>).</li>
+        <li>Each <code>char</code> is 4 bytes.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Iterating over bytes in a string</b></li>
+<pre><code class="language-rust line-numbers">let s = "Hello";
+
+for b in s.bytes() {
+    println!("{}", b);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>.bytes()</code> iterates raw UTF-8 bytes (<code>u8</code>).</li>
+        <li>Useful for parsing low-level binary data.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using for with patterns</b></li>
+<pre><code class="language-rust line-numbers">let pairs = vec![(1, 2), (3, 4)];
+
+for (a, b) in pairs {
+    println!("{} + {} = {}", a, b, a + b);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rust destructures tuples directly in the loop head.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Looping multiple ranges (Cartesian product)</b></li>
+<pre><code class="language-rust line-numbers">for x in 0..3 {
+    for y in 0..3 {
+        println!("({}, {})", x, y);
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Nesting <code>for</code> loops is straightforward.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Breaking from a for loop</b></li>
+<pre><code class="language-rust line-numbers">for i in 0..10 {
+    if i == 4 {
+        break;
+    }
+    println!("{}", i);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>break</code> stops the loop early.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Continuing to next iteration</b></li>
+<pre><code class="language-rust line-numbers">for i in 0..10 {
+    if i % 2 == 0 {
+        continue; // skip even numbers
+    }
+    println!("{}", i);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>continue</code> skips the remain of the current iteration.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Labelled for loops</b></li>
+<pre><code class="language-rust line-numbers">'outer: for x in 0..3 {
+    for y in 0..3 {
+        if x == 1 && y == 1 {
+            break 'outer;
+        }
+        println!("({}, {})", x, y);
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Labels allow breaking out of outer loops.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Range types: from and to</b></li>
+<pre><code class="language-rust line-numbers">// exclusive end
+let r1 = 1..5;   // 1,2,3,4
+
+// inclusive end
+let r2 = 1..=5;  // 1,2,3,4,5
+</code></pre>
+    <br/>
+    <ul>
+        <li>All range types implement <code>Iterator</code> or <code>IntoIterator</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Ranges used in slices</b></li>
+<pre><code class="language-rust line-numbers">let arr = [10, 20, 30, 40, 50];
+
+let slice = &arr[1..4];  // elements 1 through 3
+println!("{:?}", slice);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Ranges can index collections.</li>
+        <li>In slices, the upper bound is always exclusive.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of for and range</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Exclusive range</td>
+                <td>End value is excluded</td>
+                <td><code>0..5</code></td>
+            </tr>
+            <tr>
+                <td>Inclusive range</td>
+                <td>End value included</td>
+                <td><code>0..=5</code></td>
+            </tr>
+            <tr>
+                <td>Reverse iteration</td>
+                <td>Iterate backwards</td>
+                <td><code>(1..5).rev()</code></td>
+            </tr>
+            <tr>
+                <td>Vector iteration</td>
+                <td>Borrow or move elements</td>
+                <td><code>for v in &vec</code></td>
+            </tr>
+            <tr>
+                <td>Enumerate</td>
+                <td>Index + value</td>
+                <td><code>.enumerate()</code></td>
+            </tr>
+            <tr>
+                <td>Characters</td>
+                <td>Iterate Unicode chars</td>
+                <td><code>s.chars()</code></td>
+            </tr>
+            <tr>
+                <td>Pattern matching</td>
+                <td>Destructure in loop head</td>
+                <td><code>for (a,b) in pairs</code></td>
+            </tr>
+            <tr>
+                <td>Labels</td>
+                <td>Control nested loops</td>
+                <td><code>'outer: for...</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li><code>for</code> is the most idiomatic looping construct in Rust.</li>
+        <li>Ranges are powerful tools for index-free iteration.</li>
+        <li>Together, they provide safe, expressive, and concise looping patterns for everyday Rust programming.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
