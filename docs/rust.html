@@ -128,6 +128,7 @@
         <li><a href="#rust-closures">Closures</a></li>
         <li><a href="#rust-higher-order-functions">Higher Order Functions</a></li>
         <li><a href="#rust-diverging-functions">Diverging Functions</a></li>
+        <li><a href="#rust-modules">Modules</a></li>
         <li><a href="#rust-module-visibility">Visibility in Module</a></li>
     </ul>
 </nav>
@@ -6114,6 +6115,256 @@ match iter.next() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-modules">Modules in Rust</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <u>module</u> in Rust is a way to organize code into logical units.</li>
+        <br/>
+        <li>Modules can be nested, private or public, inline or file-based.</li>
+        <br/>
+        <li>Rust’s module system works together with its file system structure.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Declaring a Module (Inline)</b></li>
+<pre><code class="language-rust line-numbers">mod api {
+    pub fn hello() {
+        println!("Hello from API!");
+    }
+}
+
+fn main() {
+    api::hello();
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Inline modules are declared with the <code>mod</code> keyword.</li>
+        <li>The code is placed directly inside braces <code>{ ... }</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Declaring a Module in a Separate File</b></li>
+    <br/>
+    <ul>
+        <li>This is the standard way for larger projects.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/
+├── main.rs
+└── api.rs
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// main.rs
+mod api;           // declares the module (loads src/api.rs)
+fn main() {
+    api::hello();
+}
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// api.rs
+pub fn hello() {
+    println!("Hello from file module!");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>mod api;</code> tells Rust to load <code>api.rs</code> as the module body.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Modules with Submodules</b></li>
+    <br/>
+    <ul>
+        <li>Create a directory matching the module name:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/
+├── main.rs
+└── network/
+    ├── mod.rs
+    └── client.rs
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// main.rs
+mod network;
+
+fn main() {
+    network::client::connect();
+}
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// network/mod.rs
+pub mod client;
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// network/client.rs
+pub fn connect() {
+    println!("Client connected!");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>For module <code>network</code>:
+            <ul>
+                <li><code>network/mod.rs</code> defines the module root.</li>
+                <li><code>network/client.rs</code> defines the submodule.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This pattern is the same as Go, Java, or Python package directories.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The Modern Alternative: <code>network.rs</code> + <code>network/</code> Directory</b></li>
+    <br/>
+    <ul>
+        <li>Rust now allows “fs-based modules” without requiring <code>mod.rs</code>:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/
+├── main.rs
+└── network.rs
+└── network/
+    └── client.rs
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// network.rs
+pub mod client;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is the recommended layout in modern Rust.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Module Visibility</b></li>
+    <br/>
+    <ul>
+        <li>Items are private by default.</li>
+        <li>Use visibility modifiers:</li>
+        <ul>
+            <li><code>pub</code> — visible everywhere</li>
+            <li><code>pub(crate)</code> — entire crate</li>
+            <li><code>pub(super)</code> — parent module</li>
+            <li><code>pub(in path)</code> — specific module path</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-rust line-numbers">mod a {
+    pub mod b {
+        pub(super) fn f() {}
+    }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Other Modules</b></li>
+    <br/>
+    <ul>
+        <li>Use the <code>use</code> keyword to bring names into scope:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">mod math {
+    pub fn add(a: i32, b: i32) -&gt; i32 { a + b }
+}
+
+use math::add;
+
+fn main() {
+    println!("{}", add(2, 3));
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Absolute Paths vs Relative Paths</b></li>
+    <br/>
+
+<pre><code class="language-rust line-numbers">crate::a::b::f();  // absolute path
+super::f();        // parent module
+self::g();         // current module
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Absolute paths start from <code>crate::</code>.</li>
+        <li>Relative paths use <code>self</code> and <code>super</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Re-exporting Modules</b></li>
+<pre><code class="language-rust line-numbers">mod backend {
+    pub fn init() {}
+}
+
+pub use backend::init; // re-export
+
+fn main() {
+    init(); // available in root namespace
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Re-exports make APIs cleaner and easier to use.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Common File Layout Patterns in Rust Projects</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Module Structure</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>lib.rs</code></td>
+                <td>Entry point for library crates</td>
+            </tr>
+            <tr>
+                <td><code>main.rs</code></td>
+                <td>Entry point for binary crates</td>
+            </tr>
+            <tr>
+                <td><code>mod.rs</code> (legacy)</td>
+                <td>Module root inside directories</td>
+            </tr>
+            <tr>
+                <td><code>module.rs</code> + <code>module/</code></td>
+                <td>Modern module + its submodules</td>
+            </tr>
+            <tr>
+                <td><code>pub use</code></td>
+                <td>Re-exporting to create clean public APIs</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 <h3 id="rust-module-visibility">Visibility in Modules</h3>
 <ol>
     <li><b>Introduction</b></li>
@@ -6357,6 +6608,14 @@ fn main() {
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
