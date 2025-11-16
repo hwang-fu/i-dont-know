@@ -117,6 +117,7 @@
         <li><a href="#rust-types">Types</a></li>
         <li><a href="#rust-conversion">Conversion</a></li>
         <li><a href="#rust-if-else">If / Else</a></li>
+        <li><a href="#rust-loop">Loop</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -3370,6 +3371,285 @@ match x {
 </ol>
 <br/>
 
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-loop">loop</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <code>loop</code> runs forever unless explicitly stopped with:
+            <ul>
+                <li><code>break</code></li>
+                <li><code>return</code></li>
+                <li><code>panic!</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Because <code>loop</code> can run indefinitely, it is useful for:
+            <ul>
+                <li>State machines</li>
+                <li>Game loops</li>
+                <li>Servers listening for requests</li>
+                <li>Retry logic</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic loop</b></li>
+<pre><code class="language-rust line-numbers">let mut count = 0;
+
+loop {
+    println!("count = {}", count);
+    count += 1;
+
+    if count == 3 {
+        break;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The loop repeats until <code>break</code> is executed.</li>
+        <li>Without <code>break</code>, this loop would be infinite.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using break to exit the loop</b></li>
+<pre><code class="language-rust line-numbers">let mut n = 1;
+
+loop {
+    if n &gt; 5 {
+        break;
+    }
+    println!("{}", n);
+    n += 1;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>break</code> stops the loop completely.</li>
+        <li><code>continue</code> (shown later) skips to the next iteration.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>loop is an expression (can return a value)</b></li>
+<pre><code class="language-rust line-numbers">let mut x = 0;
+
+let result = loop {
+    x += 1;
+
+    if x == 5 {
+        break x * 2; // break with value
+    }
+};
+
+println!("result = {}", result);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>break</code> can return a value, making <code>loop</code> behave like an expression.</li>
+        <li>Here <code>result</code> gets the value <code>10</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using continue</b></li>
+<pre><code class="language-rust line-numbers">for i in 1..=5 {
+    if i % 2 == 0 {
+        continue;
+    }
+    println!("{}", i);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>continue</code> jumps to the next loop iteration.</li>
+        <li>Works in <code>loop</code>, <code>while</code>, and <code>for</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Loop Labels (controlling nested loops)</b></li>
+<pre><code class="language-rust line-numbers">'outer: loop {
+    println!("In outer loop");
+
+    loop {
+        println!("In inner loop");
+        break 'outer; // exit BOTH loops
+    }
+}
+
+
+
+let result = 'outer: loop {
+    println!("In outer loop");
+
+    loop {
+        println!("In inner loop");
+        break 'outer 42; // exit BOTH loops with value 42
+    }
+};
+println!("result = {result}");
+</code></pre>
+    <br/>
+    <ul>
+        <li>Labels allow breaking or continuing specific loops when nested.</li>
+        <li>Labels start with <code>'</code> and can be any valid identifier.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Loop with return</b></li>
+<pre><code class="language-rust line-numbers">fn find() -&gt; i32 {
+    let mut n = 0;
+
+    loop {
+        if n == 7 {
+            return n; // exit the function entirely
+        }
+        n += 1;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>return</code> bypasses the loop and exits the function completely.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Infinite loops intentionally</b></li>
+<pre><code class="language-rust line-numbers">loop {
+    println!("This runs forever");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Infinite loops are valid for:
+            <ul>
+                <li>microcontroller firmware</li>
+                <li>servers</li>
+                <li>event loops</li>
+            </ul>
+        </li>
+        <li>To prevent CPU burnout, these loops often include waiting or I/O.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Combining loop with state transitions</b></li>
+<pre><code class="language-rust line-numbers">let mut state = 0;
+
+loop {
+    match state {
+        0 =&gt; {
+            println!("Start");
+            state = 1;
+        }
+        1 =&gt; {
+            println!("Processing");
+            state = 2;
+        }
+        2 =&gt; {
+            println!("Done");
+            break;
+        }
+        _ =&gt; unreachable!(),
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>loop</code> is excellent for state machines with deterministic transitions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using loop to retry operations</b></li>
+<pre><code class="language-rust line-numbers">use std::fs::File;
+
+loop {
+    match File::open("config.txt") {
+        Ok(f) =&gt; {
+            println!("File opened");
+            break;
+        }
+        Err(_) =&gt; {
+            println!("Retrying...");
+        }
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Ideal for “retry-until-success” logic.</li>
+        <li>Often used with network or file system operations.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of loop</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Basic loop</td>
+                <td>Repeats forever</td>
+                <td><code>loop { ... }</code></td>
+            </tr>
+            <tr>
+                <td>Break</td>
+                <td>Stops the loop</td>
+                <td><code>break;</code></td>
+            </tr>
+            <tr>
+                <td>Break with value</td>
+                <td>Returns value from loop-expression</td>
+                <td><code>break x;</code></td>
+            </tr>
+            <tr>
+                <td>Continue</td>
+                <td>Skip to next iteration</td>
+                <td><code>continue;</code></td>
+            </tr>
+            <tr>
+                <td>Loop labels</td>
+                <td>Control nested loops</td>
+                <td><code>'label: loop { ... }</code></td>
+            </tr>
+            <tr>
+                <td>State machines</td>
+                <td>Ideal for multi-step logic</td>
+                <td><code>match state { ... }</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li><code>loop</code> is simple, powerful, and often the foundation of more complex looping constructs.</li>
+        <li>Mastering <code>loop</code> helps build systems-level code, state machines, servers, and embedded applications in Rust.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
