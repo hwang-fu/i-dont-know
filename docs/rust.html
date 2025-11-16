@@ -135,6 +135,7 @@
         <li><a href="#rust-attributes">Attributes</a></li>
         <li><a href="#rust-custom-attributes-beginner">Defining Custom Attributes (Beginners Level)</a></li>
         <li><a href="#rust-dead-code">The <code>dead_code</code> Attribute</a></li>
+        <li><a href="#rust-cfg">The <code>cfg</code> Attribute</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -7881,7 +7882,326 @@ fn unix_only() {}  // unused on Windows
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-cfg">The <code>cfg</code> Attribute in Rust</h3>
+<ol>
+    <li><b>Introduction: What is <code>cfg</code>?</b></li>
+    <br/>
+    <ul>
+        <li>The <code>cfg</code> attribute (<b>c</b>on<b>f</b>i<b>g</b>uration) allows conditional compilation in Rust.</li>
+        <br/>
+        <li>It instructs the compiler to <u>include</u> or <u>exclude</u> code depending on:
+            <ul>
+                <li>target operating system</li>
+                <li>CPU architecture</li>
+                <li>compiler flags</li>
+                <li>Cargo features</li>
+                <li>debug vs release mode</li>
+                <li>test mode</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Useful for:
+            <ul>
+                <li>cross-platform code</li>
+                <li>feature flags</li>
+                <li>debug-only tools</li>
+                <li>compile-time switches</li>
+                <li>conditional modules</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 
+
+    <li><b>Two Forms: Attribute</b> <code>#[cfg]</code> <b>and Conditional Block</b> <code>cfg!</code></li>
+    <br/>
+    <ul>
+        <li><code>#[cfg(...)]</code> — compile-time inclusion/exclusion of items.</li>
+        <li><code>cfg!(...)</code> — returns <code>true</code>/<code>false</code> at runtime (but decided at compile time).</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[cfg(unix)]
+fn platform() { println!("running on unix"); }
+
+#[cfg(windows)]
+fn platform() { println!("running on windows"); }
+
+fn main() {
+    platform();
+}
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>OS-Based Conditions</b></li>
+<pre><code class="language-rust line-numbers">#[cfg(target_os = "linux")]
+fn only_linux() {
+    println!("This runs on Linux");
+}
+
+#[cfg(target_os = "windows")]
+fn only_windows() {
+    println!("This runs on Windows");
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Common OS targets:
+            <ul>
+                <li><code>linux</code></li>
+                <li><code>windows</code></li>
+                <li><code>macos</code></li>
+                <li><code>ios</code></li>
+                <li><code>android</code></li>
+                <li><code>freebsd</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Architecture Conditions</b></li>
+<pre><code class="language-rust line-numbers">#[cfg(target_arch = "x86_64")]
+fn arch_fn() { println!("x86_64 CPU"); }
+
+#[cfg(target_arch = "aarch64")]
+fn arch_fn() { println!("ARM64 CPU"); }
+</code></pre>
+    <br/>
+    <ul>
+        <li>Common architectures:
+            <ul>
+                <li><code>x86</code>, <code>x86_64</code></li>
+                <li><code>aarch64</code></li>
+                <li><code>wasm32</code></li>
+                <li><code>mips</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Debug vs Release Mode</b></li>
+<pre><code class="language-rust line-numbers">#[cfg(debug_assertions)]
+fn debug_mode() {
+    println!("Compiled in debug mode");
+}
+
+#[cfg(not(debug_assertions))]
+fn debug_mode() {
+    println!("Compiled in release mode");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>debug_assertions</code> is <code>true</code> for <code>cargo build</code> but <code>false</code> for <code>cargo build --release</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Cargo Features</b></li>
+    <br/>
+    <ul>
+        <li>Define features in <code>Cargo.toml</code>:</li>
+    </ul>
+
+<pre><code class="language-toml line-numbers">[features]
+fast = []
+gui = []
+</code></pre>
+
+<pre><code class="language-rust line-numbers">#[cfg(feature = "fast")]
+fn run() {
+    println!("Fast mode enabled");
+}
+
+#[cfg(not(feature = "fast"))]
+fn run() {
+    println!("Normal mode");
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Activate with:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">$ cargo run --features fast
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Combining Conditions</b></li>
+    <br/>
+    <ul>
+        <li>You can use <code>any</code>, <code>all</code>, and <code>not</code>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[cfg(all(unix, target_arch = "x86_64"))]
+fn example() { println!("Unix + x86_64"); }
+
+#[cfg(any(windows, target_os = "macos"))]
+fn example() { println!("Windows OR macOS"); }
+
+#[cfg(not(debug_assertions))]
+fn example() { println!("Not debug"); }
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Conditional Modules</b></li>
+<pre><code class="language-rust line-numbers">#[cfg(feature = "gui")]
+mod gui;
+
+#[cfg(feature = "cli")]
+mod cli;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Only the selected module is compiled.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Conditional Blocks Using <code>cfg!</code></b></li>
+    <br/>
+    <ul>
+        <li><code>cfg!</code> does not remove code from compilation.</li>
+        <li>It simply evaluates to <code>true</code> or <code>false</code>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn main() {
+    if cfg!(windows) {
+        println!("This binary was compiled for Windows");
+    }
+
+    if cfg!(target_arch = "aarch64") {
+        println!("Compiled for ARM64");
+    }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Conditional Use Statements</b></li>
+<pre><code class="language-rust line-numbers">#[cfg(windows)]
+use winapi::um::winuser::MessageBoxA;
+
+#[cfg(unix)]
+use libc::printf;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Useful for selecting platform-specific libraries.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Conditional Struct Fields</b></li>
+<pre><code class="language-rust line-numbers">struct Config {
+    #[cfg(feature = "gui")]
+    window_size: u32,
+
+    #[cfg(feature = "cli")]
+    terminal_colors: u8,
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Only included when the feature is active.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Conditional Functions Inside Modules</b></li>
+<pre><code class="language-rust line-numbers">mod util {
+    #[cfg(feature = "fast")]
+    pub fn compute() { println!("fast compute"); }
+
+    #[cfg(not(feature = "fast"))]
+    pub fn compute() { println!("normal compute"); }
+}
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Common <code>cfg</code> Targets Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Condition</th>
+                <th>Example</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>target_os</code></td>
+                <td><code>#[cfg(target_os = "linux")]</code></td>
+                <td>OS-specific code</td>
+            </tr>
+            <tr>
+                <td><code>target_arch</code></td>
+                <td><code>#[cfg(target_arch = "x86_64")]</code></td>
+                <td>CPU architecture</td>
+            </tr>
+            <tr>
+                <td><code>debug_assertions</code></td>
+                <td><code>#[cfg(debug_assertions)]</code></td>
+                <td>Debug mode</td>
+            </tr>
+            <tr>
+                <td><code>feature</code></td>
+                <td><code>#[cfg(feature = "fast")]</code></td>
+                <td>Cargo feature flags</td>
+            </tr>
+            <tr>
+                <td><code>unix</code>, <code>windows</code></td>
+                <td><code>#[cfg(unix)]</code></td>
+                <td>Platform families</td>
+            </tr>
+            <tr>
+                <td><code>test</code></td>
+                <td><code>#[cfg(test)]</code></td>
+                <td>Unit test code only</td>
+            </tr>
+            <tr>
+                <td><code>not</code>, <code>all</code>, <code>any</code></td>
+                <td><code>#[cfg(not(windows))]</code></td>
+                <td>Condition combinators</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li><code>cfg</code> enables compile-time conditional code.</li>
+        <li>Main use cases:
+            <ul>
+                <li>OS-dependent behavior</li>
+                <li>Architecture-dependent logic</li>
+                <li>Feature flags</li>
+                <li>Debug vs release differences</li>
+                <li>Test-only modules</li>
+            </ul>
+        </li>
+        <li><code>#[cfg(...)]</code> removes code entirely when condition is false.</li>
+        <li><code>cfg!(...)</code> evaluates to <code>true</code>/<code>false</code> but still compiles both branches.</li>
+        <li>Flexible combinations via <code>any</code>, <code>all</code>, <code>not</code>.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
