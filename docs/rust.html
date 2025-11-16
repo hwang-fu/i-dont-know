@@ -121,6 +121,7 @@
         <li><a href="#rust-while">While</a></li>
         <li><a href="#rust-for-range">For and Range</a></li>
         <li><a href="#rust-match">Match</a></li>
+        <li><a href="#rust-if-let">If Let</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -4526,6 +4527,201 @@ println!("{}", result);
             </tr>
         </tbody>
     </table>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-if-let">if let</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>It is a shortcut for:
+            <ul>
+                <li>Matching <u>only one pattern</u></li>
+                <li>Ignoring the <u>remaining cases</u></li>
+            </ul>
+        </li>
+        <br/>
+        <li>It is especially common with <code>Option</code>, <code>Result</code>, and simple enum matches.</li>
+        <br/>
+        <li>Equivalent to a <code>match</code> with two arms, where one arm is <code>_ =&gt; {}</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic if let with Option&lt;T&gt;</b></li>
+<pre><code class="language-rust line-numbers">let value: Option&lt;i32&gt; = Some(10);
+
+if let Some(v) = value {
+    println!("Value is {}", v);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This checks if <code>value</code> is <code>Some(v)</code>.</li>
+        <li>Inside the block, <code>v</code> is available.</li>
+        <li>If <code>value</code> is <code>None</code>, nothing happens.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>if let ... else</b></li>
+<pre><code class="language-rust line-numbers">let value: Option&lt;i32&gt; = None;
+
+if let Some(v) = value {
+    println!("Value = {}", v);
+} else {
+    println!("No value found");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>else</code> runs only when the pattern does not match.</li>
+        <li>Equivalent to a full <code>match</code> expression.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>if let is a shortcut for match</b></li>
+<pre><code class="language-rust line-numbers">let value = Some(5);
+
+match value {
+    Some(v) =&gt; println!("{}", v),
+    _ =&gt; {},
+}
+</code></pre>
+
+<pre><code class="language-rust line-numbers">if let Some(v) = value {
+    println!("{}", v);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Same behavior, cleaner syntax.</li>
+        <li>Use <code>match</code> when more than one pattern is needed.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Matching Result&lt;T, E&gt;</b></li>
+<pre><code class="language-rust line-numbers">let result: Result&lt;i32, &amp;str&gt; = Ok(42);
+
+if let Ok(n) = result {
+    println!("Number is {}", n);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Equivalent to checking for <code>Ok</code> only.</li>
+        <li>Error case is ignored silently unless you add <code>else</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using if let with enums</b></li>
+<pre><code class="language-rust line-numbers">enum Msg {
+    Quit,
+    Move { x: i32, y: i32 },
+}
+
+let m = Msg::Move { x: 3, y: 7 };
+
+if let Msg::Move { x, y } = m {
+    println!("Moving to ({}, {})", x, y);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Allows extracting values from an enum variant easily.</li>
+        <li>Other variants are ignored.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>if let with pattern guards</b></li>
+<pre><code class="language-rust line-numbers">let n = Some(12);
+
+if let Some(v) = n if v &gt; 10 {
+    println!("Large number: {}", v);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Pattern guards refine conditions further.</li>
+        <li>Equivalent to <code>Some(v) if v &gt; 10</code> in a match arm.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Mutably binding with if let</b></li>
+<pre><code class="language-rust line-numbers">let mut opt = Some(5);
+
+if let Some(ref mut v) = opt {
+    *v += 1;
+}
+
+println!("{:?}", opt);
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>ref mut</code> gives a mutable reference to the contained value.</li>
+        <li>Very common for updating a value inside <code>Option</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>if let with references</b></li>
+<pre><code class="language-rust line-numbers">let x = Some(10);
+
+if let Some(&amp;v) = x.as_ref() {
+    println!("v = {}", v);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>&amp;</code> in patterns destructures the reference.</li>
+        <li><code>as_ref()</code> converts <code>Option&lt;T&gt;</code> into <code>Option&lt;&amp;T&gt;</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Combining multiple patterns (nested)</b></li>
+<pre><code class="language-rust line-numbers">let data = Some((1, 2));
+
+if let Some((a, b)) = data {
+    println!("a = {}, b = {}", a, b);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Works with nested tuples, structs, enums, etc.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>if let chains (Rust 1.65+)</b></li>
+<pre><code class="language-rust line-numbers">let a = Some(10);
+let b = Some(20);
+
+if let Some(x) = a
+    &amp;&amp; let Some(y) = b
+{
+    println!("Both present: {} and {}", x, y);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Chained <code>if let</code> allows matching multiple patterns at once.</li>
+        <li>Both patterns must match for the body to execute.</li>
+    </ul>
     <br/><br/>
 
 </ol>
