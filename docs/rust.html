@@ -116,6 +116,7 @@
         <li><a href="#rust-variable-bindings">Variable Bindings</a></li>
         <li><a href="#rust-types">Types</a></li>
         <li><a href="#rust-conversion">Conversion</a></li>
+        <li><a href="#rust-if-else">If / Else</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -3037,6 +3038,338 @@ let p = Point::from((3, 4));
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-if-else">if / else</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Unlike many languages, <code>if</code> in Rust is an <u>expression</u>, not just a statement:
+            <ul>
+                <li>It produces a value.</li>
+                <li>It can be used in <code>let</code> bindings.</li>
+                <li>Its branches must return compatible types.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Rust does not allow non-boolean conditions (e.g., numbers or strings) — the condition must be <code>bool</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic if</b></li>
+<pre><code class="language-rust line-numbers">let x = 10;
+
+if x &gt; 5 {
+    println!("x is greater than 5");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The condition must be a boolean expression: <code>x &gt; 5</code>.</li>
+        <li>Curly braces are required, even for single-line blocks.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>if / else</b></li>
+<pre><code class="language-rust line-numbers">let x = 3;
+
+if x % 2 == 0 {
+    println!("even");
+} else {
+    println!("odd");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>else</code> branch runs when the <code>if</code> condition is false.</li>
+        <li>Indentation and braces help readability and are idiomatic in Rust.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>else if (Chained Conditions)</b></li>
+
+<pre><code class="language-rust line-numbers">let score = 85;
+
+if score &gt;= 90 {
+    println!("A");
+} else if score &gt;= 80 {
+    println!("B");
+} else if score &gt;= 70 {
+    println!("C");
+} else {
+    println!("D");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>else if</code> allows branching on multiple conditions.</li>
+        <li>Evaluates from top to bottom until a condition matches.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>if as an Expression</b></li>
+
+<pre><code class="language-rust line-numbers">let x = 5;
+
+let result = if x &gt; 3 {
+    "big"
+} else {
+    "small"
+};
+
+println!("result = {}", result);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Both branches must return the <u>same type</u>: both return <code>&amp;str</code> in this example.</li>
+        <li>Semicolon after the entire <code>if</code> is optional but conventional when binding.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Mismatched Types in Branches (Error)</b></li>
+
+<pre><code class="language-rust line-numbers">let x = 5;
+
+let result = if x &gt; 3 {
+    10        // i32
+} else {
+    "small"   // &amp;str
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>This will not compile because the two branches return different types.</li>
+        <li>Rust expects both branches to yield a single consistent type.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Using if in let bindings</b></li>
+
+<pre><code class="language-rust line-numbers">let temperature = 30;
+
+let advice = if temperature &gt; 25 {
+    "Wear light clothes"
+} else {
+    "Wear a jacket"
+};
+
+println!("{}", advice);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Common idiom when choosing between two values.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Nested if</b></li>
+
+<pre><code class="language-rust line-numbers">let x = 15;
+
+if x &gt; 10 {
+    if x &lt; 20 {
+        println!("x is between 10 and 20");
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Nesting is allowed but can reduce readability.</li>
+        <li>Prefer <code>else if</code> or <code>match</code> for clearer branching when possible.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Returning Complex Values from if</b></li>
+
+<pre><code class="language-rust line-numbers">struct User {
+    name: String,
+    admin: bool,
+}
+
+let user = User { name: "Alice".into(), admin: false };
+
+let label = if user.admin {
+    format!("Admin: {}", user.name)
+} else {
+    format!("User: {}", user.name)
+};
+
+println!("{}", label);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Both branches return <code>String</code>, so types match.</li>
+        <li>Using <code>format!</code> inside <code>if</code> expressions is common.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Using if with Option values</b></li>
+
+<pre><code class="language-rust line-numbers">let value: Option&lt;i32&gt; = Some(10);
+
+if let Some(v) = value {
+    println!("We got {}", v);
+} else {
+    println!("No value");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>if let</code> simplifies matching against one pattern.</li>
+        <li>Works like a shorthand for simple <code>match</code> expressions.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>if let for Ignoring the Else Branch</b></li>
+
+<pre><code class="language-rust line-numbers">let maybe_number = Some(5);
+
+if let Some(x) = maybe_number {
+    println!("Got {}", x);
+}
+// else is optional
+</code></pre>
+    <br/>
+    <ul>
+        <li>Useful when you only care about the success branch.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Short-Circuiting with Boolean Expressions</b></li>
+
+<pre><code class="language-rust line-numbers">let logged_in = true;
+let is_admin = false;
+
+if logged_in &amp;&amp; is_admin {
+    println!("Welcome, admin");
+} else {
+    println!("Access denied");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>&amp;&amp;</code> and <code>||</code> short-circuit:</li>
+        <ul>
+            <li><code>&amp;&amp;</code> stops if left side is false</li>
+            <li><code>||</code> stops if left side is true</li>
+        </ul>
+        <li>This is identical to most C-like languages.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>if vs match</b></li>
+
+<pre><code class="language-rust line-numbers">let x = 5;
+
+match x {
+    0 =&gt; println!("Zero"),
+    1..=5 =&gt; println!("Small"),
+    _ =&gt; println!("Large"),
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Use <code>if</code> for:
+            <ul>
+                <li>simple boolean checks</li>
+                <li>two-branch decisions</li>
+                <li>short conditions</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Use <code>match</code> for:
+            <ul>
+                <li>pattern matching</li>
+                <li>exhaustive branching</li>
+                <li>multiple complex conditions</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Summary of if / else</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Basic if</td>
+                <td>Executes block when condition is true</td>
+                <td><code>if x &gt; 0 { ... }</code></td>
+            </tr>
+            <tr>
+                <td>if / else</td>
+                <td>Fallback branch when condition is false</td>
+                <td><code>if a { ... } else { ... }</code></td>
+            </tr>
+            <tr>
+                <td>else if</td>
+                <td>Multiple branching conditions</td>
+                <td><code>else if x &gt; 10</code></td>
+            </tr>
+            <tr>
+                <td>Expression</td>
+                <td>Returns a value</td>
+                <td><code>let v = if cond { 1 } else { 2 };</code></td>
+            </tr>
+            <tr>
+                <td>Type consistency</td>
+                <td>Both branches must match</td>
+                <td><code>i32 / i32</code>, not mixed</td>
+            </tr>
+            <tr>
+                <td>if let</td>
+                <td>Pattern matching convenience</td>
+                <td><code>if let Some(v) = opt</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>The <code>if</code> expression is simple, powerful, and forms the foundation of branching logic in Rust.</li>
+        <li>Mastering <code>if</code>, <code>else if</code>, and <code>if let</code> is essential before learning <code>match</code> and pattern matching.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
+
 <!-- * * * * * * * * * * * * * * -->
 
 
