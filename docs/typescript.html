@@ -128,6 +128,7 @@
         <li><a href="#ts-template-literal-types">Template Literal Types</a></li>
         <li><a href="#ts-modules">Modules</a></li>
         <li><a href="#ts-decorators">Decorators</a></li>
+        <li><a href="#ts-get-set">Getters and Setters in TS</a></li>
     </ul>
 </nav>
 <hr/>
@@ -4449,6 +4450,299 @@ A
                 <td>Parameter Decorator</td>
                 <td>Inject or annotate parameters</td>
                 <td><code>(target, key, index)</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-get-set">Getters and Setters in TypeScript</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>TypeScript allows you to define special class methods called <code>get</code> and <code>set</code>.</li>
+        <br/>
+        <li>These methods look like normal property access from the outside, but inside they run custom logic.</li>
+        <br/>
+        <li>They behave like properties but work like functions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Example of Getter and Setter</b></li>
+<pre><code class="language-ts line-numbers">class User {
+    private _name: string = "";
+
+    get name() {
+        return this._name.toUpperCase();
+    }
+
+    set name(value: string) {
+        if (value.length < 2) {
+            throw new Error("Name too short");
+        }
+        this._name = value;
+    }
+}
+
+const u = new User();
+u.name = "alice";          // calls the setter
+console.log(u.name);       // calls the getter
+</code></pre>
+    <br/>
+    <ul>
+        <li>Typing <code>u.name</code> does NOT access a field.</li>
+        <li>It triggers the getter or setter <b>as if</b> they were functions.</li>
+        <li>This is called a <b>computed property accessor</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Why Not Just Use Methods?</b></li>
+<pre><code class="language-ts line-numbers">u.getName();       // explicit method
+u.setName("Bob");  // explicit method
+</code></pre>
+    <br/>
+    <ul>
+        <li>Getter and setter syntax allows you to write <b>cleaner and more natural APIs</b>:</li>
+<pre><code class="language-ts">u.name;     // getter
+u.name = x; // setter
+</code></pre>
+        <br/>
+        <li>The API feels like using normal properties.</li>
+        <li>This is why frameworks like Angular and libraries like TypeORM rely on <code>get</code>/<code>set</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Getter Only (Read-Only Property)</b></li>
+<pre><code class="language-ts line-numbers">class Circle {
+    constructor(private radius: number) {}
+
+    get area() {
+        return Math.PI * this.radius * this.radius;
+    }
+}
+
+const c = new Circle(10);
+console.log(c.area);  // computed every time
+</code></pre>
+    <br/>
+    <ul>
+        <li>No setter means the property cannot be assigned to.</li>
+        <li><code>c.area = 10;</code> causes a compile-time error.</li>
+        <li>Used for computed values or protected internal values.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Setter Only (Write-Only Property)</b></li>
+<pre><code class="language-ts line-numbers">class Logger {
+    set message(value: string) {
+        console.log("Log:", value);
+    }
+}
+
+const log = new Logger();
+log.message = "Hello";  // allowed
+// console.log(log.message); // ERROR: getter missing
+</code></pre>
+    <br/>
+    <ul>
+        <li>Rare in practice but used in logging or write-only channels.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Getters and Setters to Control Access</b></li>
+<pre><code class="language-ts line-numbers">class Person {
+    private _age = 0;
+
+    get age() {
+        return this._age;
+    }
+
+    set age(value: number) {
+        if (value < 0 || value > 150) {
+            throw new Error("Invalid age");
+        }
+        this._age = value;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Useful when a property must follow rules or constraints.</li>
+        <li>Prevents invalid state from being assigned.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Getters and Setters with Types</b></li>
+<pre><code class="language-ts line-numbers">class Point {
+    private _x = 0;
+
+    get x(): number {
+        return this._x;
+    }
+
+    set x(value: number) {
+        this._x = value;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The getter declares a return type.</li>
+        <li>The setter declares a parameter type.</li>
+        <li>They must match or be compatible.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How They Work Internally (Property Descriptor)</b></li>
+    <br/>
+    <ul>
+        <li>TypeScript compiles getters and setters to JavaScript using <code>Object.defineProperty</code>.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">Object.defineProperty(Person.prototype, "age", {
+    get: function () { ... },
+    set: function (value) { ... },
+    enumerable: true,
+    configurable: true
+});
+</code></pre>
+    <br/>
+    <ul>
+        <li>This is the true magic behind <code>get</code> and <code>set</code>.</li>
+        <li>The property is stored on the prototype as an accessor, not as a normal field.</li>
+        <li>Reading it calls the getter function; writing it calls the setter function.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Getters and Setters with Private Fields</b></li>
+<pre><code class="language-ts line-numbers">class Account {
+    #balance = 0;
+
+    get balance() {
+        return this.#balance;
+    }
+
+    set balance(value: number) {
+        if (value < 0) throw new Error("Negative balance not allowed");
+        this.#balance = value;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>#balance</code> is a <b>true private</b> field at runtime (ES private field).</li>
+        <li>Getters and setters act as a controlled interface to private data.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Getters and Setters with Computation</b></li>
+<pre><code class="language-ts line-numbers">class Temperature {
+    constructor(private celsius: number) {}
+
+    get fahrenheit() {
+        return this.celsius * 1.8 + 32;
+    }
+
+    set fahrenheit(value: number) {
+        this.celsius = (value - 32) / 1.8;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>The getter computes Fahrenheit from Celsius.</li>
+        <li>The setter reverses the calculation.</li>
+        <li>This creates virtual fields that appear real but are computed.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Combining Getters, Setters, and Decorators</b></li>
+<pre><code class="language-ts line-numbers">function Log(target: any, key: string, descriptor: PropertyDescriptor) {
+    const originalSet = descriptor.set!;
+    descriptor.set = function (value: any) {
+        console.log(`Assigning ${key} =`, value);
+        originalSet.call(this, value);
+    };
+}
+
+class Product {
+    private _price = 0;
+
+    @Log
+    set price(value: number) {
+        this._price = value;
+    }
+
+    get price() {
+        return this._price;
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Setters are widely used together with decorators to implement validation, logging, or metadata.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of Getters and Setters in TypeScript</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Getter</td>
+                <td>Runs when accessing a property</td>
+                <td><code>obj.name</code></td>
+            </tr>
+            <tr>
+                <td>Setter</td>
+                <td>Runs when assigning to a property</td>
+                <td><code>obj.name = value</code></td>
+            </tr>
+            <tr>
+                <td>Computed property</td>
+                <td>Looks like a field but acts like a function</td>
+                <td><code>get area() {...}</code></td>
+            </tr>
+            <tr>
+                <td>Validation</td>
+                <td>Prevent invalid values</td>
+                <td><code>set age(v)</code></td>
+            </tr>
+            <tr>
+                <td>Encapsulation</td>
+                <td>Hide private data</td>
+                <td><code>#balance</code></td>
+            </tr>
+            <tr>
+                <td>Interoperability</td>
+                <td>Works well with decorators and metadata</td>
+                <td><code>@Log</code> on setter</td>
             </tr>
         </tbody>
     </table>
