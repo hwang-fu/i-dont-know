@@ -122,6 +122,7 @@
         <li><a href="#rust-for-range">For and Range</a></li>
         <li><a href="#rust-match">Match</a></li>
         <li><a href="#rust-if-let">If Let</a></li>
+        <li><a href="#rust-let-else">Let Else</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -4721,6 +4722,198 @@ if let Some(x) = a
     <ul>
         <li>Chained <code>if let</code> allows matching multiple patterns at once.</li>
         <li>Both patterns must match for the body to execute.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-let-else">let else</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>let else</code> is a control-flow construct introduced in Rust 1.65.</li>
+        <br/>
+        <li>It allows you to perform pattern matching <u>inside a let-binding</u>, and if the pattern fails, execution jumps into an <code>else</code> block.</li>
+        <br/>
+        <li>It is used for:
+            <ul>
+                <li>Early exits</li>
+                <li>Input validation</li>
+                <li>Pattern destructuring with failure handling</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Syntax:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let PATTERN = EXPR else {
+    HANDLING_CODE
+};</code></pre>
+
+    <br/>
+    <ul>
+        <li>If <code>EXPR</code> matches <code>PATTERN</code>, the destructured variables are available afterwards.</li>
+        <li>If not, the <code>else</code> block runs, and the surrounding scope must be exited (e.g., <code>return</code>, <code>break</code>, <code>continue</code>, <code>panic!</code>).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic let else Example</b></li>
+<pre><code class="language-rust line-numbers">let Some(value) = maybe_value else {
+    println!("No value!");
+    return;
+};
+
+println!("Got: {}", value);
+</code></pre>
+    <br/>
+    <ul>
+        <li>If <code>maybe_value</code> is <code>Some(v)</code>, then <code>value</code> is bound.</li>
+        <li>If it's <code>None</code>, the function returns early.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Why let else? Cleaner than match</b></li>
+<pre><code class="language-rust line-numbers">// Traditional match:
+let value = match maybe_value {
+    Some(v) =&gt; v,
+    None =&gt; return,
+};
+
+// Cleaner with let else:
+let Some(value) = maybe_value else {
+    return;
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>Avoids indentation and nested matches.</li>
+        <li>Improves readability when only one pattern matters.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using let else with multiple variables</b></li>
+<pre><code class="language-rust line-numbers">let Ok((x, y)) = do_work() else {
+    eprintln!("Work failed");
+    return;
+};
+
+println!("x = {}, y = {}", x, y);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Perfect for destructuring tuples, structs, or enum variants.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>let else in loops</b></li>
+<pre><code class="language-rust line-numbers">while let Some(line) = lines.next() {
+    let Ok(num) = line.parse::&lt;i32&gt;() else {
+        continue; // skip malformed input
+    };
+
+    println!("Parsed number: {}", num);
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>continue</code> is a valid early exit inside loops.</li>
+        <li>Useful for parsing streams or validating input.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>let else with structs</b></li>
+<pre><code class="language-rust line-numbers">struct Point { x: i32, y: i32 }
+
+let Point { x, y } = p else {
+    panic!("Not a point!");
+};
+
+println!("({}, {})", x, y);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Struct destructuring works the same as in <code>match</code> patterns.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Pattern guards are allowed</b></li>
+<pre><code class="language-rust line-numbers">let Some(v) = input else {
+    panic!("Not an Option");
+};
+
+let n = v;
+
+let Some(x) = n.filter(|x| *x &gt; 10) else {
+    println!("Too small!");
+    return;
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can combine <code>let else</code> with preconditions using methods like <code>filter</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The else block must break or return</b></li>
+<pre><code class="language-rust line-numbers">// ERROR: compiler does not allow falling through
+let Some(x) = maybe else {
+    println!("No value");
+    // nothing here — ERROR
+};
+</code></pre>
+    <br/>
+    <ul>
+        <li>The compiler requires that the <code>else</code> block ends control flow:</li>
+        <ul>
+            <li><code>return</code></li>
+            <li><code>break</code></li>
+            <li><code>continue</code></li>
+            <li><code>panic!</code></li>
+        </ul>
+        <li>Otherwise, the pattern failure would result in uninitialized variables.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Combining let else with references</b></li>
+<pre><code class="language-rust line-numbers">let Some(&amp;num) = maybe_ref else {
+    return;
+};
+
+println!("Number: {}", num);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Supports destructuring of references via <code>&amp;</code> in the pattern.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Chaining multiple let elses</b></li>
+<pre><code class="language-rust line-numbers">let Some(a) = opt_a else { return; };
+let Some(b) = opt_b else { return; };
+let Ok(sum) = add(a, b) else { return; };
+
+println!("Sum = {}", sum);
+</code></pre>
+    <br/>
+    <ul>
+        <li>Useful for step-by-step validation pipelines.</li>
     </ul>
     <br/><br/>
 
