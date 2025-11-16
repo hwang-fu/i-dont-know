@@ -128,6 +128,7 @@
         <li><a href="#rust-closures">Closures</a></li>
         <li><a href="#rust-higher-order-functions">Higher Order Functions</a></li>
         <li><a href="#rust-diverging-functions">Diverging Functions</a></li>
+        <li><a href="#rust-module-visibility">Visibility in Module</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -6101,6 +6102,256 @@ match iter.next() {
             </ul>
         </li>
         <li>The never type is a powerful tool for the type system and compiler optimizations.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-module-visibility">Visibility in Modules</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Rust uses a module system to organize code into namespaces.</li>
+        <br/>
+        <li>By default, everything is <u>private</u> inside a module unless you explicitly make it visible.</li>
+        <br/>
+        <li>Visibility rules control:
+            <ul>
+                <li>which functions, structs, enums, traits, and modules are accessible</li>
+                <li>how other modules interact with your code</li>
+                <li>public APIs vs internal implementation details</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You change visibility with the <code>pub</code> keyword and its variants.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Default: Everything is Private</b></li>
+<pre><code class="language-rust line-numbers">mod a {
+    fn secret() {
+        println!("hidden");
+    }
+}
+
+fn main() {
+    // a::secret(); // ERROR: function is private
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Items inside a module are private to that module unless marked <code>pub</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Making Items Public with pub</b></li>
+<pre><code class="language-rust line-numbers">mod a {
+    pub fn hello() {
+        println!("Hello!");
+    }
+}
+
+fn main() {
+    a::hello(); // OK
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>pub</code> makes an item visible outside the module.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Public Structs with Private Fields</b></li>
+<pre><code class="language-rust line-numbers">mod user {
+    pub struct User {
+        pub name: String,
+        age: u32, // private
+    }
+
+    impl User {
+        pub fn new(name: String, age: u32) -&gt; Self {
+            Self { name, age }
+        }
+    }
+}
+
+fn main() {
+    let u = user::User::new("Alice".into(), 20);
+
+    println!("{}", u.name);
+    // println!("{}", u.age); // ERROR: age is private
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>A <code>pub</code> struct does not automatically make its fields public.</li>
+        <li>You control field visibility individually.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Visibility of Enums</b></li>
+<pre><code class="language-rust line-numbers">mod m {
+    pub enum Color {
+        Red,
+        Green,
+        Blue,
+    }
+}
+
+fn main() {
+    let c = m::Color::Red; // OK
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>If an enum is public, all its variants are also public.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>pub(crate): Visible Within the Entire Crate</b></li>
+<pre><code class="language-rust line-numbers">mod internal {
+    pub(crate) fn helper() {
+        println!("crate-level visibility");
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Visible everywhere in the same crate.</li>
+        <li>Invisible to external crates.</li>
+        <li>Useful for library internal APIs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>pub(super): Visible Only to Parent Module</b></li>
+<pre><code class="language-rust line-numbers">mod a {
+    mod b {
+        pub(super) fn f() {
+            println!("visible to parent (mod a)");
+        }
+    }
+
+    pub fn call() {
+        b::f(); // OK
+    }
+}
+
+fn main() {}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>pub(super)</code> exposes an item to the parent module only.</li>
+        <li>Siblings and outside modules cannot access it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>pub(in path): Visible Only Within a Specific Module</b></li>
+<pre><code class="language-rust line-numbers">mod a {
+    pub mod b {
+        pub(in crate::a) fn f() {
+            println!("visible only inside mod a");
+        }
+    }
+
+    fn call() {
+        b::f(); // OK
+    }
+}
+
+fn main() {
+    // a::b::f(); // ERROR
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>pub(in path)</code> gives fine-grained control.</li>
+        <li>You can expose functions to a specific module subtree.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>pub(self): Visible Only Inside the Current Module</b></li>
+<pre><code class="language-rust line-numbers">mod a {
+    pub(self) fn f() {
+        println!("only inside a");
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This is identical to the default private visibility.</li>
+        <li>Useful for clarity in API design.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>pub(restricted) Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Keyword</th>
+                <th>Visibility</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>pub</code></td>
+                <td>Visible everywhere</td>
+            </tr>
+            <tr>
+                <td><code>pub(crate)</code></td>
+                <td>Visible in the current crate</td>
+            </tr>
+            <tr>
+                <td><code>pub(super)</code></td>
+                <td>Visible to parent module</td>
+            </tr>
+            <tr>
+                <td><code>pub(in path)</code></td>
+                <td>Visible in a specific module</td>
+            </tr>
+            <tr>
+                <td><code>pub(self)</code></td>
+                <td>Visible only in the current module (default)</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b>Re-exporting with pub use</b></li>
+<pre><code class="language-rust line-numbers">mod backend {
+    pub fn init() {
+        println!("backend init");
+    }
+}
+
+pub use backend::init; // re-export
+
+fn main() {
+    init(); // OK
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>pub use</code> re-exports items at a different location.</li>
+        <li>Useful for creating clean public APIs.</li>
     </ul>
     <br/><br/>
 
