@@ -130,6 +130,7 @@
         <li><a href="#rust-diverging-functions">Diverging Functions</a></li>
         <li><a href="#rust-modules">Modules</a></li>
         <li><a href="#rust-module-visibility">Visibility in Module</a></li>
+        <li><a href="#rust-use">Keyword <code>use</code> in Rust</a></li>
         <li><a href="#rust-crates">Crates</a></li>
     </ul>
 </nav>
@@ -6604,6 +6605,299 @@ fn main() {
     <ul>
         <li><code>pub use</code> re-exports items at a different location.</li>
         <li>Useful for creating clean public APIs.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-use">The <code>use</code> Keyword in Rust</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>use</code> keyword in Rust brings names into the current scope.</li>
+        <br/>
+        <li>It reduces long paths and makes code cleaner.</li>
+        <br/>
+        <li>You can use it for:
+            <ul>
+                <li>Your own modules</li>
+                <li>Crates and external libraries</li>
+                <li>Standard library items</li>
+                <li>Structs, enums, traits, and functions</li>
+                <li>Selective imports and renaming</li>
+                <li>Re-exports (public API design)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Usage</b></li>
+<pre><code class="language-rust line-numbers">use std::collections::HashMap;
+
+fn main() {
+    let mut map = HashMap::new();
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Without <code>use</code>, you would need:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let mut map = std::collections::HashMap::new();
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Standard Library Items</b></li>
+<pre><code class="language-rust line-numbers">use std::fs::File;
+use std::io::{self, Read};
+
+fn main() -&gt; io::Result&lt;()&gt; {
+    let mut file = File::open("data.txt")?;
+    let mut buffer = String::new();
+    file.read_to_string(&amp;mut buffer)?;
+    Ok(())
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>use std::io::{self, Read};</code> imports:
+            <ul>
+                <li><code>io</code> module</li>
+                <li><code>Read</code> trait</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using 3rd-Party Crates</b></li>
+    <br/>
+    <ul>
+        <li>Declare dependencies in <code>Cargo.toml</code>:</li>
+    </ul>
+
+<pre><code class="language-toml line-numbers">[dependencies]
+rand = "0.8"
+serde = "1.0"
+</code></pre>
+
+<pre><code class="language-rust line-numbers">use rand::Rng;
+
+fn main() {
+    let n = rand::thread_rng().gen_range(1..=10);
+    println!("Random: {}", n);
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>After adding a crate in <code>Cargo.toml</code>, you use <code>use</code> to bring items into scope.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Your Own Modules</b></li>
+<pre><code class="language-rust line-numbers">// src/math.rs
+pub fn add(a: i32, b: i32) -&gt; i32 { a + b }
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// src/main.rs
+mod math;
+use math::add;
+
+fn main() {
+    println!("{}", add(5, 3));
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>mod math;</code> loads <code>math.rs</code>.</li>
+        <li><code>use math::add;</code> imports the function.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Nested Submodules</b></li>
+
+<pre><code class="language-bash line-numbers">src/
+├── main.rs
+└── network/
+    ├── mod.rs
+    └── client.rs
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// network/mod.rs
+pub mod client;
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// network/client.rs
+pub fn connect() {
+    println!("Connected!");
+}
+</code></pre>
+
+<pre><code class="language-rust line-numbers">// main.rs
+mod network;
+use network::client::connect;
+
+fn main() {
+    connect();
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Multiple Imports from the Same Module</b></li>
+<pre><code class="language-rust line-numbers">use std::cmp::{min, max};
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Brings several items into scope in one line.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Everything in a Module (Glob Import)</b></li>
+<pre><code class="language-rust line-numbers">use std::collections::*;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Imports all items in the module.</li>
+        <li>Recommended mainly for:
+            <ul>
+                <li>tests</li>
+                <li>prelude design</li>
+                <li>example code</li>
+            </ul>
+        </li>
+        <li>Avoid overuse in production for clarity.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Renaming Imports with <code>as</code></b></li>
+<pre><code class="language-rust line-numbers">use std::io::Result as IoResult;
+
+fn example() -&gt; IoResult&lt;()&gt; {
+    Ok(())
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Renaming helps avoid name conflicts.</li>
+        <li>Useful for common names like <code>Result</code> and <code>Error</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Importing Traits</b> (Required for Methods!)</b></li>
+<pre><code class="language-rust line-numbers">use std::io::Read;
+
+let mut buffer = String::new();
+file.read_to_string(&amp;mut buffer); // method from Read trait
+</code></pre>
+    <br/>
+    <ul>
+        <li>If a method is defined by a trait, you must <code>use</code> the trait.</li>
+        <li>Otherwise Rust cannot find the method.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Importing Enums and Variants</b></li>
+<pre><code class="language-rust line-numbers">use std::cmp::Ordering;
+
+match x.cmp(&amp;y) {
+    Ordering::Less =&gt; {}
+    Ordering::Equal =&gt; {}
+    Ordering::Greater =&gt; {}
+}
+</code></pre>
+
+<pre><code class="language-rust line-numbers">use std::cmp::Ordering::{Less, Equal, Greater};
+
+match x.cmp(&amp;y) {
+    Less =&gt; {}
+    Equal =&gt; {}
+    Greater =&gt; {}
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can import:
+            <ul>
+                <li>the enum type</li>
+                <li>specific variants</li>
+                <li>all variants <code>use Enum::*;</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Re-exporting (`pub use`)</b></li>
+<pre><code class="language-rust line-numbers">mod utils {
+    pub fn greet() { println!("hi"); }
+}
+
+pub use utils::greet;  // re-export
+
+fn main() {
+    greet(); // available at crate root
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is how libraries design clean APIs.</li>
+        <li>External users don’t need to know your internal module layout.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Self and Super Imports</b></li>
+<pre><code class="language-rust line-numbers">use self::math::add;
+use super::config::load_config;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>self</code> refers to the current module.</li>
+        <li><code>super</code> refers to its parent.</li>
+        <li>Useful for organizing complex directory structures.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li><code>use</code> brings names into scope to reduce long paths.</li>
+        <li>Use it for:
+            <ul>
+                <li>Standard library modules</li>
+                <li>3rd-party crates</li>
+                <li>Your own modules</li>
+                <li>Traits, structs, enums, functions</li>
+            </ul>
+        </li>
+        <li>Glob imports (<code>*</code>) and variant imports are also supported.</li>
+        <li>Renaming with <code>as</code> helps avoid conflicts.</li>
+        <li><code>pub use</code> is important for API design and re-exporting.</li>
     </ul>
     <br/><br/>
 
