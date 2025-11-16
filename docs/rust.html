@@ -134,6 +134,7 @@
         <li><a href="#rust-crates">Crates</a></li>
         <li><a href="#rust-attributes">Attributes</a></li>
         <li><a href="#rust-custom-attributes-beginner">Defining Custom Attributes (Beginners Level)</a></li>
+        <li><a href="#rust-dead-code">The <code>dead_code</code> Attribute</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -7702,6 +7703,193 @@ fn secret() {
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-dead-code">The <code>dead_code</code> Attribute in Rust</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Rust warns you when you define a function, variable, struct, or module that is <u>never used</u>.</li>
+        <br/>
+        <li>The compiler issues this warning under the lint named <code>dead_code</code>.</li>
+        <br/>
+        <li>You can suppress this warning using the attribute:
+            <ul>
+                <li><code>#[allow(dead_code)]</code></li>
+                <li><code>#![allow(dead_code)]</code> (crate-level)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Why Does Rust Warn About Dead Code?</b></li>
+    <br/>
+    <ul>
+        <li>Unused code may indicate mistakes:
+            <ul>
+                <li>a function you forgot to call</li>
+                <li>an outdated variable</li>
+                <li>an abandoned struct or enum</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The warning encourages:
+            <ul>
+                <li>clean codebases</li>
+                <li>smaller binaries</li>
+                <li>better maintainability</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Usage of <code>#[allow(dead_code)]</code></b></li>
+<pre><code class="language-rust line-numbers">#[allow(dead_code)]
+fn unused_function() {
+    println!("This function is never called");
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>This suppresses the warning for <u>only this item</u>.</li>
+        <li>The function still compiles normally.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Allowing Dead Code for Structs and Enums</b></li>
+<pre><code class="language-rust line-numbers">#[allow(dead_code)]
+struct Config {
+    debug: bool,
+    retries: u32,
+}
+
+#[allow(dead_code)]
+enum Status {
+    Ok,
+    Error,
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Useful when structs or enums are temporarily unused during refactoring.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Silencing Dead Code for an Entire Module</b></li>
+<pre><code class="language-rust line-numbers">#[allow(dead_code)]
+mod utils {
+    fn unused_a() {}
+    fn unused_b() {}
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Applies to everything within the module.</li>
+        <li>Helpful during early development stages.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Crate-Level Dead Code Attribute</b></li>
+<pre><code class="language-rust line-numbers">#![allow(dead_code)]
+
+fn a() {}
+fn b() {}
+
+mod helpers {
+    fn c() {}
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Placed at the top of <code>main.rs</code> or <code>lib.rs</code>.</li>
+        <li>Suppresses the warning for the <b>entire crate</b>.</li>
+        <li>Useful for small experiments or prototypes.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>When Should You Use <code>dead_code</code>?</b></li>
+    <br/>
+    <ul>
+        <li>✔ During prototyping or early development</li>
+        <li>✔ When writing helper functions not yet used</li>
+        <li>✔ When preparing an API but not exporting all items yet</li>
+        <li>✔ In large modules where some code is only conditionally used</li>
+        <br/>
+        <li>✘ Avoid using it to hide mistakes:
+            <ul>
+                <li>Forgot to call the function?</li>
+                <li>Unused struct that should be removed?</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Combining with <code>cfg</code> Attributes</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes code is unused on one platform but used on another.</li>
+        <li>Combine <code>cfg</code> and <code>dead_code</code> to silence correct cases.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[cfg(unix)]
+fn unix_only() {}
+
+#[cfg(windows)]
+#[allow(dead_code)]
+fn unix_only() {}  // unused on Windows
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Dead Code on Private Items Only</b></li>
+    <br/>
+    <ul>
+        <li>The compiler only warns about unused:
+            <ul>
+                <li>private functions</li>
+                <li>private structs and enums</li>
+                <li>private fields</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Public items <b>never</b> trigger a dead code warning because they may be used by external crates.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">pub fn api_entry() {} // never warns
+</code></pre>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
