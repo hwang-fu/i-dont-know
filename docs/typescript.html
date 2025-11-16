@@ -127,6 +127,7 @@
         <li><a href="#ts-infer">The <code>infer</code> Keyword</a></li>
         <li><a href="#ts-template-literal-types">Template Literal Types</a></li>
         <li><a href="#ts-modules">Modules</a></li>
+        <li><a href="#ts-decorators">Decorators</a></li>
     </ul>
 </nav>
 <hr/>
@@ -4131,6 +4132,327 @@ export * from "./types";
     </table>
     <br/><br/>
 
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-decorators">Decorators in TypeScript</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><u>Decorators</u> in TypeScript provide a way to attach metadata or modify classes, methods, properties, parameters, and accessors.</li>
+        <br/>
+        <li>A <u>decorator</u> is simply a function that receives the target being decorated.</li>
+        <br/>
+        <li>To enable decorators, you must first activate them in <code>tsconfig.json</code>:</li>
+<pre><code class="language-json line-numbers">{
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true
+    }
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Decorator Basics</b></li>
+<pre><code class="language-ts line-numbers">function SimpleDecorator(constructor: Function) {
+    console.log("Decorated:", constructor.name);
+}
+
+@SimpleDecorator
+class MyClass {}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>@SimpleDecorator</code> invokes the function when the class is defined.</li>
+        <li>Decorators run at definition time, not at runtime when instances are created.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Class Decorators</b></li>
+    <br/>
+    <ul>
+        <li>A class decorator receives the constructor function of the class.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">function LogClass(target: Function) {
+    console.log(`Class: ${target.name}`);
+}
+
+@LogClass
+class User {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Output:
+<pre><code class="language-ts">Class: User
+</code></pre>
+        </li>
+        <li>Useful for logging, metadata, or modifying the constructor.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Class Decorator Factory</b></li>
+<pre><code class="language-ts line-numbers">function WithRole(role: string) {
+    return function (target: Function) {
+        target.prototype.role = role;
+    };
+}
+
+@WithRole("admin")
+class Account {}
+
+const a = new Account();
+console.log(a.role);        // "admin"
+</code></pre>
+    <br/>
+    <ul>
+        <li>Decorator factories allow passing parameters into decorators.</li>
+        <li>The first function receives parameters; the second receives the class.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Method Decorators</b></li>
+    <br/>
+    <ul>
+        <li>A method decorator receives:
+            <ul>
+                <li><code>target</code> — the prototype</li>
+                <li><code>key</code> — the method name</li>
+                <li><code>descriptor</code> — the property descriptor</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">function LogMethod(target: any, key: string, descriptor: PropertyDescriptor) {
+    const original = descriptor.value;
+
+    descriptor.value = function (...args: any[]) {
+        console.log(`Calling ${key} with`, args);
+        return original.apply(this, args);
+    };
+}
+
+class Calculator {
+    @LogMethod
+    add(a: number, b: number) {
+        return a + b;
+    }
+}
+
+const c = new Calculator();
+c.add(2, 3);
+</code></pre>
+    <br/>
+    <ul>
+        <li>A method decorator can wrap, modify, or replace the method.</li>
+        <li>This is the base of logging, profiling, caching, and authorization decorators.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Accessor Decorators</b></li>
+<pre><code class="language-ts line-numbers">function Readonly(target: any, key: string, descriptor: PropertyDescriptor) {
+    descriptor.writable = false;
+}
+
+class Person {
+    private _name = "Alice";
+
+    @Readonly
+    get name() {
+        return this._name;
+    }
+}
+
+// person.name = "Bob"; // Error
+</code></pre>
+    <br/>
+    <ul>
+        <li>Accessor decorators modify getters and setters.</li>
+        <li>They allow controlling writability or enumerability.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Property Decorators</b></li>
+    <br/>
+    <ul>
+        <li>A property decorator receives only:
+            <ul>
+                <li><code>target</code> — the prototype</li>
+                <li><code>key</code> — the property name</li>
+            </ul>
+        </li>
+        <li>It cannot directly modify property values because properties do not have descriptors on the prototype.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">function Required(target: any, key: string) {
+    console.log(`${key} is required`);
+}
+
+class Settings {
+    @Required
+    theme!: string;
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Often used for validation metadata.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Parameter Decorators</b></li>
+<pre><code class="language-ts line-numbers">function LogParam(target: any, key: string, index: number) {
+    console.log(`Parameter #${index} in ${key}`);
+}
+
+class Service {
+    greet(@LogParam name: string) {
+        console.log("Hello " + name);
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Parameter decorators receive:
+            <ul>
+                <li><code>target</code></li>
+                <li><code>method name</code></li>
+                <li><code>parameter index</code></li>
+            </ul>
+        </li>
+        <li>Useful for dependency injection systems (e.g. NestJS).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Decorators for Dependency Injection</b></li>
+<pre><code class="language-ts line-numbers">function Inject(service: any) {
+    return function (target: any, key: string, index: number) {
+        console.log(`Injecting ${service.name} into ${key}`);
+    };
+}
+
+class Logger {}
+
+class Controller {
+    constructor(@Inject(Logger) private logger: Logger) {}
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Decorators allow building DI frameworks similar to Angular and NestJS.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Metadata Decorators</b></li>
+<pre><code class="language-ts line-numbers">import "reflect-metadata";
+
+function Type(type: any) {
+    return function (target: any, key: string) {
+        Reflect.defineMetadata("design:type", type, target, key);
+    };
+}
+
+class Box {
+    @Type(String)
+    content!: string;
+}
+
+const type = Reflect.getMetadata("design:type", new Box(), "content");
+console.log(type.name); // "String"
+</code></pre>
+    <br/>
+    <ul>
+        <li>Used heavily in ORMs and DI frameworks.</li>
+        <li>Requires <code>emitDecoratorMetadata</code> to be enabled.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Execution Order of Decorators</b></li>
+    <br/>
+    <ul>
+        <li>If multiple decorators are applied, evaluation happens:
+            <ul>
+                <li><u>Bottom to top</u> (in code)</li>
+                <li>Then <u>each result is applied top to bottom</u></li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">function A() { return () =&gt; console.log("A"); }
+function B() { return () =&gt; console.log("B"); }
+
+@A()
+@B()
+class Example {}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Output:
+<pre><code class="language-ts">B
+A
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of Decorators in TypeScript</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Decorator Type</th>
+                <th>Purpose</th>
+                <th>Arguments Received</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Class Decorator</td>
+                <td>Modify/replace class constructor</td>
+                <td><code>(constructor)</code></td>
+            </tr>
+            <tr>
+                <td>Method Decorator</td>
+                <td>Modify method behavior</td>
+                <td><code>(target, key, descriptor)</code></td>
+            </tr>
+            <tr>
+                <td>Accessor Decorator</td>
+                <td>Control getters/setters</td>
+                <td><code>(target, key, descriptor)</code></td>
+            </tr>
+            <tr>
+                <td>Property Decorator</td>
+                <td>Attach metadata to fields</td>
+                <td><code>(target, key)</code></td>
+            </tr>
+            <tr>
+                <td>Parameter Decorator</td>
+                <td>Inject or annotate parameters</td>
+                <td><code>(target, key, index)</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
 </ol>
 <br/>
 <!-- * * * * * * * * * * * * * * -->
