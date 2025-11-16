@@ -125,6 +125,7 @@
         <li><a href="#ts-conditional-types">Conditional Types</a></li>
         <li><a href="#ts-mapped-types">Mapped Types</a></li>
         <li><a href="#ts-infer">The <code>infer</code> Keyword</a></li>
+        <li><a href="#ts-template-literal-types">Template Literal Types</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3636,7 +3637,237 @@ type C = IsArray&lt;number&gt;;               // false
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-template-literal-types">Template Literal Types</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Template Literal Types in TypeScript allow you to construct new string types by combining:
+            <ul>
+                <li>string literal types</li>
+                <li>union types</li>
+                <li>interpolations using <code>${...}</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>They work similarly to JavaScript template strings, but at the type level.</li>
+    </ul>
+    <br/><br/>
 
+
+    <li><b>Basic Template Literal Type</b></li>
+<pre><code class="language-ts line-numbers">type Greeting = `Hello ${string}`;
+
+let a: Greeting = "Hello Alice";  // OK
+let b: Greeting = "Hi Bob";       // Error
+</code></pre>
+    <br/>
+    <ul>
+        <li>The type <code>Hello ${string}</code> matches any string starting with "Hello ". </li>
+        <li>The <code>${string}</code> placeholder means any string literal.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Union Types Inside Template Literals</b></li>
+<pre><code class="language-ts line-numbers">type Direction = "up" | "down";
+type Move = `move-${Direction}`;
+
+let a: Move = "move-up";    // OK
+let b: Move = "move-left";  // Error
+</code></pre>
+    <br/>
+    <ul>
+        <li>Unions expand all combinations.</li>
+        <li>Template literal types allow building strict naming patterns.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Combining Multiple Unions</b></li>
+<pre><code class="language-ts line-numbers">type Size = "small" | "medium" | "large";
+type Color = "red" | "blue";
+
+type Variant = `${Size}-${Color}`;
+
+let v1: Variant = "small-red";      // OK
+let v2: Variant = "large-blue";     // OK
+let v3: Variant = "medium-green";   // Error
+</code></pre>
+    <br/>
+    <ul>
+        <li>The type expands to all valid combinations automatically.</li>
+        <li>Useful for CSS-like systems, classnames, config options, etc.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Inferring Template Literal Types</b></li>
+<pre><code class="language-ts line-numbers">function makeEvent(name: string) {
+    return `on-${name}` as const;
+}
+
+const e = makeEvent("click");
+// type: "on-click"
+</code></pre>
+    <br/>
+    <ul>
+        <li>Using <code>as const</code> helps preserve literal types instead of widening to <code>string</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Narrowing With Template Literal Types</b></li>
+<pre><code class="language-ts line-numbers">type ID = `id-${number}`;
+
+function printID(id: ID) {
+    console.log(id);
+}
+
+printID("id-42");     // OK
+printID("id-Alice");  // Error
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can require specific string patterns at compile time.</li>
+        <li>This is helpful in routing, command parsing, event names, etc.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Template Literal Types With Built-In String Manipulation Types</b></li>
+<pre><code class="language-ts line-numbers">type Name = "alice" | "bob";
+type Capitalized = Capitalize&lt;Name&gt;;
+
+type Greeting = `Hello ${Capitalized}`;
+
+let a: Greeting = "Hello Alice"; // OK
+let b: Greeting = "Hello bob";   // Error
+</code></pre>
+    <br/>
+    <ul>
+        <li>Template literal types integrate with TypeScript's utility types:
+            <ul>
+                <li><code>Uppercase&lt;T&gt;</code></li>
+                <li><code>Lowercase&lt;T&gt;</code></li>
+                <li><code>Capitalize&lt;T&gt;</code></li>
+                <li><code>Uncapitalize&lt;T&gt;</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Building Safe API Routes With Template Literal Types</b></li>
+<pre><code class="language-ts line-numbers">type UserID = number;
+type Route = `/users/${UserID}/posts/${number}`;
+
+let r: Route = "/users/12/posts/99"; // OK
+let x: Route = "/users/A/posts/5";   // Error
+</code></pre>
+    <br/>
+    <ul>
+        <li>Great for ensuring correctness in API path strings.</li>
+        <li>Reduces runtime errors from typos or wrong formats.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Extracting Parts Using Inference</b></li>
+<pre><code class="language-ts line-numbers">type Event = `on-${string}`;
+
+function handle&lt;T extends Event&gt;(name: T) {
+    const type = name.replace("on-", "");
+    return type;
+}
+
+handle("on-click"); // OK
+handle("on-move");  // OK
+handle("click");    // Error
+</code></pre>
+    <br/>
+    <ul>
+        <li>This allows pattern-based type checking.</li>
+        <li>Useful when parsing structured strings.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Template Literals in Conditional Types</b></li>
+<pre><code class="language-ts line-numbers">type RemovePrefix&lt;T&gt; = T extends `id-${infer U}` ? U : never;
+
+type R1 = RemovePrefix&lt;"id-123"&gt;; // "123"
+type R2 = RemovePrefix&lt;"user"&gt;;   // never
+</code></pre>
+    <br/>
+    <ul>
+        <li>You can extract substrings at the type level via <code>infer</code>.</li>
+        <li>Enables advanced type transformations.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Tagging and Branding Types</b></li>
+<pre><code class="language-ts line-numbers">type BrandedID = `${number}-user-id`;
+
+let id1: BrandedID = "123-user-id"; // OK
+let id2: BrandedID = "123abc";      // Error
+</code></pre>
+    <br/>
+    <ul>
+        <li>Template literal types help create nominal-like typing patterns.</li>
+        <li>Useful for preventing mixing of different ID types.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of Template Literal Types</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Basic construction</td>
+                <td>Create string patterns using ${}</td>
+                <td><code>`Hello ${string}`</code></td>
+            </tr>
+            <tr>
+                <td>Union expansion</td>
+                <td>Build combinations from unions</td>
+                <td><code>`move-${"left"|"right"}`</code></td>
+            </tr>
+            <tr>
+                <td>Type-safe strings</td>
+                <td>Prevent invalid formats</td>
+                <td><code>id-${number}</code></td>
+            </tr>
+            <tr>
+                <td>Integration with utility types</td>
+                <td>Uppercase, Lowercase, Capitalize</td>
+                <td><code>`Hello ${Capitalize&lt;T&gt;}`</code></td>
+            </tr>
+            <tr>
+                <td>Pattern inference</td>
+                <td>Extract inner substrings with infer</td>
+                <td><code>T extends `x-${infer U}`</code></td>
+            </tr>
+            <tr>
+                <td>API schemas</td>
+                <td>Build strict REST endpoints</td>
+                <td><code>`/users/${number}`</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
