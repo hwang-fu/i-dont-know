@@ -132,6 +132,7 @@
         <li><a href="#rust-module-visibility">Visibility in Module</a></li>
         <li><a href="#rust-use">Keyword <code>use</code> in Rust</a></li>
         <li><a href="#rust-crates">Crates</a></li>
+        <li><a href="#rust-attributes">Attributes</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -7140,6 +7141,331 @@ $ cargo doc --open    # generate and open crate docs
             </tr>
         </tbody>
     </table>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-attributes">Attributes in Rust</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Rust attributes are metadata applied to items such as:
+            <ul>
+                <li>functions</li>
+                <li>modules</li>
+                <li>structs and enums</li>
+                <li>expressions</li>
+                <li>crates</li>
+            </ul>
+        </li>
+        <br/>
+        <li>They change how Rust compiles, documents, warns, tests, and structures your code.</li>
+        <br/>
+        <li>Attributes appear in two syntaxes:
+            <ul>
+                <li><code>#[attribute]</code> &nbsp; — outer attribute</li>
+                <li><code>#![attribute]</code> — inner attribute</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Inner attributes apply to the <u>containing item</u> (crate or module).</li>
+        <li>Outer attributes apply to the <u>following item</u>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Outer Attributes</b></li>
+<pre><code class="language-rust line-numbers">#[derive(Debug)]
+struct User {
+    id: u32,
+    name: String,
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Placed directly before the item they modify.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Inner Attributes</b></li>
+<pre><code class="language-rust line-numbers">#![allow(unused)]
+mod utils {
+    fn temp() {}
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Placed inside a crate or module using <code>#![ ... ]</code>.</li>
+        <li>Apply to the entire enclosing item.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Derive Attributes</b></li>
+    <br/>
+    <ul>
+        <li><code>#[derive(...)]</code> automatically implements common traits.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[derive(Debug, Clone, Copy, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Common derive traits include:
+            <ul>
+                <li><code>Debug</code></li>
+                <li><code>Clone</code></li>
+                <li><code>Copy</code></li>
+                <li><code>Eq</code>, <code>PartialEq</code></li>
+                <li><code>Hash</code></li>
+                <li><code>Default</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Conditional Compilation Attributes</b></li>
+<pre><code class="language-rust line-numbers">#[cfg(target_os = "linux")]
+fn platform_only() {
+    println!("Running on Linux");
+}
+
+#[cfg(feature = "fast_mode")]
+fn fast() {}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>cfg</code> controls what gets compiled depending on OS, architecture, Cargo features, etc.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn main() {
+    #[cfg(debug_assertions)]
+    println!("Running in debug mode");
+}
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Allow, Warn, and Deny Lints</b></li>
+<pre><code class="language-rust line-numbers">#[allow(dead_code)]
+fn unused() {}
+
+#[warn(missing_docs)]
+fn documented() {}
+
+#[deny(warnings)]
+fn strict() {}
+</code></pre>
+    <br/>
+    <ul>
+        <li>These attributes control compiler warnings and errors.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Documentation Attributes (rustdoc)</b></li>
+<pre><code class="language-rust line-numbers">#![doc = "A crate-level description"]
+
+/// Adds two numbers.
+///
+/// # Example
+/// ```
+/// assert_eq!(3, add(1, 2));
+/// ```
+#[doc(alias = "plus")]
+pub fn add(a: i32, b: i32) -&gt; i32 {
+    a + b
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>Used by <code>rustdoc</code> to generate documentation.</li>
+        <li><code>#[doc(alias = "...")]</code> improves searchability.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Test Attributes</b></li>
+<pre><code class="language-rust line-numbers">#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        assert_eq!(2 + 2, 4);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_fail() {
+        panic!("panics as expected");
+    }
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>#[test]</code> marks test functions.</li>
+        <li><code>#[should_panic]</code> marks tests expecting a panic.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Inline and Macro Attributes</b></li>
+<pre><code class="language-rust line-numbers">#[inline]
+fn fast_add(a: i32, b: i32) -&gt; i32 {
+    a + b
+}
+
+#[inline(always)]
+fn really_inline(a: i32, b: i32) -&gt; i32 {
+    a + b
+}
+
+#[macro_export]
+macro_rules! hello {
+    () =&gt; {
+        println!("Hello from macro!");
+    };
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>#[inline]</code> suggests inlining to the compiler.</li>
+        <li><code>#[macro_export]</code> makes macros public from a crate.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Serde Attributes (3rd-Party Example)</b></li>
+<pre><code class="language-rust line-numbers">use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize)]
+struct User {
+    #[serde(rename = "user_id")]
+    id: u32,
+
+    #[serde(skip_serializing)]
+    password: String,
+}
+</code></pre>
+    <br/>
+    <ul>
+        <li>3rd-party crates (like serde) provide powerful custom attributes.</li>
+        <li>They can modify serialization, deserialization, renaming, skipping, etc.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Entry Point Attribute</b></li>
+<pre><code class="language-rust line-numbers">#[no_mangle]
+pub extern "C" fn my_entry() {}
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>#[no_mangle]</code> keeps the symbol name unchanged for FFI.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Crate-Level Attributes</b></li>
+<pre><code class="language-rust line-numbers">#![allow(unused)]
+#![warn(missing_docs)]
+#![cfg_attr(debug_assertions, feature(explicit_generic_args_with_impl_trait))]
+</code></pre>
+    <br/>
+    <ul>
+        <li>Applied at the top of <code>main.rs</code> or <code>lib.rs</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Attribute Summary Table</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Attribute</th>
+                <th>Purpose</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>#[derive]</code></td>
+                <td>Auto-impl common traits</td>
+                <td><code>#[derive(Debug, Clone)]</code></td>
+            </tr>
+            <tr>
+                <td><code>#[cfg]</code></td>
+                <td>Conditional compilation</td>
+                <td><code>#[cfg(unix)]</code></td>
+            </tr>
+            <tr>
+                <td><code>#[allow]</code>, <code>#[warn]</code>, <code>#[deny]</code></td>
+                <td>Lint control</td>
+                <td><code>#[allow(dead_code)]</code></td>
+            </tr>
+            <tr>
+                <td><code>#[test]</code></td>
+                <td>Unit test functions</td>
+                <td><code>#[test]</code></td>
+            </tr>
+            <tr>
+                <td><code>#[inline]</code></td>
+                <td>Suggest inline expansion</td>
+                <td><code>#[inline(always)]</code></td>
+            </tr>
+            <tr>
+                <td><code>#[doc]</code></td>
+                <td>Documentation metadata</td>
+                <td><code>#[doc(alias = "x")]</code></td>
+            </tr>
+            <tr>
+                <td><code>#[macro_export]</code></td>
+                <td>Expose macros publicly</td>
+                <td><code>#[macro_export]</code></td>
+            </tr>
+            <tr>
+                <td><code>#![crate_attr]</code></td>
+                <td>Crate-level behavior</td>
+                <td><code>#![allow(unused)]</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li>Attributes modify how Rust compiles, tests, documents, or interprets code.</li>
+        <li>Outer attributes (<code>#[...]</code>) apply to the next item.</li>
+        <li>Inner attributes (<code>#![...]</code>) apply to the containing module or crate.</li>
+        <li>Used for:
+            <ul>
+                <li>trait derivation</li>
+                <li>conditional compilation</li>
+                <li>enabling/disabling lints</li>
+                <li>tests</li>
+                <li>macros</li>
+                <li>FFI</li>
+                <li>documentation</li>
+            </ul>
+        </li>
+        <li>They are one of Rust’s most flexible and powerful meta-programming mechanisms.</li>
+    </ul>
     <br/><br/>
 
 </ol>
