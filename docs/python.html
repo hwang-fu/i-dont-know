@@ -132,7 +132,8 @@
         <li><a href="#python-type-annotations">Python Type Annotations</a></li>
         <li><a href="#python-protocol"><code>Protocol</code></a></li>
         <li><a href="#python-typeddict"><code>TypedDict</code></a></li>
-        <li><a href="#python-type-checkers">Python Type Checkers: mypy, pyright, and ruff</a></li>
+        <li><a href="#python-type-checkers">Type Checkers: mypy, pyright, and ruff</a></li>
+        <li><a href="#python-special-function-parameters">Special Parameters</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3079,7 +3080,266 @@ select = ["E", "F", "I", "TCH"]
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-special-function-parameters">Special Parameters in Python Functions</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Python function definitions support several <b>special parameter forms</b> that control how arguments can be passed.</li>
+        <br/>
+        <li>These special markers allow you to restrict, organize, or structure function parameters:</li>
+        <ul>
+            <li><code>/</code> — positional-only parameters</li>
+            <li><code>*</code> — keyword-only parameters</li>
+            <li><code>*args</code> — variable positional arguments</li>
+            <li><code>**kwargs</code> — variable keyword arguments</li>
+        </ul>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Positional-Only Parameters (<code>/</code>)</b></li>
+    <br/>
+    <ul>
+        <li>A parameter placed before <code>/</code> can <b>ONLY</b> be passed positionally (Python 3.8+).</li>
+        <br/>
+        <li>Motivation:</li>
+        <ul>
+            <li>prevent callers from depending on parameter names</li>
+            <li>make APIs easier to change later</li>
+            <li>match CPython built-ins like <code>len(obj)</code></li>
+        </ul>
+    </ul>
+
+<pre><code class="language-python line-numbers">def add(a, b, /):
+    return a + b
+
+add(3, 4)        # OK
+add(a=3, b=4)    # ❌ error: cannot use keyword args
+</code></pre>
+
+    <br/>
+    <ul><li>Everything before <code>/</code> must be passed positionally.</li></ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Keyword-Only Parameters (<code>*</code>)</b></li>
+    <br/>
+    <ul>
+        <li>Parameters placed after <code>*</code> must be passed by keyword.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def configure(*, debug=False, verbose=False):
+    print(debug, verbose)
+
+configure(debug=True)     # OK
+configure(True, True)     # ❌ error
+</code></pre>
+
+    <br/>
+    <ul><li>Everything after <code>*</code> must be named explicitly.</li></ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Combining Positional-Only and Keyword-Only</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def func(a, b, /, c, d, *, e, f):
+    print(a, b, c, d, e, f)
+</code></pre>
+
+    <ul>
+        <li><b>Rules:</b></li>
+        <ul>
+            <li><code>a</code>, <code>b</code> → positional-only</li>
+            <li><code>c</code>, <code>d</code> → can be positional or keyword</li>
+            <li><code>e</code>, <code>f</code> → keyword-only</li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Variable Positional Arguments (<code>*args</code>)</b></li>
+    <br/>
+    <ul>
+        <li><code>*args</code> captures an arbitrary number of positional arguments into a tuple.</li>
+        <br/>
+        <li>Use when your function accepts a flexible amount of inputs.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def total(*numbers):
+    print(numbers)
+
+total(1, 2, 3)      # (1, 2, 3)
+total()             # ()
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Variable Keyword Arguments (<code>**kwargs</code>)</b></li>
+    <br/>
+    <ul>
+        <li><code>**kwargs</code> collects keyword arguments into a dictionary.</li>
+        <br/>
+        <li>This is useful for flexible configuration or passing options through layers of functions.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def debug(**options):
+    print(options)
+
+debug(level=3, verbose=True)
+# {'level': 3, 'verbose': True}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>*args</code> and <code>**kwargs</code> Together</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def func(a, *args, **kwargs):
+    print(a, args, kwargs)
+
+func(1, 2, 3, x=10, y=20)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Produces:</li>
+    </ul>
+
+<pre><code class="language-python">1 (2, 3) {'x': 10, 'y': 20}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Enforcing Only <code>**kwargs</code> Arguments</b></li>
+    <br/>
+    <ul>
+        <li>A common pattern in APIs is to force callers to use keywords:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def build_model(*, layers, activation):
+    ...
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Prevents:</li>
+    </ul>
+
+<pre><code class="language-python">build_model(3, "relu")   # ❌
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>/</code> with <code>*args</code> and <code>**kwargs</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def f(a, b, /, c, *args, d, e=0, **kwargs):
+    print(a, b, c, args, d, e, kwargs)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This allows extremely precise function signatures.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Real Example: Built-in <code>pow</code></b></li>
+    <br/>
+    <ul>
+        <li>Python built-in functions often use positional-only parameters:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">pow(base, exp, mod=None, /)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Meaning:</li>
+        <ul>
+            <li><code>base</code>, <code>exp</code>, <code>mod</code> must be positional</li>
+            <li>Cannot call: <code>pow(base=2, exp=3)</code></li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Common Uses in Real Codebases</b></li>
+    <br/>
+    <ul>
+        <li><b>Library APIs</b> (Positional-only)</li>
+        <ul><li>Protects parameter names from becoming part of public API.</li></ul>
+        <br/>
+        <li><b>Configuration functions</b> (Keyword-only)</li>
+        <ul><li>Force clarity: <code>send(email, *, retries=3, timeout=1000)</code></li></ul>
+        <br/>
+        <li><b>Decorators</b> (args + kwargs)</li>
+        <ul><li>Capture any function signatures flexibly.</li></ul>
+        <br/>
+        <li><b>Wrappers & Forwarding</b></li>
+        <ul><li>Useful when passing options through layers of functions.</li></ul>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Syntax</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>/</code></td>
+                <td>Positional-only parameters</td>
+            </tr>
+            <tr>
+                <td><code>*</code></td>
+                <td>Keyword-only parameters</td>
+            </tr>
+            <tr>
+                <td><code>*args</code></td>
+                <td>Captures extra positional arguments</td>
+            </tr>
+            <tr>
+                <td><code>**kwargs</code></td>
+                <td>Captures extra keyword arguments</td>
+            </tr>
+            <tr>
+                <td><code>*args, **kwargs</code></td>
+                <td>Flexible wrappers for arbitrary signatures</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
