@@ -15,6 +15,15 @@
     <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.js"></script>
 
 <style>
+
+    .nav-icon {
+        width: 18px;          /* adjust size here */
+        height: 18px;
+        object-fit: contain;  /* keep aspect ratio */
+        vertical-align: middle;
+        margin-left: 0.3rem;  /* small gap from text */
+    }
+
     table {
         border-collapse: collapse;      /* merge borders so you don't get double lines */
         width: 100%;                    /* optional: make it full width */
@@ -115,14 +124,278 @@
 <nav id="toc" style="margin-bottom: 2rem;">
     <h2> <img src="resources/python.png" alt="PY Logo" class="nav-icon"/> Documentation Index</h2>
     <ul style="line-height: 1.8;">
-        <li><a href="#"></a></li>
+        <li><a href="#">Python <code>*args</code> and <code>**kwargs</code></a></li>
     </ul>
 </nav>
 <hr/>
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-args-kwargs">Python <code>*args</code> and <code>**kwargs</code></h3>
+<ol>
+    <li>In Python, functions can accept a variable number of arguments using two special syntax forms:</li>
+    <ul>
+        <li><code>*args</code>: captures <u>positional</u> arguments</li>
+        <li><code>**kwargs</code>: captures <u>keyword</u> arguments</li>
+    </ul>
+    <br/><br/>
 
+
+    <li><b>Positional Variable Arguments: <code>*args</code></b></li>
+    <br/>
+    <ul>
+        <li><code>*args</code> collects extra positional arguments into a tuple.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def greet(*args):
+    print(args)
+
+greet("Hello", "World", 42)
+</code></pre>
+
+<pre><code class="language-text">('Hello', 'World', 42)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can loop through <code>args</code> easily:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def add_all(*args):
+    return sum(args)
+
+print(add_all(1, 2, 3, 4))
+</code></pre>
+    <ul>
+        <li>Use <code>*args</code> when you don’t know how many positional arguments you will receive.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Keyword Variable Arguments: <code>**kwargs</code></b></li>
+    <br/>
+    <ul>
+        <li><code>**kwargs</code> collects extra keyword arguments into a dictionary.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def show_info(**kwargs):
+    print(kwargs)
+
+show_info(name="Alice", age=25, city="Berlin")
+</code></pre>
+
+<pre><code class="language-text">{'name': 'Alice', 'age': 25, 'city': 'Berlin'}</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can iterate over the dictionary:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def print_info(**kwargs):
+    for key, value in kwargs.items():
+        print(key, "=", value)
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Combining Positional and Keyword Arguments</b></li>
+    <br/>
+    <ul>
+        <li>You can combine both:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def func(a, b, *args, **kwargs):
+    print("a =", a)
+    print("b =", b)
+    print("args =", args)
+    print("kwargs =", kwargs)
+
+func(1, 2, 3, 4, x=10, y=20)
+</code></pre>
+
+<pre><code class="language-text">
+a = 1
+b = 2
+args = (3, 4)
+kwargs = {'x': 10, 'y': 20}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><u>Order matters</u> in function definitions:</li>
+    </ul>
+
+<pre><code class="language-text">1. normal positional parameters
+2. *args
+3. keyword-only parameters (optional)
+4. **kwargs
+</code></pre>
+
+<pre><code class="language-python line-numbers">def example(a, *args, sep="-", **kwargs):
+    pass
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Argument Unpacking Using <code>*</code> and <code>**</code></b></li>
+    <br/>
+    <ul>
+        <li>You can unpack lists and dictionaries when calling functions.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def add(a, b, c):
+    return a + b + c
+
+nums = [1, 2, 3]
+print(add(*nums))
+</code></pre>
+
+<pre><code class="language-python line-numbers">def format_user(name, age, city):
+    return f"{name}, {age}, from {city}"
+
+info = {"name": "Bob", "age": 30, "city": "Hamburg"}
+print(format_user(**info))
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Real Use Case: Wrapping Functions (Forwarding Arguments)</b></li>
+    <br/>
+    <ul>
+        <li><code>*args</code> and <code>**kwargs</code> make decorators and wrappers easy:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def debug(func):
+    def wrapper(*args, **kwargs):
+        print("Calling:", func.__name__)
+        return func(*args, **kwargs)  # forward everything
+    return wrapper
+
+@debug
+def multiply(x, y):
+    return x * y
+
+print(multiply(3, 4))
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This technique allows arbitrary functions to be wrapped without knowing their signature.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>When to Use <code>*args</code> and <code>**kwargs</code>?</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Use Case</th>
+                <th><code>*args</code></th>
+                <th><code>**kwargs</code></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Unknown number of positional arguments</td>
+                <td>Yes</td>
+                <td>No</td>
+            </tr>
+            <tr>
+                <td>Unknown number of keyword arguments</td>
+                <td>No</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Forwarding arguments in decorators/wrappers</td>
+                <td>Yes</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Passing configuration options</td>
+                <td>No</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Building flexible API helpers</td>
+                <td>Yes</td>
+                <td>Yes</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b>Common Mistakes</b></li>
+    <br/>
+    <ul>
+        <li><u>Wrong order</u> in function signature:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def wrong(**kwargs, *args):  # ❌ invalid</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Using args or kwargs without</b> <code>*</code>:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def f(args):  # ❌ not the same as *args
+    pass
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Forgetting to unpack:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def f(a, b):
+    return a + b
+
+nums = (1, 2)
+# f(nums) ❌ TypeError
+f(*nums)   # ✔ correct
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>*args</code></td>
+                <td>Captures extra positional arguments into a tuple.</td>
+            </tr>
+            <tr>
+                <td><code>**kwargs</code></td>
+                <td>Captures extra keyword arguments into a dictionary.</td>
+            </tr>
+            <tr>
+                <td>Unpacking</td>
+                <td><code>*</code> unpacks lists/tuples, <code>**</code> unpacks dictionaries.</td>
+            </tr>
+            <tr>
+                <td>Decorator usage</td>
+                <td>Forward arguments to wrapped functions easily.</td>
+            </tr>
+            <tr>
+                <td>Best practice</td>
+                <td><code>a, *args, sep="-", **kwargs</code> follows correct ordering.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
