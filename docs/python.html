@@ -130,6 +130,7 @@
         <li><a href="#python-text">Python Text (Strings)</a></li>
         <li><a href="#python-lists">Python Lists</a></li>
         <li><a href="#python-type-annotations">Python Type Annotations</a></li>
+        <li><a href="#python-protocol">Python Protocols</a></li>
     </ul>
 </nav>
 <hr/>
@@ -2147,6 +2148,348 @@ print(f.__annotations__)
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-protocol">Python Protocols</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <code>Protocol</code> in Python (introduced in <b>PEP 544</b>) is a way to define <b>structural typing</b> (also called <b>duck typing</b>) for static type checkers such as <code>mypy</code>, <code>pyright</code>, and <code>ruff</code>.</li>
+        <br/>
+        <li>Structural typing means:
+            <b>"If an object has the required methods/attributes, it is accepted — regardless of its class."</b>
+        </li>
+        <br/>
+        <li>This is different from nominal typing where the type depends on inheritance.</li>
+        <br/>
+        <li>Protocols allow you to define interfaces <b>without forcing inheritance</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Basic Protocol Example</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import Protocol
+
+class Greeter(Protocol):
+    def greet(self) -&gt; str:
+        ...
+</code></pre>
+
+    <ul>
+        <li>Any class with a <code>greet()</code> method returning a <code>str</code> matches this protocol:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Person:
+    def greet(self) -&gt; str:
+        return "Hello!"
+
+class Robot:
+    def greet(self) -&gt; str:
+        return "Beep bop"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Both classes satisfy <code>Greeter</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def welcome(g: Greeter) -&gt; None:
+    print(g.greet())
+
+welcome(Person())   # OK
+welcome(Robot())    # OK
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>No Need to Inherit</b></li>
+    <br/>
+    <ul>
+        <li>The following also works, because Protocols check structure, not inheritance:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Cat:
+    def greet(self) -&gt; str:
+        return "Meow"
+</code></pre>
+
+<pre><code class="language-python line-numbers">welcome(Cat())   # Also OK
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Cat</code> does NOT inherit from <code>Greeter</code>, but matches the required structure.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Protocols with Attributes</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class User(Protocol):
+    name: str
+    age: int
+
+def print_user(u: User) -&gt; None:
+    print(u.name, u.age)
+</code></pre>
+
+    <ul>
+        <li>Any object with <code>name</code> and <code>age</code> attributes matches:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Person:
+    def __init__(self, name: str, age: int) -&gt; None:
+        self.name = name
+        self.age = age
+
+print_user(Person("Hwangfu", 23))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Protocols with Multiple Methods</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class FileLike(Protocol):
+    def read(self) -&gt; str:
+        ...
+    def write(self, s: str) -&gt; int:
+        ...
+</code></pre>
+
+    <ul>
+        <li>Any class with <code>read()</code> and <code>write()</code> methods is considered file-like.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Extending Protocols</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class Shape(Protocol):
+    def area(self) -&gt; float:
+        ...
+
+class DrawableShape(Shape, Protocol):
+    def draw(self) -&gt; None:
+        ...
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Optional Protocol Features</b></li>
+    <br/>
+
+    <ul>
+        <li><b>@runtime_checkable</b> allows <code>isinstance()</code> checks at runtime:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from typing import runtime_checkable
+
+@runtime_checkable
+class Greeter(Protocol):
+    def greet(self) -&gt; str:
+        ...
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Now you can do:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">print(isinstance(Person(), Greeter))   # True
+print(isinstance(42, Greeter))         # False
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Protocols vs Abstract Base Classes (ABC)</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Protocol</th>
+                <th>ABC (Abstract Base Class)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Typing style</td>
+                <td>Structural (duck typing)</td>
+                <td>Nominal (inherits from ABC)</td>
+            </tr>
+            <tr>
+                <td>Requires inheritance?</td>
+                <td>No</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Runtime enforcement</td>
+                <td>No (unless using <code>@runtime_checkable</code>)</td>
+                <td>Yes (raises error if abstract methods not implemented)</td>
+            </tr>
+            <tr>
+                <td>Common usage</td>
+                <td>Flexible APIs, plugin systems, duck typing</td>
+                <td>Strict class hierarchies</td>
+            </tr>
+            <tr>
+                <td>Better for static type checking?</td>
+                <td>Yes</td>
+                <td>Partly</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Protocol with Generics</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import Protocol, TypeVar
+
+T = TypeVar("T")
+
+class Container(Protocol[T]):
+    def add(self, item: T) -&gt; None:
+        ...
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Protocols to Define Function Signatures</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class Comparator(Protocol):
+    def __call__(self, a: int, b: int) -&gt; bool:
+        ...
+
+def sort_with(nums: list[int], comp: Comparator) -&gt; None:
+    nums.sort(key=lambda x: x, reverse=comp(1, 0))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Protocols with Properties</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class Sized(Protocol):
+    @property
+    def size(self) -&gt; int:
+        ...
+</code></pre>
+
+<pre><code class="language-python line-numbers">class Box:
+    def __init__(self, size: int) -&gt; None:
+        self._size = size
+
+    @property
+    def size(self) -&gt; int:
+        return self._size
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Protocol</td>
+                <td>Defines a structural-typing interface</td>
+            </tr>
+            <tr>
+                <td>No inheritance required</td>
+                <td>Matches by methods/attributes present</td>
+            </tr>
+            <tr>
+                <td>@runtime_checkable</td>
+                <td>Allows <code>isinstance()</code> with Protocol</td>
+            </tr>
+            <tr>
+                <td>Attributes & Methods</td>
+                <td>Protocols can specify both</td>
+            </tr>
+            <tr>
+                <td>Generics support</td>
+                <td>Protocols can accept type parameters</td>
+            </tr>
+            <tr>
+                <td>Use cases</td>
+                <td>Flexible interfaces, APIs, plugin architectures</td>
+            </tr>
+            <tr>
+                <td>Difference from ABC</td>
+                <td>Structural vs. nominal typing</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
