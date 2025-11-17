@@ -129,6 +129,7 @@
         <li><a href="#python-numbers">Python Numbers</a></li>
         <li><a href="#python-text">Python Text (Strings)</a></li>
         <li><a href="#python-lists">Python Lists</a></li>
+        <li><a href="#python-type-annotations">Python Type Annotations</a></li>
     </ul>
 </nav>
 <hr/>
@@ -185,10 +186,10 @@ print(add_all(1, 2, 3, 4))
 <pre><code class="language-python line-numbers">def show_info(**kwargs):
     print(kwargs)
 
-show_info(name="Alice", age=25, city="Berlin")
+show_info(name="Ammy", age=25, city="Berlin")
 </code></pre>
 
-<pre><code class="language-text">{'name': 'Alice', 'age': 25, 'city': 'Berlin'}</code></pre>
+<pre><code class="language-text">{'name': 'Ammy', 'age': 25, 'city': 'Berlin'}</code></pre>
 
     <br/>
     <ul>
@@ -1139,7 +1140,7 @@ print(s.count("m"))    # 2
         <li><b>f-strings</b> (recommended):</li>
     </ul>
 
-<pre><code class="language-python line-numbers">name = "Junzhe"
+<pre><code class="language-python line-numbers">name = "Hwangfu"
 age = 23
 print(f"My name is {name} and I am {age} years old.")
 </code></pre>
@@ -1150,7 +1151,7 @@ print(f"My name is {name} and I am {age} years old.")
     </ul>
 
 <pre><code class="language-python line-numbers">print("Hello, {}!".format("World"))
-print("{name} is {age}".format(name="Alice", age=30))
+print("{name} is {age}".format(name="Ammy", age=30))
 </code></pre>
 
     <br/>
@@ -1158,7 +1159,7 @@ print("{name} is {age}".format(name="Alice", age=30))
         <li>Old C-style formatting:</li>
     </ul>
 
-<pre><code class="language-python line-numbers">print("%s scored %d points" % ("Alice", 95))
+<pre><code class="language-python line-numbers">print("%s scored %d points" % ("Ammy", 95))
 </code></pre>
 
     <br/><br/>
@@ -1695,7 +1696,457 @@ print(a)  # all rows changed!
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-type-annotations">Python Type Annotations</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Type annotations were introduced in Python 3.5 and expanded significantly in later versions (3.7+, 3.9+, 3.10+, 3.12+).</li>
+        <br/>
+        <li>They allow you to <b>declare the expected type</b> of variables, function parameters, return values, classes, and more.</li>
+        <br/>
+        <li>Annotations are checked by external tools (e.g., <code>mypy</code>, <code>pyright</code>, <code>ruff</code>), not by Python itself.</li>
+        <br/>
+        <li>At runtime, annotations do nothing unless explicitly used.</li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Basic Function Annotations</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def add(x: int, y: int) -&gt; int:
+    return x + y
+</code></pre>
+
+    <ul>
+        <li><code>x: int</code> — parameter annotation</li>
+        <li><code>-&gt; int</code> — return annotation</li>
+    </ul>
+
+    <br/>
+    <ul>
+        <li>Multiple arguments:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def greet(name: str, age: int) -&gt; str:
+    return f"{name} is {age} years old"
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Annotating Variables</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">age: int = 25
+name: str = "Hwangfu"
+height: float = 1.80
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Without assigning a value (type-only variable):</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">count: int
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Common Built-in Types</b></li>
+    <br/>
+    <ul>
+        <li>Use these directly in Python 3.9+</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">n: int = 10
+flag: bool = True
+ratio: float = 0.75
+text: str = "Hello"
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Containers and Generics</b></li>
+    <br/>
+    <ul>
+        <li>Use built-in generic types (Python 3.9+):</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">nums: list[int] = [1, 2, 3]
+names: set[str] = {"a", "b"}
+mapping: dict[str, int] = {"a": 1}
+matrix: list[list[int]] = [[1, 2], [3, 4]]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>For compatibility with older versions, use <code>typing.List</code>, <code>typing.Dict</code>, etc.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Optional Types</b></li>
+    <br/>
+    <ul>
+        <li>A value that may be <code>None</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from typing import Optional
+
+age: Optional[int] = None
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Python 3.10+ (PEP 604):</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">age: int | None = None
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Union Types</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import Union
+
+value: Union[int, str] = 10
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Python 3.10+:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">value: int | str = 10
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Any Type</b></li>
+    <br/>
+    <ul>
+        <li><code>Any</code> disables type checking.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from typing import Any
+
+data: Any = "hello"
+data = 123         # allowed
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Literal Types</b></li>
+    <br/>
+    <ul>
+        <li>Restrict allowed values:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from typing import Literal
+
+mode: Literal["debug", "prod", "test"] = "debug"
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Callable / Function Types</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import Callable
+
+def apply(f: Callable[[int, int], int], x: int, y: int) -&gt; int:
+    return f(x, y)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Tuple Types</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">coords: tuple[int, int] = (10, 20)
+point: tuple[int, str, float] = (1, "a", 1.5)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Variable-length tuples:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">nums: tuple[int, ...] = (1, 2, 3)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Self Type (Methods returning instance)</b></li>
+    <br/>
+    <ul>
+        <li>Python 3.11 introduced <code>typing.Self</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from typing import Self
+
+class Vector:
+    def scale(self, x: float) -&gt; Self:
+        self.x *= x
+        self.y *= x
+        return self
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>TypedDict (for dicts with fixed structure)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import TypedDict
+
+class User(TypedDict):
+    id: int
+    name: str
+    email: str
+
+u: User = {"id": 1, "name": "Ammy", "email": "a@example.com"}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Protocol (Duck Typing Interfaces)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import Protocol
+
+class Drawable(Protocol):
+    def draw(self) -&gt; None:
+        ...
+
+def render(obj: Drawable) -&gt; None:
+    obj.draw()
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>No inheritance required: if a class has <code>draw()</code>, it matches the protocol.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Final</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import Final
+
+PI: Final = 3.14159
+</code></pre>
+
+    <ul>
+        <li>Type checkers warn if you try to reassign.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Class and Instance Attributes</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class Person:
+    name: str          # instance attribute annotation
+    count: int = 0     # class variable annotation
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Forward References</b></li>
+    <br/>
+    <ul>
+        <li>When a type is not yet defined, quote it:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Node:
+    next: "Node" | None
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Union Return Patterns with <code>match</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def parse(data: str) -&gt; int | float | None:
+    match data:
+        case "none":
+            return None
+        case _ if data.isdigit():
+            return int(data)
+        case _:
+            return float(data)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>ParamSpec and TypeVar (Advanced Generics)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import TypeVar, ParamSpec, Callable
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+def wrapper(f: Callable[P, R]) -&gt; Callable[P, R]:
+    def inner(*args: P.args, **kwargs: P.kwargs) -&gt; R:
+        return f(*args, **kwargs)
+    return inner
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Annotated (Metadata for Types)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import Annotated
+
+x: Annotated[int, "must be positive"] = 5
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Type Aliases</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">UserId = int
+Vector = list[float]
+
+def scale(v: Vector) -&gt; Vector:
+    return [x * 10 for x in v]
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Runtime Access to Annotations</b></li>
+    <br/>
+    <ul>
+        <li>Annotations are stored in <code>__annotations__</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def f(x: int, y: str) -&gt; bool:
+    return True
+
+print(f.__annotations__)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary of Major Annotation Features</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Basic types</td>
+                <td><code>int</code>, <code>float</code>, <code>bool</code>, <code>str</code></td>
+            </tr>
+            <tr>
+                <td>Generics</td>
+                <td><code>list[int]</code>, <code>dict[str, int]</code></td>
+            </tr>
+            <tr>
+                <td>Optional</td>
+                <td><code>int | None</code></td>
+            </tr>
+            <tr>
+                <td>Union</td>
+                <td><code>int | str</code></td>
+            </tr>
+            <tr>
+                <td>Any</td>
+                <td>Disable type checking</td>
+            </tr>
+            <tr>
+                <td>Literal</td>
+                <td>Restrict to specific values</td>
+            </tr>
+            <tr>
+                <td>Callable</td>
+                <td>Describe function signatures</td>
+            </tr>
+            <tr>
+                <td>TypedDict</td>
+                <td>Dicts with fixed field types</td>
+            </tr>
+            <tr>
+                <td>Protocol</td>
+                <td>Duck-typing interfaces</td>
+            </tr>
+            <tr>
+                <td>Final</td>
+                <td>Constant-like values</td>
+            </tr>
+            <tr>
+                <td>Self</td>
+                <td>Methods returning class instance</td>
+            </tr>
+            <tr>
+                <td>ParamSpec / TypeVar</td>
+                <td>Advanced generic functions</td>
+            </tr>
+            <tr>
+                <td>Annotated</td>
+                <td>Add metadata to types</td>
+            </tr>
+            <tr>
+                <td>Type Aliases</td>
+                <td>Give names to complex types</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
