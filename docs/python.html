@@ -130,7 +130,8 @@
         <li><a href="#python-text">Python Text (Strings)</a></li>
         <li><a href="#python-lists">Python Lists</a></li>
         <li><a href="#python-type-annotations">Python Type Annotations</a></li>
-        <li><a href="#python-protocol">Python Protocols</a></li>
+        <li><a href="#python-protocol"><code>Protocol</code></a></li>
+        <li><a href="#python-typeddict"><code>TypedDict</code></a></li>
     </ul>
 </nav>
 <hr/>
@@ -2465,7 +2466,6 @@ def sort_with(nums: list[int], comp: Comparator) -&gt; None:
 
     <br/><br/>
 </ol>
-
 <!-- * * * * * * * * * * * * * * -->
 
 
@@ -2473,7 +2473,360 @@ def sort_with(nums: list[int], comp: Comparator) -&gt; None:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-typeddict">Python <code>TypedDict</code></h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>TypedDict</code> (introduced in PEP 589) allows you to define <b>dictionaries with a fixed structure</b> — specific keys and specific value types.</li>
+        <br/>
+        <li>It is extremely useful when you want dict-like objects but with the type safety of data classes.</li>
+        <br/>
+        <li>Unlike <code>dataclasses</code>, <code>TypedDict</code> remains a regular <b>dict at runtime</b> and does not enforce types — checkers like <code>mypy</code>, <code>pyright</code>, and <code>ruff</code> enforce it statically.</li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Basic Usage</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import TypedDict
+
+class User(TypedDict):
+    id: int
+    name: str
+    email: str
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Create instances like normal dicts:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">u: User = {
+    "id": 1,
+    "name": "Alice",
+    "email": "alice@example.com"
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>TypedDict Enforces Key Presence</b></li>
+    <br/>
+    <ul>
+        <li>Missing required keys → static type error:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">bad_user: User = {
+    "id": 1,
+    "name": "Alice"
+}   # ❌ error: missing key "email"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Extra keys → static type error:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">wrong: User = {
+    "id": 1,
+    "name": "Alice",
+    "email": "a@x.com",
+    "age": 23
+}   # ❌ error: extra key "age"
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Optional Keys</b></li>
+    <br/>
+    <ul>
+        <li>Option 1: Annotate key as optional value:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class User(TypedDict):
+    id: int
+    name: str
+    email: str | None   # value may be None
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Option 2: Mark the entire key as optional using <code>total=False</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class PartialUser(TypedDict, total=False):
+    id: int
+    name: str
+    email: str
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Now all keys are optional.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">p: PartialUser = {}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Mixing Required and Optional Keys</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class User(TypedDict):
+    id: int
+    name: str
+
+class UserExtra(TypedDict, total=False):
+    email: str
+    age: int
+</code></pre>
+
+    <ul>
+        <li>You can also combine required and optional keys inside one definition (Python 3.11+ style):</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class User(TypedDict):
+    id: int
+    name: str
+    email: str | None   # optional value, key still required
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Readonly Keys (Python 3.12+)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import TypedDict, NotRequired, ReadOnly
+
+class Config(TypedDict):
+    version: ReadOnly[int]
+    debug: NotRequired[bool]
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>version</code> is readonly for static checking.</li>
+    </ul>
+    <br/><br/><br/>
+
+
+
+    <li><b>TypedDict with Inheritance</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class BaseUser(TypedDict):
+    id: int
+    name: str
+
+class FullUser(BaseUser):
+    email: str
+    age: int
+</code></pre>
+    <br/>
+    <ul>
+        <li><code>FullUser</code> now includes all keys of <code>BaseUser</code>.</li>
+    </ul>
+    <br/><br/><br/>
+
+
+
+    <li><b>TypedDict vs Dataclass</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>TypedDict</th>
+                <th>Dataclass</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Runtime type</td>
+                <td>Just a dict</td>
+                <td>Custom class</td>
+            </tr>
+            <tr>
+                <td>Allows missing keys?</td>
+                <td>No (unless <code>total=False</code>)</td>
+                <td>Yes (default values)</td>
+            </tr>
+            <tr>
+                <td>Fast creation?</td>
+                <td>Yes (dict)</td>
+                <td>Slower (object)</td>
+            </tr>
+            <tr>
+                <td>Attribute access</td>
+                <td>Key-based (<code>d["key"]</code>)</td>
+                <td>Dot-access (<code>d.key</code>)</td>
+            </tr>
+            <tr>
+                <td>Static type checking</td>
+                <td>Strong</td>
+                <td>Strong</td>
+            </tr>
+            <tr>
+                <td>Serialization (JSON)</td>
+                <td>Easy</td>
+                <td>Requires conversion</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>TypedDict with Functions</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def process_user(user: User) -&gt; None:
+    print(user["id"], user["name"])
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>TypedDict for API Responses</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class ApiResponse(TypedDict):
+    status: int
+    data: dict[str, str]
+</code></pre>
+
+<pre><code class="language-python line-numbers">response: ApiResponse = {
+    "status": 200,
+    "data": {"id": "123"}
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Nesting TypedDicts</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class Profile(TypedDict):
+    bio: str
+    github: str
+
+class User(TypedDict):
+    id: int
+    profile: Profile
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>TypedDict with Literal Types</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import Literal
+
+class Event(TypedDict):
+    type: Literal["click", "keypress"]
+    payload: dict[str, str]
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Total=False Default Behavior</b></li>
+    <br/>
+    <ul>
+        <li>You can flip the default — make keys optional unless stated otherwise:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Partial(TypedDict, total=False):
+    required: int
+    # everything here is optional
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using TypedDict with <code>**kwargs</code></b></li>
+    <br/>
+<pre><code class="language-python line-numbers">def create_user(**kwargs: User) -&gt; User:
+    return kwargs
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Runtime Representation</b></li>
+    <br/>
+    <ul>
+        <li><code>TypedDict</code> is still a normal dictionary:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">u: User = {"id": 1, "name": "Alice", "email": "a@x.com"}
+
+print(type(u))    # &lt;class 'dict'&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>TypedDict</code></td>
+                <td>Dictionary with predefined keys and value types</td>
+            </tr>
+            <tr>
+                <td>Required keys</td>
+                <td>All keys required unless <code>total=False</code></td>
+            </tr>
+            <tr>
+                <td>Optional keys</td>
+                <td>Via <code>total=False</code> or optional values</td>
+            </tr>
+            <tr>
+                <td>Runtime representation</td>
+                <td>Still a plain dict, only static checks apply</td>
+            </tr>
+            <tr>
+                <td>Supports inheritance</td>
+                <td>Extend dictionary definitions</td>
+            </tr>
+            <tr>
+                <td>Common use cases</td>
+                <td>API schemas, config objects, JSON-like data</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
