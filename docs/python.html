@@ -138,6 +138,7 @@
         <li><a href="#python-lambda">Lambda Expressions</a></li>
         <li><a href="#python-docstrings">Documentation Strings</a></li>
         <li><a href="#python-function-annotations">Function Annotations</a></li>
+        <li><a href="#python-tuples-sequences">Tuples and Sequences</a></li>
     </ul>
 </nav>
 <hr/>
@@ -4584,7 +4585,335 @@ def scale(x: Annotated[int, "positive"]) -> int:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-tuples-sequences">Python Tuples and Sequences</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Python provides several built-in <b>sequence types</b>: <code>list</code>, <code>tuple</code>, <code>range</code>, <code>str</code>, as well as specialized ones like <code>bytes</code> and <code>bytearray</code>.</li>
+        <br/>
+        <li>A <b>sequence</b> is an ordered collection of items with indexing, slicing, iteration, and length operations.</li>
+        <br/>
+        <li>This chapter focuses mainly on <b>tuples</b> but also covers general sequence behavior shared across all sequence types.</li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>What Is a Tuple?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>tuple</b> is an <b>immutable</b> ordered collection of items.</li>
+        <li>You cannot modify, add, or remove items once created.</li>
+        <li>They are often used to represent fixed-size records or return multiple values from functions.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">t = (1, 2, 3)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Creating Tuples</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers"># Parentheses (typical)
+t1 = (1, 2, 3)
+
+# Without parentheses (tuple packing)
+t2 = 4, 5, 6
+
+# Empty tuple
+t3 = ()
+
+# Single-element tuple (comma is required!)
+single = (42,)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Python automatically creates tuples when using comma-separated values. Parentheses are optional but encouraged for clarity.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Tuple Indexing and Slicing</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">t = (10, 20, 30, 40)
+
+print(t[0])   # 10
+print(t[-1])  # 40
+
+print(t[1:3]) # (20, 30)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Immutability</b></li>
+    <br/>
+    <ul>
+        <li>You cannot change tuple elements after creation:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">t = (1, 2, 3)
+t[1] = 99     # ❌ TypeError
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>But tuples can contain mutable objects, which <i>can</i> be changed inside:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">t = ([1, 2], 3)
+t[0].append(99)
+print(t)      # ([1, 2, 99], 3)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Tuple Unpacking</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">x, y, z = (10, 20, 30)
+
+print(x)  # 10
+print(y)  # 20
+print(z)  # 30
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Extended Unpacking (PEP 3132)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">a, *b = (1, 2, 3, 4)
+print(a)  # 1
+print(b)  # [2, 3, 4]
+
+*a, b = (1, 2, 3, 4)
+print(a)  # [1, 2, 3]
+print(b)  # 4
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Tuples as Return Values</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def stats():
+    return (10, 20, 30)
+
+x, y, z = stats()
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Functions frequently return multiple values using tuples.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Why Use Tuples Instead of Lists?</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Reason</th>
+                <th>Explanation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Immutability</td>
+                <td>Protects data from accidental changes</td>
+            </tr>
+            <tr>
+                <td>Hashability</td>
+                <td>Tuples can be used as dict keys (if elements are hashable)</td>
+            </tr>
+            <tr>
+                <td>Performance</td>
+                <td>Slightly faster and smaller than lists</td>
+            </tr>
+            <tr>
+                <td>Semantic meaning</td>
+                <td>Represents a fixed structure, like a row or coordinate</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Tuple Methods</b></li>
+    <br/>
+    <ul>
+        <li>Only two built-in methods:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">t.count(value)
+t.index(value)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Nested and Structured Tuples</b></li>
+    <br/>
+    <ul>
+        <li>Useful for representing structured information.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">point = (10, 20)
+rect = (point, (30, 40))  # nested
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Sequences: Common Operations</b></li>
+    <br/>
+    <ul>
+        <li>All sequences support:</li>
+        <ul>
+            <li>Length: <code>len(seq)</code></li>
+            <li>Indexing: <code>seq[i]</code></li>
+            <li>Slicing: <code>seq[a:b]</code></li>
+            <li>Iteration: <code>for x in seq</code></li>
+            <li>Membership: <code>x in seq</code></li>
+            <li>Concatenation: <code>seq1 + seq2</code></li>
+            <li>Repetition: <code>seq * 3</code></li>
+        </ul>
+    </ul>
+
+<pre><code class="language-python line-numbers">seq = (1, 2, 3)
+print(len(seq))
+print(2 in seq)
+print(seq + (4, 5))
+print(seq * 2)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Tuple vs Sequence vs Iterable</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Iterable</td>
+                <td>Anything usable in a <code>for</code> loop</td>
+            </tr>
+            <tr>
+                <td>Sequence</td>
+                <td>Ordered iterable with indexing and slicing</td>
+            </tr>
+            <tr>
+                <td>Tuple</td>
+                <td>An immutable sequence</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Tuple Type Annotations</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers"># fixed size
+point: tuple[int, int] = (10, 20)
+
+# variable length
+numbers: tuple[int, ...] = (1, 2, 3, 4)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Common Use Cases of Tuples</b></li>
+    <br/>
+
+    <ul>
+        <li>Returning multiple values from functions</li>
+        <li>Representing records (immutable data)</li>
+        <li>Coordinates and geometric data</li>
+        <li>Dictionary keys</li>
+        <li>Unpacking assignments</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Tuple</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Mutability</td>
+                <td>Immutable</td>
+            </tr>
+            <tr>
+                <td>Ordering</td>
+                <td>Preserved</td>
+            </tr>
+            <tr>
+                <td>Indexing / slicing</td>
+                <td>Supported</td>
+            </tr>
+            <tr>
+                <td>Performance</td>
+                <td>Faster and smaller than lists</td>
+            </tr>
+            <tr>
+                <td>Common use</td>
+                <td>Fixed-size structures, multiple return values</td>
+            </tr>
+            <tr>
+                <td>Hashable?</td>
+                <td>Yes, if all elements are hashable</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
