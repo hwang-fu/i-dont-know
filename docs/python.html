@@ -134,6 +134,7 @@
         <li><a href="#python-typeddict"><code>TypedDict</code></a></li>
         <li><a href="#python-type-checkers">Type Checkers: mypy, pyright, and ruff</a></li>
         <li><a href="#python-special-function-parameters">Special Parameters</a></li>
+        <li><a href="#python-range"><code>range</code></a></li>
     </ul>
 </nav>
 <hr/>
@@ -3347,7 +3348,312 @@ func(1, 2, 3, x=10, y=20)
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-range">Python <code>range</code></h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>range</code> is a built-in Python type used to generate arithmetic sequences of integers.</li>
+        <br/>
+        <li>It is commonly used in loops, iterations, indexing, and algorithmic logic.</li>
+        <br/>
+        <li><code>range</code> objects are:</li>
+        <ul>
+            <li><b>immutable</b></li>
+            <li><b>lazy</b> (values are produced on demand)</li>
+            <li><b>memory efficient</b> even for large sequences</li>
+        </ul>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Basic Forms of <code>range</code></b></li>
+    <br/>
+    <ul>
+        <li><code>range(stop)</code></li>
+        <li><code>range(start, stop)</code></li>
+        <li><code>range(start, stop, step)</code></li>
+    </ul>
+
+<pre><code class="language-python line-numbers">range(5)            # 0, 1, 2, 3, 4
+range(2, 7)         # 2, 3, 4, 5, 6
+range(1, 10, 2)     # 1, 3, 5, 7, 9
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Range Objects Don’t Produce Lists</b></li>
+    <br/>
+    <ul>
+        <li><code>range</code> itself does not store all values.</li>
+        <li>To see the actual numbers, convert it:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">list(range(5))
+# [0, 1, 2, 3, 4]
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Default Behavior</b></li>
+    <br/>
+    <ul>
+        <li><b>start</b> defaults to 0</li>
+        <li><b>step</b> defaults to +1</li>
+        <li>The <code>stop</code> value is <b>exclusive</b></li>
+    </ul>
+
+<pre><code class="language-python line-numbers">range(4)     # 0, 1, 2, 3  (never reaches 4)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>range</code> in Loops</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">for i in range(3):
+    print(i)
+</code></pre>
+    <ul><li>Output:</li></ul>
+
+<pre><code class="language-python">0
+1
+2
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>range</code> with <code>start</code> and <code>stop</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">for i in range(5, 10):
+    print(i)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>step</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">range(0, 10, 2)   # even numbers: 0,2,4,6,8
+range(1, 10, 2)   # odd numbers: 1,3,5,7,9
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Negative Step (Counting Backward)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">range(10, 0, -1)     # 10, 9, 8, ..., 1
+range(5, -6, -2)     # 5, 3, 1, -1, -3, -5
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>When using a negative step, <code>stop</code> must be <b>less than</b> <code>start</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Ranges with Zero or Invalid Steps</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">range(0, 10, 0)    # ❌ error: step cannot be zero
+</code></pre>
+
+    <ul><li>Step must be non-zero — either positive or negative.</li></ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Range is Lazy and Efficient</b></li>
+    <br/>
+    <ul>
+        <li><code>range(1_000_000_000)</code> uses the same memory as <code>range(5)</code>.</li>
+        <li>No list of numbers is stored — values are computed when needed.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">r = range(1_000_000_000)
+print(len(r))      # works instantly!
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Membership Testing (<code>in</code>)</b></li>
+    <br/>
+    <ul>
+        <li><code>range</code> supports fast membership tests:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">5 in range(10)         # True
+9 in range(1, 10, 2)   # False
+</code></pre>
+
+    <ul>
+        <li>It does this mathematically, without iterating.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Indexing and Slicing</b></li>
+    <br/>
+    <ul>
+        <li>Range objects support indexing:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">r = range(10, 20)
+print(r[0])    # 10
+print(r[5])    # 15
+print(r[-1])   # 19
+</code></pre>
+
+    <br/>
+    <ul><li>Ranges can also be sliced, resulting in another <code>range</code>:</li></ul>
+
+<pre><code class="language-python line-numbers">r = range(0, 20, 2)  # 0,2,4,...18
+print(r[2:6])         # range(4, 12, 2)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Common Patterns with <code>range</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Looping N times</b></li>
+    </ul>
+
+<pre><code class="language-python line-numbers">for _ in range(3):
+    print("hi")
+</code></pre>
+
+    <br/>
+
+    <ul><li><b>Indexing lists</b></li></ul>
+
+<pre><code class="language-python line-numbers">names = ["Anna", "Ben", "Carl"]
+for i in range(len(names)):
+    print(i, names[i])
+</code></pre>
+
+    <br/>
+
+    <ul><li><b>Reversed loops</b></li></ul>
+
+<pre><code class="language-python line-numbers">for i in range(10, -1, -1):
+    print(i)
+</code></pre>
+
+    <br/>
+
+    <ul><li><b>Generating arithmetic sequences</b></li></ul>
+
+<pre><code class="language-python line-numbers">evens = list(range(0, 21, 2))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Comparison of List vs Range</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Operation</th>
+                <th>list(range)</th>
+                <th>range</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Memory usage</td>
+                <td>Large (stores all values)</td>
+                <td>Tiny (three integers only)</td>
+            </tr>
+            <tr>
+                <td>Speed of iteration</td>
+                <td>Fast</td>
+                <td>Fast</td>
+            </tr>
+            <tr>
+                <td>Supports slicing</td>
+                <td>Yes</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Supports membership test</td>
+                <td>Linear search</td>
+                <td>Constant-time math</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Lazy</td>
+                <td>No list stored; values computed when needed</td>
+            </tr>
+            <tr>
+                <td>Efficient</td>
+                <td>Constant memory usage</td>
+            </tr>
+            <tr>
+                <td>Exclusive stop</td>
+                <td>Sequence stops before the stop value</td>
+            </tr>
+            <tr>
+                <td>Step</td>
+                <td>Can count upward or downward</td>
+            </tr>
+            <tr>
+                <td>Supports slicing</td>
+                <td>Slicing returns a new range</td>
+            </tr>
+            <tr>
+                <td>Constant-time membership</td>
+                <td>Efficient mathematical check</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
