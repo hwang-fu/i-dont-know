@@ -135,6 +135,7 @@
         <li><a href="#python-type-checkers">Type Checkers: mypy, pyright, and ruff</a></li>
         <li><a href="#python-special-function-parameters">Special Parameters</a></li>
         <li><a href="#python-range"><code>range</code></a></li>
+        <li><a href="#python-lambda">Lambda Expressions</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3654,6 +3655,293 @@ for i in range(len(names)):
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-lambda">Python Lambda Expressions</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <code>lambda</code> expression in Python creates a small, anonymous function.</li>
+        <br/>
+        <li>Lambdas are useful when you need a short function for a brief moment and do not want to define a full <code>def</code> block.</li>
+        <br/>
+        <li>However, they are intentionally limited: a lambda can contain only <b>one expression</b> (no statements).</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Basic Syntax</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">lambda arguments: expression
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">add = lambda a, b: a + b
+print(add(3, 4))   # 7
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is equivalent to:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def add(a, b):
+    return a + b
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Single Expression Only</b></li>
+    <br/>
+    <ul>
+        <li>The body must be a single expression — not statements, loops, assignments, or annotations.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">lambda x: x * 2           # OK
+lambda x: print(x)        # OK (print is an expression here)
+
+lambda x: y = x + 1       # ❌ error (assignment is not allowed)
+lambda x: for i in ...    # ❌ cannot contain loops
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Zero-Argument Lambdas</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">noop = lambda: None
+noop()
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Lambdas with Default Values</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">f = lambda x=10, y=20: x + y
+print(f())       # 30
+print(f(5))      # 25
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Lambdas Returning Other Lambdas</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">make_multiplier = lambda n: (lambda x: x * n)
+times3 = make_multiplier(3)
+print(times3(10))   # 30
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Lambdas in <code>sorted()</code></b></li>
+    <br/>
+    <ul>
+        <li>A common use case is providing a custom sorting key.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">names = ["alice", "Bob", "carol"]
+sorted_names = sorted(names, key=lambda s: s.lower())
+print(sorted_names)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Lambdas in <code>map()</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">nums = [1, 2, 3]
+doubled = list(map(lambda n: n * 2, nums))
+print(doubled)   # [2, 4, 6]
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Lambdas in <code>filter()</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">nums = [1, 2, 3, 4, 5]
+evens = list(filter(lambda n: n % 2 == 0, nums))
+print(evens)     # [2, 4]
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Lambdas in <code>reduce()</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from functools import reduce
+
+nums = [1, 2, 3, 4]
+total = reduce(lambda a, b: a + b, nums)
+print(total)     # 10
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Lambdas in Dictionary Structures</b></li>
+    <br/>
+    <ul>
+        <li>Useful for defining small callback tables or dispatch maps:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">actions = {
+    "square": lambda x: x * x,
+    "cube": lambda x: x * x * x,
+}
+
+print(actions)   # 27
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Lambdas in UI / Callback Code</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def on_click(callback):
+    callback()
+
+on_click(lambda: print("Clicked!"))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Lambdas with Closures</b></li>
+    <br/>
+    <ul><li>Lambdas capture variables from the surrounding scope.</li></ul>
+
+<pre><code class="language-python line-numbers">def make_add(n):
+    return lambda x: x + n
+
+add5 = make_add(5)
+print(add5(10))   # 15
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Lambdas vs Named Functions</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>lambda</th>
+                <th>def function</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Has a name?</td>
+                <td>No</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Multiple statements?</td>
+                <td>No</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Main usage</td>
+                <td>Short, throwaway functions</td>
+                <td>Larger or reusable logic</td>
+            </tr>
+            <tr>
+                <td>Debug readability</td>
+                <td>Poor</td>
+                <td>Good</td>
+            </tr>
+            <tr>
+                <td>Syntax</td>
+                <td>Single expression</td>
+                <td>Block with <code>return</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Anonymous</td>
+                <td><code>lambda</code> defines short unnamed functions</td>
+            </tr>
+            <tr>
+                <td>Single expression</td>
+                <td>No blocks, no loops, no assignments</td>
+            </tr>
+            <tr>
+                <td>Common uses</td>
+                <td><code>sorted</code>, <code>map</code>, <code>filter</code>, callbacks</td>
+            </tr>
+            <tr>
+                <td>Readability</td>
+                <td>Good for small tasks, bad for complex logic</td>
+            </tr>
+            <tr>
+                <td>Alternatives</td>
+                <td>Use <code>def</code> for named, clearer functions</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
