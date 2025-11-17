@@ -152,6 +152,7 @@
         <li><a href="#python-output">Output</a></li>
         <li><a href="#python-rw-files">R/W Files</a></li>
         <li><a href="#python-errors-exceptions">Errors and Exceptions</a></li>
+        <li><a href="#python-custom-exceptions">Custom Exceptions</a></li>
     </ul>
 </nav>
 <hr/>
@@ -9020,6 +9021,349 @@ BaseException
             <tr>
                 <td>Custom exceptions</td>
                 <td>Define your own error types</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-custom-exceptions">Custom Exceptions in Python</h3>
+<ol>
+    <li><b>Why Define Custom Exceptions?</b></li>
+    <br/>
+    <ul>
+        <li>Built-in exceptions like <code>ValueError</code>, <code>TypeError</code>, <code>FileNotFoundError</code> are generic.</li>
+        <br/>
+        <li>In non-trivial programs, you often want to distinguish:
+            <ul>
+                <li><code>InvalidUserInputError</code></li>
+                <li><code>ConfigNotFoundError</code></li>
+                <li><code>PaymentFailedError</code></li>
+                <li><code>RateLimitExceededError</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Basic Custom Exception</b></li>
+    <br/>
+    <ul>
+        <li>All user-defined exceptions should ultimately inherit from <code>Exception</code> (not from <code>BaseException</code>).</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class MyError(Exception):
+    pass
+
+def do_stuff():
+    raise MyError("Something went wrong!")
+
+try:
+    do_stuff()
+except MyError as e:
+    print("Caught MyError:", e)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>pass</code> is enough if you do not need extra attributes.</li>
+        <li>The message is passed to the base <code>Exception</code> class.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Adding Custom Information</b></li>
+    <br/>
+    <ul>
+        <li>You can store extra context on the exception object:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class ConfigError(Exception):
+    def __init__(self, key: str, message: str):
+        self.key = key
+        self.message = message
+        super().__init__(f"[{key}] {message}")
+
+def load_config(key: str) -&gt; str:
+    # imagine it fails
+    raise ConfigError(key, "Missing configuration value")
+
+try:
+    load_config("DB_HOST")
+except ConfigError as e:
+    print("Config error for key:", e.key)
+    print("Details:", e.message)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Pattern:
+            <ul>
+                <li>Store raw data in attributes (<code>key</code>, <code>code</code>, etc.)</li>
+                <li>Pass a human-readable message to <code>super().__init__</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Exception Hierarchies for a Project</b></li>
+    <br/>
+    <ul>
+        <li>For a bigger project or library, define a base exception and derive others from it:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class AppError(Exception):
+    """Base class for all application-specific errors."""
+    pass
+
+class DatabaseError(AppError):
+    pass
+
+class NotFoundError(AppError):
+    pass
+
+class PermissionDeniedError(AppError):
+    pass
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This allows:
+            <ul>
+                <li>catching a specific error &rarr; <code>DatabaseError</code></li>
+                <li>catching all app errors &rarr; <code>AppError</code></li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-python line-numbers">try:
+    ...
+except NotFoundError:
+    print("Item not found, show 404")
+
+except AppError:
+    print("Some other app-level error")</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Choosing Good Exception Names</b></li>
+    <br/>
+    <ul>
+        <li>Use clear, descriptive names ending with <code>Error</code>:
+            <ul>
+                <li><code>InvalidStateError</code></li>
+                <li><code>AuthenticationError</code></li>
+                <li><code>RateLimitError</code></li>
+                <li><code>TimeoutError</code> (already exists in stdlib)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Make it obvious what went wrong just from the class name.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Wrapping Lower-Level Exceptions</b></li>
+    <br/>
+    <ul>
+        <li>Often you want to convert low-level exceptions (e.g. <code>OSError</code>) into your own domain exceptions.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class StorageError(Exception):
+    pass
+
+def read_user_file(path: str) -&gt; str:
+    try:
+        with open(path) as f:
+            return f.read()
+    except OSError as e:
+        # wrap OS error in a domain-specific one
+        raise StorageError(f"Could not read {path}") from e
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Using <code>raise ... from e</code>:
+            <ul>
+                <li>preserves the original traceback as the <b>cause</b></li>
+                <li>shows both high-level and low-level errors in logs</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Custom Exceptions and <code>__str__</code> / <code>__repr__</code></b></li>
+    <br/>
+    <ul>
+        <li>You can override <code>__str__</code> to control how the error is displayed:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class ApiError(Exception):
+    def __init__(self, status: int, message: str):
+        self.status = status
+        self.message = message
+        super().__init__(message)
+
+    def __str__(self) -&gt; str:
+        return f"API error {self.status}: {self.message}"
+
+raise ApiError(404, "Resource not found")
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Now <code>print(e)</code> shows a friendly message.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Custom Exceptions with Extra Context</b></li>
+    <br/>
+    <ul>
+        <li>You can attach more structured information, not only text:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class ValidationError(Exception):
+    def __init__(self, field: str, errors: list[str]):
+        self.field = field
+        self.errors = errors
+        message = f"Validation failed for '{field}': {', '.join(errors)}"
+        super().__init__(message)
+
+try:
+    raise ValidationError("email", ["missing '@'", "too short"])
+except ValidationError as e:
+    print(e.field)      # email
+    print(e.errors)     # ["missing '@'", "too short"]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is useful when your caller needs to inspect error details programmatically (e.g., web API validation).</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Where to Put Custom Exceptions in a Project</b></li>
+    <br/>
+    <ul>
+        <li>In small scripts: define them near where they are used.</li>
+        <br/>
+        <li>In larger projects or libraries:
+            <ul>
+                <li>put them in a dedicated module like <code>errors.py</code> or <code>exceptions.py</code></li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-text line-numbers">myapp/
+    __init__.py
+    exceptions.py   # all custom exception classes
+    models.py
+    services.py
+</code></pre>
+
+<pre><code class="language-python line-numbers"># exceptions.py
+class MyAppError(Exception):
+    pass
+
+class AuthError(MyAppError):
+    pass
+
+# services.py
+from .exceptions import AuthError
+
+def login(user, password):
+    if not valid(user, password):
+        raise AuthError("Invalid credentials")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Best Practices</b></li>
+    <br/>
+    <ul>
+        <li><b>Always</b> inherit from <code>Exception</code> (or a subclass), not from <code>BaseException</code>.</li>
+        <br/>
+        <li>Use a <b>base exception</b> for your package or app:
+            <ul>
+                <li><code>MyLibError</code>, <code>MyAppError</code>, etc.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Do not overuse custom exceptions:
+            <ul>
+                <li>Sometimes <code>ValueError</code> or <code>TypeError</code> is enough.</li>
+                <li>Create a custom class when:
+                    <ul>
+                        <li>you need to distinguish it from standard errors</li>
+                        <li>it encodes a specific domain concept</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <br/>
+        <li>Use <code>raise ... from e</code> when wrapping other exceptions.</li>
+        <br/>
+        <li>Give meaningful messages and store raw data as attributes.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Aspect</th>
+                <th>Recommendation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Base class</td>
+                <td>Inherit from <code>Exception</code> (or a library-specific base error)</td>
+            </tr>
+            <tr>
+                <td>Naming</td>
+                <td>End with <code>Error</code>, be descriptive (e.g. <code>ConfigError</code>)</td>
+            </tr>
+            <tr>
+                <td>Hierarchy</td>
+                <td>Create a root <code>AppError</code> / <code>MyLibError</code> and derive others</td>
+            </tr>
+            <tr>
+                <td>Extra data</td>
+                <td>Store extra fields in attributes; pass a friendly message to <code>super().__init__</code></td>
+            </tr>
+            <tr>
+                <td>Wrapping</td>
+                <td>Use <code>raise NewError(...) from e</code> to keep original cause</td>
+            </tr>
+            <tr>
+                <td>Location</td>
+                <td>Large projects: put them in <code>exceptions.py</code> / <code>errors.py</code></td>
             </tr>
         </tbody>
     </table>
