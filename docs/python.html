@@ -153,6 +153,7 @@
         <li><a href="#python-rw-files">R/W Files</a></li>
         <li><a href="#python-errors-exceptions">Errors and Exceptions</a></li>
         <li><a href="#python-custom-exceptions">Custom Exceptions</a></li>
+        <li><a href="#python-classes">Classes</a></li>
     </ul>
 </nav>
 <hr/>
@@ -9364,6 +9365,456 @@ def login(user, password):
             <tr>
                 <td>Location</td>
                 <td>Large projects: put them in <code>exceptions.py</code> / <code>errors.py</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-classes">Python Classes</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Classes are the foundation of object-oriented programming (OOP) in Python.</li>
+        <br/>
+        <li>A class defines:
+            <ul>
+                <li>what data an object has (attributes)</li>
+                <li>what an object can do (methods)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>A class is like a blueprint, an object (instance) is a specific realization of that blueprint.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Creating a Class</b></li>
+<pre><code class="language-python line-numbers">class Person:
+    pass
+</code></pre>
+    <ul>
+        <li>This defines a class called <code>Person</code> but with no attributes or methods yet.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Instantiating (Creating Objects)</b></li>
+<pre><code class="language-python line-numbers">p = Person()
+print(p)</code></pre>
+    <ul>
+        <li>Calling the class creates a new instance.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>The <code>__init__</code> Method (Constructor)</b></li>
+    <br/>
+    <ul>
+        <li>The constructor initializes new objects.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Person:
+    def __init__(self, name, age):
+        self.name = name    # instance attribute
+        self.age = age
+
+p = Person("Alice", 25)
+print(p.name)
+print(p.age)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>self</code> refers to the instance being created.</li>
+        <li>Attributes like <code>self.name</code> belong to each object separately.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Instance Attributes</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+p1 = Point(1, 2)
+p2 = Point(10, 20)
+
+print(p1.x, p2.x)
+</code></pre>
+    <ul>
+        <li>Each object has its own independent attributes.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Instance Methods</b></li>
+    <br/>
+    <ul>
+        <li>Methods are functions that belong to a class.</li>
+        <li>They always take <code>self</code> as the first argument.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Circle:
+    def __init__(self, radius):
+        self.radius = radius
+
+    def area(self):
+        return 3.14 * self.radius * self.radius
+
+c = Circle(5)
+print(c.area())
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Class Attributes</b></li>
+    <br/>
+    <ul>
+        <li>Class attributes are shared by all instances.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Dog:
+    species = "Canis lupus familiaris"   # class attribute
+
+    def __init__(self, name):
+        self.name = name     # instance attribute
+
+d1 = Dog("Buddy")
+d2 = Dog("Charlie")
+
+print(d1.species, d2.species, Dog.species)
+</code></pre>
+    <ul>
+        <li>Instance attributes override class attributes with the same name.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Methods vs Attributes (Key Concept)</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Stored Where?</th>
+                <th>Shared?</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Instance Attributes</td>
+                <td>Inside each object</td>
+                <td>No</td>
+            </tr>
+            <tr>
+                <td>Class Attributes</td>
+                <td>On the class itself</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Methods</td>
+                <td>On the class (as functions)</td>
+                <td>Shared by all instances</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Special Methods (Dunder Methods)</b></li>
+    <br/>
+    <ul>
+        <li>Python classes can override special methods to control built-in behavior.</li>
+        <li>Some common examples:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Person:
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return f"Person({self.name})"
+
+    def __repr__(self):
+        return f"Person(name={self.name!r})"
+
+p = Person("Alice")
+print(p)        # calls __str__
+print([p])      # calls __repr__
+</code></pre>
+
+    <br/>
+
+        <li><b>Other useful dunders:</b></li>
+    <ul>
+        <li><code>__len__</code>: length() behavior</li>
+        <li><code>__eq__</code>: == operator</li>
+        <li><code>__lt__</code>, <code>__gt__</code>: ordering</li>
+        <li><code>__add__</code>, <code>__mul__</code>: operator overloading</li>
+        <li><code>__enter__</code>, <code>__exit__</code>: context managers</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Class Methods</b></li>
+    <br/>
+    <ul>
+        <li>Defined with <code>@classmethod</code>.</li>
+        <li>Receive the class (<code>cls</code>) instead of an object (<code>self</code>).</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class User:
+    count = 0
+
+    def __init__(self):
+        User.count += 1
+
+    @classmethod
+    def how_many(cls):
+        return cls.count
+
+print(User.how_many())</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Static Methods</b></li>
+    <br/>
+    <ul>
+        <li>Defined with <code>@staticmethod</code>.</li>
+        <li>No <code>self</code> and no <code>cls</code>.</li>
+        <li>Just a function living inside a class namespace.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Math:
+    @staticmethod
+    def add(a, b):
+        return a + b
+
+print(Math.add(2, 3))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Inheritance</b></li>
+    <br/>
+    <ul>
+        <li>One class can inherit from another to reuse behavior.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Animal:
+    def speak(self):
+        return "..."
+
+class Dog(Animal):
+    def speak(self):
+        return "Woof!"
+
+d = Dog()
+print(d.speak())</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Calling the Parent Class</b></li>
+<pre><code class="language-python line-numbers">class Person:
+    def __init__(self, name):
+        self.name = name
+
+class Employee(Person):
+    def __init__(self, name, salary):
+        super().__init__(name)    # calls Person.__init__
+        self.salary = salary
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Multiple Inheritance</b></li>
+    <br/>
+    <ul>
+        <li>Python supports it, but use with caution.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class A: pass
+class B: pass
+class C(A, B): pass
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Method resolution order (MRO) decides lookup order.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Encapsulation / Access Control</b></li>
+    <br/>
+
+    <ul><li><b>Public attribute</b> — free access</li></ul>
+
+<pre><code class="language-python line-numbers">self.name</code></pre>
+
+    <ul><li><b>Protected attribute</b> — convention only</li></ul>
+
+<pre><code class="language-python line-numbers">self._internal_value</code></pre>
+
+    <ul><li><b>Private attribute</b> — name-mangled</li></ul>
+
+<pre><code class="language-python line-numbers">self.__secret</code></pre>
+
+    <br/>
+    <ul>
+        <li>Private attributes become <code>_ClassName__secret</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Properties (Getters/Setters in Pythonic Way)</b></li>
+<pre><code class="language-python line-numbers">class Person:
+    def __init__(self, age):
+        self._age = age
+
+    @property
+    def age(self):
+        return self._age
+
+    @age.setter
+    def age(self, value):
+        if value &lt; 0:
+            raise ValueError("Age cannot be negative")
+        self._age = value
+
+
+
+p = Person(20)
+
+print(p.age)      # uses the @property -&gt; calls age(self)
+# 20
+
+p.age = 25        # uses @age.setter -&gt; calls age(self, 25)
+print(p.age)
+# 25
+
+p.age = -5        # also calls the setter
+# ValueError: Age cannot be negative
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>@property</code> is the Pythonic alternative to Java-style getters/setters.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Dataclasses (Python 3.7+ Convenience)</b></li>
+<pre><code class="language-python line-numbers">from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: int
+    y: int
+
+p = Point(4, 5)
+print(p)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Automatically adds:
+            <ul>
+                <li><code>__init__</code></li>
+                <li><code>__repr__</code></li>
+                <li><code>__eq__</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Instance attribute</td>
+                <td>Per-object data, stored on each instance</td>
+            </tr>
+            <tr>
+                <td>Class attribute</td>
+                <td>Shared across all instances</td>
+            </tr>
+            <tr>
+                <td>Instance method</td>
+                <td>Methods that operate on object state (<code>self</code>)</td>
+            </tr>
+            <tr>
+                <td>Class method</td>
+                <td>Receives <code>cls</code>; often constructors or class utilities</td>
+            </tr>
+            <tr>
+                <td>Static method</td>
+                <td>Namespace-only function inside class</td>
+            </tr>
+            <tr>
+                <td>Dunder methods</td>
+                <td>Customize behavior (printing, math, comparisons, etc.)</td>
+            </tr>
+            <tr>
+                <td>Inheritance</td>
+                <td>Reuse and extend behavior of other classes</td>
+            </tr>
+            <tr>
+                <td>Dataclasses</td>
+                <td>Auto-generated methods for simple data containers</td>
             </tr>
         </tbody>
     </table>
