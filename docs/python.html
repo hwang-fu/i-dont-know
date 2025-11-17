@@ -145,6 +145,7 @@
         <li><a href="#python-modules-intro">Modules Introduction</a></li>
         <li><a href="#python-vs-python3">Python vs Python3</a></li>
         <li><a href="#python-pip">pip / pip3 - Python Package Manager</a></li>
+        <li><a href="#python-packages">Packages</a></li>
     </ul>
 </nav>
 <hr/>
@@ -6886,6 +6887,349 @@ python -m pip cache list     # list cached packages
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-packages">Python Packages</h3>
+<ol>
+    <li><b>What Is a Package?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>package</b> in Python is a <b>directory</b> containing <b>modules</b>.</li>
+        <br/>
+        <li>The directory becomes a <b>package</b> when it contains a file named <code>__init__.py</code> (even if empty).</li>
+        <br/>
+        <li>Packages allow you to structure code into logical groups:
+            <ul>
+                <li><b>modules</b>: single .py files</li>
+                <li><b>packages</b>: directories of modules</li>
+                <li><b>subpackages</b>: nested package folders</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Basic Package Structure</b></li>
+    <br/>
+
+<pre><code class="language-text line-numbers">myproject/
+    mypackage/
+        __init__.py
+        math_utils.py
+        string_utils.py
+    main.py
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>mypackage</code> is now importable because it contains <code>__init__.py</code>.</li>
+        <li>You can access modules inside it through standard import syntax.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Importing from Packages</b></li>
+    <br/>
+    <ul>
+        <li>Import the entire package:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import mypackage
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Import a module inside a package:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from mypackage import math_utils
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Import specific functions or classes:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from mypackage.math_utils import add, multiply
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Import with alias:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import mypackage.string_utils as su
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>The <code>__init__.py</code> File</b></li>
+    <br/>
+    <ul>
+        <li>This file is executed when the package is imported.</li>
+        <li>Purposes:</li>
+        <ul>
+            <li>Indicate that the directory is a package</li>
+            <li>Define package-level variables</li>
+            <li>Expose selected members for import</li>
+            <li>Run initialization logic (not common)</li>
+        </ul>
+    </ul>
+    <br/>
+
+<pre><code class="language-python line-numbers"># mypackage/__init__.py
+
+from .math_utils import add
+from .string_utils import to_upper
+
+VERSION = "1.0.0"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This allows:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from mypackage import add, to_upper
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Package Search Path</b></li>
+    <br/>
+    <ul>
+        <li>When you import a package, Python searches for it in:</li>
+        <ul>
+            <li>The current directory</li>
+            <li>Virtual environment packages</li>
+            <li>System site-packages</li>
+            <li>Directories listed in <code>sys.path</code></li>
+        </ul>
+    </ul>
+
+<pre><code class="language-python line-numbers">import sys
+print(sys.path)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Subpackages</b></li>
+    <br/>
+
+    <ul>
+        <li>You can create deeper hierarchies:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">mypackage/
+    __init__.py
+    data/
+        __init__.py
+        loader.py
+    utils/
+        __init__.py
+        file.py
+        debug.py
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Importing from subpackages:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from mypackage.data.loader import load_csv
+from mypackage.utils.debug import log
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Absolute vs Relative Imports</b></li>
+    <br/>
+    <ul><b>Absolute imports:</b></ul>
+
+<pre><code class="language-python line-numbers">from mypackage.utils.file import read_file
+</code></pre>
+
+    <br/>
+
+    <ul><b>Relative imports:</b></ul>
+
+<pre><code class="language-python line-numbers">from .utils.file import read_file           # same package
+from ..core.helpers import validate_input   # parent package
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Relative imports work only inside packages, not in top-level scripts.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Installing Your Package Locally</b></li>
+    <br/>
+    <ul>
+        <li>Modern Python packaging uses <code>pyproject.toml</code>.</li>
+        <li>Install your package into a virtual environment:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python -m pip install .
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Editable mode (for development):</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python -m pip install -e .
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This means changes in source files update immediately without reinstalling.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Packaging for Distribution</b></li>
+    <br/>
+    <ul>
+        <li>Typical project layout:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">yourpackage/
+    __init__.py
+    module_a.py
+    module_b.py
+pyproject.toml
+README.md
+LICENSE
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Build with:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python -m build
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This generates wheels and sdist files suitable for PyPI.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Namespace Packages (Advanced)</b></li>
+    <br/>
+    <ul>
+        <li>A package <b>without</b> <code>__init__.py</code> is a <b>namespace package</b>.</li>
+        <br/>
+        <li>Namespace packages allow:</li>
+        <ul>
+            <li>splitting a package across multiple directories</li>
+            <li>large plugin systems</li>
+        </ul>
+        <br/>
+        <li>Examples: <code>google.cloud.*</code>, <code>zope.*</code></li>
+    </ul>
+
+<pre><code class="language-text line-numbers">analytics/
+    models/
+        user.py
+    transformations/
+        filter.py
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>If both folders are namespace packages, they combine automatically under <code>analytics</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Module</td>
+                <td>Single <code>.py</code> file</td>
+            </tr>
+            <tr>
+                <td>Package</td>
+                <td>Directory containing <code>__init__.py</code> and modules</td>
+            </tr>
+            <tr>
+                <td>Subpackage</td>
+                <td>Package inside another package</td>
+            </tr>
+            <tr>
+                <td>Absolute import</td>
+                <td><code>from package.module import x</code></td>
+            </tr>
+            <tr>
+                <td>Relative import</td>
+                <td><code>from .module import x</code></td>
+            </tr>
+            <tr>
+                <td>Editable install</td>
+                <td><code>pip install -e .</code></td>
+            </tr>
+            <tr>
+                <td>Namespace package</td>
+                <td>Package without <code>__init__.py</code>, can span multiple dirs</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
