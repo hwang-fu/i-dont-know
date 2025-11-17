@@ -137,6 +137,7 @@
         <li><a href="#python-range"><code>range</code></a></li>
         <li><a href="#python-lambda">Lambda Expressions</a></li>
         <li><a href="#python-docstrings">Documentation Strings</a></li>
+        <li><a href="#python-function-annotations">Function Annotations</a></li>
     </ul>
 </nav>
 <hr/>
@@ -4284,6 +4285,338 @@ This package contains utilities for data analysis.
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-function-annotations">Python Function Annotations</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><b>Function annotations</b> allow you to attach arbitrary metadata to function parameters and return values.</li>
+        <br/>
+        <li>They were introduced in PEP 3107 and are most commonly used for <b>type hints</b> in modern Python.</li>
+        <br/>
+        <li>Annotations do not enforce types at runtime. They are:</li>
+        <ul>
+            <li>for humans</li>
+            <li>for tooling (mypy, pyright, IDEs)</li>
+            <li>accessible at runtime via <code>.__annotations__</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Basic Syntax</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def add(a: int, b: int) -> int:
+    return a + b
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The <code>a: int</code> and <code>b: int</code> parts are <b>parameter annotations</b>.</li>
+        <li>The <code>-> int</code> after the parentheses is the <b>return annotation</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Accessing Annotations at Runtime</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">print(add.__annotations__)
+</code></pre>
+
+<pre><code class="language-python">{
+    'a': int,
+    'b': int,
+    'return': int
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Annotations Are Not Enforced</b></li>
+    <br/>
+    <ul>
+        <li>Python does not check annotated types automatically.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">add("hello", "world")   # Works (but might not be meaningful)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Type checking is done by external tools such as mypy or pyright.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Annotating Optional and Default Arguments</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def greet(name: str = "World") -> str:
+    return f"Hello, {name}!"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Annotations and default values coexist naturally.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Annotating *args and **kwargs</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def func(*args: int, **kwargs: str) -> None:
+    pass
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This means: each positional arg should be <code>int</code>, each keyword arg should be <code>str</code>.</li>
+        <li>However, Python does not enforce this automatically.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Forward References</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes you must reference a type that has not been defined yet (e.g., class below).</li>
+        <li>Use a string literal for the annotation:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def parse(user: "User") -> "Result":
+    ...
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>PEP 563 allows delayed evaluation; Python 3.11+ enables it by default using <code>from __future__ import annotations</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Annotations Beyond Types</b></li>
+    <br/>
+    <ul>
+        <li>Annotations can hold <b>any Python object</b>: values, classes, custom markers.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def process(x: "database_id", y: list) -> "status":
+    pass
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Frameworks sometimes overload annotations for validation or routing (e.g. FastAPI).</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Annotating Collections</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>list[int]</code>, <code>dict[str, int]</code>, etc. in Python 3.9+</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def average(nums: list[float]) -> float:
+    return sum(nums) / len(nums)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Union Types</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def load(config: str | None) -> str:
+    return config or "default"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>|</code> is preferred over <code>typing.Union</code> since Python 3.10.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Callable Annotations</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import Callable
+
+def apply(f: Callable[[int, int], int], x: int, y: int) -> int:
+    return f(x, y)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>Annotated</code> for Metadata</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from typing import Annotated
+
+def scale(x: Annotated[int, "positive"]) -> int:
+    return x
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Allows attaching hints beyond type information.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Return Type of <code>None</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def log(msg: str) -> None:
+    print(msg)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Typical Misunderstandings</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Misunderstanding</th>
+                <th>Explanation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>"Annotations enforce types"</td>
+                <td>They do not — Python ignores them at runtime unless tools check them.</td>
+            </tr>
+            <tr>
+                <td>"Annotations must be types"</td>
+                <td>No — any object is allowed.</td>
+            </tr>
+            <tr>
+                <td>"Annotations slow down code"</td>
+                <td>No — they are just stored metadata.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Syntax</td>
+                <td><code>param: type</code> and <code>-> return_type</code></td>
+            </tr>
+            <tr>
+                <td>Runtime access</td>
+                <td><code>func.__annotations__</code></td>
+            </tr>
+            <tr>
+                <td>Enforcement</td>
+                <td>None by Python itself</td>
+            </tr>
+            <tr>
+                <td>Purpose</td>
+                <td>Documentation, type checking, IDE support</td>
+            </tr>
+            <tr>
+                <td>Advanced tools</td>
+                <td>mypy, pyright, runtime frameworks</td>
+            </tr>
+            <tr>
+                <td>Supported types</td>
+                <td>Any object — not just types</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
