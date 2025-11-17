@@ -136,6 +136,7 @@
         <li><a href="#python-special-function-parameters">Special Parameters</a></li>
         <li><a href="#python-range"><code>range</code></a></li>
         <li><a href="#python-lambda">Lambda Expressions</a></li>
+        <li><a href="#python-docstrings">Documentation Strings</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3941,7 +3942,348 @@ print(add5(10))   # 15
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-docstrings">Python Documentation Strings (Docstrings)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <b>docstring</b> in Python is a string literal placed at the beginning of a module, class, method, or function.</li>
+        <br/>
+        <li>Docstrings provide built-in documentation and can be retrieved programmatically using <code>help()</code>, <code>.__doc__</code>, and tooling such as IDEs and Sphinx.</li>
+        <br/>
+        <li>Docstrings are intended for humans, but are stored and accessible at runtime.</li>
+        <br/>
+        <li>The standard format is a triple-quoted string:</li>
+    </ul>
 
+<pre><code class="language-python line-numbers">"""This is a docstring."""</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Where Docstrings Can Be Placed</b></li>
+    <br/>
+    <ul>
+        <li>Module-level</li>
+        <li>Class-level</li>
+        <li>Function / Method-level</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">"""
+This module handles user authentication logic.
+"""
+
+
+def login(user, password):
+    """Authenticate a user by password."""
+    ...
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Accessing Docstrings</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">print(login.__doc__)
+help(login)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>help()</code> uses docstrings to display formatted documentation.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>One-Line Docstrings</b></li>
+    <br/>
+    <ul>
+        <li>Used for simple, self-explanatory functions.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def add(a, b):
+    """Return the sum of a and b."""
+    return a + b
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Multi-Line Docstrings</b></li>
+    <br/>
+    <ul>
+        <li>Follow PEP 257 conventions:</li>
+        <ul>
+            <li>First line: short summary</li>
+            <li>Blank line</li>
+            <li>Detailed explanation (optional)</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-python line-numbers">def connect(url, timeout=10):
+    """
+    Connect to a remote server.
+
+    This function establishes a TCP connection to the given URL.
+    The connection will fail if the timeout is exceeded.
+    """
+    ...
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Docstrings for Classes</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class User:
+    """
+    Represents a system user with username and email.
+    """
+
+    def __init__(self, username, email):
+        """Initialize a new User object."""
+        self.username = username
+        self.email = email
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Docstrings for Methods</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class Circle:
+    """Circle with radius and area calculation."""
+
+    def area(self):
+        """Return the area of the circle."""
+        import math
+        return math.pi * self.r * self.r
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Documenting Parameters</b></li>
+    <br/>
+    <ul>
+        <li>Python has no official format, but common standards are:</li>
+        <ul>
+            <li>Google style</li>
+            <li>NumPy style</li>
+            <li>reStructuredText / Sphinx style</li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Google Style Example</b></li>
+
+<pre><code class="language-python line-numbers">def add(a, b):
+    """
+    Add two numbers.
+
+    Args:
+        a (int): First number.
+        b (int): Second number.
+
+    Returns:
+        int: Sum of a and b.
+    """
+    return a + b
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>NumPy Style</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def scale(values, factor):
+    """
+    Scale an array by a factor.
+
+    Parameters
+    ----------
+    values : list[int]
+        Sequence of numbers.
+    factor : int or float
+        Multiplier.
+
+    Returns
+    -------
+    list[int]
+        Scaled numbers.
+    """
+    return [v * factor for v in values]
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Sphinx / reStructuredText (RST) Style</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def greet(name):
+    """
+    Greet a user.
+
+    :param name: User's name.
+    :type name: str
+    :return: Greeting message.
+    :rtype: str
+    """
+    return f"Hello, {name}!"
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Documenting Return Values</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def compute(x):
+    """
+    Compute something useful.
+
+    Returns:
+        float: The computed value.
+    """
+    return x * 2.5
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Documenting Exceptions</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def read_file(path):
+    """
+    Read a file.
+
+    Args:
+        path (str): File path.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+    """
+    with open(path) as f:
+        return f.read()
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Docstrings for Modules</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">"""
+utility.py - helper functions for math and statistics.
+"""
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Docstrings for Packages</b></li>
+    <br/>
+    <ul><li>Place a docstring inside <code>__init__.py</code>:</li></ul>
+
+<pre><code class="language-python line-numbers">"""
+This package contains utilities for data analysis.
+"""
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Automated Tools That Use Docstrings</b></li>
+    <br/>
+    <ul>
+        <li><code>help()</code> — built-in interactive documentation</li>
+        <li>IDEs (VSCode, PyCharm, etc.) show docstring hints</li>
+        <li><code>pydoc</code> — documentation generator</li>
+        <li>Sphinx — advanced documentation tool</li>
+        <li>Type checkers use docstrings for descriptions but not for typing</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>PEP 257 Docstring Conventions</b></li>
+    <br/>
+    <ul>
+        <li>Triple quotes should be used.</li>
+        <li>First line should be a short summary.</li>
+        <li>Add a blank line before detailed descriptions.</li>
+        <li>Use consistent indentation.</li>
+        <li>Closing quotes should be on their own line if multi-line.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Aspect</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Definition</td>
+                <td>String literal used to document modules, classes, and functions</td>
+            </tr>
+            <tr>
+                <td>Supported By</td>
+                <td>help(), IDEs, Sphinx, pydoc</td>
+            </tr>
+            <tr>
+                <td>Styles</td>
+                <td>Google, NumPy, Sphinx/RST</td>
+            </tr>
+            <tr>
+                <td>Retrieval</td>
+                <td><code>object.__doc__</code> or <code>help()</code></td>
+            </tr>
+            <tr>
+                <td>Purpose</td>
+                <td>Provide human-readable API documentation</td>
+            </tr>
+            <tr>
+                <td>Best Practices</td>
+                <td>Short summary + details, parameter docs, return/exception docs</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
