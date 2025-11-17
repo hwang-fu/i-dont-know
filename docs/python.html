@@ -124,7 +124,8 @@
 <nav id="toc" style="margin-bottom: 2rem;">
     <h2> <img src="resources/python.png" alt="PY Logo" class="nav-icon"/> Documentation Index</h2>
     <ul style="line-height: 1.8;">
-        <li><a href="#">Python <code>*args</code> and <code>**kwargs</code></a></li>
+        <li><a href="#python-args-kwargs">Python <code>*args</code> and <code>**kwargs</code></a></li>
+        <li><a href="#python-match">Python <code>match</code> Statement</a></li>
     </ul>
 </nav>
 <hr/>
@@ -403,7 +404,316 @@ f(*nums)   # ✔ correct
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-match">Python <code>match</code> Statement (Structural Pattern Matching)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>match</code> statement was introduced in <u>Python 3.10</u>.</li>
+        <br/>
+        <li>Patterns can match:
+            <ul>
+                <li>values</li>
+                <li>types</li>
+                <li>structures (lists, dicts, tuples)</li>
+                <li>classes</li>
+                <li>guards (conditions)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Basic Value Matching</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def check_status(code):
+    match code:
+        case 200:
+            return "OK"
+        case 404:
+            return "Not Found"
+        case 500:
+            return "Server Error"
+        case _:
+            return "Unknown"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>_</code> is the wildcard catch-all.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Match Multiple Values in One Case</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">match command:
+    case "start" | "run":
+        print("Starting...")
+    case "stop" | "quit":
+        print("Stopping...")
+    case _:
+        print("Unknown command")
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Use <code>|</code> (“OR”) for multi-pattern matching.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Capturing Values</b></li>
+    <br/>
+    <ul>
+        <li>
+            With <code>match</code>, Python can look at a value (often coming from user input or a function)
+            and check whether it fits a certain “shape”.<br/>
+            While doing that, it can also <b>capture parts of the value</b> into variables.
+        </li>
+    </ul>
+<pre><code class="language-python line-numbers"># Example commands your program might receive
+user_input = ("add", 10, 20)
+# user_input = ("echo", "Hello")
+# user_input = ("quit",)
+
+match user_input:
+    case ("add", x, y):
+        # The tuple matches ("add", something, something)
+        # The two values are captured as x and y
+        print(x + y)
+
+    case ("echo", message):
+        # Matches a tuple with 2 elements: ("echo", some_text)
+        # 'message' captures the second element
+        print(message)
+
+    case ("quit",):
+        # Matches a single-element tuple
+        print("Goodbye!")
+
+    case _:
+        # Anything else that doesn't fit the patterns
+        print("Unknown command")
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>
+            Capturing lets you extract needed values directly inside the pattern.
+            No manual unpacking or indexing is needed.
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Sequence Pattern Matching</b></li>
+    <br/>
+<pre><code class="language-python line-numbers">match data:
+    case [x, y]:
+        print(f"Two elements: {x}, {y}")
+    case [x, y, z]:
+        print(f"Three elements: {x}, {y}, {z}")
+    case [first, *rest]:
+        print("First element:", first)
+        print("Remaining:", rest)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>*rest</code> works like in argument unpacking.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Matching Dictionaries</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">match config:
+    case {"mode": "debug", "level": lvl}:
+        print("Debug level:", lvl)
+    case {"mode": "production"}:
+        print("Running in prod mode")
+    case _:
+        print("Unknown config")
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Keys must match exactly; extra keys are allowed unless restricted.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Matching Classes (Object Patterns)</b></li>
+    <br/>
+<pre><code class="language-python line-numbers">class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+def describe(p):
+    match p:
+        case Point(x=0, y=0):
+            return "Origin"
+        case Point(x, y):
+            return f"Point({x}, {y})"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can match attributes by name.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Using Guards (<code>if</code> conditions)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">match value:
+    case x if x &gt; 0:
+        print("Positive")
+    case x if x &lt; 0:
+        print("Negative")
+    case 0:
+        print("Zero")
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><b>Matching Enums</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from enum import Enum
+
+class State(Enum):
+    READY   = 1
+    RUNNING = 2
+    STOPPED = 3
+
+match state:
+    case State.READY:
+        print("Ready")
+    case State.RUNNING:
+        print("Running")
+    case State.STOPPED:
+        print("Stopped")
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><b>Combining Patterns</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">match event:
+    case {"type": "click", "pos": (x, y)}:
+        print("Clicked:", x, y)
+    case {"type": "keypress", "key": k} if k.isalpha():
+        print("Pressed a letter:", k)
+    case {"type": "keypress", "key": k}:
+        print("Pressed:", k)
+    case _:
+        print("Unknown event")
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Common Mistakes</b></li>
+    <br/>
+    <ul>
+        <li><b>Using <code>=</code> instead of <code>==</code> inside patterns</b></li>
+    </ul>
+
+<pre><code class="language-py line-numbers">case x = 10   # ❌ invalid
+case 10       # ✔ correct
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li><b>Misunderstanding variable binding</b>—patterns like <code>case x</code> assign to <code>x</code>, they don’t compare.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">match value:
+    case x:      # ALWAYS matches, captures value into x
+        print("Matched:", x)
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li>To compare against variable <code>x</code>, prefix with <code>.</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">x = 10
+match value:
+    case .x:         # match literal value of x
+        print("value is 10")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary Table</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Value patterns</td>
+                <td>Compare exact literals (200, "ok", etc.)</td>
+            </tr>
+            <tr>
+                <td>OR-patterns</td>
+                <td><code>"a" | "b"</code> matches either</td>
+            </tr>
+            <tr>
+                <td>Sequence patterns</td>
+                <td>Match lists/tuples, use <code>*rest</code></td>
+            </tr>
+            <tr>
+                <td>Mapping patterns</td>
+                <td>Match dictionaries by key</td>
+            </tr>
+            <tr>
+                <td>Class patterns</td>
+                <td>Match objects by attribute</td>
+            </tr>
+            <tr>
+                <td>Guards</td>
+                <td><code>case x if condition</code></td>
+            </tr>
+            <tr>
+                <td>Wildcard</td>
+                <td><code>_</code> matches anything</td>
+            </tr>
+            <tr>
+                <td>Variable capture</td>
+                <td>Patterns bind matched values to variables</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
