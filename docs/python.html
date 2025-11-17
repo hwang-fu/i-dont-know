@@ -139,6 +139,7 @@
         <li><a href="#python-docstrings">Documentation Strings</a></li>
         <li><a href="#python-function-annotations">Function Annotations</a></li>
         <li><a href="#python-tuples-sequences">Tuples and Sequences</a></li>
+        <li><a href="#python-del-statement">The <code>del</code> Statement in Python</a></li>
     </ul>
 </nav>
 <hr/>
@@ -2513,7 +2514,7 @@ class User(TypedDict):
 
 <pre><code class="language-python line-numbers">u: User = {
     "id": 1,
-    "name": "Alice",
+    "name": "Ammy",
     "email": "alice@example.com"
 }
 </code></pre>
@@ -2530,7 +2531,7 @@ class User(TypedDict):
 
 <pre><code class="language-python line-numbers">bad_user: User = {
     "id": 1,
-    "name": "Alice"
+    "name": "Ammy"
 }   # ❌ error: missing key "email"
 </code></pre>
 
@@ -2541,7 +2542,7 @@ class User(TypedDict):
 
 <pre><code class="language-python line-numbers">wrong: User = {
     "id": 1,
-    "name": "Alice",
+    "name": "Ammy",
     "email": "a@x.com",
     "age": 23
 }   # ❌ error: extra key "age"
@@ -2786,7 +2787,7 @@ class Event(TypedDict):
         <li><code>TypedDict</code> is still a normal dictionary:</li>
     </ul>
 
-<pre><code class="language-python line-numbers">u: User = {"id": 1, "name": "Alice", "email": "a@x.com"}
+<pre><code class="language-python line-numbers">u: User = {"id": 1, "name": "Ammy", "email": "a@x.com"}
 
 print(type(u))    # &lt;class 'dict'&gt;
 </code></pre>
@@ -4921,7 +4922,326 @@ numbers: tuple[int, ...] = (1, 2, 3, 4)
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-del-statement">The <code>del</code> Statement in Python</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The <code>del</code> statement removes bindings between names and objects, or removes items from collections.</li>
+        <br/>
+        <li>It does <b>not</b> directly delete objects from memory — Python deletes the object only when nothing references it anymore (via reference counting + garbage collection).</li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Deleting Variables (Name Bindings)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">x = 10
+del x
+
+print(x)   # NameError: name 'x' is not defined
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>del x</code> removes the variable <code>x</code> from the current namespace.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Deleting Multiple Names</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">a = 1
+b = 2
+c = 3
+
+del a, b, c
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Deleting List Elements</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">nums = [10, 20, 30, 40]
+del nums[1]
+
+print(nums)   # [10, 30, 40]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This deletes the item at index <code>1</code>, not the whole list.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Deleting List Slices</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">nums = [1, 2, 3, 4, 5]
+del nums[1:4]
+
+print(nums)   # [1, 5]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Deletes the slice from index 1 to 3 (inclusive start, exclusive end).</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Deleting Dictionary Keys</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">person = {"name": "Ammy", "age": 30}
+del person["age"]
+
+print(person)   # {"name": "Ammy"}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Deletes the key-value pair.</li>
+        <li>If the key does not exist, a <code>KeyError</code> occurs.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Deleting Attributes</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class User:
+    def __init__(self):
+        self.name = "Ammy"
+        self.age = 20
+
+u = User()
+del u.age
+
+print(u.age)   # AttributeError
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Removes the attribute binding from the instance.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Deleting Items in Nested Structures</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">data = {"users": ["alice", "bob", "carol"]}
+del data["users"][1]
+
+print(data)   # {"users": ["alice", "carol"]}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>del</code> to Reduce Memory Pressure</b></li>
+    <br/>
+    <ul>
+        <li>Large objects can be deleted early so memory is freed sooner.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import pandas as pd
+
+df = pd.read_csv("big.csv")
+# ... process ...
+
+del df   # allow Python to free memory sooner
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b><code>del</code> Does Not Force Immediate Garbage Collection</b></li>
+    <br/>
+    <ul>
+        <li>Python may keep the object alive if other references still point to it:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">x = [1, 2, 3]
+y = x
+del x
+
+print(y)   # [1, 2, 3] — object still exists!
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>del</code> in Loops</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">items = [1, 2, 3, 4, 5]
+
+for i in range(len(items)):
+    del items[0]
+
+print(items)  # []
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Removing elements inside loops must be done carefully.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b><code>del</code> vs <code>pop()</code> vs <code>remove()</code></b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Operation</th>
+                <th>Use Case</th>
+                <th>Returns value?</th>
+                <th>Errors?</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>del seq[i]</code></td>
+                <td>Delete by index</td>
+                <td>No</td>
+                <td>IndexError</td>
+            </tr>
+            <tr>
+                <td><code>seq.pop(i)</code></td>
+                <td>Delete by index</td>
+                <td>Yes (returns value)</td>
+                <td>IndexError</td>
+            </tr>
+            <tr>
+                <td><code>seq.remove(x)</code></td>
+                <td>Delete first matching value</td>
+                <td>No</td>
+                <td>ValueError</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>The <code>__del__()</code> Method (Destructor)</b></li>
+    <br/>
+    <ul>
+        <li>Often confused with the <code>del</code> statement, but completely different.</li>
+        <li><code>__del__()</code> is called when an object is about to be garbage-collected.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class A:
+    def __del__(self):
+        print("Object destroyed")
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b><code>del obj</code> does NOT call <code>__del__()</code> automatically</b> — only when the object is garbage-collected.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Common Pitfalls</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Pitfall</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Deleting wrong slice</td>
+                <td><code>del seq[a:b]</code> can remove more than intended</td>
+            </tr>
+            <tr>
+                <td>Deleting inside loops</td>
+                <td>Can change indices and cause skipped items</td>
+            </tr>
+            <tr>
+                <td>Expecting memory to clear immediately</td>
+                <td>Python may retain object until all references are gone</td>
+            </tr>
+            <tr>
+                <td>Confusing <code>del</code> with destruction</td>
+                <td><code>del</code> removes names, not objects</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Main Role</td>
+                <td>Remove bindings between names and objects</td>
+            </tr>
+            <tr>
+                <td>Can delete</td>
+                <td>Variables, list items, dictionary keys, object attributes, slices</td>
+            </tr>
+            <tr>
+                <td>Does not do</td>
+                <td>Force garbage collection or memory cleanup</td>
+            </tr>
+            <tr>
+                <td>Namespace effect</td>
+                <td>After <code>del</code>, the name is gone</td>
+            </tr>
+            <tr>
+                <td>Memory</td>
+                <td>Object disappears only when no references remain</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
