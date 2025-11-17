@@ -132,6 +132,7 @@
         <li><a href="#python-type-annotations">Python Type Annotations</a></li>
         <li><a href="#python-protocol"><code>Protocol</code></a></li>
         <li><a href="#python-typeddict"><code>TypedDict</code></a></li>
+        <li><a href="#python-type-checkers">Python Type Checkers: mypy, pyright, and ruff</a></li>
     </ul>
 </nav>
 <hr/>
@@ -2821,6 +2822,250 @@ print(type(u))    # &lt;class 'dict'&gt;
             <tr>
                 <td>Common use cases</td>
                 <td>API schemas, config objects, JSON-like data</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-type-checkers">Python Type Checkers: mypy, pyright, and ruff</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Python is dynamically typed, but modern tools allow <b>static type checking</b> based on type hints.</li>
+        <br/>
+        <li>The three major tools are:</li>
+        <ul>
+            <li><code>mypy</code>: classic, strict, feature-rich</li>
+            <li><code>pyright</code>: fast, modern, excellent IDE integration</li>
+            <li><code>ruff</code>: fast linter with partial type checks</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>What Static Type Checking Does</b></li>
+    <br/>
+    <ul>
+        <li>Type checkers analyze your code <b>without running it</b>.</li>
+        <br/>
+        <li>They detect errors such as:</li>
+        <ul>
+            <li>wrong argument types</li>
+            <li>incorrect return types</li>
+            <li>invalid attribute access</li>
+            <li>mistyped <code>TypedDict</code> keys</li>
+            <li>mismatched <code>Protocol</code> implementations</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-python line-numbers">def add(a: int, b: int) -&gt; int:
+    return a + b
+
+add("hi", 3)  # ❌ static type error
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>mypy</b></li>
+    <br/>
+    <ul>
+        <li><code>mypy</code> is the most widely adopted and feature-complete type checker.</li>
+        <br/>
+        <li>Strong support for:</li>
+        <ul>
+            <li><code>TypedDict</code></li>
+            <li><code>Protocol</code></li>
+            <li>Generics</li>
+            <li><code>Literal</code> types</li>
+            <li><code>@overload</code></li>
+            <li>Strict mode settings</li>
+        </ul>
+        <br/>
+        <li>Installation:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">pip install mypy
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Running mypy:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">mypy app.py
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example configuration (<code>mypy.ini</code>):</li>
+    </ul>
+
+<pre><code class="language-ini line-numbers">[mypy]
+strict = True
+disallow_untyped_defs = True
+warn_unused_ignores = True
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>pyright</b></li>
+    <br/>
+    <ul>
+        <li><code>pyright</code> is a fast type checker created by Microsoft.</li>
+        <br/>
+        <li>Main advantages:</li>
+        <ul>
+            <li>extremely fast</li>
+            <li>excellent VSCode integration</li>
+            <li>advanced type inference and narrow typing</li>
+            <li>good for large projects</li>
+        </ul>
+        <br/>
+        <li>Installation:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">npm install -g pyright
+</code></pre>
+
+    <br/>
+    <ul><li>Run pyright:</li></ul>
+
+<pre><code class="language-bash line-numbers">pyright
+</code></pre>
+
+    <br/>
+    <ul><li>Configuration (<code>pyrightconfig.json</code>):</li></ul>
+
+<pre><code class="language-json line-numbers">{
+  "include": ["src"],
+  "strict": true
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>ruff</b></li>
+    <br/>
+    <ul>
+        <li><code>ruff</code> is an ultra-fast linter written in Rust.</li>
+        <br/>
+        <li>It is not a full type checker, but supports:</li>
+        <ul>
+            <li>lightweight type-checking rules</li>
+            <li>unused code analysis</li>
+            <li>import sorting</li>
+            <li>formatting</li>
+        </ul>
+        <br/>
+        <li>Installation:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">pip install ruff
+</code></pre>
+
+    <br/>
+    <ul><li>Run:</li></ul>
+
+<pre><code class="language-bash line-numbers">ruff check .
+</code></pre>
+
+    <br/>
+    <ul><li>Enable type-checking rules:</li></ul>
+
+<pre><code class="language-toml line-numbers">[tool.ruff]
+select = ["E", "F", "I", "TCH"]
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Comparison Table</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>mypy</th>
+                <th>pyright</th>
+                <th>ruff</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Checking depth</td>
+                <td>Very deep</td>
+                <td>Very deep</td>
+                <td>Shallow</td>
+            </tr>
+            <tr>
+                <td>Speed</td>
+                <td>Medium</td>
+                <td>Very fast</td>
+                <td>Extremely fast</td>
+            </tr>
+            <tr>
+                <td>Best use case</td>
+                <td>Strict typing, CI validation</td>
+                <td>Daily development, IDE</td>
+                <td>Linting + basic type checks</td>
+            </tr>
+            <tr>
+                <td>Protocol support</td>
+                <td>Excellent</td>
+                <td>Excellent</td>
+                <td>Minimal</td>
+            </tr>
+            <tr>
+                <td>TypedDict analysis</td>
+                <td>Strong</td>
+                <td>Strong</td>
+                <td>Partial</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Tool</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>mypy</code></td>
+                <td>Classic strict type checker with full feature support</td>
+            </tr>
+            <tr>
+                <td><code>pyright</code></td>
+                <td>Fast, modern, editor-focused type checker</td>
+            </tr>
+            <tr>
+                <td><code>ruff</code></td>
+                <td>Ultra-fast linter with optional lightweight type warnings</td>
             </tr>
         </tbody>
     </table>
