@@ -150,6 +150,7 @@
         <li><a href="#python-conda-vs-anaconda">Conda vs Anaconda</a></li>
         <li><a href="#python-input">Input</a></li>
         <li><a href="#python-output">Output</a></li>
+        <li><a href="#python-rw-files">R/W Files</a></li>
     </ul>
 </nav>
 <hr/>
@@ -8378,6 +8379,349 @@ pprint.pprint(users)
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-rw-files">Reading and Writing Files in Python</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Python provides built-in tools for reading and writing files using the <code>open()</code> function.</li>
+        <br/>
+        <li>Working with files involves:
+            <ul>
+                <li>opening a file</li>
+                <li>reading or writing</li>
+                <li>closing the file (automatically handled using <code>with</code>)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Python supports text files, binary files, and different file modes.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>The <code>open()</code> Function</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">f = open("data.txt", "r")   # r = read mode
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>open()</code> returns a file object.</li>
+        <li>Always specify a mode to avoid confusion.</li>
+    </ul>
+
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Mode</th>
+                <th>Meaning</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>r</code></td>
+                <td>Read</td>
+                <td>File must exist</td>
+            </tr>
+            <tr>
+                <td><code>w</code></td>
+                <td>Write</td>
+                <td>Overwrite or create new file</td>
+            </tr>
+            <tr>
+                <td><code>a</code></td>
+                <td>Append</td>
+                <td>Add to the end of file</td>
+            </tr>
+            <tr>
+                <td><code>r+</code></td>
+                <td>Read/Write</td>
+                <td>File must exist</td>
+            </tr>
+            <tr>
+                <td><code>b</code></td>
+                <td>Binary</td>
+                <td>Combine with other modes: <code>rb</code>, <code>wb</code></td>
+            </tr>
+            <tr>
+                <td><code>t</code></td>
+                <td>Text</td>
+                <td>Default mode</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>with</code> for Safe File Handling</b></li>
+    <br/>
+    <ul>
+        <li>The recommended way to manage files:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">with open("data.txt", "r") as f:
+    content = f.read()
+</code></pre>
+    <ul>
+        <li><code>with</code> automatically closes the file, even if an error occurs.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Reading Files</b></li>
+    <br/>
+
+    <ul><li><b>Read entire file</b></li></ul>
+
+<pre><code class="language-python line-numbers">with open("data.txt", "r") as f:
+    text = f.read()
+</code></pre>
+
+    <br/>
+
+    <ul><li><b>Read line-by-line</b></li></ul>
+
+<pre><code class="language-python line-numbers">with open("data.txt") as f:
+    for line in f:
+        print(line.strip())
+</code></pre>
+
+    <br/>
+
+    <ul><li><b>Read all lines into a list</b></li></ul>
+
+<pre><code class="language-python line-numbers">with open("data.txt") as f:
+    lines = f.readlines()
+</code></pre>
+
+    <br/>
+
+    <ul><li><b>Read a fixed number of characters</b></li></ul>
+
+<pre><code class="language-python line-numbers">with open("data.txt") as f:
+    partial = f.read(10)   # read first 10 chars
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Writing Files</b></li>
+    <br/>
+
+    <ul><li><b>Overwrite file (write mode)</b></li></ul>
+
+<pre><code class="language-python line-numbers">with open("output.txt", "w") as f:
+    f.write("Hello world\n")
+</code></pre>
+
+    <br/>
+
+    <ul><li><b>Append to file</b></li></ul>
+
+<pre><code class="language-python line-numbers">with open("output.txt", "a") as f:
+    f.write("Another line\n")
+</code></pre>
+
+    <br/>
+
+    <ul><li><b>Writing multiple lines</b></li></ul>
+
+<pre><code class="language-python line-numbers">lines = ["a\n", "b\n", "c\n"]
+
+with open("letters.txt", "w") as f:
+    f.writelines(lines)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Binary Files</b></li>
+    <br/>
+    <ul>
+        <li>Used for images, ZIP files, PDFs, etc.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">with open("image.png", "rb") as f:
+    data = f.read()
+</code></pre>
+
+<pre><code class="language-python line-numbers">with open("copy.png", "wb") as f:
+    f.write(data)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>File Paths</b></li>
+    <br/>
+    <ul>
+        <li>You can use relative or absolute paths:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">open("subfolder/data.txt")
+open("/home/user/file.txt")
+open("C:\\Users\\John\\file.txt")
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Use raw strings for Windows paths:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">open(r"C:\folder\file.txt")
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Checking File Existence</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from pathlib import Path
+
+p = Path("data.txt")
+if p.exists():
+    print("File exists!")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Error Handling for File Operations</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">try:
+    with open("no_such_file.txt") as f:
+        data = f.read()
+except FileNotFoundError:
+    print("File does not exist")
+</code></pre>
+
+    <br/>
+
+<pre><code class="language-python line-numbers">except PermissionError:
+    print("Permission denied")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Reading and Writing JSON Files</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import json
+
+with open("config.json") as f:
+    data = json.load(f)
+</code></pre>
+
+<pre><code class="language-python line-numbers">with open("output.json", "w") as f:
+    json.dump(data, f, indent=2)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Reading and Writing CSV Files</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import csv
+
+with open("data.csv") as f:
+    reader = csv.reader(f)
+    for row in reader:
+        print(row)
+</code></pre>
+
+<pre><code class="language-python line-numbers">import csv
+
+rows = [["id", "name"], [1, "Alice"]]
+with open("out.csv", "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerows(rows)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Task</th>
+                <th>Method</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Open a file</td>
+                <td><code>open(path, mode)</code></td>
+            </tr>
+            <tr>
+                <td>Safe open</td>
+                <td><code>with open(...)</code></td>
+            </tr>
+            <tr>
+                <td>Read all</td>
+                <td><code>f.read()</code></td>
+            </tr>
+            <tr>
+                <td>Read line-by-line</td>
+                <td>Iterate file object</td>
+            </tr>
+            <tr>
+                <td>Write to file</td>
+                <td><code>f.write()</code></td>
+            </tr>
+            <tr>
+                <td>Binary mode</td>
+                <td><code>"rb"</code>, <code>"wb"</code></td>
+            </tr>
+            <tr>
+                <td>Modern paths</td>
+                <td><code>pathlib.Path</code></td>
+            </tr>
+            <tr>
+                <td>Error handling</td>
+                <td>Use <code>try/except</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
