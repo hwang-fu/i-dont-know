@@ -156,6 +156,7 @@
         <li><a href="#python-classes">Classes</a></li>
         <li><a href="#python-dataclasses">Dataclasses</a></li>
         <li><a href="#python-class-inheritance">Class Inheritance</a></li>
+        <li><a href="#python-private-variables">Private Variables</a></li>
     </ul>
 </nav>
 <hr/>
@@ -10578,6 +10579,313 @@ class Square(Shape):
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-private-variables">Private Variables in Python</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Python does <b>not</b> have true private variables like Java or C++.</li>
+        <br/>
+        <li>However, Python uses <b>conventions</b> and <b>name-mangling</b> to protect internal attributes.</li>
+        <br/>
+        <li>Three common visibility conventions:
+            <ul>
+                <li><b>public</b>: <code>var</code></li>
+                <li><b>protected (by convention)</b>: <code>_var</code></li>
+                <li><b>private (name-mangled)</b>: <code>__var</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Public Attributes</b></li>
+    <br/>
+    <ul>
+        <li>Accessible from anywhere.</li>
+        <li>Default visibility in Python.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Person:
+    name = "Alice"
+
+p = Person()
+print(p.name)   # accessible
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Protected Attributes (Single Underscore)</b></li>
+    <br/>
+    <ul>
+        <li>Convention: <code>_var</code> means "for internal use only".</li>
+        <li>Not enforced by Python. Developers are expected not to access it directly.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class User:
+    def __init__(self):
+        self._password = "1234"   # internal
+
+u = User()
+print(u._password)   # works, but not recommended
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Used mainly to indicate intent, not to block access.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Private Attributes (Double Underscore)</b></li>
+    <br/>
+    <ul>
+        <li>Using <code>__var</code> triggers <b>name mangling</b>.</li>
+        <li>Python changes the internal name to prevent accidental overrides from subclasses.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class BankAccount:
+    def __init__(self, balance):
+        self.__balance = balance
+
+acc = BankAccount(500)
+print(acc.__balance)     # AttributeError
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Internally becomes <code>_BankAccount__balance</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">print(acc._BankAccount__balance)   # 500 (works but not intended!)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is not true security — just name obfuscation to avoid conflicts.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Why Name-Mangling Exists</b></li>
+    <br/>
+    <ul>
+        <li>Main purpose: prevent accidentally overriding internal attributes in subclasses.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class A:
+    def __init__(self):
+        self.__x = 1   # becomes _A__x
+
+class B(A):
+    def __init__(self):
+        super().__init__()
+        self.__x = 2   # becomes _B__x (not overriding A's)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Each class gets its own safely isolated name.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Accessing Private Values via Methods</b></li>
+    <br/>
+    <ul>
+        <li>Private attributes are usually accessed via getters and setters (Pythonic approach uses properties).</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Counter:
+    def __init__(self):
+        self.__count = 0
+
+    @property
+    def count(self):
+        return self.__count
+
+    def increment(self):
+        self.__count += 1
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Private Methods</b></li>
+    <br/>
+    <ul>
+        <li>Double underscores also work for methods.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Server:
+    def __connect(self):
+        print("Connecting...")
+
+    def start(self):
+        self.__connect()
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Internally named <code>_Server__connect</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Private Attributes and Inheritance</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class Base:
+    def __init__(self):
+        self.__value = 10
+
+class Child(Base):
+    def show(self):
+        # print(self.__value)  # error
+        print(self._Base__value)  # works
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Child classes cannot directly access the parent’s private variable.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>When to Use What?</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Notation</th>
+                <th>Meaning</th>
+                <th>Use Case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>var</code></td>
+                <td>Public</td>
+                <td>Visible everywhere</td>
+            </tr>
+            <tr>
+                <td><code>_var</code></td>
+                <td>Protected by convention</td>
+                <td>Internal detail, subclass-friendly</td>
+            </tr>
+            <tr>
+                <td><code>__var</code></td>
+                <td>Private (name-mangled)</td>
+                <td>Avoid accidental overrides; “internal-only”</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Why Python Uses Conventions Instead of Real Privacy</b></li>
+    <br/>
+    <ul>
+        <li>Python philosophy:
+            <ul>
+                <li>“We are all consenting adults here.”</li>
+                <li>No need for strict enforcement when cooperation is assumed.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Privacy exists mostly for safety and avoiding errors, not for hiding secrets.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Public attributes</td>
+                <td>Accessible everywhere</td>
+            </tr>
+            <tr>
+                <td>Protected attributes</td>
+                <td>Marked with <code>_var</code>, convention only</td>
+            </tr>
+            <tr>
+                <td>Private attributes</td>
+                <td>Double underscore; name-mangled</td>
+            </tr>
+            <tr>
+                <td>Name mangling</td>
+                <td>Prevents accidental name collisions in subclasses</td>
+            </tr>
+            <tr>
+                <td>Private methods</td>
+                <td>Same rules as private variables</td>
+            </tr>
+            <tr>
+                <td>Properties</td>
+                <td>Pythonic way to expose private fields safely</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
