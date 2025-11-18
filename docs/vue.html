@@ -164,6 +164,7 @@
         <li><a href="#vue-template-syntax">Template Syntax</a></li>
         <li><a href="#vue-watchers">Watchers</a></li>
         <li><a href="#vue-template-refs">Template Refs</a></li>
+        <li><a href="#vue-typescript">Using Vue with TypeScript</a></li>
     </ul>
 </nav>
 <hr/>
@@ -1841,10 +1842,10 @@ const name = ref("User")
 &lt;script setup&gt;
 import { ref } from "vue"
 
-const count = ref(1)
+const count     = ref(1)
 const firstName = ref("Junzhe")
-const lastName = ref("Wang")
-const isAdmin = ref(false)
+const lastName  = ref("Hwangfu")
+const isAdmin   = ref(false)
 &lt;/script&gt;
 </code></pre>
 
@@ -2660,7 +2661,336 @@ onMounted(() =&gt; {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-typescript">Using Vue with TypeScript (Vue 3 + Composition API)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Vue 3 has first-class TypeScript support, especially with the Composition API.</li>
+        <br/>
+        <li>Vue 3's <code>&lt;script setup lang="ts"&gt;</code> syntax is the recommended way to use TypeScript.</li>
+    </ul>
 
+    <br/><br/>
+
+
+
+    <li><b>Enabling TypeScript in a Vue SFC</b></li>
+    <br/>
+    <ul>
+        <li>To use TypeScript inside a component, simply add <code>lang="ts"</code>.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+
+const message = ref("Hello TypeScript")
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>Vue + Vite will automatically compile the TypeScript for you. No extra setup needed.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Refs</b></li>
+    <br/>
+    <ul>
+        <li>By default, <code>ref()</code> infers the type from the initial value.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const count = ref(0)          // ref&lt;number&gt;
+const username = ref("Alice") // ref&lt;string&gt;
+</code></pre>
+
+    <ul>
+        <li>If you want to explicitly provide a type, pass a generic:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const age = ref&lt;number | null&gt;(null)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Reactive Objects</b></li>
+    <br/>
+    <ul>
+        <li><code>reactive()</code> works well with object types.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">interface User {
+    name: string
+    age: number
+}
+
+const user = reactive&lt;User&gt;({
+    name: "Hwangfu",
+    age: 22
+})
+</code></pre>
+
+    <ul>
+        <li>All properties inside the reactive object have proper types.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Functions Inside Components</b></li>
+    <br/>
+    <ul>
+        <li>Just use normal TypeScript syntax.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">function greet(name: string): string {
+    return "Hello, " + name
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Computed Properties</b></li>
+    <br/>
+    <ul>
+        <li>Types are inferred automatically in most cases.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const count = ref(2)
+
+const double = computed(() =&gt; count.value * 2)
+// computed&lt;number&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can force a type if needed:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const price = ref(10)
+
+const withTax = computed&lt;number&gt;(() =&gt; price.value * 1.19)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Props (with <code>&lt;script setup&gt;</code>)</b></li>
+    <br/>
+    <ul>
+        <li>Props are typed using <code>defineProps&lt;&gt;</code>.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script setup lang="ts"&gt;
+interface Props {
+    title: string
+    count?: number
+}
+
+const props = defineProps&lt;Props&gt;()
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;h1&gt;{{ props.title }}&lt;/h1&gt;
+    &lt;p&gt;Count: {{ props.count ?? 0 }}&lt;/p&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <ul>
+        <li>Props now get full type-checking and IDE hints.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Emits</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>defineEmits&lt;&gt;</code> to type event signatures.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+const emit = defineEmits&lt;{
+    (event: "update", value: number): void
+}&gt;()
+
+emit("update", 42) // ✔️
+emit("update")     // ❌ type error
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Template Refs</b></li>
+    <br/>
+    <ul>
+        <li>You must annotate the type of the DOM element.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;input ref="inputEl" /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref, onMounted } from "vue"
+
+const inputEl = ref&lt;HTMLInputElement | null&gt;(null)
+
+onMounted(() =&gt; {
+    inputEl.value?.focus()
+})
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Composables</b></li>
+    <br/>
+    <ul>
+        <li>When writing reusable functions, add proper types to arguments and returns.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// useCounter.ts
+import { ref } from "vue"
+
+export function useCounter(initial = 0) {
+    const count = ref(initial)
+
+    function increment(): void {
+        count.value++
+    }
+
+    return { count, increment }
+}
+</code></pre>
+
+    <ul>
+        <li>Now all components using this composable will have typed reactive values.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Events in the Template</b></li>
+    <br/>
+    <ul>
+        <li>Vue automatically infers the event type for DOM events.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;input @input="onInput" /&gt;
+
+&lt;script setup lang="ts"&gt;
+function onInput(event: Event) {
+    const target = event.target as HTMLInputElement
+    console.log(target.value)
+}
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Type Safety with <code>defineModel()</code> (Vue 3.4+)</b></li>
+    <br/>
+    <ul>
+        <li>For custom <code>v-model</code>, you can type the value:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+const modelValue = defineModel&lt;string&gt;()
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;input v-model="modelValue" /&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Recommended Project Setup</b></li>
+    <br/>
+    <ul>
+        <li>Use the official TS template:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">npm create vue@latest
+# choose: Typescript + JSX support (optional)
+</code></pre>
+
+    <ul>
+        <li>This sets up:
+            <ul>
+                <li><code>tsconfig.json</code></li>
+                <li>full IDE support</li>
+                <li>recommended type definitions</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>TypeScript Usage</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Typing refs</td>
+                <td><code>ref&lt;T&gt;(initial)</code></td>
+            </tr>
+            <tr>
+                <td>Reactive objects</td>
+                <td><code>reactive&lt;Interface&gt;({ ... })</code></td>
+            </tr>
+            <tr>
+                <td>Props</td>
+                <td><code>defineProps&lt;Props&gt;()</code></td>
+            </tr>
+            <tr>
+                <td>Emits</td>
+                <td><code>defineEmits&lt;Signatures&gt;()</code></td>
+            </tr>
+            <tr>
+                <td>Template refs</td>
+                <td><code>ref&lt;ElementType | null&gt;(null)</code></td>
+            </tr>
+            <tr>
+                <td>Computed</td>
+                <td>auto inferred or <code>computed&lt;T&gt;()</code></td>
+            </tr>
+            <tr>
+                <td>Composables</td>
+                <td>write typed functions returning reactive state</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
