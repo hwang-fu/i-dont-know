@@ -166,6 +166,7 @@
         <li><a href="#vue-template-refs">Template Refs</a></li>
         <li><a href="#vue-typescript">Using Vue with TypeScript</a></li>
         <li><a href="#vue-components-basics">Components Basics</a></li>
+        <li><a href="#vue-component-registration">Component Registration</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3341,7 +3342,221 @@ function sayHi() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-component-registration">Component Registration in Vue (Global & Local)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Component registration determines <u>where</u> a component can be used inside your app.</li>
+        <br/>
+        <li>Vue 3 supports:
+            <ul>
+                <li><code>Local Registration</code>: component usable only in the importing component</li>
+                <li><code>Global Registration</code>: component usable everywhere in the app</li>
+            </ul>
+        </li>
+        <br/>
+        <li>When using <code>&lt;script setup&gt;</code> and TypeScript, registration is very simple.</li>
+        <br/>
+        <li>Because of tree-shaking and clarity, <u>local registration</u> is recommended for most situations.</li>
+    </ul>
 
+    <br/><br/>
+
+
+
+    <li><b>Local Registration (Recommended)</b></li>
+    <br/>
+    <ul>
+        <li>In <code>&lt;script setup&gt;</code>, simply <b>import</b> a component and <b>use it directly</b> in your template.</li>
+        <li>No need to manually add a <code>components: { ... }</code> section.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;UserCard name="Junzhe" /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import UserCard from "./UserCard.vue"
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>The imported component <code>UserCard</code> is automatically available in the template.</li>
+        <li>This is the most common and cleanest pattern in Vue 3.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Local Registration in Old Syntax (Not Needed with &lt;script setup&gt;)</b></li>
+    <br/>
+    <ul>
+        <li>You may see older Vue 2 / early Vue 3 syntax:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">&lt;script lang="ts"&gt;
+import { defineComponent } from "vue";
+import UserCard from "./UserCard.vue";
+
+export default defineComponent({
+    components: {
+        UserCard
+    }
+})
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>You should only use this when not using <code>&lt;script setup&gt;</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Global Registration</b></li>
+    <br/>
+    <ul>
+        <li>Global registration allows you to use a component in <b>any template</b> without importing it.</li>
+        <li>This is useful for:
+            <ul>
+                <li>very common UI elements (Button, Card, Modal)</li>
+                <li>global utilities (Icon component)</li>
+                <li>documentation/markdown rendering tools</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You register global components in your app entry file (<code>main.ts</code> or <code>main.js</code>).</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import { createApp } from "vue";
+import App from "./App.vue";
+
+import BaseButton from "./components/BaseButton.vue";
+import BaseCard   from "./components/BaseCard.vue"  ;
+
+const app = createApp(App);
+
+// global registration
+app.component("BaseButton", BaseButton);
+app.component("BaseCard", BaseCard);
+
+app.mount("#app");
+</code></pre>
+
+    <ul>
+        <li>Now <code>&lt;BaseButton&gt;</code> and <code>&lt;BaseCard&gt;</code> can be used anywhere in the project.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Automatic Global Registration (Optional)</b></li>
+    <br/>
+    <ul>
+        <li>You can auto-load components using Vite's <code>import.meta.glob()</code> feature.</li>
+        <li>This is a powerful trick for large UI libraries.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const components = import.meta.glob("./components/global/*.vue", { eager: true })
+
+for (const path in components) {
+    const comp = components[path]
+    const name = path.split("/").pop()!.replace(".vue", "")
+    app.component(name, (comp as any).default)
+}
+</code></pre>
+
+    <ul>
+        <li>Every <code>.vue</code> file inside <code>components/global/</code> is registered automatically.</li>
+        <li>Frameworks like Nuxt internally use similar techniques.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Local vs Global Registration (Quick Comparison)</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Aspect</th>
+                <th>Local Registration</th>
+                <th>Global Registration</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Scope</td>
+                <td>Only usable inside the importing component</td>
+                <td>Usable everywhere in the app</td>
+            </tr>
+            <tr>
+                <td>Recommended?</td>
+                <td><b>Yes</b> for most components</td>
+                <td>Yes for common UI elements</td>
+            </tr>
+            <tr>
+                <td>Tree-shaking</td>
+                <td>Excellent</td>
+                <td>Potentially worse (less dead-code elimination)</td>
+            </tr>
+            <tr>
+                <td>Setup style</td>
+                <td>Use <code>&lt;script setup&gt;</code> import</td>
+                <td>Register in <code>main.ts</code></td>
+            </tr>
+            <tr>
+                <td>Best use-case</td>
+                <td>Pages, logic-specific components</td>
+                <td>Buttons, form fields, layouts, icons</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Local registration</td>
+                <td>Import in <code>&lt;script setup&gt;</code> → immediately available</td>
+            </tr>
+            <tr>
+                <td>Global registration</td>
+                <td>Register with <code>app.component()</code> in <code>main.ts</code></td>
+            </tr>
+            <tr>
+                <td>Recommended pattern</td>
+                <td>Use local registration for most components</td>
+            </tr>
+            <tr>
+                <td>Global usage</td>
+                <td>Use for shared UI primitives (buttons, cards, icons)</td>
+            </tr>
+            <tr>
+                <td>Automatic loading</td>
+                <td>Possible using <code>import.meta.glob()</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
