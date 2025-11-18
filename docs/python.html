@@ -159,6 +159,7 @@
         <li><a href="#python-private-variables">Private Variables</a></li>
         <li><a href="#python-iterators">Iterators</a></li>
         <li><a href="#python-generators">Generators</a></li>
+        <li><a href="#python-brief-std-lib-tour">Brief Tour of the Python Standard Library</a></li>
     </ul>
 </nav>
 <hr/>
@@ -11796,7 +11797,359 @@ print(next(g))              # 2
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-brief-std-lib-tour">Brief Tour of the Python Standard Library</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>The Python Standard Library is a powerful collection of modules that come bundled with Python, no installation required.</li>
+        <br/>
+        <li>It includes tools for:
+            <ul>
+                <li>system interaction</li>
+                <li>file handling</li>
+                <li>data formats</li>
+                <li>networking</li>
+                <li>math and statistics</li>
+                <li>dates and times</li>
+                <li>compression</li>
+                <li>debugging and testing</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This chapter provides a practical overview of the most important modules you’ll frequently use.</li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Operating System Interfaces: <code>os</code> and <code>sys</code></b></li>
+    <br/>
+    <ul>
+        <li><code>os</code> lets you interact with the underlying operating system.</li>
+        <li><code>sys</code> provides access to interpreter-level features.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import os, sys
+
+print(os.getcwd())          # current working directory
+print(os.listdir("."))      # list files
+print(sys.version)          # python version
+print(sys.argv)             # command-line arguments
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>File and Path Handling: <code>pathlib</code></b></li>
+    <br/>
+    <ul>
+        <li>The modern and recommended way to work with filesystem paths.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from pathlib import Path
+
+p = Path("notes.txt")
+print(p.exists())
+print(p.read_text())
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Mathematics: <code>math</code>, <code>statistics</code>, <code>random</code></b></li>
+    <br/>
+    <ul>
+        <li>The <code>math</code> module provides fast mathematical functions.</li>
+        <li><code>statistics</code> handles averages, medians, variance, etc.</li>
+        <li><code>random</code> produces random numbers.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import math, statistics, random
+
+print(math.sqrt(9))
+print(statistics.mean([1,2,3,4]))
+print(random.randint(1, 10))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Dates and Times: <code>datetime</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from datetime import datetime, timedelta
+
+now = datetime.now()
+print(now)
+print(now + timedelta(days=3))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Collections: <code>collections</code></b></li>
+    <br/>
+    <ul>
+        <li>Provides powerful data structures beyond built-in lists/dicts.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from collections import Counter, defaultdict, deque
+
+c = Counter("banana")
+print(c)                      # character frequencies
+
+d = defaultdict(int)
+d["a"] += 1                   # no KeyError
+
+queue = deque([1,2,3])
+queue.appendleft(0)
+print(queue)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Working with JSON: <code>json</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import json
+
+data = {"name": "Alice", "age": 25}
+text = json.dumps(data)
+print(text)
+
+loaded = json.loads(text)
+print(loaded)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Regular Expressions: <code>re</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import re
+
+pattern = r"\d+"
+print(re.findall(pattern, "The year is 2025"))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Working with the Internet: <code>urllib.request</code>, <code>http.client</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from urllib import request
+
+with request.urlopen("https://example.com") as f:
+    html = f.read()
+    print(len(html))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Command-Line Argument Parsing: <code>argparse</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--name")
+args = parser.parse_args()
+
+print(f"Hello {args.name}")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Data Compression: <code>gzip</code>, <code>zipfile</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import gzip
+
+with gzip.open("data.gz", "wt") as f:
+    f.write("Hello")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Debugging and Profiling: <code>pdb</code>, <code>timeit</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import timeit
+
+print(timeit.timeit("sum(range(1000))", number=1000))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Temporary Files: <code>tempfile</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import tempfile
+
+with tempfile.TemporaryFile() as f:
+    f.write(b"Hello")
+    f.seek(0)
+    print(f.read())
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Binary Data: <code>struct</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import struct
+
+packed = struct.pack("!I", 12345)
+unpacked = struct.unpack("!I", packed)
+print(unpacked)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>File Formats: <code>csv</code>, <code>xml.etree.ElementTree</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import csv
+
+with open("data.csv") as f:
+    reader = csv.reader(f)
+    for row in reader:
+        print(row)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Threading and Concurrency: <code>threading</code>, <code>multiprocessing</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import threading
+
+def worker():
+    print("working")
+
+t = threading.Thread(target=worker)
+t.start()
+t.join()
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Popular General-Purpose Modules</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Module</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>shutil</code></td>
+                <td>File operations (copy, move, delete)</td>
+            </tr>
+            <tr>
+                <td><code>subprocess</code></td>
+                <td>Run external commands</td>
+            </tr>
+            <tr>
+                <td><code>logging</code></td>
+                <td>Configurable logging system</td>
+            </tr>
+            <tr>
+                <td><code>functools</code></td>
+                <td>Higher-order functions, caching</td>
+            </tr>
+            <tr>
+                <td><code>itertools</code></td>
+                <td>Fast iterator tools (infinite sequences, combinations)</td>
+            </tr>
+            <tr>
+                <td><code>hashlib</code></td>
+                <td>Cryptographic hashes (MD5, SHA256)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Important Modules</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>System interaction</td>
+                <td><code>os</code>, <code>sys</code>, <code>shutil</code></td>
+            </tr>
+            <tr>
+                <td>Paths &amp; Files</td>
+                <td><code>pathlib</code>, <code>csv</code>, <code>tempfile</code></td>
+            </tr>
+            <tr>
+                <td>Data formats</td>
+                <td><code>json</code>, <code>xml</code>, <code>csv</code></td>
+            </tr>
+            <tr>
+                <td>Math &amp; Stats</td>
+                <td><code>math</code>, <code>statistics</code>, <code>random</code></td>
+            </tr>
+            <tr>
+                <td>Networking</td>
+                <td><code>urllib</code>, <code>http.client</code></td>
+            </tr>
+            <tr>
+                <td>Utilities</td>
+                <td><code>timeit</code>, <code>functools</code>, <code>itertools</code></td>
+            </tr>
+            <tr>
+                <td>Compression</td>
+                <td><code>gzip</code>, <code>zipfile</code></td>
+            </tr>
+            <tr>
+                <td>Concurrency</td>
+                <td><code>threading</code>, <code>multiprocessing</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
