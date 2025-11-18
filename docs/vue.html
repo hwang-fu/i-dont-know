@@ -157,6 +157,8 @@
     <h2> <img src="resources/" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ul style="line-height: 1.8;">
         <li><a href="#vue-introduction">Introduction</a></li>
+        <li><a href="#vue-options-vs-composition">Options API vs Composition API</a></li>
+        <li><a href="#vue-composition-api">Composition API</a></li>
     </ul>
 </nav>
 <hr/>
@@ -471,6 +473,675 @@ npm run dev
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-options-vs-composition">Vue Options API vs Composition API (Introduction & Comparison)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Vue components can be written using two different styles:</li>
+        <ul>
+            <li><b>Options API</b> (Vue 2 style, still fully supported in Vue 3)</li>
+            <li><b>Composition API</b> (new in Vue 3, more flexible)</li>
+        </ul>
+        <br/>
+        <li>Both styles are valid, and you can mix them in one project.</li>
+        <br/>
+        <li>The difference is mainly in:
+            <ul>
+                <li>how you structure code</li>
+                <li>how you define reactive data</li>
+                <li>how logic is organized and reused</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Options API (Traditional Vue Style)</b></li>
+    <br/>
+    <ul>
+        <li>The Options API organizes code into <u>sections</u> inside a component:</li>
+        <ul>
+            <li><code>data()</code></li>
+            <li><code>methods</code></li>
+            <li><code>computed</code></li>
+            <li><code>watch</code></li>
+            <li><code>props</code></li>
+        </ul>
+        <br/>
+        <li>This style is easy for beginners because logic is grouped by <u>options</u>, not by <u>functionality</u>.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">export default {
+  data() {
+    return { count: 0 }
+  },
+  methods: {
+    increment() {
+      this.count++
+    }
+  },
+  computed: {
+    double() {
+      return this.count * 2
+    }
+  }
+}
+</code></pre>
+    <ul>
+        <li>Good for small to medium components, beginners, simple logic.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Composition API (Modern Vue Style)</b></li>
+    <br/>
+    <ul>
+        <li>Composition API moves logic into the <code>setup()</code> function.</li>
+        <br/>
+        <li>You create reactive variables using:</li>
+        <ul>
+            <li><code>ref()</code></li>
+            <li><code>reactive()</code></li>
+            <li><code>computed()</code></li>
+            <li><code>watch()</code></li>
+        </ul>
+        <br/>
+        <li>This style is more flexible, easier to scale, and ideal for complex apps.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { ref, computed } from "vue"
+
+export default {
+  setup() {
+    const count = ref(0)
+    const increment = () =&gt; count.value++
+    const double = computed(() =&gt; count.value * 2)
+
+    return { count, increment, double }
+  }
+}
+</code></pre>
+    <ul>
+        <li>Good for large projects, reusable logic, TypeScript support.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Key Differences</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Aspect</th>
+                <th>Options API</th>
+                <th>Composition API</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Code organization</td>
+                <td>Grouped by <b>option</b> (data, methods, computed)</td>
+                <td>Grouped by <b>logic</b> and feature</td>
+            </tr>
+            <tr>
+                <td>Learning curve</td>
+                <td>Easier for beginners</td>
+                <td>Requires understanding of JS functions and reactivity</td>
+            </tr>
+            <tr>
+                <td>Reactivity</td>
+                <td>Implicit (<code>this.count++</code>)</td>
+                <td>Explicit (<code>ref</code>, <code>reactive</code>, <code>value</code>)</td>
+            </tr>
+            <tr>
+                <td>Logic reuse</td>
+                <td>Mixins (old, limited)</td>
+                <td>Composable functions (modern, powerful)</td>
+            </tr>
+            <tr>
+                <td>Scaling to large apps</td>
+                <td>More difficult</td>
+                <td>Much easier</td>
+            </tr>
+            <tr>
+                <td>TypeScript support</td>
+                <td>Limited</td>
+                <td>Excellent</td>
+            </tr>
+            <tr>
+                <td>IDE autocompletion</td>
+                <td>Less precise (due to <code>this</code>)</td>
+                <td>Very precise (explicit types &amp; refs)</td>
+            </tr>
+            <tr>
+                <td>Recommended for Vue 3?</td>
+                <td>Still supported &amp; fine</td>
+                <td><b>Yes, the future direction</b></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>When to Use Which?</b></li>
+    <br/>
+    <ul>
+        <li><b>Use Options API if:</b>
+            <ul>
+                <li>you are a beginner</li>
+                <li>your component is small</li>
+                <li>your team prefers classic Vue</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Use Composition API if:</b>
+            <ul>
+                <li>your application is large</li>
+                <li>you want reusable logic</li>
+                <li>you use TypeScript</li>
+                <li>you need more flexibility</li>
+                <li>you want better structure for complex features</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Example Comparison (Same Component in Both APIs)</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Options API</th>
+                <th>Composition API</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+<pre><code class="language-js line-numbers">export default {
+  data() {
+    return { count: 0 }
+  },
+  methods: {
+    increment() {
+      this.count++
+    }
+  }
+}
+</code></pre>
+                </td>
+                <td>
+<pre><code class="language-js line-numbers">import { ref } from "vue"
+
+export default {
+  setup() {
+    const count = ref(0)
+    const increment = () =&gt; count.value++
+    return { count, increment }
+  }
+}
+</code></pre>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Options API</th>
+                <th>Composition API</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Ease of use</td>
+                <td>Very easy</td>
+                <td>Medium</td>
+            </tr>
+            <tr>
+                <td>Flexibility</td>
+                <td>Limited</td>
+                <td>Very high</td>
+            </tr>
+            <tr>
+                <td>Logic organization</td>
+                <td>Separated by option</td>
+                <td>Grouped by feature</td>
+            </tr>
+            <tr>
+                <td>Preferred for new Vue 3 apps?</td>
+                <td>Okay</td>
+                <td><b>Yes</b></td>
+            </tr>
+            <tr>
+                <td>TypeScript</td>
+                <td>Not ideal</td>
+                <td><b>Excellent</b></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-composition-api">Introduction to the Vue 3 Composition API (Thorough & Beginner-Friendly)</h3>
+<ol>
+    <li><b>Short Intro</b></li>
+    <br/>
+    <ul>
+        <li>The <code>Composition API</code> is a modern way to write Vue components using plain JavaScript functions.</li>
+        <br/>
+        <li>It was introduced in Vue 3 and offers:
+            <ul>
+                <li>better logic organization</li>
+                <li>cleaner code for complex components</li>
+                <li>excellent TypeScript support</li>
+                <li>more powerful code reuse</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Instead of putting logic in separate blocks (<code>data</code>, <code>computed</code>, <code>methods</code>), everything lives together inside <code>setup()</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>The Setup Function</b></li>
+    <br/>
+    <ul>
+        <li><code>setup()</code> is the entry point for the Composition API in a component.</li>
+        <li>It runs before the component is created and returns what the template can use.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">export default {
+  setup() {
+    return {
+      // expose things to the template
+    }
+  }
+}
+</code></pre>
+    <ul>
+        <li>Everything used by the template must be returned from <code>setup()</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Creating Reactive State with ref()</b></li>
+    <br/>
+    <ul>
+        <li><code>ref()</code> creates a reactive value.</li>
+        <li>Use it for primitives (numbers, strings, booleans).</li>
+        <li>The actual value lives in <code>.value</code>.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { ref } from "vue"
+
+export default {
+  setup() {
+    const count = ref(0)
+
+    function increment() {
+      count.value++
+    }
+
+    return { count, increment }
+  }
+}
+</code></pre>
+    <ul>
+        <li><b>Important:</b> In templates, Vue automatically unwraps <code>ref</code>. No need to use <code>.value</code> inside HTML.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Reactive Objects with reactive()</b></li>
+    <br/>
+    <ul>
+        <li><code>reactive()</code> creates a reactive object.</li>
+        <li>Use it for collections or multiple related values.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { reactive } from "vue"
+
+export default {
+  setup() {
+    const state = reactive({
+      name: "Hwangfu",
+      age: 22
+    })
+
+    return { state }
+  }
+}
+</code></pre>
+    <ul>
+        <li>Reactive objects behave like normal JS objects but trigger UI updates when mutated.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Computed Properties</b></li>
+    <br/>
+    <ul>
+        <li><code>computed()</code> creates values that update automatically when dependencies change.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { ref, computed } from "vue"
+
+export default {
+  setup() {
+    const count = ref(5)
+    const double = computed(() =&gt; count.value * 2)
+
+    return { count, double }
+  }
+}
+</code></pre>
+    <ul>
+        <li>Computed properties are cached and recomputed only when needed.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Watchers</b></li>
+    <br/>
+    <ul>
+        <li><code>watch()</code> runs a callback when reactive data changes.</li>
+        <li>Good for asynchronous operations, API calls, or side effects.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { ref, watch } from "vue"
+
+export default {
+  setup() {
+    const name = ref("")
+
+    watch(name, (newVal, oldVal) =&gt; {
+      console.log("Changed from", oldVal, "to", newVal)
+    })
+
+    return { name }
+  }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>watchEffect()</b> (Automatic Tracking)</li>
+    <br/>
+    <ul>
+        <li><code>watchEffect()</code> tracks all reactive values inside it automatically.</li>
+        <li>It re-runs itself whenever dependencies change.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { ref, watchEffect } from "vue"
+
+export default {
+  setup() {
+    const x = ref(1)
+
+    watchEffect(() =&gt; {
+      console.log("x is", x.value)
+    })
+
+    return { x }
+  }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Methods in Composition API</b></li>
+    <br/>
+    <ul>
+        <li>There is no <code>methods</code> section.</li>
+        <li>You simply define functions inside <code>setup()</code>.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">setup() {
+  const count = ref(0)
+
+  function increment() {
+    count.value++
+  }
+
+  return { count, increment }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Lifecycles in Composition API</b></li>
+    <br/>
+    <ul>
+        <li>Instead of Options API lifecycle hooks (<code>mounted</code>, <code>created</code>), Composition API uses importable functions.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { onMounted, onUnmounted } from "vue"
+
+export default {
+  setup() {
+    onMounted(() =&gt; {
+      console.log("Component mounted")
+    })
+
+    onUnmounted(() =&gt; {
+      console.log("Component removed")
+    })
+  }
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Other hooks:
+            <ul>
+                <li><code>onMounted</code></li>
+                <li><code>onUpdated</code></li>
+                <li><code>onUnmounted</code></li>
+                <li><code>onBeforeMount</code></li>
+                <li><code>onBeforeUpdate</code></li>
+                <li><code>onBeforeUnmount</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Props in Composition API</b></li>
+    <br/>
+    <ul>
+        <li>Props are received as arguments to <code>setup()</code>.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">export default {
+  props: {
+    msg: String
+  },
+
+  setup(props) {
+    console.log(props.msg)
+    return { }
+  }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Emitting Events</b></li>
+    <br/>
+    <ul>
+        <li>You receive <code>emit</code> as the second argument in <code>setup()</code>.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">export default {
+  emits: ["update"],
+
+  setup(props, { emit }) {
+    function updateValue() {
+      emit("update", 42)
+    }
+
+    return { updateValue }
+  }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Extracting Logic Into Composables</b></li>
+    <br/>
+    <ul>
+        <li>The Composition API allows you to reuse logic by creating <b>composable functions</b>.</li>
+        <li>These are just plain JS functions that return reactive state.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">// useCounter.js
+import { ref } from "vue"
+
+export function useCounter() {
+  const count = ref(0)
+  const increment = () =&gt; count.value++
+  return { count, increment }
+}
+</code></pre>
+
+<pre><code class="language-js line-numbers">// Component.vue
+import { useCounter } from "./useCounter"
+
+export default {
+  setup() {
+    const { count, increment } = useCounter()
+    return { count, increment }
+  }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Why the Composition API Is Powerful</b></li>
+    <br/>
+    <ul>
+        <li>Flexible code structure</li>
+        <li>Easier for large teams</li>
+        <li>Better logic reuse (composables)</li>
+        <li>Works extremely well with TypeScript</li>
+        <li>No complex mixins or inheritance needed</li>
+        <li>Cleaner separation of features</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Options API vs Composition API Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Options API</th>
+                <th>Composition API</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Organization</td>
+                <td>By option type (data, methods, etc.)</td>
+                <td>By logic/functionality</td>
+            </tr>
+            <tr>
+                <td>Reactivity</td>
+                <td>Implicit <code>this</code></td>
+                <td>Explicit <code>ref</code>, <code>reactive</code></td>
+            </tr>
+            <tr>
+                <td>Logic reuse</td>
+                <td>mixins</td>
+                <td>composables</td>
+            </tr>
+            <tr>
+                <td>TypeScript</td>
+                <td>not ideal</td>
+                <td>excellent</td>
+            </tr>
+            <tr>
+                <td>Best for</td>
+                <td>small/simple components</td>
+                <td>medium/large apps, reusable logic</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
