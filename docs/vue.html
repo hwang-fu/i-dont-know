@@ -163,6 +163,7 @@
         <li><a href="#vue-create-app">Creating a Vue Application</a></li>
         <li><a href="#vue-template-syntax">Template Syntax</a></li>
         <li><a href="#vue-watchers">Watchers</a></li>
+        <li><a href="#vue-template-refs">Template Refs</a></li>
     </ul>
 </nav>
 <hr/>
@@ -2411,7 +2412,247 @@ watch(search, async (term) =&gt; {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-template-refs">Template Refs in Vue</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><u>Template refs</u> allow you to directly access DOM elements or component instances from your JavaScript code.</li>
+        <li>They are useful when:
+            <ul>
+                <li>you need to manually focus an input</li>
+                <li>you must measure elements (height/width)</li>
+                <li>you interact with a canvas or third-party library</li>
+                <li>you need access to a child component's exposed API</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Template refs work naturally with the <b>Composition API</b> using <code>ref()</code>.</li>
+    </ul>
 
+    <br/><br/>
+
+
+
+    <li><b>Basic Example: Referencing a DOM Element</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>ref=""</code> inside the template to mark an element.</li>
+        <li>Inside <code>&lt;script setup&gt;</code>, create a <code>ref()</code> with the same name.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;input ref="inputEl" placeholder="Type here..." /&gt;
+    &lt;button @click="focusInput"&gt;Focus input&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+
+const inputEl = ref(null)
+
+function focusInput() {
+    inputEl.value.focus()
+}
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li><code>inputEl.value</code> becomes the actual DOM element after the component mounts.</li>
+        <li>Before mount, <code>inputEl.value</code> is <code>null</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>When Is the Template Ref Available?</b></li>
+    <br/>
+    <ul>
+        <li>Refs are only set after the component is mounted.</li>
+        <li>To run code immediately after mounting, use <code>onMounted()</code>.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { ref, onMounted } from "vue"
+
+const box = ref(null)
+
+onMounted(() =&gt; {
+    console.log("Box height:", box.value.offsetHeight)
+})
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Template Refs with Components</b></li>
+    <br/>
+    <ul>
+        <li>You can also reference child components, not just DOM elements.</li>
+        <li>A child component must explicitly <u>expose</u> what it wants the parent to access.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;Child ref="childComp" /&gt;
+    &lt;button @click="childComp.increment"&gt;Call child method&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+import Child from "./Child.vue"
+
+const childComp = ref(null)
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Child.vue --&gt;
+&lt;script setup&gt;
+import { ref } from "vue"
+import { defineExpose } from "vue"
+
+const count = ref(0)
+function increment() { count.value++ }
+
+defineExpose({
+    count,
+    increment
+})
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;p&gt;{{ count }}&lt;/p&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <ul>
+        <li><code>defineExpose()</code> is required to make component methods/state available via refs.</li>
+        <li>Otherwise the parent cannot access them.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Binding Refs in <code>v-for</code></b></li>
+    <br/>
+    <ul>
+        <li>A common use-case: getting references to multiple elements.</li>
+        <li>Vue automatically gives you an array or an object depending on how you bind the ref.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;ul&gt;
+        &lt;li
+            v-for="(user, index) in users"
+            :key="user.id"
+            :ref="setItemRef"
+        &gt;
+            {{ user.name }}
+        &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+
+const users = [
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" }
+]
+
+const itemRefs = ref([])
+
+function setItemRef(el) {
+    if (el) itemRefs.value.push(el)
+}
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>Now <code>itemRefs.value</code> is an array of DOM elements.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>template ref</code> for Non-DOM Purposes</b></li>
+    <br/>
+    <ul>
+        <li>You can store anything in a ref assigned via the template.</li>
+        <li>Example: Registering canvas contexts, chart instances, editors, etc.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;canvas ref="canvas" width="200" height="200"&gt;&lt;/canvas&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref, onMounted } from "vue"
+
+const canvas = ref(null)
+
+onMounted(() =&gt; {
+    const ctx = canvas.value.getContext("2d")
+    ctx.fillRect(10, 10, 100, 100)
+})
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Template Ref Caveats</b></li>
+    <br/>
+    <ul>
+        <li><b>Refs do not exist until after mount</b> → use <code>onMounted()</code>.</li>
+        <li>Refs pointing to components only work if the child uses <code>defineExpose()</code>.</li>
+        <li>Do not overuse refs: rely on Vue’s reactivity first.</li>
+        <li>Refs are for when "declarative DOM binding" isn't enough.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>DOM refs</td>
+                <td>Use <code>ref="..."</code> to access DOM elements directly</td>
+            </tr>
+            <tr>
+                <td>Component refs</td>
+                <td>Require <code>defineExpose()</code> in the child component</td>
+            </tr>
+            <tr>
+                <td>When available</td>
+                <td>After mount — use <code>onMounted()</code></td>
+            </tr>
+            <tr>
+                <td>v-for refs</td>
+                <td>Bind a function as <code>:ref</code> to collect multiple elements</td>
+            </tr>
+            <tr>
+                <td>Usage</td>
+                <td>Focus, measurements, canvas, third-party libraries</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
