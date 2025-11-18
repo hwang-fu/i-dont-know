@@ -161,6 +161,7 @@
         <li><a href="#vue-composition-api">Composition API</a></li>
         <li><a href="#vue-reactive-value">Reactive Value</a></li>
         <li><a href="#vue-create-app">Creating a Vue Application</a></li>
+        <li><a href="#vue-template-syntax">Template Syntax</a></li>
     </ul>
 </nav>
 <hr/>
@@ -1751,6 +1752,374 @@ npm run preview   # optional: preview the production build locally
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-template-syntax">Template Syntax in Vue</h3>
+<ol>
+    <li><b>What Is the Template?</b></li>
+    <br/>
+    <ul>
+        <li>In Vue, a <code>template</code> is the HTML-like part of your component that describes what should be rendered.</li>
+        <br/>
+        <li>With the Composition API, you usually write templates in <code>.vue</code> Single File Components:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;h1&gt;{{ title }}&lt;/h1&gt;
+    &lt;p&gt;Count: {{ count }}&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+
+const title = ref("Hello from Vue")
+const count = ref(0)
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>Everything you define in <code>&lt;script setup&gt;</code> is directly usable inside the template (no <code>this</code> keyword).</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Text Interpolation with <code>{{ }}</code> (Just like in Angular)</b></li>
+    <br/>
+    <ul>
+        <li>The most basic template feature is <u>interpolation</u> using double curly braces.</li>
+        <li>It displays the value of a JavaScript expression as text.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;h1&gt;{{ title }}&lt;/h1&gt;
+    &lt;p&gt;Hello, {{ name }}!&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+
+const title = ref("Welcome")
+const name = ref("User")
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>You can only put one <u>expression</u> inside <code>{{ }}</code>, not full statements or <code>if</code> / <code>for</code> blocks.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Simple JavaScript Expressions</b></li>
+    <br/>
+    <ul>
+        <li>You can use simple JS expressions inside <code>{{ }}</code>:</li>
+        <ul>
+            <li>arithmetic: <code>{{ count + 1 }}</code></li>
+            <li>string operations: <code>{{ firstName + " " + lastName }}</code></li>
+            <li>ternary: <code>{{ isAdmin ? "Admin" : "User" }}</code></li>
+            <li>function calls: <code>{{ formatName(user) }}</code></li>
+        </ul>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;p&gt;Next: {{ count + 1 }}&lt;/p&gt;
+    &lt;p&gt;Full name: {{ firstName + " " + lastName }}&lt;/p&gt;
+    &lt;p&gt;Role: {{ isAdmin ? "Admin" : "User" }}&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+
+const count = ref(1)
+const firstName = ref("Junzhe")
+const lastName = ref("Wang")
+const isAdmin = ref(false)
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Raw HTML with <code>v-html</code> (Be Careful)</b></li>
+    <br/>
+    <ul>
+        <li>By default, <code>{{ }}</code> escapes HTML (e.g., <code>&gt;</code> automatically becomes <code>&amp;gt;</code>) for safety.</li>
+        <li>If you really need to render HTML from a string, use <code>v-html</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;p&gt;Normal: {{ rawHtml }}&lt;/p&gt;
+    &lt;p v-html="rawHtml"&gt;&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+const rawHtml = "&lt;strong&gt;This is bold&lt;/strong&gt;"
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li><b>WARN:</b> Never use <code>v-html</code> with untrusted user input. It can cause XSS security problems.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Attribute Binding with <code>v-bind:</code> / <code>:</code></b></li>
+    <br/>
+    <ul>
+        <li>Use <code>v-bind:</code> to bind an attribute to a JS expression.</li>
+        <li>Short form is a single colon (<code>:</code>).</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;a :href="profileUrl"&gt;Go to profile&lt;/a&gt;
+    &lt;img :src="avatarUrl" :alt="username" /&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+const profileUrl = "https://example.com/user/hwangfu"
+const avatarUrl  = "/images/avatar.png"
+const username   = "Hwangfu"
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>You can even bind to boolean attributes:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;button :disabled="isLoading"&gt;
+    {{ isLoading ? "Loading..." : "Submit" }}
+&lt;/button&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Binding <code>class</code> and <code>style</code></b></li>
+    <br/>
+    <ul>
+        <li>Vue makes dynamic classes and styles very convenient.</li>
+        <li>You can bind strings, objects, or arrays, but Vue always converts them into normal HTML.</li>
+        <li>When using an object, the <u>keys</u> are class/style names and the <u>values</u> are booleans or expressions.</li>
+        <li>Vue builds the final <code>class=""</code> or <code>style=""</code> string automatically.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;!-- Dynamic classes --
+         Vue evaluates the object and produces a normal class string.
+         With isActive=true and hasError=false, the final HTML becomes:
+         &lt;p class="active"&gt;
+    --&gt;
+    &lt;p :class="{ active: isActive, error: hasError }"&gt;
+        Status text
+    &lt;/p&gt;
+
+    &lt;!-- Dynamic inline styles --
+         Vue converts the object to a real style attribute:
+         style="color: blue; font-size: 18px;"
+    --&gt;
+    &lt;div :style="{ color: textColor, fontSize: size + 'px' }"&gt;
+        Styled text
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+
+const isActive  = ref(true)
+const hasError  = ref(false)
+
+const textColor = ref("blue")
+const size      = ref(18)
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+
+    <li><b>Conditional Rendering: <code>v-if</code>, <code>v-else-if</code>, <code>v-else</code>, <code>v-show</code></b></li>
+    <br/>
+    <ul>
+        <li><code>v-if</code> actually adds/removes elements from the DOM.</li>
+        <li><code>v-show</code> toggles the <code>display</code> CSS property (faster when toggling often).</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;p v-if="loggedIn"&gt;Welcome back!&lt;/p&gt;
+    &lt;p v-else&gt;Please log in.&lt;/p&gt;
+
+    &lt;p v-show="showDetails"&gt;
+        These details can be quickly shown/hidden.
+    &lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+
+const loggedIn    = ref(false)
+const showDetails = ref(true)
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>List Rendering with <code>v-for</code> and <code>key</code></b></li>
+    <br/>
+    <ul>
+        <li><code>v-for</code> renders a list by iterating over arrays or objects.</li>
+        <li>Always provide a unique <code>:key</code> for better performance and stable updates.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;ul&gt;
+        &lt;li v-for="user in users" :key="user.id"&gt;
+            {{ user.name }} ({{ user.age }})
+        &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+const users = [
+    { id: 1, name: "Alice", age: 23 },
+    { id: 2, name: "Bob", age: 31 },
+    { id: 3, name: "Charlie", age: 27 }
+]
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Event Handling with <code>v-on:</code> / <code>@</code></b></li>
+    <br/>
+    <ul>
+        <li>Use <code>v-on:</code> (or <code>@</code>) to listen to DOM events.</li>
+        <li>You can call methods or inline expressions.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;button @click="increment"&gt;
+        Clicked {{ count }} times
+    &lt;/button&gt;
+
+    &lt;input
+        type="text"
+        placeholder="Type something"
+        @input="onInput"
+    /&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+
+const count = ref(0)
+
+function increment() {
+    count.value++
+}
+
+function onInput(event) {
+    console.log("You typed:", event.target.value)
+}
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Two-Way Binding with <code>v-model</code> (Quick Overview)</b></li>
+    <br/>
+    <ul>
+        <li><code>v-model</code> connects a <b>form input</b> with a reactive value in both directions.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;input v-model="name" placeholder="Your name" /&gt;
+    &lt;p&gt;Hello, {{ name }}!&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+
+const name = ref("")
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>Typing in the input updates <code>name</code>, and changing <code>name</code> in code updates the input.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Directive Shorthands (Cheat Sheet)</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Full Form</th>
+                <th>Shorthand</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>v-bind:href="url"</code></td>
+                <td><code>:href="url"</code></td>
+                <td>Bind an attribute to an expression</td>
+            </tr>
+            <tr>
+                <td><code>v-on:click="doSomething"</code></td>
+                <td><code>@click="doSomething"</code></td>
+                <td>Listen to an event</td>
+            </tr>
+            <tr>
+                <td><code>v-model="value"</code></td>
+                <td>none</td>
+                <td>Two-way binding</td>
+            </tr>
+            <tr>
+                <td><code>v-if="condition"</code></td>
+                <td>none</td>
+                <td>Conditional rendering</td>
+            </tr>
+            <tr>
+                <td><code>v-for="item in items"</code></td>
+                <td>none</td>
+                <td>List rendering</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
