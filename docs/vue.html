@@ -162,6 +162,7 @@
         <li><a href="#vue-reactive-value">Reactive Value</a></li>
         <li><a href="#vue-create-app">Creating a Vue Application</a></li>
         <li><a href="#vue-template-syntax">Template Syntax</a></li>
+        <li><a href="#vue-watchers">Watchers</a></li>
     </ul>
 </nav>
 <hr/>
@@ -2112,6 +2113,305 @@ const name = ref("")
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-watchers">Watchers in Vue (Composition API)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <code>watcher</code> in Vue lets you run code in response to changes in reactive values.</li>
+        <br/>
+        <li>Watchers are useful when you need to perform <u>side effects</u> such as:
+            <ul>
+                <li>fetching data when a value changes</li>
+                <li>saving values to localStorage</li>
+                <li>debouncing expensive operations</li>
+                <li>logging or debugging</li>
+            </ul>
+        </li>
+        <br/>
+        <li>In the Composition API, watchers are created using:
+            <ul>
+                <li><code>watch()</code></li>
+                <li><code>watchEffect()</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>watch(): Watching Specific Reactive Sources</b></li>
+    <br/>
+    <ul>
+        <li><code>watch()</code> tracks one or more <u>explicit</u> reactive values and calls a callback when they change.</li>
+        <li>It provides both the <code>new</code> and <code>old</code> values.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { ref, watch } from "vue"
+
+const name = ref("")
+
+watch(name, (newValue, oldValue) =&gt; {
+    console.log("Changed:", oldValue, "--&gt;", newValue)
+})
+</code></pre>
+
+    <ul>
+        <li>The callback only runs when <code>name</code> changes.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Watching Multiple Sources</b></li>
+    <br/>
+    <ul>
+        <li>You can watch several values by passing an array.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">const first = ref("")
+const last  = ref("")
+
+watch([first, last], ([newFirst, newLast], [oldFirst, oldLast]) =&gt; {
+    console.log("First:", oldFirst, "--&gt;", newFirst)
+    console.log("Last:", oldLast, "--&gt;", newLast)
+})
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Watching Reactive Objects</b></li>
+    <br/>
+    <ul>
+        <li>When watching a <code>reactive()</code> object, Vue only tracks changes if you set <code>{ deep: true }</code>.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { reactive, watch } from "vue"
+
+const user = reactive({
+    name: "Alice",
+    age: 25
+})
+
+watch(user, (newVal, oldVal) =&gt; {
+    console.log("User changed!")
+}, { deep: true })
+</code></pre>
+
+    <ul>
+        <li><b>NOTE:</b> For objects, Vue <u>cannot</u> give meaningful <code>oldValue</code> because the object is mutated.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Watching a Getter Function</b></li>
+    <br/>
+    <ul>
+        <li>Often you want to watch <u>one part</u> of a reactive object.</li>
+        <li>You can pass a function that returns the value you want to track.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">watch(
+    () =&gt; user.age,
+    (newAge, oldAge) =&gt; {
+        console.log("Age changed:", oldAge, "--&gt;", newAge)
+    }
+)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Immediate Watchers</b></li>
+    <br/>
+    <ul>
+        <li>Normally, a watcher runs only when the watched value <u>changes</u>.</li>
+        <li><code>{ immediate: true }</code>
+            tells Vue to run the watcher callback immediately once when the watcher is <u>created</u>,
+            even before any changes happen, using the current value of the watched ref.
+        </li>
+        <li>After that first run, it continues watching as usual.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">watch(
+    count,
+    (newVal, oldVal) =&gt; {
+        console.log("Watcher triggered:", newVal)
+    },
+    {
+        // Run once immediately with the current value
+        immediate: true
+    }
+)
+</code></pre>
+
+    <br/><br/>
+
+
+
+
+    <li><b>watchEffect(): Automatic Dependency Tracking</b></li>
+    <br/>
+    <ul>
+        <li><code>watchEffect()</code> runs a function immediately and re-runs it whenever <u>any</u> reactive value inside it changes.</li>
+        <li>You do NOT specify what to watch, Vue figures it out.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { ref, watchEffect } from "vue"
+
+const count = ref(0)
+
+watchEffect(() =&gt; {
+    console.log("Count is", count.value)
+})
+</code></pre>
+
+    <ul>
+        <li>Great for debugging or when watching several related values.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>watch vs watchEffect (Comparison)</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>watch()</th>
+                <th>watchEffect()</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Tracks values</td>
+                <td>Explicitly listed values</td>
+                <td>Automatically detects dependencies</td>
+            </tr>
+            <tr>
+                <td>First run</td>
+                <td>Only when changed (unless <code>immediate</code>)</td>
+                <td>Runs immediately</td>
+            </tr>
+            <tr>
+                <td>Best for</td>
+                <td>side effects on specific values</td>
+                <td>complex reactive logic, debugging</td>
+            </tr>
+            <tr>
+                <td>Old value available?</td>
+                <td>Yes (for refs)</td>
+                <td>No</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Cleanup (Stopping Watchers)</b></li>
+    <br/>
+    <ul>
+        <li>Both <code>watch()</code> and <code>watchEffect()</code> return a function that stops the watcher.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">const stop = watch(count, () =&gt; {
+    console.log("count changed")
+})
+
+// Later:
+stop()
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Practical Example: Fetching from an API</b></li>
+    <br/>
+    <ul>
+        <li>A very common real use-case is fetching data when a reactive value changes.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { ref, watch } from "vue"
+
+const search = ref("")
+const results = ref([])
+
+watch(search, async (term) =&gt; {
+    if (term.length &lt; 3) {
+        results.value = []
+        return
+    }
+
+    const res = await fetch(`/api/search?q=${term}`)
+    results.value = await res.json()
+})
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>watch()</code></td>
+                <td>Tracks specific reactive values and gives access to old/new values</td>
+            </tr>
+            <tr>
+                <td><code>watchEffect()</code></td>
+                <td>Runs immediately and re-runs whenever any dependency changes</td>
+            </tr>
+            <tr>
+                <td>Deep watch</td>
+                <td>Needed to observe changes inside reactive objects</td>
+            </tr>
+            <tr>
+                <td>Immediate</td>
+                <td>Runs watcher callback right away on initialization</td>
+            </tr>
+            <tr>
+                <td>Usage</td>
+                <td>Side effects such as data fetching, logging, reacting to changes</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
