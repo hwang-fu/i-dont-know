@@ -155,6 +155,7 @@
         <li><a href="#python-custom-exceptions">Custom Exceptions</a></li>
         <li><a href="#python-classes">Classes</a></li>
         <li><a href="#python-dataclasses">Dataclasses</a></li>
+        <li><a href="#python-class-inheritance">Class Inheritance</a></li>
     </ul>
 </nav>
 <hr/>
@@ -10212,7 +10213,371 @@ print(astuple(p))  # (3, 4)
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-class-inheritance">Python Class Inheritance</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Inheritance allows a class to reuse, extend, or modify the behavior of another class.</li>
+        <li>The existing class is the <b>base class</b> (or parent class).</li>
+        <li>The new class is the <b>derived class</b> (or child class).</li>
+        <br/>
+        <li>Inheritance reduces code duplication and expresses logical relationships like:
+            <ul>
+                <li><code>Dog</code> is an <code>Animal</code></li>
+                <li><code>ElectricCar</code> is a <code>Car</code></li>
+                <li><code>AdminUser</code> is a <code>User</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Python supports:
+            <ul>
+                <li>single inheritance</li>
+                <li>multiple inheritance</li>
+                <li>method overriding</li>
+                <li>super() calls</li>
+                <li>MRO (method resolution order)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Basic Inheritance</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class Animal:
+    def speak(self):
+        return "..."
+
+class Dog(Animal):
+    def speak(self):
+        return "Woof!"
+
+d = Dog()
+print(d.speak())     # "Woof!"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Dog</code> inherits from <code>Animal</code>.</li>
+        <li><code>Dog</code> overrides the <code>speak()</code> method.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>super()</code> to Call Parent Methods</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class Person:
+    def __init__(self, name):
+        self.name = name
+
+class Employee(Person):
+    def __init__(self, name, salary):
+        super().__init__(name)      # calls Person.__init__
+        self.salary = salary
+
+e = Employee("Alice", 5000)
+print(e.name, e.salary)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>super()</code> ensures proper method resolution order, especially in multiple inheritance.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Extending Methods Instead of Replacing</b></li>
+<pre><code class="language-python line-numbers">class Logger:
+    def log(self, msg):
+        print("Log:", msg)
+
+class TimestampLogger(Logger):
+    def log(self, msg):
+        from datetime import datetime
+        ts = datetime.now().isoformat()
+        super().log(f"[{ts}] {msg}")
+</code></pre>
+    <ul>
+        <li>Child class method extends parent behavior.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Inheritance of Attributes and Methods</b></li>
+    <br/>
+    <ul>
+        <li>Child classes inherit:
+            <ul>
+                <li>instance methods</li>
+                <li>class methods</li>
+                <li>static methods</li>
+                <li>class attributes</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Vehicle:
+    wheels = 4
+
+class Car(Vehicle):
+    pass
+
+print(Car.wheels)   # 4
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Overriding Attributes</b></li>
+<pre><code class="language-python line-numbers">class Vehicle:
+    wheels = 4
+
+class Motorcycle(Vehicle):
+    wheels = 2
+
+print(Motorcycle.wheels)   # 2
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Checking Inheritance Relationships</b></li>
+<pre><code class="language-python line-numbers">issubclass(Dog, Animal)     # True
+isinstance(Dog(), Animal)   # True
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>issubclass()</code> checks class-level relationships.</li>
+        <li><code>isinstance()</code> checks object-level relationships.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Multiple Inheritance</b></li>
+    <br/>
+    <ul>
+        <li>Python allows a class to inherit from multiple classes.</li>
+        <li>Useful but must be used carefully.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Flyer:
+    def action(self):
+        return "flying"
+
+class Swimmer:
+    def action(self):
+        return "swimming"
+
+class Duck(Flyer, Swimmer):
+    pass
+
+d = Duck()
+print(d.action())     # "flying"  (Flyer is first)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Python resolves method calls using <b>MRO</b> (Method Resolution Order).</li>
+        <li>Here, <code>Flyer</code> is checked before <code>Swimmer</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Method Resolution Order (MRO)</b></li>
+    <br/>
+    <ul>
+        <li>Determines which class Python looks in first when finding an attribute or method.</li>
+        <li>Use <code>.mro()</code> to inspect it:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">print(Duck.mro())
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>MRO uses the <b>C3 linearization algorithm</b> ensuring:
+            <ul>
+                <li>consistent order</li>
+                <li>left-to-right priority</li>
+                <li>parents before grandparents</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>super()</code> with Multiple Inheritance</b></li>
+    <br/>
+    <ul>
+        <li>Because of MRO, <code>super()</code> works across multiple inheritance trees.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class A:
+    def go(self):
+        print("A.go")
+
+class B(A):
+    def go(self):
+        super().go()
+        print("B.go")
+
+class C(A):
+    def go(self):
+        super().go()
+        print("C.go")
+
+class D(B, C):
+    pass
+
+D().go()
+</code></pre>
+
+Output:
+
+<pre><code class="language-text">A.go
+C.go
+B.go
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Order follows <code>D.mro()</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Abstract Base Classes (ABC)</b></li>
+    <br/>
+    <ul>
+        <li>Used to force child classes to implement specific methods.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self):
+        pass
+
+class Square(Shape):
+    def __init__(self, side):
+        self.side = side
+
+    def area(self):
+        return self.side * self.side
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You cannot instantiate <code>Shape</code> directly.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Preventing Inheritance</b></li>
+    <br/>
+    <ul>
+        <li>Python has no direct <code>final</code> keyword like Java.</li>
+        <li>But you can use conventions, metaclasses, or raise errors inside <code>__init_subclass__</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class FinalClass:
+    def __init_subclass__(cls):
+        raise TypeError("This class cannot be inherited from")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Common Inheritance Patterns</b></li>
+    <br/>
+    <ul>
+        <li><b>"Is-a" relationship</b> (proper use):
+            <ul>
+                <li><code>Dog</code> is an <code>Animal</code></li>
+                <li><code>Car</code> is a <code>Vehicle</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>"Has-a" relationship</b> → use composition instead of inheritance:
+            <ul>
+                <li><code>Car</code> has an <code>Engine</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Inheritance</td>
+                <td>Child class extends/overrides parent class</td>
+            </tr>
+            <tr>
+                <td>super()</td>
+                <td>Call parent method following MRO</td>
+            </tr>
+            <tr>
+                <td>Multiple inheritance</td>
+                <td>Class inherits from multiple parents</td>
+            </tr>
+            <tr>
+                <td>MRO</td>
+                <td>Defines attribute/method lookup order</td>
+            </tr>
+            <tr>
+                <td>Overriding</td>
+                <td>Child redefines parent method</td>
+            </tr>
+            <tr>
+                <td>ABC</td>
+                <td>Define abstract methods to enforce implementation</td>
+            </tr>
+            <tr>
+                <td>Best practice</td>
+                <td>Use inheritance for “is-a” relationships; use composition for “has-a”</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
