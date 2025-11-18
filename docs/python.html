@@ -158,6 +158,7 @@
         <li><a href="#python-class-inheritance">Class Inheritance</a></li>
         <li><a href="#python-private-variables">Private Variables</a></li>
         <li><a href="#python-iterators">Iterators</a></li>
+        <li><a href="#python-generators">Generators</a></li>
     </ul>
 </nav>
 <hr/>
@@ -11221,7 +11222,573 @@ for w in words:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-generators">Python Generators</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <b>generator</b> is a special kind of iterator that produces values lazily — one at a time — using the <code>yield</code> keyword.</li>
+        <br/>
+        <li>Generators allow you to write iterable sequences without creating full containers in memory.</li>
+        <br/>
+        <li>Generators are ideal for:
+            <ul>
+                <li>large data processing</li>
+                <li>streaming / pipelines</li>
+                <li>infinite sequences</li>
+                <li>efficient iteration</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Generators automatically implement the <b>iterator protocol</b>:
+            <ul>
+                <li><code>__iter__()</code></li>
+                <li><code>__next__()</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Basic Generator Function</b></li>
+    <br/>
+    <ul>
+        <li>A generator function contains one or more <code>yield</code> statements.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def countdown(n):
+    while n &gt; 0:
+        yield n
+        n -= 1
+
+for x in countdown(3):
+    print(x)
+</code></pre>
+
+Output:
+
+<pre><code class="language-text">3
+2
+1
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Each call to <code>yield</code> produces the next value.</li>
+        <li>Execution pauses at <code>yield</code> and resumes on the next <code>next()</code> call.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Generator Execution Model</b></li>
+    <br/>
+    <ul>
+        <li>Generators maintain their internal state between yields.</li>
+        <li>Unlike normal functions, they do not restart from the top each time.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">g = countdown(3)
+print(next(g))   # 3
+print(next(g))   # 2
+print(next(g))   # 1
+# next(g) -&gt; StopIteration
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Difference Between Return and Yield</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Keyword</th>
+                <th>Effect</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>return</code></td>
+                <td>Ends function, returns a value once</td>
+            </tr>
+            <tr>
+                <td><code>yield</code></td>
+                <td>Pauses execution, returns multiple values one at a time</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Generators Are Memory-Efficient</b></li>
+    <br/>
+    <ul>
+        <li>A list with 1 million numbers:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">nums = [x*x for x in range(1_000_000)]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>A generator version:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">nums = (x*x for x in range(1_000_000))
+</code></pre>
+    <ul>
+        <li>The generator uses <b>constant memory</b>, because it computes values only when needed.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Generator Expressions</b></li>
+    <br/>
+    <ul>
+        <li>Like list comprehensions but lazy.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">squares = (n*n for n in range(5))
+print(next(squares))   # 0
+print(next(squares))   # 1
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Generators with Multiple Yields</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def steps():
+    yield "start"
+    yield "loading"
+    yield "finish"
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Generators to Build Pipelines</b></li>
+    <br/>
+    <ul>
+        <li>Generators are great for streaming transformations.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def read_numbers():
+    for i in range(10):
+        yield i
+
+def even_numbers(numbers):
+    for n in numbers:
+        if n % 2 == 0:
+            yield n
+
+def squared(numbers):
+    for n in numbers:
+        yield n * n
+
+pipeline = squared(even_numbers(read_numbers()))
+for x in pipeline:
+    print(x)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This pipeline:
+            <ul>
+                <li>reads numbers</li>
+                <li>filters even ones</li>
+                <li>squares the result</li>
+                <li>all lazily</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+    <li><b>Sending Data into a Generator</b></li>
+    <br/>
+    <ul>
+        <li>Generators are not only one-way producers of values.</li>
+        <br/>
+        <li>Using <code>generator.send(value)</code>, you can send data <b>into</b> a paused generator.</li>
+        <br/>
+        <li>This turns generators into <b>coroutines</b> — a powerful technique for cooperative multitasking, data pipelines, and stateful processing.</li>
+    </ul>
+    <br/>
+
+<pre><code class="language-python line-numbers">def greeter():
+    name = yield "Your name?"
+    yield f"Hello, {name}!"
+
+g = greeter()
+print(next(g))           # "Your name?"
+print(g.send("Alice"))   # "Hello, Alice!"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The first <code>next()</code> call starts the generator until the first <code>yield</code>.</li>
+        <li>The next <code>send()</code> call provides a value that becomes the result of the suspended <code>yield</code> expression.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>How <code>send()</code> Works Internally</b></li>
+    <br/>
+    <ul>
+        <li>When a generator is paused at this line:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">name = yield "Your name?"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The expression <code>yield "Your name?"</code> acts like:
+            <ul>
+                <li>output: <code>"Your name?"</code></li>
+                <li>input: value provided later via <code>send()</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>When we call <code>g.send("Alice")</code>:</li>
+        <ul>
+            <li>the <code>yield</code> returns the value <code>"Alice"</code></li>
+            <li>so <code>name</code> becomes <code>"Alice"</code></li>
+            <li>execution continues until the next <code>yield</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>The First <code>send()</code> Must Be <code>None</code></b></li>
+    <br/>
+    <ul>
+        <li>You cannot send a non-None value into a generator before it reaches the first <code>yield</code>.</li>
+        <li>Therefore, the first interaction usually uses <code>next()</code> (or <code>send(None)</code>).</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">g = greeter()
+g.send("Alice")  # ERROR! Generator not started yet
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Correct way:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">g = greeter()
+next(g)           # or g.send(None)
+g.send("Alice")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Generators as Simple Coroutines</b></li>
+    <br/>
+    <ul>
+        <li>A generator can behave like a coroutine that receives many values over time.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def accumulator():
+    total = 0
+    while True:
+        value = yield total
+        total += value
+
+acc = accumulator()
+print(next(acc))        # 0
+print(acc.send(5))      # 5
+print(acc.send(10))     # 15
+print(acc.send(3))      # 18
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This generator:
+            <ul>
+                <li>starts with a total of 0</li>
+                <li>each <code>send()</code> adds the value to the total</li>
+                <li>yields the updated total each time</li>
+            </ul>
+        </li>
+        <li>This is a miniature coroutine.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Stopping a Coroutine with a Sentinel Value</b></li>
+    <br/>
+    <ul>
+        <li>Generators can be designed to terminate on a special input, such as <code>None</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def summer():
+    total = 0
+    while True:
+        item = yield total
+        if item is None:      # sentinel value
+            return total
+        total += item
+
+g = summer()
+next(g)
+print(g.send(5))   # 5
+print(g.send(7))   # 12
+
+try:
+    g.send(None)   # stops the generator
+except StopIteration as e:
+    print("Final total:", e.value)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>When a generator returns, the return value is contained inside a <code>StopIteration</code> exception.</li>
+        <li>This is how Python’s async framework originally worked before <code>async</code>/<code>await</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Sending Exceptions into a Generator</b></li>
+    <br/>
+    <ul>
+        <li>You can use <code>throw()</code> to inject an exception inside a paused generator.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def worker():
+    try:
+        while True:
+            task = yield
+            print("Processing", task)
+    except ValueError:
+        print("ValueError inside generator!")
+    yield "done"
+
+g = worker()
+next(g)
+g.send("Job 1")
+g.throw(ValueError)
+print(next(g))   # "done"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This technique is used in advanced coroutine schedulers.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Difference Between <code>next()</code> and <code>send()</code></b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Purpose</th>
+                <th>Value Passed to Generator</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>next(gen)</code></td>
+                <td>Resume generator</td>
+                <td><code>None</code></td>
+            </tr>
+            <tr>
+                <td><code>gen.send(value)</code></td>
+                <td>Resume generator and pass <code>value</code></td>
+                <td><code>value</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Practical Use Cases</b></li>
+    <br/>
+    <ul>
+        <li>Stateful streaming transformations</li>
+        <li>Creating coroutine pipelines</li>
+        <li>Simple message-passing systems</li>
+        <li>Implementing cooperative multitasking (pre-async/await)</li>
+        <li>Controlling behavior based on incoming data</li>
+        <li>Simplifying actor-model concurrency</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Closing a Generator</b></li>
+<pre><code class="language-python line-numbers">g = countdown(3)
+g.close()
+</code></pre>
+    <ul>
+        <li>After <code>close()</code>, further <code>next()</code> calls raise <code>StopIteration</code> immediately.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Throwing Exceptions into Generators</b></li>
+    <br/>
+    <ul>
+        <li>You can inject exceptions:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def test():
+    try:
+        yield 1
+    except ValueError:
+        yield "error handled"
+    yield 2
+
+g = test()
+print(next(g))              # 1
+print(g.throw(ValueError))  # "error handled"
+print(next(g))              # 2
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Returning from a Generator</b></li>
+    <br/>
+    <ul>
+        <li>A generator may use <code>return</code>, but this signals the end of iteration.</li>
+        <li>The returned value is stored in the <code>StopIteration</code> exception.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def total():
+    s = 0
+    while True:
+        n = yield
+        if n is None:
+            break
+        s += n
+    return s
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Infinite Generators</b></li>
+    <br/>
+    <ul>
+        <li>Generators can represent unbounded sequences.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def naturals():
+    n = 0
+    while True:
+        yield n
+        n += 1
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Generators vs Regular Functions</b></li>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Regular Function</th>
+                <th>Generator</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Returns once</td>
+                <td>Yields many times</td>
+            </tr>
+            <tr>
+                <td>Does not preserve state</td>
+                <td>Resumes from last yield</td>
+            </tr>
+            <tr>
+                <td>Eager evaluation</td>
+                <td>Lazy evaluation</td>
+            </tr>
+            <tr>
+                <td>Returns ordinary values</td>
+                <td>Returns an iterator</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>yield</code></td>
+                <td>Produces values lazily</td>
+            </tr>
+            <tr>
+                <td>Stateful execution</td>
+                <td>Generator pauses and resumes</td>
+            </tr>
+            <tr>
+                <td>Memory efficient</td>
+                <td>Only one value stored at a time</td>
+            </tr>
+            <tr>
+                <td>Generator expressions</td>
+                <td>Lightweight inline generators</td>
+            </tr>
+            <tr>
+                <td>send() / throw()</td>
+                <td>Two-way communication with generator</td>
+            </tr>
+            <tr>
+                <td>Pipelines</td>
+                <td>Ideal for streaming data processing</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
