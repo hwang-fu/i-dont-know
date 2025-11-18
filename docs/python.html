@@ -157,6 +157,7 @@
         <li><a href="#python-dataclasses">Dataclasses</a></li>
         <li><a href="#python-class-inheritance">Class Inheritance</a></li>
         <li><a href="#python-private-variables">Private Variables</a></li>
+        <li><a href="#python-iterators">Iterators</a></li>
     </ul>
 </nav>
 <hr/>
@@ -10869,7 +10870,350 @@ class Child(Base):
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-iterators">Python Iterators</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>An <b>iterator</b> is an object that allows you to traverse a sequence of values one at a time.</li>
+        <br/>
+        <li>Python implements the iterator protocol with two methods:
+            <ul>
+                <li><code>__iter__()</code>: returns the iterator object itself</li>
+                <li><code>__next__()</code>: returns the next item, or raises <code>StopIteration</code> when done</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Iterators power:
+            <ul>
+                <li><code>for</code> loops</li>
+                <li>generators</li>
+                <li>comprehensions</li>
+                <li>file reading</li>
+                <li>lazy evaluation</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Everything Iterable in Python Produces an Iterator</b></li>
+    <br/>
+    <ul>
+        <li>Examples of iterable objects:
+            <ul>
+                <li>lists</li>
+                <li>tuples</li>
+                <li>strings</li>
+                <li>dictionaries</li>
+                <li>sets</li>
+                <li>file objects</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-python line-numbers">nums = [1, 2, 3]
+it = iter(nums)
+
+print(next(it))   # 1
+print(next(it))   # 2
+print(next(it))   # 3
+# next(it) would raise StopIteration
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>The Iterator Protocol</b></li>
+    <br/>
+    <ul>
+        <li>To create a custom iterator, implement:
+            <ul>
+                <li><code>__iter__()</code></li>
+                <li><code>__next__()</code></li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class CountTo:
+    def __init__(self, limit):
+        self.limit = limit
+        self.current = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.current &gt;= self.limit:
+            raise StopIteration
+        value = self.current
+        self.current += 1
+        return value
+
+for n in CountTo(3):
+    print(n)
+</code></pre>
+
+Output:
+
+<pre><code class="language-text">0
+1
+2
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Iterators Are State Machines</b></li>
+    <br/>
+    <ul>
+        <li>They remember their current position.</li>
+        <li>Once consumed, they cannot be restarted unless recreated.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">it = iter([10, 20, 30])
+for i in it:
+    print(i)
+
+for i in it:
+    print(i)   # prints nothing (iterator exhausted)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Iterators vs Iterables</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Iterable</td>
+                <td>Object that can return an iterator with <code>iter()</code></td>
+            </tr>
+            <tr>
+                <td>Iterator</td>
+                <td>Object that produces values via <code>next()</code> and remembers state</td>
+            </tr>
+            <tr>
+                <td>Iterator Protocol</td>
+                <td>Requires <code>__iter__()</code> and <code>__next__()</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Iterators in For-Loops</b></li>
+    <br/>
+    <ul>
+        <li><code>for</code> automatically calls <code>iter()</code> and repeatedly <code>next()</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">for ch in "abc":
+    print(ch)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Files Are Iterators</b></li>
+    <br/>
+    <ul>
+        <li>File objects produce one line at a time.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">with open("data.txt") as f:
+    for line in f:
+        print(line.strip())
+</code></pre>
+    <ul>
+        <li>This is memory-efficient (reads lazily).</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Generators: The Most Common Way to Build Iterators</b></li>
+<pre><code class="language-python line-numbers">def countdown(n):
+    while n &gt; 0:
+        yield n
+        n -= 1
+
+for x in countdown(3):
+    print(x)
+</code></pre>
+    <ul>
+        <li>Generators automatically implement the iterator protocol.</li>
+        <li><code>yield</code> produces one value at a time.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Generator Expressions</b></li>
+<pre><code class="language-python line-numbers">squares = (x*x for x in range(5))
+print(next(squares))   # 0
+print(next(squares))   # 1
+</code></pre>
+    <ul>
+        <li>Generator expressions create lightweight iterators.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Itertools: Tools for Advanced Iteration</b></li>
+<pre><code class="language-python line-numbers">import itertools
+
+for x in itertools.count(5, 2):
+    print(x)
+    if x &gt; 12:
+        break
+</code></pre>
+    <ul>
+        <li>Common functions:
+            <ul>
+                <li><code>count()</code>: infinite counting</li>
+                <li><code>cycle()</code>: repeat items endlessly</li>
+                <li><code>repeat()</code>: repeat a value</li>
+                <li><code>chain()</code>: combine iterables</li>
+                <li><code>islice()</code>: slice an iterator</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Iterator Exhaustion</b></li>
+    <br/>
+    <ul>
+        <li>Once an iterator is exhausted, calling <code>next()</code> raises <code>StopIteration</code>.</li>
+        <li>Must recreate a new iterator to iterate again.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">lst = [1, 2, 3]
+it = iter(lst)
+
+for i in it:
+    print(i)
+
+for i in it:
+    print(i)   # nothing printed
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Reiterable Objects</b></li>
+    <br/>
+    <ul>
+        <li>Lists, strings, tuples return a <b>new</b> iterator each time:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">nums = [1, 2, 3]
+for x in nums:
+    print(x)
+
+for x in nums:
+    print(x)   # works again
+</code></pre>
+    <ul>
+        <li>This makes them "reiterable".</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Building Your Own Iterable + Iterator Pair</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">class Reverse:
+    def __init__(self, data):
+        self.data = data
+
+    def __iter__(self):
+        return ReverseIterator(self.data)
+
+class ReverseIterator:
+    def __init__(self, data):
+        self.data = data
+        self.index = len(data)
+
+    def __next__(self):
+        if self.index == 0:
+            raise StopIteration
+        self.index -= 1
+        return self.data[self.index]
+
+words = Reverse("abc")
+for w in words:
+    print(w)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Iterator</td>
+                <td>Object with <code>__iter__</code> and <code>__next__</code></td>
+            </tr>
+            <tr>
+                <td>Iterable</td>
+                <td>Object that produces an iterator via <code>iter()</code></td>
+            </tr>
+            <tr>
+                <td>StopIteration</td>
+                <td>Signals end of iteration</td>
+            </tr>
+            <tr>
+                <td>Generators</td>
+                <td>Simplest way to create iterators</td>
+            </tr>
+            <tr>
+                <td>Iterator exhaustion</td>
+                <td>Iterators cannot be reused; create another</td>
+            </tr>
+            <tr>
+                <td>Itertools</td>
+                <td>Advanced iterator utilities</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
