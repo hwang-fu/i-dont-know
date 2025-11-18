@@ -168,6 +168,7 @@
         <li><a href="#vue-components-basics">Components Basics</a></li>
         <li><a href="#vue-component-registration">Component Registration</a></li>
         <li><a href="#vue-props">Props</a></li>
+        <li><a href="#vue-component-events">Component Events</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3888,6 +3889,318 @@ function toggle() {
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-component-events">Component Events in Vue (Emits + TypeScript)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Component events allow child components to <b>send messages to their parents</b>.</li>
+        <br/>
+        <li>They are fundamental for communication when child components need to:
+            <ul>
+                <li>notify about user interactions</li>
+                <li>update values in the parent</li>
+                <li>trigger actions (submit, delete, save)</li>
+                <li>implement custom <code>v-model</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>In Vue 3 with the Composition API, events are defined using <code>defineEmits&lt;T&gt;</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Defining Events with <code>defineEmits()</code></b></li>
+    <br/>
+    <ul>
+        <li>The recommended way to define events is using function signatures.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Child.vue --&gt;
+&lt;template&gt;
+    &lt;button @click="sendMessage"&gt;Send&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+const emit = defineEmits&lt;{
+    (event: "hello", message: string): void
+}&gt;()
+
+function sendMessage() {
+    emit("hello", "Hi from child!")
+}
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>The event type ensures the event name must be <code>"hello"</code> and the payload must be a <code>string</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Listening to Events in the Parent</b></li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;Child @hello="onHello" /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import Child from "./Child.vue"
+
+function onHello(message: string) {
+    console.log("Child said:", message)
+}
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>The parent's callback receives a strongly typed payload.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Multiple Events</b></li>
+    <br/>
+    <ul>
+        <li>You can define multiple events by adding more signatures.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+const emit = defineEmits&lt;{
+    (e: "increment"): void
+    (e: "submit", value: string): void
+    (e: "delete", id: number): void
+}&gt;()
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Passing Multiple Arguments</b></li>
+    <br/>
+
+<pre><code class="language-ts line-numbers">emit("submit", title.value, description.value)
+// Typed as: (e: "submit", title: string, desc: string)
+</code></pre>
+
+    <ul>
+        <li>You can include as many values as needed.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Events for User Interaction</b></li>
+    <br/>
+    <ul>
+        <li>Example: A like button that notifies the parent when clicked.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- LikeButton.vue --&gt;
+&lt;template&gt;
+    &lt;button @click="like"&gt;Like ({{ count }})&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+
+const count = ref(0)
+
+const emit = defineEmits&lt;{
+    (e: "liked", newCount: number): void
+}&gt;()
+
+function like() {
+    count.value++
+    emit("liked", count.value)
+}
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;LikeButton @liked="onLiked" /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import LikeButton from "./LikeButton.vue"
+
+function onLiked(total: number) {
+    console.log("Likes:", total)
+}
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Events and Custom <code>v-model</code></b></li>
+    <br/>
+    <ul>
+        <li>Vue uses events to power two-way binding with custom components.</li>
+        <li>The event must follow the pattern: <code>"update:modelValue"</code></li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Toggle.vue --&gt;
+&lt;template&gt;
+    &lt;button @click="toggle"&gt;
+        {{ modelValue ? "On" : "Off" }}
+    &lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+const props = defineProps&lt;{
+    modelValue: boolean
+}&gt;()
+
+const emit = defineEmits&lt;{
+    (e: "update:modelValue", value: boolean): void
+}&gt;()
+
+function toggle() {
+    emit("update:modelValue", !props.modelValue)
+}
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;Toggle v-model="enabled" /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+import Toggle from "./Toggle.vue"
+
+const enabled = ref(false)
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Event Listeners in Parents</b></li>
+    <br/>
+    <ul>
+        <li>When using TypeScript, listener functions also get type checking automatically:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">function onSelect(id: number) {
+    // id is guaranteed to be a number
+}
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Event Validation (Old Vue 2 API)</b></li>
+    <br/>
+    <ul>
+        <li>In Vue 2, you could validate events using an <code>emits: {}</code> object.</li>
+        <li>Vue 3 keeps it for compatibility, but <b>TypeScript + defineEmits</b> is preferred.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+defineEmits({
+    submit(payload: string) {
+        return payload.length &gt; 0
+    }
+})
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>This pattern is now discouraged in TS-based Vue apps.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Best Practices for Component Events</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>defineEmits&lt;T&gt;</code> for full type safety.</li>
+        <br/>
+        <li>Use descriptive event names like <code>selected</code>, <code>saved</code>, <code>submitted</code>.</li>
+        <br/>
+        <li>Use <code>update:modelValue</code> for custom two-way binding.</li>
+        <br/>
+        <li>Avoid emitting complex objects if a simple ID or string works.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Defining events</td>
+                <td><code>defineEmits&lt;Signatures&gt;()</code></td>
+            </tr>
+            <tr>
+                <td>Triggering events</td>
+                <td><code>emit("eventName", payload)</code></td>
+            </tr>
+            <tr>
+                <td>Parent listening</td>
+                <td><code>&lt;Child @eventName="handler" /&gt;</code></td>
+            </tr>
+            <tr>
+                <td>Multiple events</td>
+                <td>Use multiple overload signatures</td>
+            </tr>
+            <tr>
+                <td>Custom v-model</td>
+                <td>Event must be <code>update:modelValue</code></td>
+            </tr>
+            <tr>
+                <td>Type safety</td>
+                <td>All events strictly typed with TypeScript</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
