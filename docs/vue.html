@@ -167,6 +167,7 @@
         <li><a href="#vue-typescript">Using Vue with TypeScript</a></li>
         <li><a href="#vue-components-basics">Components Basics</a></li>
         <li><a href="#vue-component-registration">Component Registration</a></li>
+        <li><a href="#vue-props">Props</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3551,6 +3552,336 @@ for (const path in components) {
             <tr>
                 <td>Automatic loading</td>
                 <td>Possible using <code>import.meta.glob()</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-props">Props in Vue (Typed Props Composition API + TypeScript)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Props are how a parent component passes data to a child component.</li>
+        <li>Props are <u>read-only</u> inside the child — they cannot be mutated directly.</li>
+        <li>You declare props using <code>defineProps&lt;T&gt;</code> and a TypeScript interface.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Defining Typed Props</b></li>
+    <br/>
+    <ul>
+        <li>You define props using <code>defineProps</code> in <code>&lt;script setup lang="ts"&gt;</code>.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- UserCard.vue --&gt;
+&lt;template&gt;
+    &lt;h2&gt;{{ name }}&lt;/h2&gt;
+    &lt;p&gt;Age: {{ age }}&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+interface Props {
+    name: string
+    age: number
+}
+
+const props = defineProps&lt;Props&gt;()
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>Props are fully type-checked.</li>
+        <li>IDE autocompletion works automatically.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Passing Props from a Parent Component</b></li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;!--
+        Without `:` → the value is a plain string
+        With    `:` → the value is a JavaScript expression
+    --&gt;
+    &lt;UserCard name="Junzhe" :age="22" /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import UserCard from "./UserCard.vue"
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Optional Props</b></li>
+    <br/>
+    <ul>
+        <li>Optional props are typed with <code>?</code>.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const props = defineProps&lt;{
+    title: string
+    subtitle?: string
+}&gt;()
+</code></pre>
+
+    <ul>
+        <li>Vue and TypeScript ensure the parent does not forget required props.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Props with Default Values</b></li>
+    <br/>
+    <ul>
+        <li>To provide default values, use <code>withDefaults()</code>.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script setup lang="ts"&gt;
+const props = withDefaults(
+    defineProps&lt;{
+        size?: "sm" | "md" | "lg"
+        label: string
+    }&gt;(),
+    {
+        size: "md"
+    }
+)
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>TypeScript now treats <code>size</code> as always defined.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Union Types for Props</b></li>
+    <br/>
+    <ul>
+        <li>Union types allow flexible but safe prop values.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const props = defineProps&lt;{
+    status: "success" | "warning" | "error"
+}&gt;()
+</code></pre>
+
+    <ul>
+        <li>Parents must provide one of the allowed strings.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Props with Complex Types</b></li>
+    <br/>
+    <ul>
+        <li>You can pass objects, arrays, or custom interfaces as props.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">interface User {
+    id: number
+    name: string
+    email: string
+}
+
+const props = defineProps&lt;{
+    user: User
+    tags: string[]
+}&gt;()
+</code></pre>
+
+    <ul>
+        <li>Vue handles reactivity automatically for these values.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Readonly Behavior of Props</b></li>
+    <br/>
+    <ul>
+        <li>Props cannot be mutated directly.</li>
+        <li>The following will throw a warning:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">props.count++   // ❌ not allowed (props are readonly)
+</code></pre>
+
+    <ul>
+        <li>Instead, use a local ref:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const localCount = ref(props.count)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Required Props</b></li>
+    <br/>
+    <ul>
+        <li>Props without <code>?</code> are automatically required.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const props = defineProps&lt;{
+    id: number      // required
+    name?: string   // optional
+}&gt;()
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Prop Validation with TypeScript</b></li>
+    <br/>
+    <ul>
+        <li>TypeScript replaces the old Vue runtime validators.</li>
+        <li>The component will not compile if you pass invalid types.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- ❌ Type error: age must be a number --&gt;
+&lt;UserCard name="Alice" age="twenty" /&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Destructuring Props (Safe Pattern)</b></li>
+    <br/>
+    <ul>
+        <li>You should <u>avoid</u> direct destructuring, because it loses reactivity.</li>
+        <li>Use <code>toRefs()</code> to safely destructure props.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import { toRefs } from "vue"
+
+const props = defineProps&lt;{
+    title: string
+    count: number
+}&gt;()
+
+const { title, count } = toRefs(props)
+</code></pre>
+
+    <ul>
+        <li>Now <code>title</code> and <code>count</code> remain reactive.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Props and Emits Together</b></li>
+    <br/>
+    <ul>
+        <li>Combining props with emits enables two-way communication.</li>
+        <li>This is the building block for custom <code>v-model</code> implementations.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Toggle.vue --&gt;
+&lt;template&gt;
+    &lt;button @click="toggle"&gt;{{ modelValue ? "On" : "Off" }}&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+const props = defineProps&lt;{
+    modelValue: boolean
+}&gt;()
+
+const emit = defineEmits&lt;{
+    (e: "update:modelValue", value: boolean): void
+}&gt;()
+
+function toggle() {
+    emit("update:modelValue", !props.modelValue)
+}
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Best Practices for Props</b></li>
+    <br/>
+    <ul>
+        <li>Use <b>TypeScript</b> <code>interfaces</code> for clarity and reusability.</li>
+        <li>Use <code>withDefaults()</code> instead of manual default handling.</li>
+        <li>Do <u>not</u> mutate props, use local state instead.</li>
+        <li>Use union types to restrict props to valid values.</li>
+        <li>Use <code>toRefs(props)</code> when destructuring.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Define props</td>
+                <td><code>defineProps&lt;T&gt;()</code> with TypeScript interfaces</td>
+            </tr>
+            <tr>
+                <td>Optional props</td>
+                <td>Use <code>?</code> in type definitions</td>
+            </tr>
+            <tr>
+                <td>Default values</td>
+                <td>Use <code>withDefaults()</code> around <code>defineProps</code></td>
+            </tr>
+            <tr>
+                <td>Prop immutability</td>
+                <td>Props are readonly — cannot mutate directly</td>
+            </tr>
+            <tr>
+                <td>Complex props</td>
+                <td>Pass objects, arrays, or interfaces</td>
+            </tr>
+            <tr>
+                <td>Destructuring</td>
+                <td>Use <code>toRefs()</code> to keep reactivity</td>
+            </tr>
+            <tr>
+                <td>Type safety</td>
+                <td>TypeScript enforces correct prop usage automatically</td>
             </tr>
         </tbody>
     </table>
