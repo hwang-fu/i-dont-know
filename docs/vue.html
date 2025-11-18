@@ -159,6 +159,8 @@
         <li><a href="#vue-introduction">Introduction</a></li>
         <li><a href="#vue-options-vs-composition">Options API vs Composition API</a></li>
         <li><a href="#vue-composition-api">Composition API</a></li>
+        <li><a href="#vue-reactive-value">Reactive Value</a></li>
+        <li><a href="#vue-create-app">Creating a Vue Application</a></li>
     </ul>
 </nav>
 <hr/>
@@ -1141,7 +1143,278 @@ export default {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-reactive-value">What Is a Reactive Value in Vue?</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>It allows the UI to update automatically whenever your data changes.</li>
+        <br/>
+        <li>A <u>reactive value</u> is any value that Vue tracks internally so it can update the DOM when the value changes.</li>
+        <br/>
+        <li>In Vue 3 (Composition API), reactivity is created using:</li>
+        <ul>
+            <li><code>ref()</code> — for reactive primitives</li>
+            <li><code>reactive()</code> — for reactive objects</li>
+        </ul>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Why Reactivity Matters</b></li>
+    <br/>
+    <ul>
+        <li>In plain JavaScript, changing a variable does <u>not</u> update the UI automatically.<br/>
+            You would have to manually modify the DOM:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">let count = 0
+document.getElementById("counter").innerText = count
+count++
+document.getElementById("counter").innerText = count
+</code></pre>
+    <ul>
+        <li>This is slow, repetitive, and error-prone.</li>
+        <br/>
+        <li>In Vue, you update the variable → UI updates automatically.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">const count = ref(0)
+count.value++  // UI updates automatically
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>ref(): Reactive Primitive Values</b></li>
+    <br/>
+    <ul>
+        <li><code>ref()</code> wraps a value inside an object with a single property: <code>value</code>.</li>
+        <li>This wrapper is reactive.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { ref } from "vue"
+
+const count = ref(0)
+console.log(count.value)  // 0
+
+count.value++
+console.log(count.value)  // 1
+</code></pre>
+    <ul>
+        <li>Why <code>.value</code>?</li>
+        <ul>
+            <li>Because JavaScript primitives (number, string, boolean) cannot be made reactive by themselves.</li>
+            <li>Vue wraps them in an object to track changes.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>reactive(): Reactive Objects (Deep Reactivity)</b></li>
+    <br/>
+    <ul>
+        <li><code>reactive()</code> makes an entire object reactive.</li>
+        <li>All nested properties also become reactive.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { reactive } from "vue"
+
+const user = reactive({
+  name: "Hwangfu",
+  age: 22
+})
+
+user.age++  // automatically updates UI
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is called <u>deep reactivity</u>, where every property is tracked.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>How Vue Detects Changes (The Proxy System)</b></li>
+    <br/>
+    <ul>
+        <li>Vue 3 uses the <b>JavaScript Proxy API</b> to intercept operations on reactive values:</li>
+        <ul>
+            <li>reading</li>
+            <li>writing</li>
+            <li>deleting</li>
+        </ul>
+        <br/>
+        <li>Whenever a reactive property is read, Vue records the dependency.</li>
+        <br/>
+        <li>Whenever it’s changed, Vue schedules a UI update.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Reactive Values in Templates</b></li>
+    <br/>
+    <ul>
+        <li>In Vue templates, ref values are <u>auto-unwrapped</u>.</li>
+        <li>This means you do NOT write <code>.value</code> in templates.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+  &lt;button @click="count++"&gt;{{ count }}&lt;/button&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Even though <code>count</code> is a <code>ref</code>, Vue unwraps <code>.value</code> for convenience.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Computed Properties Are Also Reactive</b></li>
+    <br/>
+    <ul>
+        <li><code>computed()</code> returns a special read-only reactive value.</li>
+        <li>It updates whenever its dependencies change.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { ref, computed } from "vue"
+
+const count = ref(5)
+const double = computed(() =&gt; count.value * 2)
+
+console.log(double.value) // 10
+count.value++
+console.log(double.value) // 12
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Watchers React to Changes</b></li>
+    <br/>
+    <ul>
+        <li><code>watch()</code> listens for changes in reactive values.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">watch(count, (newVal, oldVal) =&gt; {
+  console.log("Count changed:", oldVal, "-&gt;", newVal)
+})
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>How Reactivity Differs from Plain JavaScript</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Plain JavaScript</th>
+                <th>Vue Reactive Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Variables don't update UI automatically</td>
+                <td>UI updates instantly when reactive value changes</td>
+            </tr>
+            <tr>
+                <td>No dependency tracking</td>
+                <td>Automatic dependency tracking</td>
+            </tr>
+            <tr>
+                <td>Manual DOM updates needed</td>
+                <td>DOM updates handled by Vue</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>ref vs reactive (Quick Comparison)</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>ref()</th>
+                <th>reactive()</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Main use-case</td>
+                <td>single primitive</td>
+                <td>objects, arrays, maps</td>
+            </tr>
+            <tr>
+                <td>Access</td>
+                <td><code>value</code> property</td>
+                <td>direct property access</td>
+            </tr>
+            <tr>
+                <td>Deep reactivity</td>
+                <td>No (wrapping only)</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Template auto-unwrapping</td>
+                <td>Yes</td>
+                <td>Yes</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>When Should You Use ref()?</b></li>
+    <br/>
+    <ul>
+        <li>primitive values (number, string, boolean)</li>
+        <li>single reactive state</li>
+        <li>you need full control over reactivity</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">const isVisible = ref(true)
+const count = ref(0)
+const message = ref("Hello")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>When Should You Use reactive()?</b></li>
+    <br/>
+    <ul>
+        <li>objects</li>
+        <li>arrays</li>
+        <li>complex state</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">const form = reactive({
+  email: "",
+  password: "",
+  remember: false
+})
+</code></pre>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
@@ -1149,7 +1422,335 @@ export default {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-create-app">Creating a Vue Application</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>In Vue 3, a "Vue application" is created with <code>createApp()</code> and mounted onto a DOM element.</li>
+        <br/>
+        <li>We will assume the <code>Composition API</code> by default (with <code>setup()</code>, <code>ref()</code>, etc.).</li>
+        <br/>
+        <li>There are two common ways to start a Vue app:
+            <ul>
+                <li><b>Quick test</b>: use Vue from a <u>CDN script</u> in a single HTML file</li>
+                <li><b>Real project</b>: use a <u>build tool</u> (e.g. Vite with <code>npm create vue@latest</code>)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><b>Quick Start with CDN (Single HTML File)</b></li>
+    <br/>
+    <ul>
+        <li>This is the fastest way to experiment with Vue.</li>
+        <li>No build step, no bundler – just an HTML file and a script tag.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset="utf-8"&gt;
+    &lt;title&gt;Vue 3 App&lt;/title&gt;
+    &lt;script src="https://unpkg.com/vue@3/dist/vue.global.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div id="app"&gt;
+        &lt;h1&gt;{{ title }}&lt;/h1&gt;
+        &lt;button @click="count++"&gt;Clicked {{ count }} times&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;script&gt;
+        const { createApp, ref } = Vue;
+
+        const App = {
+            setup() {
+                const title = ref("Hello Vue 3");
+                const count = ref(0);
+
+                return { title, count };
+            }
+        };
+
+        createApp(App).mount("#app");
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+    <ul>
+        <li>Key points:
+            <ul>
+                <li><code>createApp(App)</code> creates a Vue application instance.</li>
+                <li><code>.mount("#app")</code> tells Vue to control the <code>&lt;div id="app"&gt;</code>.</li>
+                <li>The component object <code>App</code> uses the <b>Composition API</b> via <code>setup()</code>.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Real Project Setup with Vite (Recommended)</b></li>
+    <br/>
+    <ul>
+        <li>For real apps, use a modern build tool. The recommended way is Vite with the official Vue starter.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers"># 1. Create a new Vue 3 + Vite project
+npm create vue@latest my-vue-app
+
+# 2. Move into the folder
+cd my-vue-app
+
+# 3. Install dependencies
+npm install
+
+# 4. Start dev server
+npm run dev
+</code></pre>
+    <ul>
+        <li>Then open the URL shown in the terminal (usually <code>http://localhost:5173</code>).</li>
+        <li>You will see a default Vue starter page.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Project Structure (Typical Vite + Vue App)</b></li>
+    <br/>
+
+<pre><code class="language-text line-numbers">my-vue-app/
+  ├─ index.html
+  ├─ package.json
+  ├─ vite.config.js
+  └─ src/
+      ├─ main.js
+      ├─ App.vue
+      └─ components/
+          └─ ...
+</code></pre>
+    <ul>
+        <li><code>index.html</code>: main HTML entry file.</li>
+        <li><code>src/main.js</code>: JS entry where the Vue app is created and mounted.</li>
+        <li><code>src/App.vue</code>: root Vue component.</li>
+        <li><code>src/components/</code>: other components you create.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>main.js: Creating and Mounting the Application</b></li>
+    <br/>
+    <ul>
+        <li>The <code>main.js</code> file usually looks like this:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { createApp } from "vue"
+import App from "./App.vue"
+
+const app = createApp(App)
+
+// here you can also use plugins, router, store, etc.
+// e.g. app.use(router)
+
+app.mount("#app")
+</code></pre>
+    <ul>
+        <li>Here you:
+            <ul>
+                <li>import the root component <code>App</code></li>
+                <li>create the application instance with <code>createApp(App)</code></li>
+                <li>mount it to the DOM element with id <code>app</code> (defined in <code>index.html</code>)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>index.html: The Mount Point</b></li>
+<pre><code class="language-html line-numbers">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+    &lt;head&gt;
+        &lt;meta charset="UTF-8" /&gt;
+        &lt;title&gt;My Vue App&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+        &lt;div id="app"&gt;&lt;/div&gt;
+        &lt;!-- Vite will inject the compiled JS here --&gt;
+        &lt;script type="module" src="/src/main.js"&gt;&lt;/script&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+    <ul>
+        <li>The <code>&lt;div id="app"&gt;</code> is the “root” of your Vue application.</li>
+        <li>Everything your Vue app renders will appear inside this element.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>App.vue: Root Component with Composition API</b></li>
+    <br/>
+    <ul>
+        <li><code>App.vue</code> is a Single File Component (SFC) with three main sections:</li>
+        <ul>
+            <li><code>&lt;template&gt;</code>: HTML markup</li>
+            <li><code>&lt;script&gt;</code> (or <code>&lt;script setup&gt;</code>): logic</li>
+            <li><code>&lt;style&gt;</code>: CSS</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;main&gt;
+        &lt;h1&gt;{{ title }}&lt;/h1&gt;
+        &lt;button @click="count++"&gt;
+            Clicked {{ count }} times
+        &lt;/button&gt;
+    &lt;/main&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+
+const title = ref("My First Vue App")
+const count = ref(0)
+&lt;/script&gt;
+
+&lt;style&gt;
+main {
+    font-family: system-ui, sans-serif;
+}
+button {
+    margin-top: 1rem;
+}
+&lt;/style&gt;
+</code></pre>
+    <ul>
+        <li>Using <code>&lt;script setup&gt;</code> is the recommended Vue 3 style:
+            <ul>
+                <li>No need to explicitly write <code>export default</code>.</li>
+                <li>All top-level variables are automatically exposed to the template.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Adding Another Component</b></li>
+    <br/>
+    <ul>
+        <li>Create a component in <code>src/components/Counter.vue</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;div&gt;
+        &lt;p&gt;Local count: {{ count }}&lt;/p&gt;
+        &lt;button @click="count++"&gt;Increment&lt;/button&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+
+const count = ref(0)
+&lt;/script&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Then import and use it in <code>App.vue</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;main&gt;
+        &lt;h1&gt;{{ title }}&lt;/h1&gt;
+        &lt;Counter /&gt;
+    &lt;/main&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from "vue"
+import Counter from "./components/Counter.vue"
+
+const title = ref("My Vue App")
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Development vs Production</b></li>
+    <br/>
+    <ul>
+        <li>During development, you run a dev server:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">npm run dev
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>For production, you build static files:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">npm run build
+npm run preview   # optional: preview the production build locally
+</code></pre>
+    <ul>
+        <li>The build output (usually in <code>dist/</code>) can be deployed to any static file server.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Step</th>
+                <th>What Happens</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Create project</td>
+                <td>Use <code>npm create vue@latest</code> to scaffold a Vue 3 app</td>
+            </tr>
+            <tr>
+                <td>Entry file</td>
+                <td><code>main.js</code> imports <code>App.vue</code> and calls <code>createApp(App).mount("#app")</code></td>
+            </tr>
+            <tr>
+                <td>Root component</td>
+                <td><code>App.vue</code> defined using Composition API (<code>&lt;script setup&gt;</code>, <code>ref()</code>)</td>
+            </tr>
+            <tr>
+                <td>DOM mount point</td>
+                <td><code>&lt;div id="app"&gt;</code> in <code>index.html</code></td>
+            </tr>
+            <tr>
+                <td>Components</td>
+                <td>More components go into <code>src/components/</code> and are imported into <code>App.vue</code> or others</td>
+            </tr>
+            <tr>
+                <td>Dev server</td>
+                <td><code>npm run dev</code> for live reload while coding</td>
+            </tr>
+            <tr>
+                <td>Production build</td>
+                <td><code>npm run build</code> to create optimized static files</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
