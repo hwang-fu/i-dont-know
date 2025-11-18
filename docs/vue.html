@@ -165,6 +165,7 @@
         <li><a href="#vue-watchers">Watchers</a></li>
         <li><a href="#vue-template-refs">Template Refs</a></li>
         <li><a href="#vue-typescript">Using Vue with TypeScript</a></li>
+        <li><a href="#vue-components-basics">Components Basics</a></li>
     </ul>
 </nav>
 <hr/>
@@ -2991,6 +2992,356 @@ const modelValue = defineModel&lt;string&gt;()
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-components-basics">Components Basics in Vue (Composition API + TypeScript)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Components are the building blocks of every Vue application.</li>
+        <br/>
+        <li>Each component represents an independent, reusable piece of UI combined with logic.</li>
+        <br/>
+        <li>Every component typically contains:
+            <ul>
+                <li>a <code>template</code>: how the UI looks</li>
+                <li>a <code>script</code>: data + logic</li>
+                <li>(optional) <code>style</code> — CSS</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Your First Component</b></li>
+    <br/>
+    <ul>
+        <li>A component lives in its own <code>.vue</code> file (Single-File Component).</li>
+        <li>Below is a minimal, fully typed component:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Hello.vue --&gt;
+&lt;template&gt;
+    &lt;h2&gt;Hello, {{ name }}!&lt;/h2&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { defineProps } from "vue";
+
+const props = defineProps&lt;{
+    name: string
+}&gt;();
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>The <code>name</code> value is passed from the parent component.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using a Component</b></li>
+    <br/>
+    <ul>
+        <li>Import and register components simply by importing them in <code>&lt;script setup&gt;</code>.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- App.vue --&gt;
+&lt;template&gt;
+    &lt;Hello name="Junzhe" /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import Hello from "./components/Hello.vue";
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>You do not need <code>components: { ... }</code>. Importing is enough.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Props: Passing Data into Components</b></li>
+    <br/>
+    <ul>
+        <li>Props are the primary way to pass data from parent to child.</li>
+        <li>Props are fully type-checked using <code>defineProps&lt;T&gt;()</code>.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+const props = defineProps&lt;{
+    title:  string;
+    count?: number;     // optional
+}&gt;()
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;h3&gt;{{ title }}&lt;/h3&gt;
+    &lt;p&gt;Count: {{ count ?? 0 }}&lt;/p&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <ul>
+        <li>TypeScript ensures that the parent provides correct prop types.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Emits: Sending Data from Child to Parent</b></li>
+    <br/>
+    <ul>
+        <li>Child components can send events upward using <code>defineEmits</code>.</li>
+        <li>TypeScript ensures event names and payloads are correct.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Counter.vue --&gt;
+&lt;template&gt;
+    &lt;button @click="increment"&gt;Count is {{ count }}&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref, defineEmits } from "vue";
+
+const emit = defineEmits&lt;{
+    (e: "update:count", value: number): void;
+}&gt;()
+
+const count = ref(0);
+
+function increment() {
+    count.value++;
+    emit("update:count", count.value);
+}
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;Counter @update:count="val =&gt; total = val" /&gt;
+    &lt;p&gt;Latest count from child: {{ total }}&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue";
+import Counter from "./Counter.vue";
+
+const total = ref(0);
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>Highly predictable, type-safe event communication.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Component Slots: Passing Content into Children</b></li>
+    <br/>
+    <ul>
+        <li><b>Slots</b> let parents inject custom content into children.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Card.vue --&gt;
+&lt;template&gt;
+    &lt;div class="card"&gt;
+        &lt;slot /&gt; &lt;!-- default slot --&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;Card&gt;
+        &lt;p&gt;This is inside the card!&lt;/p&gt;
+    &lt;/Card&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import Card from "./Card.vue";
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>Slots allow components to remain flexible and reusable.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Named Slots</b></li>
+    <br/>
+    <ul>
+        <li>Named slots allow placing content into specific regions.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Layout.vue --&gt;
+&lt;template&gt;
+    &lt;header&gt;
+        &lt;slot name="header"/&gt;
+    &lt;/header&gt;
+
+    &lt;main&gt;
+        &lt;slot/&gt;
+    &lt;/main&gt;
+
+    &lt;footer&gt;
+        &lt;slot name="footer"/&gt;
+    &lt;/footer&gt;
+&lt;/template&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- App.vue --&gt;
+&lt;template&gt;
+    &lt;Layout&gt;
+        &lt;template #header&gt;Header content&lt;/template&gt;
+        Main area content
+        &lt;template #footer&gt;Footer content&lt;/template&gt;
+    &lt;/Layout&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import Layout from "./Layout.vue"
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Component Naming Conventions</b></li>
+    <br/>
+    <ul>
+        <li>Best practices:
+            <ul>
+                <li>Use PascalCase for component filenames: <code>UserCard.vue</code></li>
+                <li>Use PascalCase or kebab-case in templates:
+                    <ul>
+                        <li><code>&lt;UserCard /&gt;</code></li>
+                        <li><code>&lt;user-card /&gt;</code></li>
+                    </ul>
+                </li>
+                <li>Keep components small &amp; focused</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Reusable Component Pattern (Full Example)</b></li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;!-- Button.vue --&gt;
+&lt;template&gt;
+    &lt;button :class="variant" @click="onClick"&gt;
+        &lt;slot /&gt;
+    &lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+const props = defineProps&lt;{
+    variant?: "primary" | "secondary"
+}&gt;()
+
+const emit = defineEmits&lt;{
+    (e: "click"): void
+}&gt;()
+
+function onClick() {
+    emit("click")
+}
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+.primary { padding: 6px; background: #3b82f6; color: white; }
+.secondary { padding: 6px; background: #e5e7eb; }
+&lt;/style&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- App.vue --&gt;
+&lt;template&gt;
+    &lt;Button variant="primary" @click="sayHi"&gt;Say Hi&lt;/Button&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import Button from "./components/Button.vue"
+
+function sayHi() {
+    alert("Hello from Vue!")
+}
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Creating components</td>
+                <td>Use <code>.vue</code> SFC files with <code>&lt;script setup lang="ts"&gt;</code></td>
+            </tr>
+            <tr>
+                <td>Props</td>
+                <td>Typed via <code>defineProps&lt;T&gt;()</code> for safe inputs</td>
+            </tr>
+            <tr>
+                <td>Emits</td>
+                <td>Typed events via <code>defineEmits&lt;Signature&gt;()</code></td>
+            </tr>
+            <tr>
+                <td>Usage</td>
+                <td>Components are imported and used directly in parent templates</td>
+            </tr>
+            <tr>
+                <td>Slots</td>
+                <td>Allow flexible insertion of content</td>
+            </tr>
+            <tr>
+                <td>Composition API + TS</td>
+                <td>Provides best developer experience &amp; type safety</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
