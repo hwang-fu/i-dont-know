@@ -169,6 +169,7 @@
         <li><a href="#vue-component-registration">Component Registration</a></li>
         <li><a href="#vue-props">Props</a></li>
         <li><a href="#vue-component-events">Component Events</a></li>
+        <li><a href="#vue-component-v-model">Component v-model</a></li>
     </ul>
 </nav>
 <hr/>
@@ -4084,6 +4085,13 @@ function toggle() {
 
 <pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
 &lt;template&gt;
+    &lt;!--
+        &lt;Toggle
+            :modelValue="enabled"
+            @update:modelValue="enabled = $event"
+        /&gt;
+    --&gt;
+
     &lt;Toggle v-model="enabled" /&gt;
 &lt;/template&gt;
 
@@ -4187,6 +4195,315 @@ defineEmits({
             <tr>
                 <td>Type safety</td>
                 <td>All events strictly typed with TypeScript</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-component-v-model">Component v-model (Custom Two-Way Binding in Vue)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>v-model</code> is normally used with form elements (input, checkbox, select).</li>
+        <br/>
+        <li>But Vue also allows any <u>custom component</u> to support <code>v-model</code>.</li>
+        <br/>
+        <li>With the Composition API + TypeScript, custom v-model is implemented using:
+            <ul>
+                <li>a prop named <code>modelValue</code></li>
+                <li>an event named <code>"update:modelValue"</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>This gives a clean two-way data flow between parent and child.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Basic Example: A Simple Toggle Component</b></li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;!-- Toggle.vue --&gt;
+&lt;template&gt;
+    &lt;button @click="toggle"&gt;
+        {{ modelValue ? "ON" : "OFF" }}
+    &lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+const props = defineProps&lt;{
+    modelValue: boolean
+}&gt;()
+
+const emit = defineEmits&lt;{
+    (e: "update:modelValue", value: boolean): void
+}&gt;()
+
+function toggle() {
+    emit("update:modelValue", !props.modelValue)
+}
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>This component can now be used with <code>v-model</code> like a normal input.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;Toggle v-model="enabled" /&gt;
+    &lt;p&gt;Enabled: {{ enabled }}&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+import Toggle from "./Toggle.vue"
+
+const enabled = ref(false)
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>The parent now receives updates automatically whenever the child emits.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Understanding the Pattern</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Part</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>modelValue</code></td>
+                <td>The value provided by the parent (v-model)</td>
+            </tr>
+            <tr>
+                <td><code>update:modelValue</code></td>
+                <td>The event emitted when the child wants to update the parent</td>
+            </tr>
+            <tr>
+                <td><code>v-model="x"</code></td>
+                <td>Links <code>x</code> to <code>modelValue</code> and listens for updates</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>v-model with TypeScript Validation</b></li>
+    <br/>
+
+<pre><code class="language-ts line-numbers">const emit = defineEmits&lt;{
+    (e: "update:modelValue", value: string): void
+}&gt;()
+</code></pre>
+
+    <ul>
+        <li>Any incorrect payload will be caught at compile time.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Multiple v-model Bindings</b></li>
+    <br/>
+    <ul>
+        <li>Components can define multiple v-models using <u>arguments</u>.</li>
+        <li>Each v-model gets its own prop + event pair.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- RangeInput.vue --&gt;
+&lt;template&gt;
+    &lt;input type="number" :value="min" @input="onMin($event)" /&gt;
+    &lt;input type="number" :value="max" @input="onMax($event)" /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+const props = defineProps&lt;{
+    min: number
+    max: number
+}&gt;()
+
+const emit = defineEmits&lt;{
+    (e: "update:min", value: number): void
+    (e: "update:max", value: number): void
+}&gt;()
+
+function onMin(e: Event) {
+    emit("update:min", Number((e.target as HTMLInputElement).value))
+}
+
+function onMax(e: Event) {
+    emit("update:max", Number((e.target as HTMLInputElement).value))
+}
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;RangeInput v-model:min="start" v-model:max="end" /&gt;
+    &lt;p&gt;Range: {{ start }} - {{ end }}&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+import RangeInput from "./RangeInput.vue"
+
+const start = ref(1)
+const end = ref(10)
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>This allows powerful multi-value component interactions.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Customizing v-model Name</b></li>
+    <br/>
+    <ul>
+        <li>You can use a custom prop name instead of <code>modelValue</code>.</li>
+        <li>Use the argument form of v-model.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- SearchInput.vue --&gt;
+&lt;script setup lang="ts"&gt;
+const props = defineProps&lt;{ query: string }&gt;()
+
+const emit = defineEmits&lt;{
+    (e: "update:query", value: string): void
+}&gt;()
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;input :value="query" @input="emit('update:query', $event.target.value)" /&gt;
+&lt;/template&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;SearchInput v-model:query="searchText" /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+import SearchInput from "./SearchInput.vue"
+
+const searchText = ref("")
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>Broader control for naming custom binding patterns.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Local State + Props in v-model</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes a component should maintain local state instead of directly showing <code>modelValue</code>:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+import { ref, watch } from "vue"
+
+const props = defineProps&lt;{ modelValue: string }&gt;()
+const emit = defineEmits&lt;{ (e: "update:modelValue", value: string): void }&gt;()
+
+const internal = ref(props.modelValue)
+
+// sync internal state to prop changes
+watch(() =&gt; props.modelValue, (v) =&gt; internal.value = v)
+
+function update(v: string) {
+    internal.value = v
+    emit("update:modelValue", v)
+}
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>This is useful for text inputs, debounced inputs, sliders, etc.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Best Practices</b></li>
+    <br/>
+    <ul>
+        <li>Always use <code>modelValue</code> + <code>update:modelValue</code> for the default v-model.</li>
+        <br/>
+        <li>Use <code>v-model:yourProp</code> for additional values.</li>
+        <br/>
+        <li>Return only new values, never mutate props directly.</li>
+        <br/>
+        <li>For complex inputs, use an internal state synchronized by watchers.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Default v-model</td>
+                <td>Uses <code>modelValue</code> prop + <code>update:modelValue</code> event</td>
+            </tr>
+            <tr>
+                <td>Multiple v-models</td>
+                <td>Use <code>v-model:name</code> + <code>update:name</code></td>
+            </tr>
+            <tr>
+                <td>Type safety</td>
+                <td>All payloads validated by TypeScript</td>
+            </tr>
+            <tr>
+                <td>Local state pattern</td>
+                <td>Use <code>ref()</code> + <code>watch()</code> for more control</td>
+            </tr>
+            <tr>
+                <td>Component usage</td>
+                <td><code>&lt;CustomInput v-model="value" /&gt;</code></td>
             </tr>
         </tbody>
     </table>
