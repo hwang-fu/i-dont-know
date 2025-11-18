@@ -161,6 +161,7 @@
         <li><a href="#python-generators">Generators</a></li>
         <li><a href="#python-brief-std-lib-tour">Brief Tour of the Python Standard Library</a></li>
         <li><a href="#python-wrappers">Wrappers</a></li>
+        <li><a href="#python-decorators">Decorators</a></li>
     </ul>
 </nav>
 <hr/>
@@ -12508,7 +12509,475 @@ asyncio.run(hello())
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-decorators">Python Decorators</h3>
+<ol>
+    <li><b>What Is a Decorator?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>decorator</b> is a Python feature that lets you <b>modify or enhance functions (or methods)</b> without changing their actual code.</li>
+        <br/>
+        <li>A decorator takes a function as input, wraps it inside another function (a <b>wrapper</b>), and returns a new function.</li>
+        <br/>
+        <li>You apply a decorator using the <code>@decorator_name</code> syntax above a function definition.</li>
+    </ul>
 
+<pre><code class="language-python line-numbers">@decorator
+def function():
+    ...
+</code></pre>
+    <ul>
+        <li>Python transforms this into:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">function = decorator(function)</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Why Decorators Are Important</b></li>
+    <br/>
+    <ul>
+        <li>Decorators are used everywhere in Python:
+            <ul>
+                <li>logging</li>
+                <li>authentication / access control</li>
+                <li>caching results</li>
+                <li>performance measurement</li>
+                <li>frameworks (Flask, FastAPI, Django)</li>
+                <li>retry logic</li>
+                <li>validating function arguments</li>
+                <li>registering plugins</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Decorators allow you to apply reusable patterns to many functions with clean syntax.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>How Decorators Work (Fundamentals)</b></li>
+    <br/>
+    <ul>
+        <li>A decorator is just a function that returns another function.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def my_decorator(func):
+    def wrapper():
+        print("Before call")
+        func()
+        print("After call")
+    return wrapper
+
+@my_decorator
+def hello():
+    print("Hello!")
+
+hello()
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Output:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">Before call
+Hello!
+After call
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Decorators With Arguments</b></li>
+    <br/>
+    <ul>
+        <li>Your wrapper must accept any possible function arguments:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def decorator(func):
+    def wrapper(*args, **kwargs):
+        print("Calling:", func.__name__)
+        return func(*args, **kwargs)
+    return wrapper
+
+@decorator
+def add(a, b):
+    return a + b
+
+print(add(3, 5))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Preserving Metadata Using functools.wraps</b></li>
+    <br/>
+    <ul>
+        <li>Without <code>wraps</code>, the decorated function loses its original name, docstring, and type annotations.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import functools
+
+def decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Always</b> use <code>@wraps</code> for clean and correct behavior.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Decorators With Parameters</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes you want the decorator itself to accept arguments.</li>
+        <li>This requires *three* layers of functions:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def repeat(n):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for _ in range(n):
+                func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@repeat(3)
+def hello():
+    print("Hello")
+
+hello()
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Result prints “Hello” three times.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Class-Based Decorators</b></li>
+    <br/>
+    <ul>
+        <li>Any object with <code>__call__</code> can be a decorator.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Decorator:
+    def __init__(self, func):
+        self.func = func
+
+    def __call__(self, *args, **kwargs):
+        print("Before")
+        value = self.func(*args, **kwargs)
+        print("After")
+        return value
+
+@Decorator
+def greet():
+    print("Hi!")
+
+greet()
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Decorators for Methods</b></li>
+    <br/>
+    <ul>
+        <li>Methods automatically receive <code>self</code>, and wrappers must accept it.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def log_method(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        print(f"Method {func.__name__} called")
+        return func(self, *args, **kwargs)
+    return wrapper
+
+class A:
+    @log_method
+    def hello(self):
+        print("Hello")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Decorating Class Methods (classmethod, staticmethod)</b></li>
+    <br/>
+    <ul>
+        <li>Order matters: the decorator is applied to the <b>result</b> of <code>@classmethod</code> or <code>@staticmethod</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def debug(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        print("Debug:", func.__name__)
+        return func(*args, **kwargs)
+    return wrapper
+
+class C:
+    @debug
+    @classmethod
+    def foo(cls):
+        print("Class method")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Real-World Decorator Examples</b></li>
+    <br/>
+
+    <li><b>1. Logging</b></li>
+
+<pre><code class="language-python line-numbers">def log(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f"{func.__name__} called")
+        return func(*args, **kwargs)
+    return wrapper
+
+@log
+def work():
+    print("Working...")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>2. Timing</b></li>
+
+<pre><code class="language-python line-numbers">import time
+
+def timer(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        value = func(*args, **kwargs)
+        end = time.perf_counter()
+        print(f"{func.__name__} took {end-start:.5f}s")
+        return value
+    return wrapper
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>3. Memoization / Caching</b></li>
+
+<pre><code class="language-python line-numbers">def cache(func):
+    stored = {}
+    @functools.wraps(func)
+    def wrapper(x):
+        if x not in stored:
+            stored[x] = func(x)
+        return stored[x]
+    return wrapper
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>4. Authorization (permissions)</b></li>
+
+<pre><code class="language-python line-numbers">def require_admin(func):
+    @functools.wraps(func)
+    def wrapper(user, *args, **kwargs):
+        if user != "admin":
+            raise PermissionError("Not allowed")
+        return func(user, *args, **kwargs)
+    return wrapper
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>5. Retry Decorator</b></li>
+
+<pre><code class="language-python line-numbers">import time
+
+def retry(n):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for i in range(n):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(f"Retry {i+1}/{n}: {e}")
+                    time.sleep(1)
+            raise RuntimeError("Failed after retries")
+        return wrapper
+    return decorator
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Decorators for Asynchronous Functions</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def async_decorator(func):
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        print("Before await")
+        result = await func(*args, **kwargs)
+        print("After await")
+        return result
+    return wrapper
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Stacking Multiple Decorators</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">@log
+@timer
+def compute():
+    return sum(range(1_000_000))
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Equivalent to:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">
+compute = log(timer(compute))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Decorators on Classes</b></li>
+    <br/>
+    <ul>
+        <li>You can decorate entire classes (not just methods).</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def make_all_methods_debugged(cls):
+    for name, value in cls.__dict__.items():
+        if callable(value):
+            setattr(cls, name, debug(value))
+    return cls
+
+@make_all_methods_debugged
+class A:
+    def hello(self): print("Hello")
+    def world(self): print("World")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Common Built-In Decorators</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Decorator</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>@staticmethod</code></td>
+                <td>Method that has no <code>self</code></td>
+            </tr>
+            <tr>
+                <td><code>@classmethod</code></td>
+                <td>Method that receives <code>cls</code> instead of <code>self</code></td>
+            </tr>
+            <tr>
+                <td><code>@property</code></td>
+                <td>Turn methods into computed attributes</td>
+            </tr>
+            <tr>
+                <td><code>@functools.lru_cache</code></td>
+                <td>Built-in caching decorator</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Decorator</td>
+                <td>Function that wraps another function to add behavior</td>
+            </tr>
+            <tr>
+                <td>Wrapper</td>
+                <td>Inner function that surrounds the original function</td>
+            </tr>
+            <tr>
+                <td><code>@decorator</code></td>
+                <td>Syntax sugar for <code>func = decorator(func)</code></td>
+            </tr>
+            <tr>
+                <td><code>functools.wraps</code></td>
+                <td>Keeps metadata (function name, docstring)</td>
+            </tr>
+            <tr>
+                <td>Decorator arguments</td>
+                <td>Requires 3-layer structure: <code>decorator(args) → decorator → wrapper</code></td>
+            </tr>
+            <tr>
+                <td>Common uses</td>
+                <td>logging, caching, timing, authentication, retries</td>
+            </tr>
+            <tr>
+                <td>Advanced</td>
+                <td>class decorators, async decorators, stacked decorators</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
