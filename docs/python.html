@@ -154,6 +154,7 @@
         <li><a href="#python-errors-exceptions">Errors and Exceptions</a></li>
         <li><a href="#python-custom-exceptions">Custom Exceptions</a></li>
         <li><a href="#python-classes">Classes</a></li>
+        <li><a href="#python-dataclasses">Dataclasses</a></li>
     </ul>
 </nav>
 <hr/>
@@ -9821,6 +9822,397 @@ print(p)
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-dataclasses">Python Dataclasses</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>A <code>dataclass</code> is a Python feature (introduced in Python 3.7) that automatically generates common boilerplate code for classes.</li>
+        <br/>
+        <li>Without it, you would manually write:
+            <ul>
+                <li><code>__init__</code></li>
+                <li><code>__repr__</code></li>
+                <li><code>__eq__</code></li>
+                <li>optionally, <code>__lt__</code>, <code>__hash__</code>, etc.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Dataclasses generate these methods automatically, reducing boilerplate and improving readability.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Basic Dataclass</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: int
+    y: int
+
+p = Point(1, 2)
+print(p)          # Point(x=1, y=2)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Automatically created:
+            <ul>
+                <li><code>__init__(self, x, y)</code></li>
+                <li><code>__repr__</code></li>
+                <li><code>__eq__</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Type Annotations Are Required</b></li>
+    <br/>
+    <ul>
+        <li>Dataclasses use type annotations to define fields.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">@dataclass
+class Item:
+    name: str
+    price: float
+</code></pre>
+    <ul>
+        <li>Without a type annotation, the dataclass will not treat it as a field.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Default Values</b></li>
+<pre><code class="language-python line-numbers">@dataclass
+class User:
+    name: str
+    active: bool = True
+
+u = User("Alice")
+print(u.active)   # True
+</code></pre>
+    <ul>
+        <li>Fields with defaults must come after non-default fields, same as normal Python classes.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Default Factory for Mutable Values</b></li>
+    <br/>
+    <ul>
+        <li><b>Never</b> use a mutable default directly (e.g., <code>[]</code>, <code>{}</code>).</li>
+        <li>Use <code>field(default_factory=...)</code> to generate a fresh object each time.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from dataclasses import dataclass, field
+
+@dataclass
+class Bag:
+    items: list[str] = field(default_factory=list)
+
+b1 = Bag()
+b2 = Bag()
+b1.items.append("apple")
+print(b2.items)   # []  (correct!)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Immutability with <code>frozen=True</code></b></li>
+    <br/>
+    <ul>
+        <li>Frozen dataclasses create immutable objects (like namedtuples).</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">@dataclass(frozen=True)
+class Color:
+    r: int
+    g: int
+    b: int
+
+c = Color(10, 20, 30)
+# c.r = 99  # error: cannot modify frozen dataclass
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Useful for safe value objects, configuration, caching, and dictionary keys.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Comparison Methods</b></li>
+    <br/>
+    <ul>
+        <li>Dataclasses implement comparisons based on fields:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">@dataclass(order=True)
+class Score:
+    value: int
+
+print(Score(5) &lt; Score(10))  # True
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>To disable comparisons:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">@dataclass(eq=False)
+class Node:
+    id: int
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Post-Initialization with <code>__post_init__</code></b></li>
+    <br/>
+    <ul>
+        <li>This method runs right after <code>__init__</code> finishes.</li>
+        <li>Useful for validation or computed fields.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">@dataclass
+class Product:
+    name: str
+    price: float
+
+    def __post_init__(self):
+        if self.price &lt; 0:
+            raise ValueError("Price cannot be negative")
+
+Product("Book", 20)    # OK
+Product("Free", -5)    # error!
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Excluding Fields from Dataclasses</b></li>
+    <br/>
+    <ul>
+        <li>Fields that should not appear in <code>__init__</code>, <code>__repr__</code>, etc. can be customized:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">@dataclass
+class Cache:
+    url: str
+    data: bytes = field(repr=False)     # hide from repr
+    expires: int = field(init=False)    # not passed to __init__
+
+    def __post_init__(self):
+        self.expires = 3600</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Make Dataclass Hashable</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">@dataclass(frozen=True)
+class Coordinate:
+    x: int
+    y: int
+
+s = {Coordinate(1, 2)}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Frozen dataclasses are automatically hashable.</li>
+        <li>Non-frozen ones are not, unless you explicitly set <code>unsafe_hash=True</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Customizing Field Ordering</b></li>
+    <br/>
+    <ul>
+        <li>You can exclude specific fields from comparisons:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">@dataclass(order=True)
+class Item:
+    sort_index: int = field(init=False, repr=False)
+    name: str
+    price: float
+
+    def __post_init__(self):
+        self.sort_index = self.price</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Inheritance with Dataclasses</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">@dataclass
+class Animal:
+    name: str
+
+@dataclass
+class Dog(Animal):
+    breed: str
+
+d = Dog("Snoopy", "Beagle")
+print(d)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Parent fields come first in generated <code>__init__</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Asdict and Astuple Conversion</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from dataclasses import asdict, astuple
+
+p = Point(3, 4)
+
+print(asdict(p))   # {'x': 3, 'y': 4}
+print(astuple(p))  # (3, 4)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Very useful for JSON serialization, logging, exporting, etc.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Dataclass vs. NamedTuple vs. TypedDict</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Dataclass</th>
+                <th>NamedTuple</th>
+                <th>TypedDict</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Mutability</td>
+                <td>Mutable (unless frozen)</td>
+                <td>Immutable</td>
+                <td>Mutable</td>
+            </tr>
+            <tr>
+                <td>Methods</td>
+                <td>Allows custom methods</td>
+                <td>Methods possible, but inconvenient</td>
+                <td>No methods</td>
+            </tr>
+            <tr>
+                <td>Performance</td>
+                <td>Good</td>
+                <td>Very high</td>
+                <td>Good</td>
+            </tr>
+            <tr>
+                <td>Primary Use</td>
+                <td>General data modeling</td>
+                <td>Lightweight records</td>
+                <td>JSON-like dict structures with types</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Automatic methods</td>
+                <td>Creates <code>__init__</code>, <code>__repr__</code>, <code>__eq__</code> automatically</td>
+            </tr>
+            <tr>
+                <td>Default factory</td>
+                <td>Safely create mutable defaults</td>
+            </tr>
+            <tr>
+                <td>Frozen</td>
+                <td>Immutability support (hashable)</td>
+            </tr>
+            <tr>
+                <td>Order</td>
+                <td>Enable comparison operators</td>
+            </tr>
+            <tr>
+                <td>Post-init</td>
+                <td>Custom setup via <code>__post_init__</code></td>
+            </tr>
+            <tr>
+                <td>Field customization</td>
+                <td>Full control with <code>field()</code></td>
+            </tr>
+            <tr>
+                <td>asdict / astuple</td>
+                <td>Convert to dict / tuple</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
