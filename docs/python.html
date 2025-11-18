@@ -160,6 +160,7 @@
         <li><a href="#python-iterators">Iterators</a></li>
         <li><a href="#python-generators">Generators</a></li>
         <li><a href="#python-brief-std-lib-tour">Brief Tour of the Python Standard Library</a></li>
+        <li><a href="#python-wrappers">Wrappers</a></li>
     </ul>
 </nav>
 <hr/>
@@ -12144,6 +12145,356 @@ t.join()
             <tr>
                 <td>Concurrency</td>
                 <td><code>threading</code>, <code>multiprocessing</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-wrappers">Python Wrappers</h3>
+<ol>
+    <li><b>What Is a Wrapper in Python?</b></li>
+    <br/>
+    <ul>
+        <li>In Python, a <b>wrapper</b> is a function (or object) that “wraps around” another function to extend or modify its behavior.</li>
+        <br/>
+        <li>Wrappers are used when you want to:
+            <ul>
+                <li>run extra code before or after a function</li>
+                <li>log function calls</li>
+                <li>measure performance</li>
+                <li>validate arguments</li>
+                <li>modify return values</li>
+                <li>add permissions / authentication</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Wrappers are the foundation of <b>decorators</b>, but decorators come later — first we must understand the wrapper concept itself.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Basic Wrapper Structure</b></li>
+    <br/>
+    <ul>
+        <li>A wrapper function takes another function and returns a modified version of it.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def wrapper(func):
+    def inner():
+        print("Before")
+        result = func()
+        print("After")
+        return result
+    return inner
+
+def say_hello():
+    print("Hello")
+
+wrapped = wrapper(say_hello)
+wrapped()
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Output:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">Before
+Hello
+After
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Why Do We Need a Wrapper?</b></li>
+    <br/>
+    <ul>
+        <li>You may want to:
+            <ul>
+                <li>add logging</li>
+                <li>check user permissions</li>
+                <li>retry failed operations</li>
+                <li>limit rate of function calls</li>
+                <li>cache results</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Instead of modifying the original function, you wrap it.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Wrappers With Arguments</b></li>
+    <br/>
+    <ul>
+        <li>To support functions with any number of arguments, wrappers use <code>*args</code> and <code>**kwargs</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def wrapper(func):
+    def inner(*args, **kwargs):
+        print("Calling:", func.__name__)
+        return func(*args, **kwargs)
+    return inner
+
+def add(a, b):
+    return a + b
+
+wrapped_add = wrapper(add)
+print(wrapped_add(3, 5))
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Preserving Function Metadata</b></li>
+    <br/>
+    <ul>
+        <li>Wrapping a function normally destroys the original function’s name, docstring, and annotations.</li>
+        <br/>
+        <li>Python provides <code>functools.wraps</code> to preserve them.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import functools
+
+def wrapper(func):
+    @functools.wraps(func)
+    def inner(*args, **kwargs):
+        return func(*args, **kwargs)
+    return inner
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Wrapper Example: Logging Function Calls</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import functools
+
+def log_calls(func):
+    @functools.wraps(func)
+    def inner(*args, **kwargs):
+        print(f"Calling {func.__name__} with {args=} {kwargs=}")
+        result = func(*args, **kwargs)
+        print(f"{func.__name__} returned {result}")
+        return result
+    return inner
+
+@log_calls
+def multiply(x, y):
+    return x * y
+
+multiply(3, 4)
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Wrapper Example: Timing Functions</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">import time
+import functools
+
+def timer(func):
+    @functools.wraps(func)
+    def inner(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        end = time.perf_counter()
+        print(f"{func.__name__} took {end - start:.6f} seconds")
+        return result
+    return inner
+
+@timer
+def slow():
+    time.sleep(1)
+
+slow()
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Wrapper Example: Checking Permissions</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def require_admin(func):
+    @functools.wraps(func)
+    def inner(user, *args, **kwargs):
+        if user != "admin":
+            raise PermissionError("Access denied")
+        return func(user, *args, **kwargs)
+    return inner
+
+@require_admin
+def delete_database(user):
+    return "Database deleted!"
+
+delete_database("admin")    # OK
+delete_database("guest")    # PermissionError
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Wrapper Example: Caching (Memoization)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">def cache(func):
+    stored = {}
+
+    @functools.wraps(func)
+    def inner(x):
+        if x not in stored:
+            stored[x] = func(x)
+        return stored[x]
+    return inner
+
+@cache
+def square(n):
+    print("Computing...")
+    return n * n
+
+print(square(5))   # computed
+print(square(5))   # from cache
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Wrappers vs Decorators</b></li>
+    <br/>
+    <ul>
+        <li>A decorator is simply a <b>shortcut</b> for applying a wrapper.</li>
+    </ul>
+
+<pre><code class="language-text">
+Without decorator:
+    wrapped = wrapper(func)
+
+With decorator:
+    @wrapper
+    def func(): ...
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Thus: <b>All decorators use wrappers, but not all wrappers need decorators.</b></li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Wrappers With Methods (Classes)</b></li>
+    <br/>
+    <ul>
+        <li>Wrappers also work on methods, but remember: the first argument is <code>self</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def debug(func):
+    @functools.wraps(func)
+    def inner(self, *args, **kwargs):
+        print(f"Method {func.__name__} called")
+        return func(self, *args, **kwargs)
+    return inner
+
+class A:
+    @debug
+    def hello(self):
+        print("Hello from A")
+
+A().hello()
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Advanced: Wrapping Async Functions</b></li>
+    <br/>
+    <ul>
+        <li>Wrappers can also handle <code>async</code> functions.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import functools
+import asyncio
+
+def async_wrapper(func):
+    @functools.wraps(func)
+    async def inner(*args, **kwargs):
+        print("Before async call")
+        result = await func(*args, **kwargs)
+        print("After async call")
+        return result
+    return inner
+
+@async_wrapper
+async def hello():
+    await asyncio.sleep(1)
+    return "Done"
+
+asyncio.run(hello())
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Wrapper</td>
+                <td>A function that adds behavior around another function</td>
+            </tr>
+            <tr>
+                <td><code>*args</code> / <code>**kwargs</code></td>
+                <td>Allow wrappers to handle any function signature</td>
+            </tr>
+            <tr>
+                <td><code>functools.wraps</code></td>
+                <td>Preserves function metadata (name, docstring)</td>
+            </tr>
+            <tr>
+                <td>Without decorator</td>
+                <td><code>wrapped = wrapper(func)</code></td>
+            </tr>
+            <tr>
+                <td>With decorator</td>
+                <td><code>@wrapper</code> above the function</td>
+            </tr>
+            <tr>
+                <td>Common uses</td>
+                <td>logging, timing, caching, permissions, validation, retries</td>
             </tr>
         </tbody>
     </table>
