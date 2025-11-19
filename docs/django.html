@@ -170,6 +170,7 @@
         <li><a href="#django-multiple-databases">Using Multiple Databases</a></li>
         <li><a href="#django-settings-databse">Understanding the <code>DATABASES</code> Setting</a></li>
         <li><a href="#django-models-model">Understanding the <code>models.Model</code></a></li>
+        <li><a href="#django-models-meta">Understanding the <code>class Meta</code> Options in Django <code>models.Model</code></a></li>
     </ul>
 </nav>
 <hr/>
@@ -5565,7 +5566,310 @@ obj.save()
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-models-meta">Understanding the <code>class Meta</code> Options in Django Models</h3>
+<ol>
 
+    <li><b>What Is the</b> <code>Meta</code> <b>Class?</b></li>
+    <br/>
+    <ul>
+        <li>The inner <code>class Meta</code> inside a Django model is a special configuration class.</li>
+        <br/>
+        <li>It tells Django how to behave when generating:
+            <ul>
+                <li>database table names</li>
+                <li>sorting rules</li>
+                <li>indexes</li>
+                <li>constraints</li>
+                <li>permissions</li>
+                <li>model names</li>
+                <li>relationships between apps</li>
+            </ul>
+        </li>
+        <br/>
+        <li><code>Meta</code> does <u>not</u> affect Python logic — it affects <u>Django ORM behavior, database schema, and admin interface.</u></li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Basic Structure of <code>Meta</code></b></li>
+<pre><code class="language-python line-numbers">class Product(models.Model):
+    name = models.CharField(max_length=50)
+
+    class Meta:
+        ordering = ["name"]
+</code></pre>
+
+    <ul>
+        <li>The <code>Meta</code> class must be inside the model and indented.</li>
+        <li>All its attributes are optional.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Full List of Common Meta Options</b></li>
+
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Option</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td><code>db_table</code></td><td>Custom SQL table name</td></tr>
+            <tr><td><code>ordering</code></td><td>Default ordering for QuerySets</td></tr>
+            <tr><td><code>verbose_name</code></td><td>Human-readable singular name</td></tr>
+            <tr><td><code>verbose_name_plural</code></td><td>Plural human-readable name</td></tr>
+            <tr><td><code>indexes</code></td><td>Custom database indexes</td></tr>
+            <tr><td><code>unique_together</code></td><td>Multi-field uniqueness constraint (legacy)</td></tr>
+            <tr><td><code>constraints</code></td><td>Advanced database constraints</td></tr>
+            <tr><td><code>permissions</code></td><td>Custom permission definitions</td></tr>
+            <tr><td><code>default_related_name</code></td><td>Reverse relationship name</td></tr>
+            <tr><td><code>app_label</code></td><td>Assign model to a different app</td></tr>
+            <tr><td><code>managed</code></td><td>If False, Django will NOT create or modify the table</td></tr>
+            <tr><td><code>get_latest_by</code></td><td>Field used by QuerySet.latest()</td></tr>
+            <tr><td><code>ordering</code></td><td>Set default ordering (ASC/DESC)</td></tr>
+            <tr><td><code>abstract</code></td><td>Create abstract base classes</td></tr>
+            <tr><td><code>proxy</code></td><td>Create proxy models</td></tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>db_table — Custom Table Name</b></li>
+    <br/>
+    <ul>
+        <li>By default Django names tables like <code>appname_modelname</code>.</li>
+        <li>You can override this:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Product(models.Model):
+    name = models.CharField(max_length=50)
+
+    class Meta:
+        db_table = "ecommerce_products"
+</code></pre>
+
+    <ul>
+        <li>The database table will now be called <code>ecommerce_products</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>ordering — Default QuerySet Order</b></li>
+    <br/>
+    <ul>
+        <li>This determines how QuerySets are sorted <u>unless you override it</u>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Post(models.Model):
+    created_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-created_at"]
+</code></pre>
+
+    <ul>
+        <li><code>Post.objects.all()</code> will always be newest → oldest.</li>
+        <li>Supports multiple fields.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>verbose_name & verbose_name_plural</b></li>
+    <br/>
+    <ul>
+        <li>Used by Django Admin for labels.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Product(models.Model):
+    class Meta:
+        verbose_name = "Product Item"
+        verbose_name_plural = "Product Items"
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>indexes — Creating Database Indexes</b></li>
+<pre><code class="language-python line-numbers">class User(models.Model):
+    username = models.CharField(max_length=50)
+    email = models.EmailField()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["username"]),
+            models.Index(fields=["email"]),
+        ]
+</code></pre>
+
+    <ul>
+        <li>Django will generate SQL for index creation.</li>
+        <li>This improves query performance.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>unique_together (Deprecated in Favor of <code>UniqueConstraint</code>)</b></li>
+<pre><code class="language-python line-numbers">class Enrollment(models.Model):
+    student = models.ForeignKey("Student", on_delete=models.CASCADE)
+    course = models.ForeignKey("Course", on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ["student", "course"]
+</code></pre>
+
+    <ul>
+        <li>Ensures that one student cannot enroll in the same course twice.</li>
+        <li>Use <code>constraints</code> instead in modern Django.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>constraints — Advanced SQL Constraints</b></li>
+<pre><code class="language-python line-numbers">from django.db import models
+
+class Product(models.Model):
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(check=models.Q(price__gte=0), name="price_positive")
+        ]
+</code></pre>
+
+    <ul>
+        <li>Types of constraints:</li>
+        <ul>
+            <li><b>CheckConstraint</b></li>
+            <li><b>UniqueConstraint</b></li>
+            <li><b>ForeignKey constraints</b> are handled automatically</li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>permissions — Custom Permissions</b></li>
+<pre><code class="language-python line-numbers">class Report(models.Model):
+    class Meta:
+        permissions = [
+            ("view_sensitive_data", "Can view sensitive data"),
+            ("export_reports", "Can export reports"),
+        ]
+</code></pre>
+
+    <ul>
+        <li>Django creates these permissions in the database.</li>
+        <li>Often used with the Admin interface.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>default_related_name — Reverse Relation Name</b></li>
+<pre><code class="language-python line-numbers">class Author(models.Model):
+    class Meta:
+        default_related_name = "authors"
+</code></pre>
+
+    <ul>
+        <li>This affects reverse relationships used by ForeignKeys.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>managed — Should Django Create This Table?</b></li>
+<pre><code class="language-python line-numbers">class LegacyUser(models.Model):
+    legacy_id = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = "legacy_user_table"
+</code></pre>
+
+    <ul>
+        <li>Use when working with a table that Django should NOT create or modify.</li>
+        <li>Common for legacy databases.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>get_latest_by — Field Used by <code>latest()</code></b></li>
+<pre><code class="language-python line-numbers">class Event(models.Model):
+    timestamp = models.DateTimeField()
+
+    class Meta:
+        get_latest_by = "timestamp"
+</code></pre>
+
+    <ul>
+        <li>Now <code>Event.objects.latest()</code> works.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>abstract — Create an Abstract Base Class</b></li>
+<pre><code class="language-python line-numbers">class BaseTimestamp(models.Model):
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        abstract = True
+</code></pre>
+
+    <ul>
+        <li>No table is created for abstract models.</li>
+        <li>They serve as base classes for other models.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>proxy — Create a Proxy Model</b></li>
+<pre><code class="language-python line-numbers">class OrderedUser(User):
+    class Meta:
+        proxy = True
+        ordering = ["username"]
+</code></pre>
+
+    <ul>
+        <li>No new table created — same table, different Python class.</li>
+        <li>Used to add methods or change default ordering.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>app_label — Force a Model into a Different App</b></li>
+    <br/>
+    <ul>
+        <li>Normally, Django determines an app by the folder name.</li>
+        <li>You can override this:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Report(models.Model):
+    class Meta:
+        app_label = "analytics"
+</code></pre>
+
+    <ul>
+        <li>Do this only when necessary (e.g., models in a shared folder).</li>
+    </ul>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
