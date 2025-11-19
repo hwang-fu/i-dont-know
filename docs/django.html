@@ -85,11 +85,6 @@
     .token.keyword {
         font-weight: 500;
     }
-    /*
-    .token.comment {
-        color: #888;
-    }
-    */
 
     .red-underline {
         text-decoration-line: underline;
@@ -108,8 +103,8 @@
     }
 
     code {
-        color: #24292e;                     /* text */
-        background-color: #f6f8fa;          /* bg */
+        color: #24292e;
+        background-color: #f6f8fa;
         border: 1px solid #d0d7de;          /* subtle frame */
         border-radius: .375rem;
         padding: .15rem .35rem;
@@ -169,6 +164,7 @@
         <li><a href="#django-model-queries">Models Making Queries</a></li>
         <li><a href="#django-model-aggregation">Models Aggregation</a></li>
         <li><a href="#django-model-research">Models Research</a></li>
+        <li><a href="#django-model-managers">Models Managers</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3907,7 +3903,223 @@ results = Post.objects.filter(
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-model-managers">Model Managers in Django</h3>
+<ol>
 
+    <li><b>What Is a Model Manager?</b></li>
+    <br/>
+    <ul>
+        <li>Every Django model has at least one <u>Manager</u> which acts as the main interface between your model and the database.</li>
+        <br/>
+        <li>The default manager for every model is <code>objects</code>.
+            <br/>Example:
+            <pre><code class="language-python">Post.objects.all()</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Default Manager: <code>objects</code></b></li>
+    <br/>
+    <ul>
+        <li>Every model automatically gets:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+
+# Default manager
+Post.objects.all()
+</code></pre>
+
+    <ul>
+        <li>But you can <u>add additional managers</u> or <u>replace the default</u>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Creating a Custom Manager</b></li>
+<pre><code class="language-python line-numbers">from django.db import models
+
+class PublishedManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_published=True)
+</code></pre>
+
+    <ul>
+        <li>This manager redefines <code>get_queryset()</code> to show only published posts.</li>
+    </ul>
+
+    <br/>
+    <br/>
+
+    <ul>
+        <li>Attach it to your model:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+    is_published = models.BooleanField(default=False)
+
+    objects = models.Manager()           # default manager
+    published = PublishedManager()       # custom manager
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li>Using the managers:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.all()        # returns all posts
+Post.published.all()      # returns only published posts
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Adding Helper Methods to a Manager</b></li>
+    <br/>
+    <ul>
+        <li>You can define custom helper methods to simplify complex queries.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class PostManager(models.Manager):
+    def recent(self):
+        return self.get_queryset().order_by("-created_at")[:5]
+
+class Post(models.Model):
+    ...
+    objects = PostManager()
+</code></pre>
+
+    <ul>
+        <li>Use it like:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.recent()</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Multiple Managers on One Model</b></li>
+<pre><code class="language-python line-numbers">class Post(models.Model):
+    ...
+    objects = models.Manager()           # default
+    published = PublishedManager()       # custom
+    recent = PostManager()               # custom
+</code></pre>
+
+    <ul>
+        <li>You can use:</li>
+    </ul>
+<pre><code class="language-python">Post.published.all()</code></pre>
+<pre><code class="language-python">Post.recent.recent()</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Managers With ForeignKeys (related_name)</b></li>
+<pre><code class="language-python line-numbers">class Comment(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
+    text = models.TextField()
+</code></pre>
+
+    <ul>
+        <li>Django automatically creates a related manager:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
+post.comments.all()               # reverse manager
+</code></pre>
+
+    <ul>
+        <li>This is used heavily in relationships.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>The Modern Way: Custom QuerySet + Manager</b></li>
+    <br/>
+
+    <ul>
+        <li><b>Step 1 — Create a custom QuerySet</b></li>
+
+    <pre><code class="language-python line-numbers">class PostQuerySet(models.QuerySet):
+        def published(self):
+            return self.filter(is_published=True)
+
+        def recent(self):
+            return self.order_by("-created_at")[:5]
+    </code></pre>
+
+        <br/>
+
+        <li><b>Step 2 — Attach it to a Manager</b></li>
+
+    <pre><code class="language-python line-numbers">class PostManager(models.Manager):
+        def get_queryset(self):
+            return PostQuerySet(self.model, using=self._db)
+
+        def published(self):
+            return self.get_queryset().published()
+
+        def recent(self):
+            return self.get_queryset().recent()
+    </code></pre>
+
+        <br/>
+
+        <li><b>Step 3 — Attach Manager to Model</b></li>
+
+    <pre><code class="language-python line-numbers">class Post(models.Model):
+        ...
+        objects = PostManager()
+    </code></pre>
+
+        <br/>
+
+        <ul>
+            <li>Now you can chain methods:</li>
+        </ul>
+
+    <pre><code class="language-python line-numbers">Post.objects.published().recent()</code></pre>
+
+        <ul>
+            <li>This is much more powerful than plain Managers.</li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Replacing the Default Manager</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes you want the default QuerySet to always be filtered.</li>
+        <li>Example: hide soft-deleted items by default.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class ActiveManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+class User(models.Model):
+    ...
+    objects = ActiveManager()  # replaces default manager
+</code></pre>
+
+    <ul>
+        <li>Now <code>User.objects.all()</code> hides deleted entries.</li>
+    </ul>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
