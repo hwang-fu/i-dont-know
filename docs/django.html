@@ -167,6 +167,7 @@
         <li><a href="#django-models">Models</a></li>
         <li><a href="#django-orm">Object–Relational Mapper (ORM)</a></li>
         <li><a href="#django-model-queries">Models Making Queries</a></li>
+        <li><a href="#django-model-aggregation">Models Aggregation</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3025,7 +3026,6 @@ post.save()
 
 
     <li><b>Deleting Objects (DELETE)</b></li>
-    <br/>
     <ul>
         <li>Delete a single object:</li>
     </ul>
@@ -3267,8 +3267,6 @@ Post.objects.filter(title__in=["Hello", "Hi"])
 
 
     <li><b>Ordering Results (ORDER BY)</b></li>
-    <br/>
-
 <pre><code class="language-python line-numbers">Post.objects.order_by("created_at")     # ascending
 Post.objects.order_by("-created_at")    # descending
 </code></pre>
@@ -3414,8 +3412,6 @@ Post.objects.filter(
 
 
     <li><b>Aggregation (SUM, AVG, COUNT)</b></li>
-    <br/>
-
 <pre><code class="language-python line-numbers">from django.db.models import Count
 
 Post.objects.aggregate(total_posts=Count("id"))
@@ -3425,8 +3421,6 @@ Post.objects.aggregate(total_posts=Count("id"))
 
 
     <li><b>Prefetching Related Data (Performance Optimization)</b></li>
-    <br/>
-
 <pre><code class="language-python line-numbers">Post.objects.select_related()      # for ForeignKey/OneToOne
 Post.objects.prefetch_related("comment_set")  # for reverse/M2M
 </code></pre>
@@ -3445,7 +3439,275 @@ Post.objects.prefetch_related("comment_set")  # for reverse/M2M
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-model-aggregation">Models Aggregation in Django (SUM, AVG, COUNT, MAX, MIN, etc.)</h3>
+<ol>
 
+    <li><b>What Is Aggregation?</b></li>
+    <br/>
+    <ul>
+        <li><b>Aggregation</b> in Django means performing operations over a set of rows and returning a <u>single value</u>, such as:
+            <ul>
+                <li>COUNT</li>
+                <li>SUM</li>
+                <li>AVG</li>
+                <li>MAX</li>
+                <li>MIN</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Django provides aggregation tools inside the ORM so you never need to write SQL manually.</li>
+        <br/>
+        <li>Aggregations use the <code>aggregate()</code> method and built-in functions from <code>django.db.models</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example Model for This Chapter</b></li>
+<pre><code class="language-python line-numbers"># shop/models.py
+
+from django.db import models
+
+class Product(models.Model):
+    name = models.CharField(max_length=200)
+    price = models.DecimalField(max_digits=8, decimal_places=2)
+    stock = models.IntegerField()
+    rating = models.FloatField()
+</code></pre>
+
+    <ul>
+        <li>Make migrations inside a virtual environment:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
+python3 manage.py migrate
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using <code>aggregate()</code></b></li>
+    <br/>
+    <ul>
+        <li>The <code>aggregate()</code> method sends a single SQL query that returns a dictionary.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from django.db.models import Count, Sum, Avg, Max, Min
+
+Product.objects.aggregate(total_count=Count("id"))
+</code></pre>
+
+    <ul>
+        <li>Returns:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">{'total_count': 42}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>COUNT Aggregation</b></li>
+<pre><code class="language-python line-numbers">from django.db.models import Count
+
+Product.objects.aggregate(total_products=Count("id"))
+</code></pre>
+
+    <ul>
+        <li>Equivalent to SQL: <code>SELECT COUNT(*) FROM product</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>SUM Aggregation</b></li>
+<pre><code class="language-python line-numbers">Product.objects.aggregate(total_stock=Sum("stock"))
+</code></pre>
+
+    <ul>
+        <li>Returns sum of stock across all products.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>AVG Aggregation</b></li>
+<pre><code class="language-python line-numbers">Product.objects.aggregate(average_price=Avg("price"))
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>MAX and MIN Aggregation</b></li>
+<pre><code class="language-python line-numbers">Product.objects.aggregate(
+    highest_price=Max("price"),
+    lowest_price=Min("price")
+)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Multiple Aggregations at Once</b></li>
+<pre><code class="language-python line-numbers">Product.objects.aggregate(
+    avg_price=Avg("price"),
+    total_stock=Sum("stock"),
+    max_rating=Max("rating")
+)
+</code></pre>
+
+    <ul>
+        <li>Runs a single SQL query, not multiple.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Using Expressions (F and ExpressionWrapper)</b></li>
+<pre><code class="language-python line-numbers">from django.db.models import F, Sum
+
+Product.objects.aggregate(
+    total_value=Sum(F("price") * F("stock"))
+)
+</code></pre>
+
+    <ul>
+        <li>Calculates inventory total value (price × stock).</li>
+        <li>Django converts expression into SQL automatically.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Aggregating With Filters (Filter then Aggregate)</b></li>
+<pre><code class="language-python line-numbers">Product.objects
+    .filter(rating__gte=4.5)
+    .aggregate(high_rated_count=Count("id"))
+</code></pre>
+
+    <ul>
+        <li>Useful for analytics dashboards.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Aggregation With Annotation (Per-row Aggregation)</b></li>
+    <br/>
+    <ul>
+        <li><code>annotate()</code> computes aggregated values <u>per object</u> rather than for the whole table.</li>
+        <br/>
+        <li>This is powerful for grouping.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Example: Total orders per product</b></li>
+
+<pre><code class="language-python line-numbers">from django.db.models import Sum
+
+Product.objects.annotate(
+    order_quantity=Sum("order__quantity")
+)
+</code></pre>
+
+    <ul>
+        <li>This gives each product an additional attribute <code>order_quantity</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Grouping Data (Using <code>values()</code> + <code>annotate()</code>)</b></li>
+    <br/>
+    <ul>
+        <li>Similar to SQL <code>GROUP BY</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Product.objects.values("category").annotate(
+    avg_price=Avg("price"),
+    count=Count("id")
+)
+</code></pre>
+
+    <ul>
+        <li>Returns one row per category.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Distinct Aggregation</b></li>
+    <br/>
+    <ul>
+        <li>You can count distinct values using <code>distinct=True</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Product.objects.aggregate(
+    unique_ratings=Count("rating", distinct=True)
+)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Aggregation With Related Models</b></li>
+<pre><code class="language-python line-numbers"># ForeignKey: Product → Category
+
+Category.objects.annotate(
+    total_products=Count("product")
+)
+</code></pre>
+
+    <ul>
+        <li>Adds a <code>total_products</code> field to each category.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Ordering Aggregated Results</b></li>
+<pre><code class="language-python line-numbers">Category.objects.annotate(
+    total_products=Count("product")
+).order_by("-total_products")
+</code></pre>
+
+    <ul>
+        <li>Sort categories by number of products.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Handling Null Values in Aggregation</b></li>
+<pre><code class="language-python line-numbers">Product.objects.aggregate(
+    avg_rating=Avg("rating")
+)
+</code></pre>
+
+    <ul>
+        <li>Django ignores <code>NULL</code> values automatically.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Raw SQL Equivalent</b></li>
+    <br/>
+    <ul>
+        <li>Django translates aggregation into SQL such as:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">SELECT AVG(price) AS avg_price FROM shop_product;
+</code></pre>
+
+    <ul>
+        <li>This is handled by the ORM for you.</li>
+    </ul>
+
+    <br/>
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
