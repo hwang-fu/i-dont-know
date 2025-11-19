@@ -173,6 +173,7 @@
         <li><a href="#vue-fallthrough-attributes">Fallthrough Attributes</a></li>
         <li><a href="#vue-lifecycle-hooks">Lifecycle Hooks</a></li>
         <li><a href="#vue-slots">Slots</a></li>
+        <li><a href="#vue-conditional-rendering">Conditional Rendering</a></li>
     </ul>
 </nav>
 <hr/>
@@ -5311,6 +5312,277 @@ defineSlots&lt;SlotsType&lt;{
             <tr>
                 <td>TypeScript slots</td>
                 <td>Use <code>defineSlots</code> for typing slot props</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-conditional-rendering">Conditional Rendering in Vue (Composition API + TypeScript)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Conditional rendering controls whether parts of the DOM appear or not.</li>
+        <br/>
+        <li>Vue provides intuitive directives like:
+            <ul>
+                <li><code>v-if</code></li>
+                <li><code>v-else-if</code></li>
+                <li><code>v-else</code></li>
+                <li><code>v-show</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>v-if</b> — Render Only If Condition Is True</li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;div&gt;
+        &lt;p v-if="loggedIn"&gt;Welcome back!&lt;/p&gt;
+        &lt;p v-else&gt;Please log in.&lt;/p&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+
+const loggedIn = ref(false)
+&lt;/script&gt;
+</code></pre>
+    <ul>
+        <li>This is efficient for rare updates or expensive components.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>v-else-if and v-else</b></li>
+    <br/>
+    <ul>
+        <li>Standard conditional chain.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;div&gt;
+        &lt;p v-if="score &gt;= 90"&gt;Excellent&lt;/p&gt;
+        &lt;p v-else-if="score &gt;= 60"&gt;Pass&lt;/p&gt;
+        &lt;p v-else&gt;Fail&lt;/p&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+
+const score = ref(75)
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>v-show</b> — Toggle Visibility with CSS</li>
+    <br/>
+    <ul>
+        <li><code>v-show</code> does NOT remove elements from the DOM.</li>
+        <li>It toggles <code>display: none</code>.</li>
+        <li>Useful when:
+            <ul>
+                <li>you need frequent toggling</li>
+                <li>the element is expensive to recreate</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;button @click="show = !show"&gt;Toggle&lt;/button&gt;
+    &lt;p v-show="show"&gt;I stay in the DOM.&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+
+const show = ref(true)
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>v-if vs v-show: When to Use Which?</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Directive</th>
+                <th>Behavior</th>
+                <th>Best Use Case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>v-if</code></td>
+                <td>Creates/removes DOM elements</td>
+                <td>Rare toggles, expensive components</td>
+            </tr>
+            <tr>
+                <td><code>v-show</code></td>
+                <td>Always renders, toggles visibility via CSS</td>
+                <td>Frequent toggling, always needed in DOM</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>Conditional Groups Using &lt;template&gt;</b></li>
+    <br/>
+    <ul>
+        <li>Vue allows grouping multiple elements under a single <code>v-if</code> using <code>&lt;template&gt;</code>.</li>
+        <li>The template tag does not render itself, only its children appear.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template v-if="user"&gt;
+    &lt;h2&gt;User Info&lt;/h2&gt;
+    &lt;p&gt;Name: {{ user.name }}&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;template v-else&gt;
+    &lt;p&gt;No user found.&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+interface User {
+    name: string;
+}
+
+const user = ref&lt;User | null&gt;({ name: "Alice" })
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Computed Properties for Cleaner Conditions</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>computed</code> when logic becomes too complex.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+import { ref, computed } from "vue"
+
+const age = ref(20)
+
+const isAdult = computed(() =&gt; age.value &gt;= 18)
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;p v-if="isAdult"&gt;You are an adult.&lt;/p&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>v-if with Async Data (Common Pattern)</b></li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;p v-if="loading"&gt;Loading...&lt;/p&gt;
+    &lt;p v-else-if="error"&gt;Error: {{ error }}&lt;/p&gt;
+    &lt;p v-else&gt;Data: {{ data }}&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref, onMounted } from "vue"
+
+const loading = ref(true)
+const error = ref&lt;string | null&gt;(null)
+const data = ref&lt;string | null&gt;(null)
+
+onMounted(async () =&gt; {
+    try {
+        const res = await fetch("/api/message")
+        data.value = await res.text()
+    } catch (err) {
+        error.value = String(err)
+    } finally {
+        loading.value = false
+    }
+})
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Best Practices</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>v-if</code> when the condition rarely changes.</li>
+        <li>Use <code>v-show</code> when toggling frequently.</li>
+        <li>Use computed properties for readable conditions.</li>
+        <li>Avoid putting heavy logic directly inside template expressions.</li>
+        <li>Use <code>&lt;template&gt;</code> for grouping multiple conditional elements.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Directive</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>v-if</code></td>
+                <td>Conditionally render elements (added/removed from DOM)</td>
+            </tr>
+            <tr>
+                <td><code>v-else-if</code> / <code>v-else</code></td>
+                <td>Chain conditional rendering</td>
+            </tr>
+            <tr>
+                <td><code>v-show</code></td>
+                <td>Toggle visibility using CSS, always in DOM</td>
+            </tr>
+            <tr>
+                <td><code>v-if</code> + <code>&lt;template&gt;</code></td>
+                <td>Conditionally render a block of elements</td>
+            </tr>
+            <tr>
+                <td>Computed conditions</td>
+                <td>Cleaner and reusable conditional logic</td>
             </tr>
         </tbody>
     </table>
