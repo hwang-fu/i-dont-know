@@ -162,6 +162,7 @@
         <li><a href="#vue-form-input-bindings">Form Input Bindings</a></li>
         <li><a href="#vue-scoped-slots">Scoped Slots</a></li>
         <li><a href="#vue-provide-inject">Provide / Inject</a></li>
+        <li><a href="#vue-async-components">Async Components</a></li>
     </ul>
 </nav>
 <hr/>
@@ -985,7 +986,6 @@ export default {
 }
 </code></pre>
 
-    <br/>
     <ul>
         <li>Other hooks:
             <ul>
@@ -7172,7 +7172,246 @@ if (!auth) throw new Error("AuthProvider is missing")
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-async-components">Async Components in Vue (Composition API + TypeScript)</h3>
+<ol>
 
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>An <u>async component</u> is a component that is loaded <u>lazily</u> only when needed.</li>
+        <br/>
+        <li>This is useful to:
+            <ul>
+                <li>reduce initial bundle size</li>
+                <li>speed up page load</li>
+                <li>load rarely-used components only when required</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Vue supports async components via <code>defineAsyncComponent()</code>.</li>
+        <br/>
+        <li>You can use them with dynamic import (<code>import()</code>) and also type them fully in TypeScript.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Basic Async Component</b></li>
+    <br/>
+    <ul>
+        <li>The simplest form is wrapping <code>import()</code> with <code>defineAsyncComponent</code>.</li>
+        <li>Below is the recommended pattern.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;AsyncChild /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { defineAsyncComponent } from "vue"
+
+const AsyncChild = defineAsyncComponent(() =&gt;
+    import("./Child.vue")
+)
+&lt;/script&gt;
+</code></pre>
+    <ul>
+        <li>The component <code>Child.vue</code> is only fetched by the browser when <code>Parent.vue</code> is rendered.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Async Components</b></li>
+    <br/>
+    <ul>
+        <li>When using TypeScript, you can pass <code>DefineComponent</code> as a generic to tell TS that the loaded value is a real Vue component.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;script setup lang="ts"&gt;
+import { defineAsyncComponent } from "vue"
+import type { DefineComponent } from "vue"
+
+const AsyncForm = defineAsyncComponent&lt;DefineComponent&gt;(() =&gt;
+    import("./Form.vue")
+)
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Async Component with Loading and Error Components</b></li>
+    <br/>
+    <ul>
+        <li><code>defineAsyncComponent()</code> supports an optional object:</li>
+            <ul>
+                <li><code>loader</code>: function importing the component</li>
+                <li><code>loadingComponent</code>: displayed while loading</li>
+                <li><code>errorComponent</code>: displayed if loading fails</li>
+                <li><code>delay</code>: wait time before showing loading UI</li>
+                <li><code>timeout</code>: error after X ms</li>
+            </ul>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;script setup lang="ts"&gt;
+import { defineAsyncComponent } from "vue"
+
+const AsyncChart = defineAsyncComponent({
+    loader: () =&gt; import("./Chart.vue"),
+    loadingComponent: () =&gt; import("./Loading.vue"),
+    errorComponent: () =&gt; import("./Error.vue"),
+    delay: 200,     // show loading component after 200ms
+    timeout: 3000   // throw error if it takes &gt;3s
+})
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;AsyncChart /&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Async Components with</b> <code>&lt;Suspense&gt;</code></li>
+    <br/>
+    <ul>
+        <li><code>&lt;Suspense&gt;</code> is a built-in Vue 3 component that waits for async child components to finish loading before rendering them.</li>
+        <li>While waiting, Vue shows the <code>#fallback</code> slot, once async content resolves, Vue swaps in the <code>#default</code> slot.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;Suspense&gt;
+        &lt;template #default&gt;
+            &lt;AsyncProfile /&gt;
+        &lt;/template&gt;
+
+        &lt;template #fallback&gt;
+            &lt;p&gt;Loading profile...&lt;/p&gt;
+        &lt;/template&gt;
+    &lt;/Suspense&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { defineAsyncComponent } from "vue"
+
+const AsyncProfile = defineAsyncComponent(() =&gt;
+    import("./Profile.vue")
+)
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Dynamic Async Components</b></li>
+    <br/>
+    <ul>
+        <li>You can dynamically switch which async component is used at runtime.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;component :is="currentView" /&gt;
+
+    &lt;button @click="showLogin"&gt;Login&lt;/button&gt;
+    &lt;button @click="showDashboard"&gt;Dashboard&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref, defineAsyncComponent } from "vue"
+
+const LoginView     = defineAsyncComponent(() =&gt; import("./Login.vue"))
+const DashboardView = defineAsyncComponent(() =&gt; import("./Dashboard.vue"))
+
+const currentView = ref(LoginView)
+
+function showLogin() {
+    currentView.value = LoginView
+}
+function showDashboard() {
+    currentView.value = DashboardView
+}
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Preloading Async Components</b></li>
+    <br/>
+    <ul>
+        <li>You can preload async components in advance to avoid loading delays.</li>
+        <li>This uses native dynamic imports.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+import { defineAsyncComponent } from "vue"
+
+// Preload early
+import("./HeavyPanel.vue")
+
+// Create async component after preload
+const HeavyPanel = defineAsyncComponent(() =&gt; import("./HeavyPanel.vue"))
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Lazy loading</td>
+                <td>Load components only when needed</td>
+            </tr>
+            <tr>
+                <td><code>defineAsyncComponent</code></td>
+                <td>Main API for creating async components</td>
+            </tr>
+            <tr>
+                <td>Loading/error UI</td>
+                <td>Custom components for loading states and errors</td>
+            </tr>
+            <tr>
+                <td><code>&lt;Suspense&gt;</code></td>
+                <td>Simplified loading fallback system</td>
+            </tr>
+            <tr>
+                <td>TypeScript support</td>
+                <td>Use <code>DefineComponent</code> to type async imports</td>
+            </tr>
+            <tr>
+                <td>Dynamic switching</td>
+                <td>Use <code>&lt;component :is="..."&gt;</code> with async components</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
