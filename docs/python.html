@@ -195,6 +195,7 @@
         <li><a href="#python-decorators">Decorators</a></li>
         <li><a href="#python-async-intro">Introduction to Python Async Programming</a></li>
         <li><a href="#python-asyncio-run-vs-await">Understanding the Difference Between <code>asyncio.run()</code> and <code>await</code></a></li>
+        <li><a href="#python-c-api-intro">Introduction to C API</a></li>
     </ul>
 </nav>
 <hr/>
@@ -13511,7 +13512,332 @@ if __name__ == "__main__":
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-c-api-intro">Introduction to the Python C API</h3>
+<ol>
 
+    <li><b>What Is the Python C API?</b></li>
+    <br/>
+    <ul>
+        <li>The <u>Python C API</u> is a set of C functions and macros that let you:
+            <ul>
+                <li>extend Python by writing new modules in C</li>
+                <li>embed Python inside a C program</li>
+                <li>manipulate Python objects at the C level</li>
+                <li>call Python code from C</li>
+                <li>write extremely fast code using Python’s runtime</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Many famous Python libraries are powered by the C API:
+            <ul>
+                <li><b>NumPy</b></li>
+                <li><b>pandas</b></li>
+                <li><b>uvloop</b></li>
+                <li><b>CPython built-ins</b> themselves</li>
+            </ul>
+        </li>
+        <br/>
+        <li>It is part of <u>CPython</u>, the “default” Python implementation.</li>
+        <br/>
+        <li>It exposes the same internals Python itself uses.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Basic Structure of a C Extension Module</b></li>
+    <br/>
+    <ul>
+        <li>A typical module contains:
+            <ul>
+                <li>function implementations</li>
+                <li>a table describing functions</li>
+                <li>a module definition struct</li>
+                <li>an initialization function</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-c line-numbers">#include &lt;Python.h&gt;
+
+static PyObject * add(PyObject * self, PyObject * args) {
+    int a, b;
+    if (!PyArg_ParseTuple(args, "ii", &amp;a, &amp;b)) {
+        return NULL;
+    }
+
+    return PyLong_FromLong(a + b);
+}
+
+static PyMethodDef MyMethods[] = {
+    {"add", add, METH_VARARGS, "Add two numbers"},
+    {NULL, NULL, 0, NULL}
+};
+
+static struct PyModuleDef mymodule = {
+    PyModuleDef_HEAD_INIT,
+    "mymodule",
+    NULL,
+    -1,
+    MyMethods
+};
+
+PyMODINIT_FUNC PyInit_mymodule(void) {
+    return PyModule_Create(&amp;mymodule);
+}
+</code></pre>
+
+    <ul>
+        <li>This creates a Python module callable from Python:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import mymodule
+print(mymodule.add(3, 4))   # 7
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>The Core Python Object Type:</b> <code>PyObject</code></li>
+    <br/>
+    <ul>
+        <li>Everything in Python is a <code>PyObject*</code>.</li>
+        <li>All Python objects share a common base:</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">typedef struct _object {
+    Py_ssize_t ob_refcnt;   // reference count
+    PyTypeObject *ob_type;  // pointer to its type
+} PyObject;
+</code></pre>
+
+    <ul>
+        <li>Examples:
+            <ul>
+                <li><code>PyLongObject</code> → Python int</li>
+                <li><code>PyUnicodeObject</code> → Python str</li>
+                <li><code>PyListObject</code> → Python list</li>
+            </ul>
+        </li>
+        <li>The API gives functions to:
+            <ul>
+                <li>create objects</li>
+                <li>inspect them</li>
+                <li>modify them</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Reference Counting (IMPORTANT!)</b></li>
+    <br/>
+    <ul>
+        <li>CPython uses <u>reference counting</u> for memory management.</li>
+        <li>You must manage reference counts manually:</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">Py_INCREF(obj);   // increase reference count
+Py_DECREF(obj);   // decrease, free if goes to 0
+</code></pre>
+
+    <ul>
+        <li>Failure to follow these rules leads to:
+            <ul>
+                <li><u>memory leaks</u> (forgetting <code>Py_DECREF</code>)</li>
+                <li><u>crashes</u> (<code>Py_DECREF</code> too early → use-after-free)</li>
+            </ul>
+        </li>
+        <li>Golden rule: “Own what you create, Py_DECREF when done.”</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Converting Between Python and C Types</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Python</th>
+                <th>C API creation</th>
+                <th>C API extraction</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>int</td>
+                <td><code>PyLong_FromLong</code></td>
+                <td><code>PyLong_AsLong</code></td>
+            </tr>
+            <tr>
+                <td>str</td>
+                <td><code>PyUnicode_FromString</code></td>
+                <td><code>PyUnicode_AsUTF8</code></td>
+            </tr>
+            <tr>
+                <td>list</td>
+                <td><code>PyList_New</code></td>
+                <td><code>PyList_GetItem</code></td>
+            </tr>
+            <tr>
+                <td>dict</td>
+                <td><code>PyDict_New</code></td>
+                <td><code>PyDict_GetItem</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/>
+    <ul>
+        <li>Example: parsing Python arguments:</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">int a, b;
+PyArg_ParseTuple(args, "ii", &amp;a, &amp;b);
+</code></pre>
+
+    <br/>
+    <br/>
+
+
+
+    <li><b>Raising Python Exceptions from C</b></li>
+    <br/>
+    <ul>
+        <li>To signal Python errors:</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">PyErr_SetString(PyExc_ValueError, "Invalid value");
+return NULL;
+</code></pre>
+
+    <ul>
+        <li>Exceptions propagate up into Python normally.</li>
+    </ul>
+
+    <br/>
+    <br/>
+
+
+    <li><b>Embedding Python into a C Program</b></li>
+    <br/>
+    <ul>
+        <li>You can run Python code inside a native C application:</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">#include &lt;Python.h&gt;
+
+int main() {
+    Py_Initialize();
+    PyRun_SimpleString("print('Hello from embedded Python!')");
+    Py_Finalize();
+    return 0;
+}
+</code></pre>
+
+    <ul>
+        <li>This is how:
+            <ul>
+                <li>games embed Python scripting</li>
+                <li>scientific tools expose Python functionality</li>
+                <li>applications allow Python plugin systems</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Working with Python Modules in C</b></li>
+    <br/>
+    <ul>
+        <li>You can import Python modules from C:</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">PyObject * mod    = PyImport_ImportModule("math");
+PyObject * func   = PyObject_GetAttrString(mod, "sqrt");
+PyObject * result = PyObject_CallFunction(func, "d", 9.0);
+</code></pre>
+
+    <ul>
+        <li>This lets you call arbitrary Python code from C.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Defining New Python Types in C</b></li>
+    <br/>
+    <ul>
+        <li>You can define new classes implemented in C:</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">typedef struct {
+    PyObject_HEAD
+    double x;
+} Point;
+</code></pre>
+
+    <ul>
+        <li>Django’s ORM, NumPy arrays, CPython’s list/dict — all use custom C-level types.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>The GIL (Global Interpreter Lock)</b></li>
+    <br/>
+    <ul>
+        <li>The C API must follow GIL rules:
+            <ul>
+                <li>you must hold the GIL when using Python objects</li>
+                <li>long-running C code should release the GIL</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-c line-numbers">Py_BEGIN_ALLOW_THREADS
+    // long CPU computation here
+Py_END_ALLOW_THREADS
+</code></pre>
+
+    <ul>
+        <li>This is essential for performance in multi-threaded programs.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Building a C Extension Module</b></li>
+    <br/>
+    <ul>
+        <li>A typical <code>setup.py</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from setuptools import setup, Extension
+
+setup(
+    name="mymodule",
+    ext_modules=[
+        Extension("mymodule", ["mymodule.c"])
+    ]
+)
+</code></pre>
+
+    <ul>
+        <li>Build and install:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 setup.py build
+python3 setup.py install
+</code></pre>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
