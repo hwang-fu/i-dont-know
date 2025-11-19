@@ -179,6 +179,7 @@
         <li><a href="#rust-generics-fn">Generics in Functions</a></li>
         <li><a href="#rust-generics-impl">Generics Implemented</a></li>
         <li><a href="#rust-traits">Traits</a></li>
+        <li><a href="#rust-generics-placement">&lt;T&gt; Placement Guide</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -9164,7 +9165,362 @@ impl Storage&lt;i32&gt; for IntLogger {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-generics-placement">Where Do Generics Go in Rust? (&lt;T&gt; Placement Guide)</h3>
+<ol>
+    <li>In Rust, angle brackets <code>&lt;...&gt;</code> appear in two main roles:</li>
+    <br/>
+    <ol>
+        <li>
+            <u>Declaring generics</u>: introducing type parameters.<br/>
+            <code>struct Foo&lt;T&gt; { ... }</code>, <code>impl&lt;T&gt; Foo&lt;T&gt; { ... }</code>, <code>fn foo&lt;T&gt;(...)</code>
+        </li>
+        <br/>
+        <li>
+            <u>Using generics</u>: applying concrete types to a generic item.<br/>
+            <code>Vec&lt;i32&gt;</code>, <code>Option&lt;String&gt;</code>, <code>impl Storage&lt;i32&gt; for IntLogger</code>
+        </li>
+    </ol>
+    <br/><br/>
 
+
+    <li><b>Declaring Generics on Types and Functions</b></li>
+    <br/>
+    <ul>
+        <li>When you introduce a type parameter, it always appears right after the keyword:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Wrapper&lt;T&gt; {
+    value: T,
+}
+
+enum Result&lt;T, E&gt; {
+    Ok(T),
+    Err(E),
+}
+
+trait Storage&lt;T&gt; {
+    fn store(&amp;self, value: T);
+}
+
+fn identity&lt;T&gt;(value: T) -&gt; T {
+    value
+}
+</code></pre>
+
+    <ul>
+        <li>Here <code>&lt;T&gt;</code>, <code>&lt;T, E&gt;</code> are <u>declarations</u>: "this item is generic over these type parameters".</li>
+        <li>Inside the body, <code>T</code> and <code>E</code> can be used like normal types.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Declaring Generics on <code>impl</code> Blocks</b></li>
+    <br/>
+    <ul>
+        <li>The <code>impl</code> keyword can also introduce generics:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Point&lt;T&gt; {
+    x: T,
+    y: T,
+}
+
+// Declare T on the impl:
+impl&lt;T&gt; Point&lt;T&gt; {
+    fn new(x: T, y: T) -&gt; Self {
+        Self { x, y }
+    }
+
+    fn x(&amp;self) -&gt; &amp;T {
+        &amp;self.x
+    }
+}
+</code></pre>
+
+    <ul>
+        <li><code>impl&lt;T&gt;</code> declares that this whole block is generic over <code>T</code>.</li>
+        <li><code>Point&lt;T&gt;</code> after that is a <u>use</u>: we apply the same <code>T</code> to the type.</li>
+        <li>This means: "for every <code>T</code>, these methods exist for <code>Point&lt;T&gt;</code>".</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Generics: Applying Concrete Types</b></li>
+    <br/>
+    <ul>
+        <li>When you see something like <code>Point&lt;i32&gt;</code> or <code>Storage&lt;String&gt;</code>, you are <u>choosing a concrete type</u> for the generic:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let p_int: Point&lt;i32&gt; = Point::new(1, 2);
+let p_str: Point&lt;&amp;str&gt; = Point::new("x", "y");
+</code></pre>
+
+    <ul>
+        <li>Here <code>&lt;i32&gt;</code> and <code>&lt;&amp;str&gt;</code> are <u>applications</u>, not declarations.</li>
+        <br/>
+        <li>Same idea appears in trait implementations:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait Storage&lt;T&gt; {
+    fn store(&amp;self, value: T);
+}
+
+struct IntStorage;
+
+// Implement Storage for the concrete type T = i32
+impl Storage&lt;i32&gt; for IntStorage {
+    fn store(&amp;self, value: i32) {
+        println!("storing number: {}", value);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li><code>Storage&lt;i32&gt;</code> means: "this impl is for the trait <code>Storage</code> specialized to <code>i32</code>."</li>
+        <li>Notice: we did <u>not</u> write <code>impl&lt;T&gt;</code> here, so this <code>impl</code> is <u>not generic</u>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Generic <code>impl</code> vs Concrete <code>impl</code></b></li>
+    <br/>
+    <ul>
+        <li>Compare a generic implementation and a concrete one side by side:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Boxed&lt;T&gt; {
+    value: T,
+}
+
+// 1. Generic impl: applies to all T
+impl&lt;T&gt; Boxed&lt;T&gt; {
+    fn value(&amp;self) -&gt; &amp;T {
+        &amp;self.value
+    }
+}
+
+// 2. Concrete impl: only for Boxed&lt;i32&gt;
+impl Boxed&lt;i32&gt; {
+    fn is_positive(&amp;self) -&gt; bool {
+        self.value &gt; 0
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>
+            <code>impl&lt;T&gt; Boxed&lt;T&gt;</code>:
+            <ul>
+                <li><code>&lt;T&gt;</code> after <code>impl</code> = <b>declare T</b>.</li>
+                <li>Methods work for any <code>Boxed&lt;T&gt;</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>
+            <code>impl Boxed&lt;i32&gt;</code>:
+            <ul>
+                <li>No generics after <code>impl</code> =&gt; this block is <b>not generic</b>.</li>
+                <li>We are using the concrete type <code>Boxed&lt;i32&gt;</code>.</li>
+                <li>Methods only exist for <code>Boxed&lt;i32&gt;</code>, not for other <code>Boxed&lt;T&gt;</code>.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Traits + Generics: Where to Put <code>&lt;T&gt;</code>?</b></li>
+    <br/>
+    <ul>
+        <li>When combining traits and generics, angle brackets appear in both declaration and usage positions:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait ToPair&lt;A, B&gt; {
+    fn to_pair(&amp;self) -&gt; (A, B);
+}
+
+struct PairHolder&lt;T&gt; {
+    left: T,
+    right: T,
+}
+
+// Declare T on impl, use T, A, B on the trait and type
+impl&lt;T: Clone&gt; ToPair&lt;T, T&gt; for PairHolder&lt;T&gt; {
+    fn to_pair(&amp;self) -&gt; (T, T) {
+        (self.left.clone(), self.right.clone())
+    }
+}
+</code></pre>
+
+    <ul>
+        <li><code>impl&lt;T: Clone&gt;</code> declares the generic parameter <code>T</code> for this <code>impl</code> block.</li>
+        <li><code>ToPair&lt;T, T&gt;</code> is using the trait with concrete parameters <code>A = T</code>, <code>B = T</code>.</li>
+        <li><code>PairHolder&lt;T&gt;</code> is using the generic struct with the same <code>T</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Generic Methods on Non-Generic Types</b></li>
+    <br/>
+    <ul>
+        <li>A type does not have to be generic to have generic methods. The method declares its own <code>&lt;T&gt;</code>:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Logger;
+
+// Logger itself is not generic
+impl Logger {
+    // Method is generic
+    fn log_any&lt;T: std::fmt::Debug&gt;(&amp;self, value: T) {
+        println!("{:?}", value);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Here:
+            <ul>
+                <li>No <code>&lt;T&gt;</code> after <code>struct Logger</code> or after <code>impl</code>.</li>
+                <li><code>&lt;T: Debug&gt;</code> after the method name <code>log_any</code> declares a method-level generic.</li>
+                <li>This pattern is common for "utility" methods that work for many types.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Traits With Default Generic Parameters</b></li>
+    <br/>
+    <ul>
+        <li>Traits can have generic parameters with defaults. The generic goes on the trait name; the default type goes in <code>= ...</code>:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait Storage&lt;T = String&gt; {
+    fn store(&amp;self, value: T);
+}
+
+struct Logger;
+
+// Uses the default: T = String
+impl Storage for Logger {
+    fn store(&amp;self, value: String) {
+        println!("{}", value);
+    }
+}
+
+struct IntLogger;
+
+// Overrides the default: T = i32
+impl Storage&lt;i32&gt; for IntLogger {
+    fn store(&amp;self, value: i32) {
+        println!("number: {}", value);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li><code>trait Storage&lt;T = String&gt;</code> declares a generic with a default type.</li>
+        <li><code>impl Storage for Logger</code> uses the default (<code>String</code>), so we omit <code>&lt;T&gt;</code>.</li>
+        <li><code>impl Storage&lt;i32&gt; for IntLogger</code> chooses a specific type and overrides the default.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Associated Types vs Generic Parameters</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes a trait uses an <u>associated type</u> instead of a generic parameter, so the angle brackets move away from the trait name:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait Iterator {
+    type Item;
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt;;
+}
+
+struct Counter {
+    current: u32,
+    max: u32,
+}
+
+impl Iterator for Counter {
+    type Item = u32;
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
+        if self.current &lt; self.max {
+            let v = self.current;
+            self.current += 1;
+            Some(v)
+        } else {
+            None
+        }
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Here <code>Iterator</code> has no <code>&lt;T&gt;</code> at all.</li>
+        <li>Instead, <code>type Item</code> inside the trait and <code>type Item = u32;</code> in the impl tie the concrete type to the implementing type.</li>
+        <li>This is another way Rust connects traits with types, without angle brackets on the trait name.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Cheat Sheet: Where Do the Angle Brackets Go?</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Pattern</th>
+                <th>Location of <code>&lt;...&gt;</code></th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>struct Foo&lt;T&gt;</code></td>
+                <td>After <code>struct</code></td>
+                <td>Declare a generic type parameter on the struct.</td>
+            </tr>
+            <tr>
+                <td><code>fn foo&lt;T&gt;(...)</code></td>
+                <td>After function name</td>
+                <td>Declare method/function generics.</td>
+            </tr>
+            <tr>
+                <td><code>trait Trait&lt;T&gt;</code></td>
+                <td>After <code>trait</code></td>
+                <td>Declare generic parameters on a trait.</td>
+            </tr>
+            <tr>
+                <td><code>impl&lt;T&gt; Foo&lt;T&gt;</code></td>
+                <td>After <code>impl</code></td>
+                <td>Declare generics for the impl block.</td>
+            </tr>
+            <tr>
+                <td><code>impl Foo&lt;i32&gt;</code></td>
+                <td>After type name</td>
+                <td>Use a concrete type for a non-generic impl.</td>
+            </tr>
+            <tr>
+                <td><code>impl Trait for Foo</code></td>
+                <td>No angle brackets</td>
+                <td>Non-generic trait impl using defaults or no generics.</td>
+            </tr>
+            <tr>
+                <td><code>impl Trait&lt;i32&gt; for Foo</code></td>
+                <td>After trait name</td>
+                <td>Implement a trait specialized to a concrete type.</td>
+            </tr>
+            <tr>
+                <td><code>Vec&lt;i32&gt;</code>, <code>Option&lt;String&gt;</code></td>
+                <td>After type name</td>
+                <td>Apply a concrete type to a generic type.</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
