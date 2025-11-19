@@ -166,6 +166,7 @@
         <li><a href="#django-file-structure">File Structures</a></li>
         <li><a href="#django-models">Models</a></li>
         <li><a href="#django-orm">Object–Relational Mapper (ORM)</a></li>
+        <li><a href="#django-model-queries">Models Making Queries</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3116,7 +3117,327 @@ Post.objects.create(title="New", body="Hello ORM!")
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-model-queries">Models Making Queries in Django (The Django QuerySet API)</h3>
+<ol>
 
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>In Django, every model class comes with a powerful built-in interface called the <u>QuerySet API</u>.</li>
+        <br/>
+        <li>This lets you perform:
+            <ul>
+                <li>SELECT</li>
+                <li>INSERT</li>
+                <li>UPDATE</li>
+                <li>DELETE</li>
+            </ul>
+           operations without writing SQL.</li>
+        <br/>
+        <li>You "make queries" using:
+            <ul>
+                <li><code>YourModel.objects</code></li>
+                <li>or QuerySet methods → <code>.all()</code>, <code>.filter()</code>, <code>.get()</code>, etc.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Prerequisite: Example Model</b></li>
+    <br/>
+    <ul>
+        <li>We use this simple model for examples:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># blog/models.py
+
+from django.db import models
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+</code></pre>
+
+    <ul>
+        <li>Don't forget to run migrations inside a virtual environment:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
+python3 manage.py migrate
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using the Django Shell for Testing Queries</b></li>
+    <br/>
+    <ul>
+        <li>Querying is easiest to learn by experimenting inside the interactive shell:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py shell
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Creating Objects (INSERT)</b></li>
+    <br/>
+    <ul>
+        <li>You can create objects with <code>.create()</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.create(title="Hello", body="First post!")
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li>Or manually instantiate then save:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">post = Post(title="My Title", body="Some text")
+post.save()
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Retrieve all objects</b></li>
+
+<pre><code class="language-python line-numbers">Post.objects.all()
+</code></pre>
+
+    <ul>
+        <li>Returns a QuerySet of all posts.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Retrieve one object</b> (must match exactly one row):</li>
+
+<pre><code class="language-python line-numbers">Post.objects.get(id=1)
+</code></pre>
+
+    <ul>
+        <li>Raises <code>DoesNotExist</code> if not found.</li>
+        <li>Raises <code>MultipleObjectsReturned</code> if more than one result matches.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Filtering Results (WHERE Conditions)</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>.filter()</code> for flexible queries (returns QuerySet):</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.filter(title="Hello")
+Post.objects.filter(title__icontains="hello")
+Post.objects.filter(id__gt=3)     # greater than
+Post.objects.filter(id__lte=10)   # less or equal
+Post.objects.filter(title__startswith="Django")
+Post.objects.filter(title__in=["Hello", "Hi"])
+</code></pre>
+
+    <ul>
+        <li>The pattern <code>field__lookup=value</code> implements SQL-like conditions.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Excluding Results</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>.exclude()</code> for NOT queries:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.exclude(title__icontains="draft")
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Ordering Results (ORDER BY)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">Post.objects.order_by("created_at")     # ascending
+Post.objects.order_by("-created_at")    # descending
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Updating Objects (UPDATE)</b></li>
+    <br/>
+    <ul>
+        <li>Option 1: update a single object:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
+post.title = "Updated Title"
+post.save()
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li>Option 2: bulk update:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.filter(title__icontains="hello").update(body="Updated text")
+</code></pre>
+
+    <ul>
+        <li>Executes a single SQL UPDATE statement.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Deleting Objects (DELETE)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
+post.delete()
+</code></pre>
+
+    <ul>
+        <li>Delete multiple:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.filter(title__icontains="old").delete()
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Useful QuerySet Methods</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Example</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>.first()</code></td>
+                <td><code>Post.objects.first()</code></td>
+                <td>First object or None</td>
+            </tr>
+            <tr>
+                <td><code>.last()</code></td>
+                <td><code>Post.objects.last()</code></td>
+                <td>Last object or None</td>
+            </tr>
+            <tr>
+                <td><code>.count()</code></td>
+                <td><code>Post.objects.count()</code></td>
+                <td>Fast COUNT(*) query</td>
+            </tr>
+            <tr>
+                <td><code>.exists()</code></td>
+                <td><code>Post.objects.filter(...).exists()</code></td>
+                <td>Returns True/False if results exist</td>
+            </tr>
+            <tr>
+                <td><code>.values()</code></td>
+                <td><code>Post.objects.values("title")</code></td>
+                <td>Returns dictionaries instead of model instances</td>
+            </tr>
+            <tr>
+                <td><code>.values_list()</code></td>
+                <td><code>Post.objects.values_list("id", "title")</code></td>
+                <td>Returns tuples</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Relationships and Related Queries</b></li>
+    <br/>
+    <ul>
+        <li>If your app has relationships, Django simplifies queries across them.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Comment(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    text = models.TextField()
+</code></pre>
+
+    <ul>
+        <li>Query comments of a post:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
+post.comment_set.all()
+</code></pre>
+
+    <ul>
+        <li>Reverse lookup for many-to-many and one-to-one relationships works similarly.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>AND logic:</b> (default behavior)</li>
+
+<pre><code class="language-python line-numbers">Post.objects.filter(title__icontains="django", id__gt=5)
+</code></pre>
+
+    <br/>
+
+    <li><b>OR logic:</b> using <code>Q</code> objects</li>
+
+<pre><code class="language-python line-numbers">from django.db.models import Q
+
+Post.objects.filter(
+    Q(title__icontains="django") | Q(body__icontains="django")
+)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Aggregation (SUM, AVG, COUNT)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from django.db.models import Count
+
+Post.objects.aggregate(total_posts=Count("id"))
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Prefetching Related Data (Performance Optimization)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">Post.objects.select_related()      # for ForeignKey/OneToOne
+Post.objects.prefetch_related("comment_set")  # for reverse/M2M
+</code></pre>
+
+    <ul>
+        <li>These avoid unnecessary database queries.</li>
+    </ul>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
