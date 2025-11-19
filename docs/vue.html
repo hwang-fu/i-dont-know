@@ -176,6 +176,7 @@
         <li><a href="#vue-conditional-rendering">Conditional Rendering</a></li>
         <li><a href="#vue-list-rendering">List Rendering</a></li>
         <li><a href="#vue-event-handling">Event Handling</a></li>
+        <li><a href="#vue-form-input-bindings">Form Input Bindings</a></li>
     </ul>
 </nav>
 <hr/>
@@ -6149,7 +6150,318 @@ function handleUpdate(value: number) {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-form-input-bindings">Form Input Bindings in Vue (Composition API + TypeScript)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Vue provides <u>two-way binding</u> for form inputs using <code>v-model</code>.</li>
+        <br/>
+        <li><code>v-model</code> automatically keeps:
+            <ul>
+                <li>the input’s value → synced with</li>
+                <li>your component’s state</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Works with:
+            <ul>
+                <li>text inputs</li>
+                <li>checkboxes</li>
+                <li>radio buttons</li>
+                <li>select dropdowns</li>
+                <li>textareas</li>
+                <li>custom components</li>
+            </ul>
+        </li>
+    </ul>
 
+    <br/><br/>
+
+
+
+    <li><b>Text Input with v-model</b></li>
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;input v-model="name" placeholder="Your name" /&gt;
+    &lt;p&gt;Hello, {{ name }}!&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+
+const name = ref("")
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Textarea</b></li>
+<pre><code class="language-html line-numbers">&lt;textarea v-model="message"&gt;&lt;/textarea&gt;
+
+&lt;script setup lang="ts"&gt;
+const message = ref("")
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Checkbox (Boolean)</b></li>
+    <br/>
+    <ul>
+        <li>Single checkbox → boolean value.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;input type="checkbox" v-model="isChecked" /&gt;
+&lt;p&gt;Checked: {{ isChecked }}&lt;/p&gt;
+
+&lt;script setup lang="ts"&gt;
+const isChecked = ref(false)
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Checkbox Group (Array Binding)</b></li>
+    <br/>
+    <ul>
+        <li>Multiple checkboxes can bind to an array.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;label&gt;
+        &lt;input type="checkbox" value="apple" v-model="fruits" /&gt; Apple
+    &lt;/label&gt;
+    &lt;label&gt;
+        &lt;input type="checkbox" value="banana" v-model="fruits" /&gt; Banana
+    &lt;/label&gt;
+
+    &lt;p&gt;Selected: {{ fruits }}&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+
+const fruits = ref&lt;string[]&gt;([])
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Radio Buttons</b></li>
+    <br/>
+    <ul>
+        <li>Radio groups bind a single selected value.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;label&gt;
+        &lt;input type="radio" value="male" v-model="gender" /&gt; Male
+    &lt;/label&gt;
+    &lt;label&gt;
+        &lt;input type="radio" value="female" v-model="gender" /&gt; Female
+    &lt;/label&gt;
+
+    &lt;p&gt;Gender: {{ gender }}&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+const gender = ref("male")
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Select Dropdown (Single)</b></li>
+<pre><code class="language-html line-numbers">&lt;select v-model="city"&gt;
+    &lt;option value="Berlin"&gt;Berlin&lt;/option&gt;
+    &lt;option value="Munich"&gt;Munich&lt;/option&gt;
+    &lt;option value="Hamburg"&gt;Hamburg&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;script setup lang="ts"&gt;
+const city = ref("Berlin")
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Select Dropdown (Multiple)</b></li>
+<pre><code class="language-html line-numbers">&lt;select v-model="cities" multiple&gt;
+    &lt;option value="Berlin"&gt;Berlin&lt;/option&gt;
+    &lt;option value="Munich"&gt;Munich&lt;/option&gt;
+    &lt;option value="Hamburg"&gt;Hamburg&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;script setup lang="ts"&gt;
+const cities = ref&lt;string[]&gt;([])
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Binding Value Types (Number / Boolean / String)</b></li>
+    <br/>
+    <ul>
+        <li>By default, all input values are strings.</li>
+        <li>You can convert types using modifiers.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;input v-model.number="age" type="number" /&gt;
+
+&lt;script setup lang="ts"&gt;
+const age = ref&lt;number | null&gt;(null)
+&lt;/script&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Available modifiers:
+            <ul>
+                <li><code>.number</code> → converts input to number</li>
+                <li><code>.trim</code> → trims whitespace</li>
+                <li><code>.lazy</code> → updates on <code>change</code> instead of <code>input</code></li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;input v-model.trim="username" /&gt;
+&lt;input v-model.lazy="email" /&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Binding to reactive() Objects</b></li>
+    <br/>
+    <ul>
+        <li>Useful for grouping form data.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;input v-model="form.email" placeholder="Email" /&gt;
+    &lt;input type="password" v-model="form.password" placeholder="Password" /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { reactive } from "vue"
+
+const form = reactive({
+    email: "",
+    password: ""
+})
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>TypeScript Typing for Forms</b></li>
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+import { reactive } from "vue"
+
+interface LoginForm {
+    email: string
+    password: string
+    remember: boolean
+}
+
+const form = reactive&lt;LoginForm&gt;({
+    email: "",
+    password: "",
+    remember: false
+})
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using v-model with Components</b></li>
+    <br/>
+    <ul>
+        <li>Vue supports two-way binding on custom components using <code>modelValue</code> and <code>update:modelValue</code>.</li>
+        <li>(Already covered in chapter “Component v-model”) but included here for completeness.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;CustomInput v-model="username" /&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Best Practices</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>ref()</code> or <code>reactive()</code> depending on complexity.</li>
+        <br/>
+        <li>Use modifiers for correct value types.</li>
+        <br/>
+        <li>For complex forms, consider libraries like <u>VeeValidate</u> or <u>FormKit</u>.</li>
+        <br/>
+        <li>Use custom component <code>v-model</code> for reusable input fields.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>v-model</code></td>
+                <td>Two-way binding for form fields</td>
+            </tr>
+            <tr>
+                <td>Modifiers</td>
+                <td><code>.trim</code>, <code>.number</code>, <code>.lazy</code></td>
+            </tr>
+            <tr>
+                <td>Checkbox &amp; Radio</td>
+                <td>Boolean, array, or single-value binding</td>
+            </tr>
+            <tr>
+                <td>Select</td>
+                <td>Single or multiple selection support</td>
+            </tr>
+            <tr>
+                <td>reactive()</td>
+                <td>Organize form data in typed objects</td>
+            </tr>
+            <tr>
+                <td>TypeScript support</td>
+                <td>Strong typing for safe form handling</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
