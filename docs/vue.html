@@ -170,6 +170,7 @@
         <li><a href="#vue-props">Props</a></li>
         <li><a href="#vue-component-events">Component Events</a></li>
         <li><a href="#vue-component-v-model">Component v-model</a></li>
+        <li><a href="#vue-fallthrough-attributes">Fallthrough Attributes</a></li>
     </ul>
 </nav>
 <hr/>
@@ -4517,7 +4518,265 @@ function update(v: string) {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-fallthrough-attributes">Fallthrough Attributes in Vue (Composition API + TypeScript)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Fallthrough attributes are attributes that a parent component passes to a child component, but the child component does <u>not</u> explicitly define as props.</li>
+        <br/>
+        <li>Examples include:
+            <ul>
+                <li><code>class</code></li>
+                <li><code>style</code></li>
+                <li><code>id</code></li>
+                <li><code>data-*</code> attributes</li>
+                <li>ARIA attributes</li>
+            </ul>
+        </li>
+        <br/>
+        <li>By default, Vue automatically applies these attributes to the component’s <u>root element</u>.</li>
+    </ul>
 
+    <br/><br/>
+
+
+
+    <li><b>Basic Example of Fallthrough Attributes</b></li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;!-- Button.vue --&gt;
+&lt;template&gt;
+    &lt;button&gt;
+        &lt;slot /&gt;
+    &lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;Button id="main-btn" class="primary" data-x="123"&gt;
+        Click me
+    &lt;/Button&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <ul>
+        <li>The final rendered HTML becomes:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;button id="main-btn" class="primary" data-x="123"&gt;
+    Click me
+&lt;/button&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Accessing Fallthrough Attributes</b></li>
+    <br/>
+    <ul>
+        <li>Inside a component, fallthrough attributes are available through:
+            <ul>
+                <li><code>$attrs</code> (template)</li>
+                <li><code>useAttrs()</code> (Composition API)</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+import { useAttrs } from "vue"
+
+const attrs = useAttrs()
+
+console.log(attrs)
+// { id: "main-btn", class: "primary", "data-x": "123" }
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Manually Applying Fallthrough Attributes</b></li>
+    <br/>
+    <ul>
+        <li>If you want to pass fallthrough attributes onto a specific element instead of the root, you must bind <code>v-bind="attrs"</code> manually.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- InputWrapper.vue --&gt;
+&lt;template&gt;
+    &lt;label&gt;
+        {{ label }}
+        &lt;input v-bind="attrs" /&gt;
+    &lt;/label&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { defineProps, useAttrs } from "vue"
+
+const props = defineProps&lt;{
+    label: string
+}&gt;()
+
+const attrs = useAttrs()
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>Now the attributes apply to the <code>&lt;input&gt;</code>, not the root <code>&lt;label&gt;</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Disabling Automatic Fallthrough</b></li>
+    <br/>
+    <ul>
+        <li>You may want to <u>disable</u> fallthrough entirely for some components.</li>
+        <br/>
+        <li>This is done using: <code>inheritAttrs: false</code></li>
+        </li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- CustomField.vue --&gt;
+&lt;script setup lang="ts"&gt;
+defineOptions({
+    inheritAttrs: false
+})
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;div&gt;
+        &lt;!-- No automatic fallthrough onto this element --&gt;
+        &lt;slot /&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <ul>
+        <li>Now attributes like <code>id</code>, <code>class</code>, or <code>data-*</code> will not be applied automatically.</li>
+        <li>Useful when you want full control of attribute handling.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Fallthrough and Multiple Root Elements</b></li>
+    <br/>
+    <ul>
+        <li>If a component has more than one root element, Vue <u>cannot</u> decide where to apply fallthrough attributes and will warn you.</li>
+        <li>You must manually bind <code>v-bind="$attrs"</code> to the element you choose.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Wrong: Multi-root component --&gt;
+&lt;template&gt;
+    &lt;h1&gt;Hello&lt;/h1&gt;
+    &lt;p&gt;World&lt;/p&gt;
+&lt;/template&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Correct --&gt;
+&lt;template&gt;
+    &lt;div v-bind="$attrs"&gt;
+        &lt;h1&gt;Hello&lt;/h1&gt;
+        &lt;p&gt;World&lt;/p&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Fallthrough Attributes with TypeScript</b></li>
+    <br/>
+    <ul>
+        <li>TypeScript treats <code>$attrs</code> as <code>Record&lt;string, unknown&gt;</code>.</li>
+        <li>You can narrow types for better safety:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const attrs = useAttrs() as Record&lt;string, string | number | boolean&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Common Use Cases</b></li>
+    <br/>
+    <ul>
+        <li>Reusable input components:</li>
+            <ul><li>attributes like <code>placeholder</code>, <code>maxlength</code>, <code>id</code> fall through automatically</li></ul>
+        <li>Accessibility:</li>
+            <ul><li><code>aria-label</code>, <code>role</code> attributes passed automatically</li></ul>
+        <li>Passing CSS classes:</li>
+            <ul><li>parents can style the child by assigning <code>class</code></li></ul>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Best Practices</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>useAttrs()</code> when you need to manually control attribute placement.</li>
+        <li>Use <code>inheritAttrs: false</code> only when explicit control is needed.</li>
+        <li>Design components so that:
+            <ul>
+                <li><code>class</code> merges naturally</li>
+                <li><code>style</code> can override defaults</li>
+                <li><code>data-*</code> attributes are passed through safely</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Fallthrough attributes</td>
+                <td>Attributes not declared as props automatically applied to the component root</td>
+            </tr>
+            <tr>
+                <td>$attrs / useAttrs()</td>
+                <td>Access fallthrough attributes inside the component</td>
+            </tr>
+            <tr>
+                <td>inheritAttrs: false</td>
+                <td>Disables automatic fallthrough behavior</td>
+            </tr>
+            <tr>
+                <td>Manual binding</td>
+                <td><code>v-bind="$attrs"</code> applies attributes to chosen elements</td>
+            </tr>
+            <tr>
+                <td>Multiple roots</td>
+                <td>Require manual placement of fallthrough attributes</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
