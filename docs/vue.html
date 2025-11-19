@@ -172,6 +172,7 @@
         <li><a href="#vue-component-v-model">Component v-model</a></li>
         <li><a href="#vue-fallthrough-attributes">Fallthrough Attributes</a></li>
         <li><a href="#vue-lifecycle-hooks">Lifecycle Hooks</a></li>
+        <li><a href="#vue-slots">Slots</a></li>
     </ul>
 </nav>
 <hr/>
@@ -5090,6 +5091,240 @@ onDeactivated(() =&gt; console.log("Deactivated"))</code></pre>
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-slots">Slots in Vue (Composition API + TypeScript)</h3>
+<ol>
+    <br/>
+    <li><u>Slots</u> allow parent components to pass <u>template content</u> into child components.</li>
+    <br/><br/>
+
+
+
+    <li><b>Basic Slot</b></li>
+    <br/>
+    <ul>
+        <li>Define a slot inside a child component:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Child.vue --&gt;
+&lt;template&gt;
+    &lt;div class="box"&gt;
+        &lt;slot&gt;Fallback content&lt;/slot&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;&lt;/script&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Use the component and pass content:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;Child&gt;
+    &lt;p&gt;This is inserted into the slot!&lt;/p&gt;
+&lt;/Child&gt;</code></pre>
+    <ul>
+        <li>If no content is provided, the fallback content is shown.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Named Slots</b></li>
+    <br/>
+    <ul>
+        <li>Used when a component has multiple insertion points.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Card.vue --&gt;
+&lt;template&gt;
+    &lt;div class="card"&gt;
+        &lt;header&gt;&lt;slot name="header" /&gt;&lt;/header&gt;
+        &lt;main&gt;&lt;slot /&gt;&lt;/main&gt;
+        &lt;footer&gt;&lt;slot name="footer" /&gt;&lt;/footer&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;&lt;/script&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Parent uses named slots with <code>v-slot:&lt;name&gt;</code> or the shorthand <code>#&lt;name&gt;</code>.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;Card&gt;
+    &lt;template #header&gt;Header Content&lt;/template&gt;
+    Body text goes here.
+    &lt;template #footer&gt;Footer Content&lt;/template&gt;
+&lt;/Card&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Scoped Slots (Passing Data From Child to Parent)</b></li>
+    <br/>
+    <ul>
+        <li>Scoped slots allow the child to expose data to parent-provided templates.</li>
+        <li>This is extremely useful when the child has state but the parent controls rendering.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- UserList.vue --&gt;
+&lt;template&gt;
+    &lt;ul&gt;
+        &lt;li v-for="user in users" :key="user.id"&gt;
+            &lt;slot :user="user"&gt;{{ user.name }}&lt;/slot&gt;
+        &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+interface User {
+    id: number;
+    name: string;
+}
+
+const users: User[] = [
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" }
+];
+&lt;/script&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Parent receives <code>user</code> as slot props:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;UserList&gt;
+    &lt;template #default="{ user }"&gt;
+        &lt;strong&gt;{{ user.name }}&lt;/strong&gt;
+    &lt;/template&gt;
+&lt;/UserList&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Typing Slot Props in TypeScript</b></li>
+    <br/>
+    <ul>
+        <li>You can fully type slot props with the <code>SlotsType</code> helper.</li>
+        <li>This improves editor autocompletion and ensures correctness.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+import type { SlotsType } from "vue"
+
+interface User {
+    id: number;
+    name: string;
+}
+
+defineSlots&lt;SlotsType&lt;{
+    default: { user: User }
+}&gt;&gt;()
+&lt;/script&gt;
+</code></pre>
+    <ul>
+        <li>The parent now gets full TypeScript inference.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Default Slot + Named Slots Together</b></li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;!-- Layout.vue --&gt;
+&lt;template&gt;
+    &lt;div class="layout"&gt;
+        &lt;aside&gt;&lt;slot name="sidebar" /&gt;&lt;/aside&gt;
+        &lt;section&gt;&lt;slot /&gt;&lt;/section&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;Layout&gt;
+    &lt;template #sidebar&gt;Menu items...&lt;/template&gt;
+    &lt;p&gt;Main content goes here.&lt;/p&gt;
+&lt;/Layout&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Fallback Content</b></li>
+    <br/>
+    <ul>
+        <li>If a slot has no provided content, fallback appears.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;slot&gt;Nothing provided&lt;/slot&gt;</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Default slot</td>
+                <td>Main content placeholder</td>
+            </tr>
+            <tr>
+                <td>Named slots</td>
+                <td>Multiple content areas such as header/footer/sidebar</td>
+            </tr>
+            <tr>
+                <td>Scoped slots</td>
+                <td>Child passes data to parent templates</td>
+            </tr>
+            <tr>
+                <td>Fallback content</td>
+                <td>Shown when no parent content is provided</td>
+            </tr>
+            <tr>
+                <td>TypeScript slots</td>
+                <td>Use <code>defineSlots</code> for typing slot props</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
