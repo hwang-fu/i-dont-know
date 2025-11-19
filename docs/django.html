@@ -169,6 +169,7 @@
         <li><a href="#django-transactions">Database Transactions in Django</a></li>
         <li><a href="#django-multiple-databases">Using Multiple Databases</a></li>
         <li><a href="#django-settings-databse">Understanding the <code>DATABASES</code> Setting</a></li>
+        <li><a href="#django-models-model">Understanding the <code>models.Model</code></a></li>
     </ul>
 </nav>
 <hr/>
@@ -5221,6 +5222,337 @@ DATABASES = {
         }
     }
 }
+</code></pre>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-models-model">Understanding <code>models.Model</code> in Django</h3>
+<ol>
+
+    <li><b>What Is</b> <code>models.Model</code>?</li>
+    <br/>
+    <ul>
+        <li><code>models.Model</code> is the <u>base class</u> for all Django models. Every model you write in Django must inherit from it:</li>
+<pre><code class="language-python line-numbers">from django.db import models
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+</code></pre>
+    </ul>
+
+    <br/>
+    <ul>
+        <li>This single line <code>class Post(models.Model)</code> tells Django:
+            <ul>
+                <li>Create a table for this model.</li>
+                <li>Create fields (columns) based on attributes.</li>
+                <li>Generate an ORM API for queries and operations.</li>
+                <li>Add metadata (model name, app name, primary key, etc.).</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>How</b> <code>models.Model</code> <b>Creates a Database Table</b></li>
+    <br/>
+    <ul>
+        <li>Django observes all subclasses of <code>Model</code>.</li>
+        <li>When you run:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
+python3 -m django migrate
+</code></pre>
+
+    <ul>
+        <li>Django generates SQL such as:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE app_post (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title VARCHAR(200) NOT NULL,
+    body TEXT NOT NULL
+);
+</code></pre>
+
+    <ul>
+        <li>The mapping is:
+            <ul>
+                <li><b>Python class → SQL table</b></li>
+                <li><b>Model fields → SQL columns</b></li>
+                <li><b>Model instances → rows</b></li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Automatic Primary Key Field (<code>id</code>)</b></li>
+    <br/>
+    <ul>
+        <li>If you do not define a primary key, Django adds one automatically:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">id = models.AutoField(primary_key=True)
+</code></pre>
+
+    <ul>
+        <li>This auto-id increments for each row.</li>
+        <li>You may override it:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class User(models.Model):
+    user_id = models.UUIDField(primary_key=True)
+    username = models.CharField(max_length=50)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Defining Fields (Columns)</b></li>
+    <br/>
+    <ul>
+        <li>All fields are defined using <code>models.&lt;FieldType&gt;</code>.</li>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Product(models.Model):
+    name = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=8, decimal_places=2)
+    available = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+</code></pre>
+
+    <ul>
+        <li>Each field tells Django:
+            <ul>
+                <li>What SQL type to use (<code>VARCHAR</code>, <code>TEXT</code>, <code>INTEGER</code>, <code>DATE</code>, etc.)</li>
+                <li>Whether it is nullable, unique, indexed</li>
+                <li>Default values</li>
+                <li>Constraints</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Model Instances = Rows</b></li>
+    <br/>
+    <ul>
+        <li>You create a row by instantiating a model:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">p = Product(name="Laptop", price=999.99)
+p.save()       # INSERT into database
+</code></pre>
+
+    <ul>
+        <li>Saving calls an <code>INSERT</code> statement.</li>
+        <li>Updating an instance calls an <code>UPDATE</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">p.price = 899.99
+p.save()       # UPDATE in database
+</code></pre>
+
+    <ul>
+        <li>ORM tracks the row by primary key (<code>p.id</code>).</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Deleting Rows</b></li>
+<pre><code class="language-python line-numbers">p = Product.objects.get(id=1)
+p.delete()   # DELETE FROM table
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Meta Class: Controlling Table Options</b></li>
+    <br/>
+    <ul>
+        <li>Each model can define a nested <code>Meta</code> class.</li>
+        <li>This controls Django’s behavior for the table:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Product(models.Model):
+    name = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=8, decimal_places=2)
+
+    class Meta:
+        db_table = "store_products"
+        ordering = ["name"]
+        verbose_name = "Product"
+        verbose_name_plural = "Products"
+        indexes = [
+            models.Index(fields=["name"]),
+        ]
+</code></pre>
+
+    <ul>
+        <li><b>Common Meta options</b>:</li>
+        <ul>
+            <li><code>db_table</code> → custom SQL table name</li>
+            <li><code>ordering</code> → default sorting for QuerySets</li>
+            <li><code>unique_together</code></li>
+            <li><code>constraints</code></li>
+            <li><code>indexes</code></li>
+            <li><code>permissions</code></li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Model Methods: Custom Business Logic</b></li>
+    <br/>
+    <ul>
+        <li>You can attach custom methods to a model:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Product(models.Model):
+    price = models.DecimalField(max_digits=8, decimal_places=2)
+
+    def discounted_price(self, percent):
+        return self.price * (1 - percent / 100)
+</code></pre>
+
+    <ul>
+        <li>This keeps logic close to data.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>String Representation (<code>__str__</code>)</b></li>
+    <br/>
+    <ul>
+        <li>Add this to improve readability in Django Admin and shell:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Product(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"Product({self.name})"
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Custom Save Logic (Overriding <code>save()</code>)</b></li>
+
+<pre><code class="language-python line-numbers">class Order(models.Model):
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        print("Before saving...")
+        super().save(*args, **kwargs)
+        print("After saving...")
+</code></pre>
+
+    <ul>
+        <li>You must call <code>super().save()</code> to actually write to DB.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Custom Delete Logic (Overriding <code>delete()</code>)</b></li>
+
+<pre><code class="language-python line-numbers">def delete(self, *args, **kwargs):
+    print("Deleting:", self)
+    super().delete(*args, **kwargs)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Foreign Keys and Relations</b></li>
+    <br/>
+    <ul>
+        <li>Relations are also fields:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Category(models.Model):
+    name = models.CharField(max_length=50)
+
+class Product(models.Model):
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+</code></pre>
+
+    <ul>
+        <li>ORM automatically creates reverse relationships:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">cat = Category.objects.get(id=1)
+cat.product_set.all()      # All products in the category
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Model Managers</b></li>
+    <br/>
+    <ul>
+        <li>Every model has at least one manager named <code>objects</code>.</li>
+        <li>The manager is the entry point for creating queries:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">products = Product.objects.filter(price__lt=50)
+</code></pre>
+
+    <ul>
+        <li>You can define custom managers to override query defaults.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Full Lifecycle of a Model Row</b></li>
+    <br/>
+    <ul>
+        <li><b>Create</b>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">obj = Product.objects.create(name="Pen", price=2)
+</code></pre>
+
+    <ul>
+        <li><b>Retrieve</b>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">obj = Product.objects.get(id=1)
+</code></pre>
+
+    <ul>
+        <li><b>Update</b>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">obj.price = 3
+obj.save()
+</code></pre>
+
+    <ul>
+        <li><b>Delete</b>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">obj.delete()
 </code></pre>
 
     <br/><br/>
