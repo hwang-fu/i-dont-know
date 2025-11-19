@@ -177,6 +177,7 @@
         <li><a href="#rust-dead-code">The <code>dead_code</code> Attribute</a></li>
         <li><a href="#rust-cfg">The <code>cfg</code> Attribute</a></li>
         <li><a href="#rust-generics-fn">Generics in Functions</a></li>
+        <li><a href="#rust-generics-impl">Generics Implemented</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -8500,7 +8501,265 @@ fn print_any_dyn(value: &amp;dyn std::fmt::Debug) {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-generics-impl">Generics Implemented in Rust</h3>
+<ol>
+    <li>Rust allows generics in:
+        <ul>
+            <li>impl blocks of generic structs</li>
+            <li>impl blocks of concrete types with generic methods</li>
+            <li>trait implementations with generics</li>
+            <li>here clauses for cleaner bounds</li>
+        </ul>
+    </li>
+    <br/><br/>
 
+
+    <li><b>Generic <code>impl</code> for a Generic Struct</b></li>
+    <br/>
+    <ul>
+        <li>Define generics on the struct and repeat them on the <code>impl</code> block.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Point&lt;T&gt; {
+    x: T,
+    y: T,
+}
+
+impl&lt;T&gt; Point&lt;T&gt; {
+    fn new(x: T, y: T) -&gt; Self {
+        Self { x, y }
+    }
+
+    fn x(&amp;self) -&gt; &amp;T {
+        &amp;self.x
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Every method in this <code>impl&lt;T&gt;</code> applies to every <code>Point&lt;T&gt;</code> regardless of <code>T</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Separate <code>impl</code> Blocks for Different Type Constraints</b></li>
+    <br/>
+    <ul>
+        <li>We can add specialized functionality when <code>T</code> satisfies some traits.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">impl&lt;T: std::fmt::Display&gt; Point&lt;T&gt; {
+    fn show(&amp;self) {
+        println!("({}, {})", self.x, self.y);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>This method only exists for <code>Point&lt;T&gt;</code> where <code>T: Display</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using <code>where</code> Clauses in Generic Implementations</b></li>
+    <br/>
+    <ul>
+        <li>Long constraints can be moved into a <code>where</code> block for clarity.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">impl&lt;T&gt; Point&lt;T&gt;
+where
+    T: Clone + PartialEq,
+{
+    fn is_square(&amp;self) -&gt; bool {
+        self.x.clone() == self.y.clone()
+    }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Generics in Methods Without Making Struct Generic</b></li>
+    <br/>
+    <ul>
+        <li>The struct may be concrete, but the method can still use its own generics.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Logger;
+
+impl Logger {
+    fn print_any&lt;T: std::fmt::Debug&gt;(&amp;self, value: T) {
+        println!("{:?}", value);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Here <code>Logger</code> is not generic, but its method is.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Implementing Traits with Generics</b></li>
+    <br/>
+    <ul>
+        <li>Traits can be implemented for generic types or use generics themselves.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait ToTuple&lt;A, B&gt; {
+    fn to_tuple(&amp;self) -&gt; (A, B);
+}
+
+impl&lt;T: Clone&gt; ToTuple&lt;T, T&gt; for Point&lt;T&gt; {
+    fn to_tuple(&amp;self) -&gt; (T, T) {
+        (self.x.clone(), self.y.clone())
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Trait implementation restricts <code>T</code> using trait bounds.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Implementing Traits for Concrete Types but Using Generics</b></li>
+<pre><code class="language-rust line-numbers">trait ShowMe {
+    fn show_any&lt;T: std::fmt::Debug&gt;(value: T);
+}
+
+struct DisplayTool;
+
+impl ShowMe for DisplayTool {
+    fn show_any&lt;T: std::fmt::Debug&gt;(value: T) {
+        println!("{:?}", value);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>The method is generic even though the receiver type is not.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Specialization Using Different <code>impl</code> Blocks</b></li>
+    <br/>
+    <ul>
+        <li>Different implementations can apply to different <code>T</code>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">impl Point&lt;i32&gt; {
+    fn distance_from_origin(&amp;self) -&gt; f64 {
+        ((self.x.pow(2) + self.y.pow(2)) as f64).sqrt()
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>This method only exists for <code>Point&lt;i32&gt;</code>.</li>
+        <li>Other types (like <code>Point&lt;f32&gt;</code>) cannot use it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Generic Implementations for Enums</b></li>
+<pre><code class="language-rust line-numbers">enum Container&lt;T&gt; {
+    One(T),
+    Two(T, T),
+}
+
+impl&lt;T&gt; Container&lt;T&gt; {
+    fn count(&amp;self) -&gt; usize {
+        match self {
+            Container::One(_) =&gt; 1,
+            Container::Two(_, _) =&gt; 2,
+        }
+    }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Adding Trait Bounds to Generic <code>impl</code> for Enums</b></li>
+<pre><code class="language-rust line-numbers">impl&lt;T: std::fmt::Debug&gt; Container&lt;T&gt; {
+    fn print(&amp;self) {
+        println!("{:?}", self);
+    }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Multiple Generic Parameters in <code>impl</code></b></li>
+<pre><code class="language-rust line-numbers">struct Pair&lt;A, B&gt; {
+    left: A,
+    right: B,
+}
+
+impl&lt;A, B&gt; Pair&lt;A, B&gt; {
+    fn swap(self) -&gt; Pair&lt;B, A&gt; {
+        Pair {
+            left: self.right,
+            right: self.left,
+        }
+    }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Common Patterns in Generic <code>impl</code> Blocks</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Pattern</th>
+                <th>Example</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Generic struct impl</td>
+                <td><code>impl&lt;T&gt; Struct&lt;T&gt;</code></td>
+                <td>Universal methods</td>
+            </tr>
+            <tr>
+                <td>Trait-bound impl</td>
+                <td><code>impl&lt;T: Clone&gt; Struct&lt;T&gt;</code></td>
+                <td>Conditional methods</td>
+            </tr>
+            <tr>
+                <td>Where clause</td>
+                <td><code>where T: Ord + Debug</code></td>
+                <td>Cleaner constraints</td>
+            </tr>
+            <tr>
+                <td>Concrete specialization</td>
+                <td><code>impl Struct&lt;i32&gt;</code></td>
+                <td>Methods for specific types</td>
+            </tr>
+            <tr>
+                <td>Enum generics</td>
+                <td><code>impl&lt;T&gt; Enum&lt;T&gt;</code></td>
+                <td>Reusable logic</td>
+            </tr>
+            <tr>
+                <td>Trait impl with generics</td>
+                <td><code>impl&lt;T&gt; Trait for Struct&lt;T&gt;</code></td>
+                <td>Generic behavior</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
