@@ -161,6 +161,7 @@
         <li><a href="#django-manage-py"><code>manage.py</code></a></li>
         <li><a href="#django-settings-basic">Basic Settings</a></li>
         <li><a href="#django-orm">Object–Relational Mapper (ORM)</a></li>
+        <li><a href="#django-project-vs-app">Project vs App</a></li>
     </ul>
 </nav>
 <hr/>
@@ -1802,7 +1803,240 @@ Post.objects.create(title="New", body="Hello ORM!")
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-project-vs-app">Project vs App in Django</h3>
+<ol>
 
+    <li>Beginners are often confused by the difference between <b>Django Project</b> and <b>Django App</b></li>
+    <br/><br/>
+
+
+    <li><b>What Is a Django Project?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>Django project</b> is the <u>entire web application</u> that you are building.</li>
+        <li>It contains:
+            <ul>
+                <li>global configuration</li>
+                <li>settings</li>
+                <li>URL routing</li>
+                <li>WSGI/ASGI configuration</li>
+                <li>one or many Django apps</li>
+            </ul>
+        </li>
+        <li>You create a project using:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m django startproject mysite
+</code></pre>
+
+    <ul>
+        <li>Project structure looks like this:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">mysite/
+├── manage.py
+└── mysite/
+    ├── __init__.py
+    ├── settings.py      # Global Django settings (DEBUG, DB, middleware, etc.)
+    ├── urls.py          # Root URL dispatcher
+    ├── wsgi.py          # For production servers
+    └── asgi.py          # For async servers
+</code></pre>
+
+    <ul>
+        <li>The project is the container for your whole website.</li>
+        <li>It does NOT contain business logic by itself — apps do.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>What Is a Django App?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>Django app</b> is a <u>modular component</u> that provides one specific piece of functionality.</li>
+        <li>Examples of apps:
+            <ul>
+                <li><code>blog</code></li>
+                <li><code>users</code></li>
+                <li><code>payments</code></li>
+                <li><code>dashboard</code></li>
+            </ul>
+        </li>
+        <li>You create an app using:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py startapp blog
+</code></pre>
+
+    <ul>
+        <li>App structure looks like:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">blog/
+├── admin.py        # Admin interface setup
+├── apps.py         # App configuration class
+├── models.py       # Database models
+├── views.py        # Request handlers (Controller logic)
+├── tests.py        # Unit tests
+└── migrations/     # Database migrations
+</code></pre>
+
+    <ul>
+        <li>An app contains <u>actual features</u> of your site.</li>
+        <li>A single project can contain many apps.</li>
+        <li>You can reuse apps between projects.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Project vs App — Conceptual Difference</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Aspect</th>
+                <th>Django Project</th>
+                <th>Django App</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Purpose</td>
+                <td>Overall configuration and container</td>
+                <td>Specific feature or module</td>
+            </tr>
+            <tr>
+                <td>Number</td>
+                <td>One per website</td>
+                <td>Many per project</td>
+            </tr>
+            <tr>
+                <td>Reusable?</td>
+                <td>No</td>
+                <td>Yes, apps can be placed on PyPI</td>
+            </tr>
+            <tr>
+                <td>Created by</td>
+                <td><code>startproject</code></td>
+                <td><code>startapp</code></td>
+            </tr>
+            <tr>
+                <td>Main Files</td>
+                <td><code>settings.py</code>, <code>urls.py</code></td>
+                <td><code>models.py</code>, <code>views.py</code>, <code>admin.py</code></td>
+            </tr>
+            <tr>
+                <td>Scope</td>
+                <td>Entire website</td>
+                <td>Narrow, focused feature</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>When Should You Create a New App?</b></li>
+    <br/>
+    <ul>
+        <li>Create a new app when you add a <u>new feature</u> that:
+            <ul>
+                <li>has its own set of models</li>
+                <li>has its own views and logic</li>
+                <li>could logically be reused elsewhere</li>
+                <li>is independent of other parts of the project</li>
+            </ul>
+        </li>
+    </ul>
+
+    <ul>
+        <li>Examples:</li>
+        <ul>
+            <li>Add authentication → create <code>accounts</code> app</li>
+            <li>Add blog → create <code>blog</code> app</li>
+            <li>Add payment system → create <code>payments</code> app</li>
+        </ul>
+    </ul>
+
+    <ul>
+        <li>Do NOT create an app for:</li>
+        <ul>
+            <li>small isolated functions</li>
+            <li>just one template</li>
+            <li>configuration-only changes</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How an App Integrates Into a Project</b></li>
+    <br/>
+    <ul>
+        <li>After creating an app, you must add it to <code>INSTALLED_APPS</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># mysite/settings.py
+
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "blog",   # your new app
+]
+</code></pre>
+
+    <ul>
+        <li>This tells Django to load:
+            <ul>
+                <li>models</li>
+                <li>migrations</li>
+                <li>signals</li>
+                <li>admin configuration</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Example: One Project, Multiple Apps</b></li>
+    <br/>
+    <ul>
+        <li>A real-world project (e.g., Instagram clone) might contain:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">mysite/
+├── accounts/      # login, signup, profiles
+├── posts/         # uploading + viewing posts
+├── comments/      # comments on posts
+├── notifications/ # user notifications
+└── messages/      # direct messaging
+</code></pre>
+
+    <ul>
+        <li>Each app focuses on a single, reusable part of the system.</li>
+        <li>Apps communicate via imports and relationships.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li>A <b>Django project</b> is the entire website — global configuration, settings, URLs, WSGI/ASGI.</li>
+        <li>A <b>Django app</b> is a single feature inside the project — models, views, templates, logic.</li>
+        <li>Projects contain many apps; apps are reusable; projects are not.</li>
+        <li>You create projects using <code>startproject</code> and apps using <code>startapp</code>.</li>
+        <li>Apps must be added to <code>INSTALLED_APPS</code> to work.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
