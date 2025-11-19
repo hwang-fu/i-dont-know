@@ -194,6 +194,7 @@
         <li><a href="#python-wrappers">Wrappers</a></li>
         <li><a href="#python-decorators">Decorators</a></li>
         <li><a href="#python-async-intro">Introduction to Python Async Programming</a></li>
+        <li><a href="#python-asyncio-run-vs-await">Understanding the Difference Between <code>asyncio.run()</code> and <code>await</code></a></li>
     </ul>
 </nav>
 <hr/>
@@ -13308,6 +13309,209 @@ asyncio.run(main())
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-asyncio-run-vs-await">Understanding the Difference Between <code>asyncio.run()</code> and <code>await</code> in Python</h3>
+<ol>
+
+    <li><b>Big Picture: What Problem Are We Discussing?</b></li>
+    <br/>
+    <ul>
+        <li>In async Python, you always have two layers:
+            <ul>
+                <li>Outside world (normal sync code, script entry point)</li>
+                <li>Inside async world (coroutines, event loop, <code>await</code>)</li>
+            </ul>
+        </li>
+        <br/>
+        <li><code>asyncio.run()</code> is the bridge from the outside world into the async world.</li>
+        <br/>
+        <li><code>await</code> is how you move forward inside the async world.</li>
+        <br/>
+        <li>They are not competitors; they operate on different levels:
+            <ul>
+                <li><code>asyncio.run()</code> → used in normal (synchronous) code to start async execution.</li>
+                <li><code>await</code> → used only inside <code>async def</code> functions to wait for another coroutine.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>What</b> <code>asyncio.run()</code> <b>Actually Does?</b></li>
+    <br/>
+    <ul>
+        <li><code>asyncio.run(coro)</code>:
+            <ul>
+                <li>creates a brand new event loop</li>
+                <li>runs the given coroutine to completion</li>
+                <li>handles cancellation and errors</li>
+                <li>closes the loop and releases resources</li>
+                <li>returns the coroutine's final result (or raises its exception)</li>
+            </ul>
+        </li>
+        <li>It is meant to be used at the <u>top level</u> of your program.</li>
+<pre><code class="language-python line-numbers">import asyncio
+
+async def main():
+    print("Hello from async world!")
+    return 42
+
+result = asyncio.run(main())
+print("Result:", result)
+</code></pre>
+    </ul>
+
+    <ul>
+        <li>Here, <code>asyncio.run(main())</code>:
+            <ul>
+                <li>creates loop</li>
+                <li>runs <code>main()</code></li>
+                <li>closes loop</li>
+                <li>gives you <code>result</code> in normal sync code</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>What</b> <code>await</code> <b>Actually Does?</b></li>
+    <br/>
+    <ul>
+        <li><code>await</code> is a keyword that:
+            <ul>
+                <li>can only be used inside <code>async def</code></li>
+                <li>temporarily suspends the current coroutine</li>
+                <li>lets other tasks run while you wait</li>
+                <li>resumes when the awaited operation is complete</li>
+            </ul>
+        </li>
+        <li>It does <u>not</u> create an event loop, and it does not enter or exit the async world. It only works when the event loop already exists.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import asyncio
+
+async def compute():
+    print("Start compute")
+    await asyncio.sleep(1)
+    print("End compute")
+    return 10
+
+async def main():
+    result = await compute()  # await another coroutine
+    print("Result:", result)
+
+asyncio.run(main())
+</code></pre>
+
+    <ul>
+        <li>Inside <code>main()</code> the event loop is already running, so <code>await</code> is legal.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Key Difference: Where You Can Use Them</b></li>
+    <br/>
+    <ul>
+        <li><code>asyncio.run()</code> can be called only from <u>normal synchronous code</u> (where no event loop is currently running):</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># OK – top-level script
+if __name__ == "__main__":
+    asyncio.run(main())
+</code></pre>
+
+    <ul>
+        <li><code>await</code> can be used only:
+            <ul>
+                <li>inside <code>async def</code></li>
+                <li>when an event loop is already running</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># This is NOT allowed:
+result = await compute()  # SyntaxError outside async def
+</code></pre>
+
+    <ul>
+        <li>In plain Python scripts, you never write <code>await</code> directly at top-level.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example: Using Both Together Correctly</b></li>
+<pre><code class="language-python line-numbers">import asyncio
+
+async def fetch_data():
+    print("Fetching...")
+    await asyncio.sleep(1)
+    print("Done!")
+    return {"data": 123}
+
+async def main():
+    # We are already inside async world
+    result = await fetch_data()
+    print("Result from fetch:", result)
+
+# Bridge from sync world to async world
+if __name__ == "__main__":
+    asyncio.run(main())
+</code></pre>
+
+    <ul>
+        <li>Flow:
+            <ul>
+                <li>Script starts in sync world.</li>
+                <li><code>asyncio.run(main())</code> enters async world.</li>
+                <li><code>await fetch_data()</code> stays inside async world, waiting for another coroutine.</li>
+                <li>When done, <code>asyncio.run</code> exits async world and returns control.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>You Cannot Use</b> <code>asyncio.run()</code> <b>Inside a Running Event Loop</b></li>
+    <br/>
+    <ul>
+        <li>If you try to call <code>asyncio.run()</code> from inside an async function (where an event loop is already running), you get an error:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">async def inner():
+    # WRONG: this will raise
+    asyncio.run(other_coroutine())  # RuntimeError: asyncio.run() cannot be called from a running event loop
+</code></pre>
+
+    <ul>
+        <li>Inside async code, you must use <code>await</code>, not <code>asyncio.run()</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">async def inner():
+    # CORRECT:
+    await other_coroutine()
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Summary in one phrase</b>: <code>asyncio.run(coro)</code> blcoks, but <code>await</code> yields.</li>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
