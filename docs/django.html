@@ -171,6 +171,7 @@
         <li><a href="#django-settings-databse">Understanding the <code>DATABASES</code> Setting</a></li>
         <li><a href="#django-models-model">Understanding the <code>models.Model</code></a></li>
         <li><a href="#django-models-meta">Understanding the <code>class Meta</code> Options in Django <code>models.Model</code></a></li>
+        <li><a href="#django-models-tablespaces">Tablespaces in Django Models</a></li>
     </ul>
 </nav>
 <hr/>
@@ -5870,6 +5871,203 @@ class Product(models.Model):
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-models-tablespaces">Understanding Tablespaces in Django Models</h3>
+<ol>
+
+    <li><b>What Are Tablespaces?</b></li>
+    <br/>
+    <ul>
+        <li>A <u>tablespace</u> is a storage location inside a database where tables and indexes can be placed.</li>
+        <br/>
+        <li>They are supported by some database systems such as:
+            <ul>
+                <li><b>PostgreSQL</b></li>
+                <li><b>Oracle</b></li>
+            </ul>
+        </li>
+        <br/>
+        <li>SQLite and MySQL do <u>not</u> support them in the same way, so tablespace features may be limited.</li>
+        <br/>
+        <li>In Django, you can tell the ORM where to store the:
+            <ul>
+                <li>table itself</li>
+                <li>indexes for the table</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This is primarily useful in enterprise environments where DBAs organize storage across disks for:
+            <ul>
+                <li>performance optimization</li>
+                <li>backup strategies</li>
+                <li>clustered or distributed setups</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Basic Syntax for Using Tablespaces</b></li>
+    <br/>
+    <ul>
+        <li>You define tablespaces inside the model’s <code>Meta</code> class:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Report(models.Model):
+    name = models.CharField(max_length=100)
+
+    class Meta:
+        db_tablespace = "report_tablespace"
+        default_related_name = "reports"
+</code></pre>
+
+    <ul>
+        <li><code>db_tablespace</code> tells Django where to store this model's table.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>How to Set Tablespaces for Indexes</b></li>
+    <br/>
+    <ul>
+        <li>Django also allows placing indexes in separate tablespaces:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Report(models.Model):
+    title = models.CharField(max_length=200)
+
+    class Meta:
+        db_tablespace = "ts_reports"
+        indexes = [
+            models.Index(fields=["title"], db_tablespace="ts_indexes"),
+        ]
+</code></pre>
+
+    <ul>
+        <li>Now:
+            <ul>
+                <li>The table goes into <code>ts_reports</code></li>
+                <li>The index goes into <code>ts_indexes</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Setting Tablespaces for All Models in an App</b></li>
+    <br/>
+    <ul>
+        <li>You can define tablespaces globally inside <code>settings.py</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "mydb",
+        "USER": "myuser",
+    }
+}
+
+DEFAULT_TABLESPACE = "mysite_default_ts"
+DEFAULT_INDEX_TABLESPACE = "mysite_index_ts"
+</code></pre>
+
+    <ul>
+        <li>Saves you from setting tablespaces on each model manually.</li>
+        <li>Model-level configuration overrides global defaults.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Full Example: Table + Index Tablespaces</b></li>
+<pre><code class="language-python line-numbers">class Document(models.Model):
+    title = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_tablespace = "docs_ts"
+        indexes = [
+            models.Index(
+                fields=["uploaded_at"],
+                name="upload_time_idx",
+                db_tablespace="docs_idx_ts",
+            ),
+        ]
+</code></pre>
+
+    <ul>
+        <li>This is how you split data storage vs index storage.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Checking Tablespaces in Generated SQL</b></li>
+    <br/>
+    <ul>
+        <li>You can inspect SQL using:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py sqlmigrate appname 0001
+</code></pre>
+
+    <ul>
+        <li>Example SQL (PostgreSQL):</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">CREATE TABLE "app_document" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "title" varchar(255) NOT NULL,
+    "uploaded_at" timestamp with time zone NOT NULL
+) TABLESPACE docs_ts;
+
+CREATE INDEX upload_time_idx
+    ON "app_document" ("uploaded_at")
+    TABLESPACE docs_idx_ts;
+</code></pre>
+
+    <ul>
+        <li>This confirms Django applied your tablespace configuration.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>What Happens if Your Database Doesn’t Support Tablespaces?</b></li>
+    <br/>
+    <ul>
+        <li>Django will silently ignore <code>db_tablespace</code> for databases that don't support it.</li>
+        <li>This means:</li>
+        <ul>
+            <li>SQLite → ignored</li>
+            <li>MySQL → mostly ignored</li>
+            <li>PostgreSQL → fully used</li>
+            <li>Oracle → fully used</li>
+        </ul>
+        <li>Django ensures migrations remain portable.</li>
+    </ul>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
