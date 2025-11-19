@@ -177,6 +177,7 @@
         <li><a href="#vue-list-rendering">List Rendering</a></li>
         <li><a href="#vue-event-handling">Event Handling</a></li>
         <li><a href="#vue-form-input-bindings">Form Input Bindings</a></li>
+        <li><a href="#vue-scoped-slots">Scoped Slots</a></li>
     </ul>
 </nav>
 <hr/>
@@ -6469,7 +6470,436 @@ const form = reactive&lt;LoginForm&gt;({
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-scoped-slots">Scoped Slots in Vue (Composition API + TypeScript)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><u>Scoped slots</u> allow a child component to expose data to the parent’s template.</li>
+        <br/>
+        <li>Unlike normal slots (where the parent provides only markup), scoped slots allow:
+            <ul>
+                <li>child → provides data</li>
+                <li>parent → decides how to display it</li>
+            </ul>
+        </li>
+    </ul>
 
+    <br/><br/>
+
+
+
+    <li><b>How Scoped Slots Work (Concept)</b></li>
+    <br/>
+    <ul>
+        <li>A child component exposes variables using:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;slot :user="user"&gt;&lt;/slot&gt;</code></pre>
+
+    <br/>
+    <ul>
+        <li>The parent receives them using:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template #default="{ user }"&gt;
+    {{ user.name }}
+&lt;/template&gt;
+</code></pre>
+    <ul>
+        <li>Important points:
+            <ul>
+                <li>Data flows from <u>child to parent</u>.</li>
+                <li>Rendering (HTML structure) flows from <u>parent to child</u>.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Basic Scoped Slot Example</b></li>
+    <br/>
+    <ul>
+        <li>Child component exposing data:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- UserList.vue --&gt;
+&lt;template&gt;
+    &lt;ul&gt;
+        &lt;li v-for="user in users" :key="user.id"&gt;
+            &lt;slot :user="user"&gt;
+                {{ user.name }}
+            &lt;/slot&gt;
+        &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+interface User {
+    id: number
+    name: string
+}
+
+const users: User[] = [
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" }
+]
+&lt;/script&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Parent decides how each user is displayed:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;UserList&gt;
+    &lt;template #default="{ user }"&gt;
+        &lt;strong&gt;{{ user.name.toUpperCase() }}&lt;/strong&gt;
+    &lt;/template&gt;
+&lt;/UserList&gt;
+</code></pre>
+    <ul>
+        <li>Even though <code>users</code> is in the child, the parent controls the layout.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Example: Building a Flexible Table</b></li>
+    <br/>
+    <ul>
+        <li>Child defines how rows are generated but not how cells look.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- DataTable.vue --&gt;
+&lt;template&gt;
+    &lt;table&gt;
+        &lt;tr v-for="row in rows" :key="row.id"&gt;
+            &lt;slot :row="row"&gt;&lt;/slot&gt;
+        &lt;/tr&gt;
+    &lt;/table&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+interface Row {
+    id: number
+    name: string
+    age: number
+}
+
+const rows: Row[] = [
+    { id: 1, name: "Alice", age: 20 },
+    { id: 2, name: "Bob", age: 25 }
+]
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;DataTable&gt;
+    &lt;template #default="{ row }"&gt;
+        &lt;td&gt;{{ row.name }}&lt;/td&gt;
+        &lt;td&gt;{{ row.age }}&lt;/td&gt;
+    &lt;/template&gt;
+&lt;/DataTable&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><b>Typing Scoped Slots in TypeScript (Strong Typing)</b></li>
+    <br/>
+    <ul>
+        <li><code>defineSlots()</code>: declares slot names and their prop types in the <u>child</u></li>
+        <li><code>SlotsType&lt;T&gt;</code>: helper type used with <code>defineSlots</code> to describe all slots</li>
+    </ul>
+
+    <br/>
+
+    <ul>
+        <li><b>Example 1: Single Typed Default Slot</b></li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- UserCard.vue --&gt;
+&lt;template&gt;
+    &lt;div class="card"&gt;
+        &lt;!-- Expose "user" as a scoped slot prop to the parent --&gt;
+        &lt;slot :user="user"&gt;&lt;/slot&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import type { SlotsType } from "vue"
+
+interface User {
+    id: number
+    name: string
+}
+
+const user: User = {
+    id: 1,
+    name: "Alice"
+}
+
+defineSlots&lt;SlotsType&lt;{
+    default: { user: User }
+}&gt;&gt;()
+&lt;/script&gt;
+</code></pre>
+    <ul>
+        <li>This definition enforces that:
+            <ul>
+                <li>only a <code>default</code> slot exists and the the parent receives a single prop named <code>user</code></li>
+                <li><code>user</code> must match the <code>User</code> interface</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;UserCard&gt;
+        &lt;template #default="{ user }"&gt;
+            &lt;p&gt;{{ user.name }} (ID: {{ user.id }})&lt;/p&gt;
+        &lt;/template&gt;
+    &lt;/UserCard&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import UserCard from "./UserCard.vue"
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+    <ul>
+        <li><b>Example 2: Multiple Typed Scoped Slots</b></li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Panel.vue --&gt;
+&lt;template&gt;
+    &lt;section class="panel"&gt;
+        &lt;header&gt;
+            &lt;slot name="header" :title="title"&gt;&lt;/slot&gt;
+        &lt;/header&gt;
+
+        &lt;main&gt;
+            &lt;slot :item="item"&gt;&lt;/slot&gt;
+        &lt;/main&gt;
+
+        &lt;footer&gt;
+            &lt;slot name="footer" :updatedAt="updatedAt"&gt;&lt;/slot&gt;
+        &lt;/footer&gt;
+    &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import type { SlotsType } from "vue"
+
+const title = "Panel Title"
+const item = "Some item"
+const updatedAt = new Date()
+
+defineSlots&lt;SlotsType&lt;{
+    header: { title: string }
+    default: { item: string }
+    footer: { updatedAt: Date }
+}&gt;&gt;()
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>The typing above guarantees that:
+            <ul>
+                <li>the only allowed slots are <code>header</code>, <code>default</code>, and <code>footer</code></li>
+                <li><code>header</code> receives <code>{ title: string }</code></li>
+                <li><code>default</code> receives <code>{ item: string }</code></li>
+                <li><code>footer</code> receives <code>{ updatedAt: Date }</code></li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- App.vue --&gt;
+&lt;template&gt;
+    &lt;Panel&gt;
+        &lt;template #header="{ title }"&gt;
+            &lt;h2&gt; {{ title }} &lt;/h2&gt;
+        &lt;/template&gt;
+
+        &lt;template #default="{ item }"&gt;
+            &lt;p&gt;Item: {{ item }}&lt;/p&gt;
+        &lt;/template&gt;
+
+        &lt;template #footer="{ updatedAt }"&gt;
+            &lt;small&gt;Last updated: {{ updatedAt.toLocaleString() }}&lt;/small&gt;
+        &lt;/template&gt;
+    &lt;/Panel&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import Panel from "./Panel.vue"
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+    <ul>
+        <li><b>Example 3: Nullable / Optional Slot Props</b></li>
+            Below we only show the <code>&lt;script setup&gt;</code> part of the <u>child</u>, the template can use <code>&lt;slot :user="user"&gt;</code> as before.
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+import type { SlotsType } from "vue"
+
+interface User {
+    id: number
+    name: string
+}
+
+const user: User | null = null
+
+defineSlots&lt;SlotsType&lt;{
+    default: { user?: User | null }
+}&gt;&gt;()
+&lt;/script&gt;
+</code></pre>
+    <ul>
+        <li>This tells TypeScript that the slot prop <code>user</code> may be: <code>undefined</code> or <code>null</code> or a valid <code>User</code>
+            <br/>and the parent must handle these cases safely.
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+
+    <li><b>Multiple Scoped Slots</b></li>
+    <br/>
+    <ul>
+        <li>Scoped slots can also be named.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- UserCard.vue --&gt;
+&lt;template&gt;
+    &lt;div class="card"&gt;
+        &lt;slot name="header" :user="user" /&gt;
+        &lt;p&gt;Age: {{ user.age }}&lt;/p&gt;
+        &lt;slot name="footer" :user="user" /&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+const user = {
+    name: "Alice",
+    age: 22
+}
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;UserCard&gt;
+    &lt;template #header="{ user }"&gt;
+        &lt;h3&gt;{{ user.name }}&lt;/h3&gt;
+    &lt;/template&gt;
+
+    &lt;template #footer="{ user }"&gt;
+        &lt;small&gt;User is {{ user.age }} years old.&lt;/small&gt;
+    &lt;/template&gt;
+&lt;/UserCard&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Default Slot Fallback Behavior</b></li>
+    <br/>
+    <ul>
+        <li>If the parent fails to provide a slot, the default content renders.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;slot :item="item"&gt;Default layout for {{ item.name }}&lt;/slot&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Advanced: Passing Functions via Scoped Slots</b></li>
+    <br/>
+    <ul>
+        <li>Scoped slots can also expose functions, not just data.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- ActionList.vue --&gt;
+&lt;template&gt;
+    &lt;slot :remove="remove" :items="items"&gt;&lt;/slot&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+
+const items = ref(["A", "B", "C"])
+
+function remove(index: number) {
+    items.value.splice(index, 1)
+}
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;ActionList&gt;
+    &lt;template #default="{ items, remove }"&gt;
+        &lt;div v-for="(item, i) in items" :key="item"&gt;
+            {{ item }}
+            &lt;button @click="remove(i)"&gt;X&lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/template&gt;
+&lt;/ActionList&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Scoped Slots</td>
+                <td>Child exposes data → parent renders UI</td>
+            </tr>
+            <tr>
+                <td>Data Direction</td>
+                <td>Child → Parent</td>
+            </tr>
+            <tr>
+                <td>Usage</td>
+                <td>Lists, tables, cards, customized layouts</td>
+            </tr>
+            <tr>
+                <td>TypeScript Support</td>
+                <td>Use <code>defineSlots</code> + <code>SlotsType</code></td>
+            </tr>
+            <tr>
+                <td>Named Scoped Slots</td>
+                <td>Useful for components with multiple regions</td>
+            </tr>
+            <tr>
+                <td>Fallback Content</td>
+                <td>Default slot content if parent provides none</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
