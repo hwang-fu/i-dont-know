@@ -161,6 +161,7 @@
         <li><a href="#ts-modules">Modules</a></li>
         <li><a href="#ts-decorators">Decorators</a></li>
         <li><a href="#ts-get-set">Getters and Setters in TS</a></li>
+        <li><a href="#ts-record">Record</a></li>
     </ul>
 </nav>
 <hr/>
@@ -4781,6 +4782,277 @@ class Product {
     <br/><br/>
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-record">TypeScript <code>Record</code></h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>Record</code> is a built-in TypeScript utility type.</li>
+        <br/>
+        <li>It lets you create an object type where:
+            <ul>
+                <li>the <u>keys</u> have a specific allowed type</li>
+                <li>the <u>values</u> have a specific allowed type</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Its signature is: <code class="language-ts line-numbers">Record&lt;Keys, Values&gt;</code></li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Basic Example</b></li>
+    <br/>
+
+<pre><code class="language-ts line-numbers">const scores: Record&lt;string, number&gt; = {
+    math: 90,
+    physics: 85,
+    english: 88
+};</code></pre>
+
+    <ul>
+        <li>The keys are <code>string</code> and the values are <code>number</code>.</li>
+        <br/>
+        <li>TypeScript ensures no value is something else like string or boolean.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Literal Types as Keys</b></li>
+    <br/>
+    <ul>
+        <li>You can restrict allowed keys to a specific set of strings.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">type Theme = "light" | "dark" | "solarized"
+
+const options: Record&lt;Theme, boolean&gt; = {
+    light: true,
+    dark: false,
+    solarized: true
+}</code></pre>
+
+    <ul>
+        <li>All keys must be present.</li>
+        <li>No extra keys allowed.</li>
+        <li>All values must be boolean.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using <code>Record</code> for Lookup Tables</b></li>
+    <br/>
+    <ul>
+        <li>Perfect for quickly mapping strings → functions / data.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const handlers: Record&lt;string, () =&gt; void&gt; = {
+    save: () =&gt; console.log("saving..."),
+    load: () =&gt; console.log("loading..."),
+};</code></pre>
+
+    <ul>
+        <li>Useful in router-like or command-like logic.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Record with Index Signatures</b></li>
+    <br/>
+    <ul>
+        <li><code>Record</code> is basically a nicer, more explicit way of writing an index signature.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// Equivalent:
+type A = Record&lt;string, number&gt;
+
+// Same as:
+type B = {
+    [key: string]: number
+}</code></pre>
+
+    <ul>
+        <li>Both mean: “an object whose keys are strings and whose values are numbers”.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Record with Number Keys</b></li>
+    <br/>
+
+<pre><code class="language-ts line-numbers">const points: Record&lt;number, string&gt; = {
+    1: "one",
+    2: "two",
+    3: "three"
+}</code></pre>
+
+    <ul>
+        <li>Number keys are allowed (internally converted to strings).</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Record with Complex Value Types</b></li>
+    <br/>
+
+<pre><code class="language-ts line-numbers">interface User {
+    id: number
+    name: string
+}
+
+const users: Record&lt;number, User&gt; = {
+    1: { id: 1, name: "Alice" },
+    2: { id: 2, name: "Bob" }
+}</code></pre>
+
+    <ul>
+        <li>Ensures all values follow the <code>User</code> interface.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Record with Enum Keys</b></li>
+    <br/>
+
+<pre><code class="language-ts line-numbers">enum Status {
+    Pending = "pending",
+    Approved = "approved",
+    Rejected = "rejected"
+}
+
+const statusText: Record&lt;Status, string&gt; = {
+    [Status.Pending]: "Waiting...",
+    [Status.Approved]: "Approved ✓",
+    [Status.Rejected]: "Rejected ✗"
+}</code></pre>
+
+    <ul>
+        <li>Enum keys ensure correctness and avoid typos.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Partial Record</b></li>
+    <br/>
+    <ul>
+        <li>If you want keys optional, wrap it in <code>Partial</code>.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">type Language = "en" | "de" | "fr"
+
+const labels: Partial&lt;Record&lt;Language, string&gt;&gt; = {
+    en: "Hello",
+    de: "Hallo"
+    // "fr" is optional now
+}</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Record vs Map</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Use Case</th>
+                <th>Record</th>
+                <th>Map</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Type-checked lookup table</td>
+                <td>✓ Ideal</td>
+                <td>OK</td>
+            </tr>
+            <tr>
+                <td>Runtime dynamic keys</td>
+                <td>Not ideal</td>
+                <td>✓ Best choice</td>
+            </tr>
+            <tr>
+                <td>Iteration performance</td>
+                <td>Fast</td>
+                <td>A bit slower</td>
+            </tr>
+            <tr>
+                <td>Keeps insertion order</td>
+                <td>Yes (in JS)</td>
+                <td>Yes</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li><code>Record</code> is good for <u>static</u> objects known at compile time.</li>
+        <br/>
+        <li><code>Map</code> is better when keys change dynamically at runtime.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>Record&lt;K, V&gt;</code></td>
+                <td>Create an object with keys <code>K</code> and values <code>V</code></td>
+            </tr>
+            <tr>
+                <td>Keys</td>
+                <td>Can be strings, numbers, enums, or unions</td>
+            </tr>
+            <tr>
+                <td>Values</td>
+                <td>Any valid TypeScript type</td>
+            </tr>
+            <tr>
+                <td>Type safety</td>
+                <td>Ensures correct keys and values</td>
+            </tr>
+            <tr>
+                <td>Best usage</td>
+                <td>Maps, dictionaries, configuration objects</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
