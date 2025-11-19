@@ -165,6 +165,7 @@
         <li><a href="#django-model-aggregation">Models Aggregation</a></li>
         <li><a href="#django-model-research">Models Research</a></li>
         <li><a href="#django-model-managers">Models Managers</a></li>
+        <li><a href="#django-raw-sql">Performaing Raw SQL Queries</a></li>
     </ul>
 </nav>
 <hr/>
@@ -4127,7 +4128,250 @@ class User(models.Model):
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-raw-sql">Performing Raw SQL Queries in Django Models</h3>
+<ol>
 
+    <li><b>Why Use Raw SQL in Django?</b></li>
+    <br/>
+    <ul>
+        <li>Django’s ORM is very powerful, but sometimes you need direct SQL because:</li>
+        <ul>
+            <li>a query is too complex for ORM</li>
+            <li>you want database-specific optimization</li>
+            <li>you want to call database functions or stored procedures</li>
+            <li>you need full manual control over SQL</li>
+        </ul>
+        <br/>
+        <li>Django allows raw SQL while keeping models safe and integrated.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using <code>.raw()</code> for SELECT Queries</b></li>
+    <br/>
+    <ul>
+        <li>Every model gets <code>Model.objects.raw()</code> for raw <code>SELECT</code> statements.</li>
+        <li>Django will map the result rows into model instances.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># blog/models.py
+from django.db import models
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+</code></pre>
+
+<pre><code class="language-python line-numbers">posts = Post.objects.raw("SELECT * FROM blog_post")
+
+for p in posts:
+    print(p.title)
+</code></pre>
+
+    <ul>
+        <li>The SQL must return all fields that the model requires.</li>
+        <li>You can also select additional fields — Django will ignore them.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Parameters (Avoid SQL Injection!)</b></li>
+    <br/>
+    <ul>
+        <li>Always use placeholders instead of string concatenation.</li>
+        <li>Django uses the database's native param syntax (usually <code>%s</code>).</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">title = "Hello"
+posts = Post.objects.raw(
+    "SELECT * FROM blog_post WHERE title = %s",
+    [title]
+)
+</code></pre>
+
+    <ul>
+        <li>This is safe and recommended.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Executing Non-SELECT Queries with <code>connection.cursor()</code></b></li>
+    <br/>
+    <ul>
+        <li>To execute <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, or custom SQL, use <code>cursor()</code>.</li>
+        <li>You import it from:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from django.db import connection
+</code></pre>
+
+    <br/>
+
+    <li><b>Example: Manual INSERT</b></li>
+
+<pre><code class="language-python line-numbers">from django.db import connection
+
+def insert_post(title, body):
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "INSERT INTO blog_post (title, body) VALUES (%s, %s)",
+            [title, body]
+        )
+</code></pre>
+
+    <br/>
+
+    <li><b>Example: Manual UPDATE</b></li>
+
+<pre><code class="language-python line-numbers">with connection.cursor() as cursor:
+    cursor.execute(
+        "UPDATE blog_post SET title = %s WHERE id = %s",
+        ["New Title", 1]
+    )
+</code></pre>
+
+    <br/>
+
+    <li><b>Example: Manual DELETE</b></li>
+
+<pre><code class="language-python line-numbers">with connection.cursor() as cursor:
+    cursor.execute("DELETE FROM blog_post WHERE id = %s", [1])
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Fetching Results Manually</b></li>
+    <br/>
+    <ul>
+        <li>cursor can fetch rows manually:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">with connection.cursor() as cursor:
+    cursor.execute("SELECT id, title FROM blog_post")
+    rows = cursor.fetchall()
+
+for row in rows:
+    print(row)   # (id, title)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using <code>dictfetchall()</code> for Dictionary Results</b></li>
+    <br/>
+    <ul>
+        <li>Django doesn’t ship one, but the docs recommend writing your own helper.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def dictfetchall(cursor):
+    columns = [col[0] for col in cursor.description]
+    return [
+        dict(zip(columns, row))
+        for row in cursor.fetchall()
+    ]
+</code></pre>
+
+<pre><code class="language-python line-numbers">with connection.cursor() as cursor:
+    cursor.execute("SELECT id, title FROM blog_post")
+    results = dictfetchall(cursor)
+
+for item in results:
+    print(item["id"], item["title"])
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Raw Query With Model Mapping + Extra Fields</b></li>
+    <br/>
+    <ul>
+        <li>Django ignores extra fields unless you alias one of them as <code>pk</code> (primary key) with <code>AS</code>.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">posts = Post.objects.raw(
+    "SELECT id, title, body, NOW() as retrieved_at FROM blog_post"
+)
+
+for p in posts:
+    print(p.title)              # model field
+    print(p.retrieved_at)       # extra attribute
+</code></pre>
+
+    <ul>
+        <li>Django attaches unknown columns as attributes.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Running Raw SQL on a Specific Database (Multiple DBs)</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">from django.db import connections
+
+with connections["analytics"].cursor() as cursor:
+    cursor.execute("SELECT COUNT(*) FROM stats_table")
+    result = cursor.fetchone()
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using <code>Model.objects.raw()</code> With Complex Joins</b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers">posts = Post.objects.raw("""
+    SELECT p.*, COUNT(c.id) AS comment_count
+    FROM blog_post p
+    LEFT JOIN blog_comment c ON p.id = c.post_id
+    GROUP BY p.id
+""")
+</code></pre>
+
+    <ul>
+        <li>You get model instances + an extra attribute <code>comment_count</code>.</li>
+    </ul>
+
+    <br/><br/><br/>
+
+
+    <li><b>Warnings When Using Raw SQL</b></li>
+    <br/>
+    <ul>
+        <li><b>NEVER</b> manually concatenate SQL strings — always use placeholders.</li>
+        <br/>
+        <li>Raw SQL bypasses type checking.</li>
+        <br/>
+        <li>Raw SQL bypasses database abstraction (not portable across databases).</li>
+        <br/>
+        <li>Raw <code>UPDATE</code> / <code>DELETE</code> do NOT trigger model signals (<code>pre_save</code>, <code>post_delete</code>, etc.).</li>
+        <br/>
+        <li>Raw queries do NOT use Django’s model validation.</li>
+        <br/>
+        <li>Retrieving model instances from <code>.raw()</code> bypasses QuerySet optimizations.</li>
+    </ul>
+
+    <br/><br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li>Django supports raw SQL through <code>.raw()</code> and <code>connection.cursor()</code>.</li>
+        <br/>
+        <li><code>.raw()</code> is used for <code>SELECT</code> queries that map to model instances.</li>
+        <br/>
+        <li><code>cursor()</code> is used for <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, and custom SQL.</li>
+        <br/>
+        <li>Query parameters should always use placeholders to avoid SQL injection.</li>
+        <br/>
+        <li>Raw SQL is powerful but should be used sparingly — prefer ORM when possible.</li>
+    </ul>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
