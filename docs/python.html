@@ -193,6 +193,7 @@
         <li><a href="#python-brief-std-lib-tour">Brief Tour of the Python Standard Library</a></li>
         <li><a href="#python-wrappers">Wrappers</a></li>
         <li><a href="#python-decorators">Decorators</a></li>
+        <li><a href="#python-async-intro">Introduction to Python Async Programming</a></li>
     </ul>
 </nav>
 <hr/>
@@ -13009,6 +13010,312 @@ class A:
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-async-intro">Introduction to Python Async Programming</h3>
+<ol>
+
+    <li><b>What Is Asynchronous Programming in Python?</b></li>
+    <br/>
+    <ul>
+        <li><u>Asynchronous programming</u> allows Python to run many tasks "at the same time" without blocking the main thread.</li>
+        <br/>
+        <li>It is designed for tasks that involve:
+            <ul>
+                <li>I/O waiting</li>
+                <li>network requests</li>
+                <li>database operations</li>
+                <li>file system operations</li>
+                <li>sleep timers</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The idea:
+            <ul>
+                <li>Instead of <u>waiting</u> for slow I/O, Python switches to another task.</li>
+                <li>Your program becomes more efficient and responsive.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>It uses a <u>single thread</u>, but manages multiple tasks cooperatively.</li>
+        <br/>
+        <li>This is different from multithreading or multiprocessing.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Key Terminology</b></li>
+    <br/>
+    <ul>
+        <li><code>Event loop</code>:
+            The core engine of async Python that schedules and runs tasks.</li>
+        <li><code>Coroutine</code>:
+            A special function that can <code>await</code> operations.</li>
+        <li><code>Task</code>:
+            A scheduled coroutine running on the event loop.</li>
+        <li><code>Awaitable</code>:
+            Anything you can use inside <code>await</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>How Async Differs From Sync Code</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Sync Code</th>
+                <th>Async Code</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Runs line by line</td>
+                <td>Pauses during slow I/O and resumes later</td>
+            </tr>
+            <tr>
+                <td>Blocks until the operation finishes</td>
+                <td>Yields control while waiting</td>
+            </tr>
+            <tr>
+                <td>Great for CPU-heavy tasks</td>
+                <td>Great for I/O-heavy tasks</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Basic Syntax:</b> <code>async</code> <b>and</b> <code>await</code></li>
+    <br/>
+    <ul>
+        <li><code>async</code> declares a coroutine function.</li>
+        <li><code>await</code> pauses until the awaited operation completes.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import asyncio
+
+async def greet():
+    await asyncio.sleep(1)
+    print("Hello async!")
+
+asyncio.run(greet())
+</code></pre>
+
+    <ul>
+        <li>This prints after 1 second, but without blocking the entire program.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Async Functions Return Coroutines</b></li>
+    <br/>
+    <ul>
+        <li>Calling an async function does NOT execute it immediately:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">async def add(a, b):
+    return a + b
+
+result = add(1, 2)
+print(result)    # &lt;coroutine object ...&gt;
+</code></pre>
+
+    <ul>
+        <li>You must run it in the event loop:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">print(asyncio.run(add(1, 2)))    # 3
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Running Multiple Tasks Concurrently</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>asyncio.gather()</code> to run coroutines in parallel.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">async def say(name):
+    await asyncio.sleep(1)
+    print(name)
+
+async def main():
+    await asyncio.gather(
+        say("A"),
+        say("B"),
+        say("C"),
+    )
+
+asyncio.run(main())
+</code></pre>
+
+    <ul>
+        <li>All tasks sleep simultaneously → imported for I/O-heavy apps.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Turning Coroutines into Background Tasks</b></li>
+    <br/>
+    <ul>
+        <li>You can schedule a coroutine without waiting for it immediately:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">async def worker():
+    await asyncio.sleep(2)
+    print("done!")
+
+async def main():
+    task = asyncio.create_task(worker())
+    print("task started...")
+    await task
+
+asyncio.run(main())
+</code></pre>
+
+    <ul>
+        <li><code>create_task()</code> lets the coroutine run in the background.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Async I/O (Network Example)</b></li>
+    <br/>
+    <ul>
+        <li>Async is especially effective for network operations.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import asyncio
+import aiohttp   # third-party async HTTP client
+
+async def fetch(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            return await resp.text()
+
+async def main():
+    content = await fetch("https://example.com")
+    print(content[:50])
+
+asyncio.run(main())
+</code></pre>
+
+    <ul>
+        <li>Async HTTP operations do not block the main loop.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Async Context Managers & Iterators</b></li>
+    <br/>
+    <ul>
+        <li>Some async libraries use special forms:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">async with session.get(url) as resp:
+    ...
+</code></pre>
+
+<pre><code class="language-python line-numbers">async for msg in websocket:
+    print(msg)
+</code></pre>
+
+    <ul>
+        <li>Same concept as normal context managers but designed for async workflows.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Where Async Shines</b></li>
+    <br/>
+    <ul>
+        <li>Async is ideal when handling many slow I/O tasks:
+            <ul>
+                <li>web scraping</li>
+                <li>chat/notifications</li>
+                <li>websocket servers</li>
+                <li>microservices</li>
+                <li>database queries (async drivers)</li>
+                <li>network-bound APIs</li>
+            </ul>
+        </li>
+        <li>Async does NOT speed up CPU-heavy tasks.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Where Async Fails</b></li>
+    <br/>
+    <ul>
+        <li>Async is NOT suited for:
+            <ul>
+                <li>heavy computations</li>
+                <li>data processing</li>
+                <li>AI model training</li>
+                <li>image/video rendering</li>
+            </ul>
+        </li>
+        <li>In these cases, use:
+            <ul>
+                <li>multiprocessing</li>
+                <li>threading</li>
+                <li>NumPy (vectorized computation)</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Combining Async With Django</b></li>
+    <br/>
+    <ul>
+        <li>Django 3.x+ supports async views and middleware.</li>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">async def async_view(request):
+    await asyncio.sleep(1)
+    return HttpResponse("Async response")
+</code></pre>
+
+    <ul>
+        <li>But note:
+            <ul>
+                <li>Django’s ORM is still mostly synchronous</li>
+                <li>You must use async-safe wrappers</li>
+                <li>Not all Django features are async-ready</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
