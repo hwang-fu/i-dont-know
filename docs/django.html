@@ -163,6 +163,7 @@
         <li><a href="#django-urls-py"><code>urls.py</code></a></li>
         <li><a href="#django-wsgi-py"><code>wsgi.py</code></a></li>
         <li><a href="#django-asgi-py"><code>asgi.py</code></a></li>
+        <li><a href="#django-file-structure">File Structures</a></li>
         <li><a href="#django-models">Models</a></li>
         <li><a href="#django-orm">Object–Relational Mapper (ORM)</a></li>
     </ul>
@@ -2216,6 +2217,308 @@ application = ProtocolTypeRouter({
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-file-structure">Understanding Django Project &amp; App File Structure</h3>
+<ol>
+
+    <li><b>Create a Django Project (Inside Virtual Environment)</b></li>
+
+<pre><code class="language-bash line-numbers">python3 -m venv .venv
+source .venv/bin/activate
+
+python3 -m pip install django
+python3 -m django startproject mysite
+cd mysite
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Django Project Directory Structure</b></li>
+    <br/>
+    <ul>
+        <li>Your project folder <code>mysite/</code> contains:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">mysite/
+├── manage.py
+└── mysite/
+    ├── __init__.py
+    ├── settings.py
+    ├── urls.py
+    ├── asgi.py
+    └── wsgi.py
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Explanation of each file:</li>
+    </ul>
+
+    <table>
+        <thead>
+            <tr>
+                <th>File / Folder</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>manage.py</code></td>
+                <td>Main CLI tool for the project (e.g., <code>runserver</code>, <code>migrate</code>).</td>
+            </tr>
+            <tr>
+                <td><code>mysite/</code> (inner folder)</td>
+                <td>Actual project package (contains settings, URLs, ASGI/WSGI).</td>
+            </tr>
+            <tr>
+                <td><code>__init__.py</code></td>
+                <td>Makes the folder a Python package.</td>
+            </tr>
+            <tr>
+                <td><code>settings.py</code></td>
+                <td>Global configuration: database, installed apps, middleware, templates, static files, etc.</td>
+            </tr>
+            <tr>
+                <td><code>urls.py</code></td>
+                <td>Root URL routing file directing to app URLs.</td>
+            </tr>
+            <tr>
+                <td><code>asgi.py</code></td>
+                <td>Entry point for ASGI servers (async support).</td>
+            </tr>
+            <tr>
+                <td><code>wsgi.py</code></td>
+                <td>Entry point for WSGI servers (production).</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Creating an App Inside the Project</b></li>
+<pre><code class="language-bash line-numbers">python3 manage.py startapp blog
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Django App Directory Structure</b></li>
+<pre><code class="language-bash line-numbers">blog/
+├── admin.py
+├── apps.py
+├── models.py
+├── tests.py
+├── views.py
+└── migrations/
+    └── __init__.py
+</code></pre>
+
+    <ul>
+        <br/>
+        <li>Explanation of each file:</li>
+        <br/>
+    </ul>
+
+    <table>
+        <thead>
+            <tr>
+                <th>File / Folder</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>admin.py</code></td>
+                <td>Define how models appear in Django Admin.</td>
+            </tr>
+            <tr>
+                <td><code>apps.py</code></td>
+                <td>Configuration class for your app (used internally by Django).</td>
+            </tr>
+            <tr>
+                <td><code>models.py</code></td>
+                <td>Define your database tables using Django Models.</td>
+            </tr>
+            <tr>
+                <td><code>tests.py</code></td>
+                <td>Unit tests for your app.</td>
+            </tr>
+            <tr>
+                <td><code>views.py</code></td>
+                <td>Your request handlers (functions or class-based views).</td>
+            </tr>
+            <tr>
+                <td><code>migrations/</code></td>
+                <td>Stores migration files for database schema changes.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Where Do Templates and Static Files Go?</b></li>
+    <ul>
+        <li>You do NOT see templates or static folders by default.</li>
+        <li>You must create them manually.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Recommended Structure for Templates</b></li>
+
+<pre><code class="language-bash line-numbers">blog/
+├── templates/
+│   └── blog/
+│       └── index.html
+</code></pre>
+
+    <ul>
+        <li>The inner <code>blog/</code> folder prevents naming conflicts between apps.</li>
+        <li>Important: the app name becomes a namespace.</li>
+        <li>Django finds templates because <code>APP_DIRS</code> is enabled in <code>settings.py</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Recommended Structure for Static Files</b></li>
+
+<pre><code class="language-bash line-numbers">blog/
+├── static/
+│   └── blog/
+│       ├── style.css
+│       └── script.js
+</code></pre>
+
+    <ul>
+        <li>Again, use <code>blog/</code> inside <code>static/</code> to avoid collisions.</li>
+        <li>Django collects static files using <code>python3 manage.py collectstatic</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>How Project and App Work Together</b></li>
+    <br/>
+    <ul>
+        <li>Your project should be configured to include the app:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># mysite/settings.py
+
+INSTALLED_APPS = [
+    ...
+    "blog",
+]
+</code></pre>
+
+    <ul>
+        <li>Next, the project routes URLs to the app:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># mysite/urls.py
+
+from django.urls import path, include
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("blog/", include("blog.urls")),
+]
+</code></pre>
+
+    <ul>
+        <li>This makes your app accessible under <code>/blog/</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Example of a Complete App Folder (Realistic)</b></li>
+<pre><code class="language-bash line-numbers">blog/
+├── admin.py
+├── apps.py
+├── migrations/
+│   ├── __init__.py
+│   └── 0001_initial.py
+├── models.py
+├── templates/
+│   └── blog/
+│       └── index.html
+├── static/
+│   └── blog/
+│       ├── style.css
+│       └── script.js
+├── tests.py
+└── views.py
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Example of a Complete Project Folder</b></li>
+<pre><code class="language-bash line-numbers">mysite/
+├── manage.py
+├── mysite/
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   ├── wsgi.py
+│   └── asgi.py
+└── blog/
+    ├── admin.py
+    ├── apps.py
+    ├── migrations/
+    ├── models.py
+    ├── templates/
+    ├── static/
+    ├── tests.py
+    └── views.py
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li>A Django <b>project</b> is the container for the entire web application and global configuration.</li>
+        <li>A Django <b>app</b> is a modular component that provides one specific feature.</li>
+        <li>Projects contain:
+            <ul>
+                <li><code>settings.py</code></li>
+                <li><code>urls.py</code></li>
+                <li><code>wsgi.py</code></li>
+                <li><code>asgi.py</code></li>
+            </ul>
+        </li>
+        <li>Apps contain:
+            <ul>
+                <li><code>models.py</code></li>
+                <li><code>views.py</code></li>
+                <li><code>admin.py</code></li>
+                <li><code>templates/</code></li>
+                <li><code>static/</code></li>
+            </ul>
+        </li>
+        <li>A project can have many apps; apps are reusable across projects.</li>
+        <li>Correct folder structure ensures scalability, clarity, and maintainability in Django projects.</li>
+    </ul>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 <h3 id="django-models">Models in Django</h3>
 <ol>
 
@@ -2806,6 +3109,22 @@ Post.objects.create(title="New", body="Hello ORM!")
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
