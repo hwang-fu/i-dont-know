@@ -178,6 +178,7 @@
         <li><a href="#rust-cfg">The <code>cfg</code> Attribute</a></li>
         <li><a href="#rust-generics-fn">Generics in Functions</a></li>
         <li><a href="#rust-generics-impl">Generics Implemented</a></li>
+        <li><a href="#rust-traits">Traits</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -4022,7 +4023,7 @@ for value in &amp;v {
     <li><b>Mutable iteration over a vector</b></li>
 <pre><code class="language-rust line-numbers">let mut v = vec![1, 2, 3];
 
-for value in &mut v {
+for value in &amp;mut v {
     *value *= 2;
 }
 
@@ -4030,7 +4031,7 @@ println!("{:?}", v);
 </code></pre>
     <br/>
     <ul>
-        <li><code>&mut v</code> gives mutable references to elements.</li>
+        <li><code>&amp;mut v</code> gives mutable references to elements.</li>
         <li>You must dereference <code>*value</code> to modify.</li>
         <li>Result: <code>[2, 4, 6]</code></li>
     </ul>
@@ -8760,6 +8761,410 @@ impl&lt;A, B&gt; Pair&lt;A, B&gt; {
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-traits">Traits in Rust</h3>
+<ol>
+    <li><b>What Are Traits?</b></li>
+    <br/>
+    <ul>
+        <li>A <u>trait</u> in Rust defines shared behavior. It is similar to:
+            <ul>
+                <li>interfaces in TypeScript / Java</li>
+                <li>typeclasses in Haskell</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Traits do <u>not</u> contain state — only method definitions and implementations.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Defining a Trait</b></li>
+<pre><code class="language-rust line-numbers">trait Greet {
+    fn greet(&amp;self);
+}
+</code></pre>
+    <ul>
+        <li>A trait declares the methods that implementing types must define.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Implementing a Trait for a Type</b></li>
+<pre><code class="language-rust line-numbers">struct Person {
+    name: String,
+}
+
+impl Greet for Person {
+    fn greet(&amp;self) {
+        println!("Hello, {}!", self.name);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Use <code>impl Trait for Type</code> to provide the method body.</li>
+        <li>Now <code>Person</code> has the <code>greet</code> behavior.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Default Method Implementations</b></li>
+<pre><code class="language-rust line-numbers">trait Hello {
+    fn say(&amp;self) {
+        println!("Hello from default method!");
+    }
+}
+
+struct User;
+
+impl Hello for User {}  // inherits default
+</code></pre>
+
+    <ul>
+        <li>Types can override defaults but do not need to.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Traits with Multiple Methods</b></li>
+<pre><code class="language-rust line-numbers">trait MathOps {
+    fn double(&amp;self) -&gt; Self;
+    fn triple(&amp;self) -&gt; Self;
+}
+
+impl MathOps for i32 {
+    fn double(&amp;self) -&gt; Self { self * 2 }
+    fn triple(&amp;self) -&gt; Self { self * 3 }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Traits with Associated Types</b></li>
+    <br/>
+    <ul>
+        <li>Traits can define <u>placeholder types</u> using <code>type</code>. These are called <b>associated types</b>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait Iterator {
+    type Item;       // Each implementor chooses what 'Item' is.
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt;;
+}
+</code></pre>
+
+    <ul>
+        <li>
+            Associated types let a trait say:
+            <i>"Any type implementing this trait must specify what its internal item type is."</i>
+        </li>
+
+        <br/>
+
+        <li>
+            This avoids the need for generic parameters on the trait itself.
+            Instead of writing <code>Iterator&lt;T&gt;</code>, the implementor sets <code>type Item = T</code>.
+        </li>
+
+        <br/>
+
+        <li>For example:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Counter {
+    current: u32,
+    max: u32,
+}
+
+impl Iterator for Counter {
+    type Item = u32;   // We specify the concrete associated type here.
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
+        if self.current &lt; self.max {
+            let v = self.current;
+            self.current += 1;
+            Some(v)
+        } else {
+            None
+        }
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>
+            Now <code>Counter</code> is an iterator that yields <code>u32</code>.
+            The trait method <code>next()</code> automatically becomes:
+            <code>fn next(&amp;mut self) -&gt; Option&lt;u32&gt;</code>
+        </li>
+
+        <br/>
+
+        <li>
+            This design is used throughout the Rust standard library —
+            e.g. <code>Iterator::Item</code>, <code>Deref::Target</code>, <code>Add::Output</code>.
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Traits With Generic Methods</b></li>
+<pre><code class="language-rust line-numbers">trait Echo {
+    fn echo&lt;T: std::fmt::Debug&gt;(&amp;self, value: T) {
+        println!("{:?}", value);
+    }
+}
+
+struct Logger;
+
+impl Echo for Logger {}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Trait Bounds: Using Traits With Generics</b></li>
+    <br/>
+    <ul>
+        <li>Traits restrict what types can be used in generic functions.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn print_any&lt;T: std::fmt::Debug&gt;(value: T) {
+    println!("{:?}", value);
+}
+</code></pre>
+
+    <ul>
+        <li><code>T: Debug</code> means the type must implement <code>Debug</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Multiple Trait Bounds</b></li>
+<pre><code class="language-rust line-numbers">fn compare_and_show&lt;T: PartialEq + std::fmt::Debug&gt;(a: T, b: T) {
+    println!("equal? {}", a == b);
+    println!("{:?}", a);
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Where Clauses for Cleaner Trait Bounds</b></li>
+<pre><code class="language-rust line-numbers">fn sort_values&lt;T&gt;(values: &amp;mut [T])
+where
+    T: Ord + Clone,
+{
+    values.sort();
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Static Dispatch vs Dynamic Dispatch</b></li>
+    <br/>
+    <ul>
+        <li><b>Static dispatch (default)</b>:
+            <ul>
+                <li>Use generics</li>
+                <li>Zero cost (monomorphization)</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Dynamic dispatch</b>:
+            <ul>
+                <li>Use <code>dyn Trait</code></li>
+                <li>Requires a pointer like <code>&amp;dyn Trait</code> or <code>Box&lt;dyn Trait&gt;</code></li>
+                <li>More flexible, slight runtime cost</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">// static dispatch
+fn process_static&lt;T: Greet&gt;(x: T) {
+    x.greet();
+}
+
+// dynamic dispatch
+fn process_dyn(x: &amp;dyn Greet) {
+    x.greet();
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Derivable Traits</b></li>
+    <br/>
+    <ul>
+        <li>Some traits can be automatically derived using <code>#[derive(...)]</code>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[derive(Debug, Clone, PartialEq, Eq)]
+struct User {
+    id: i32,
+}
+</code></pre>
+
+    <ul>
+        <li>Rust automatically implements these traits based on the struct fields.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Supertraits</b></li>
+    <br/>
+    <ul>
+        <li>A trait can require other traits.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait Printable: std::fmt::Display {
+    fn print(&amp;self) {
+        println!("{}", self);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li><code>Printable</code> can only be implemented by types that also implement <code>Display</code>.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Traits With Default Generic Parameters</b></li>
+    <br/>
+    <ul>
+        <li>
+            Traits can give their generic parameters a <u>default type</u>.
+        </li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait Storage&lt;T = String&gt; {
+    fn store(&amp;self, value: T);
+}
+</code></pre>
+
+    <ul>
+        <li>
+            Here the default type for <code>T</code> is <code>String</code>.
+            So an implementor may choose:
+            "I accept the default" or "I want to override it".
+        </li>
+
+        <br/>
+
+        <li>If you want to use the default type parameter — you simply omit it:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Logger;
+
+// Uses the default: T = String
+impl Storage for Logger {
+    fn store(&amp;self, value: String) {
+        println!("{}", value);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>
+            Because no type was specified, the compiler expands it to:
+            <code>impl Storage&lt;String&gt; for Logger</code>.
+        </li>
+
+        <br/>
+
+        <li>If you want to override the default type — you have to explicitly supply the generic:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct IntLogger;
+
+// Override the default: T = i32
+impl Storage&lt;i32&gt; for IntLogger {
+    fn store(&amp;self, value: i32) {
+        println!("number: {}", value);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>
+            Now this implementation uses <code>i32</code> instead of <code>String</code>.
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Common Standard Library Traits</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Trait</th>
+                <th>Purpose</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>Debug</code></td>
+                <td>Debug formatting</td>
+                <td><code>println!("{:?}", x)</code></td>
+            </tr>
+            <tr>
+                <td><code>Display</code></td>
+                <td>User-friendly formatting</td>
+                <td><code>println!("{}", x)</code></td>
+            </tr>
+            <tr>
+                <td><code>Clone</code></td>
+                <td>Duplicate values</td>
+                <td><code>x.clone()</code></td>
+            </tr>
+            <tr>
+                <td><code>Copy</code></td>
+                <td>Implicit copying</td>
+                <td>All integers implement this</td>
+            </tr>
+            <tr>
+                <td><code>PartialEq</code></td>
+                <td>Equality</td>
+                <td><code>a == b</code></td>
+            </tr>
+            <tr>
+                <td><code>Ord</code></td>
+                <td>Ordering</td>
+                <td><code>values.sort()</code></td>
+            </tr>
+            <tr>
+                <td><code>Iterator</code></td>
+                <td>Iteration protocol</td>
+                <td><code>for x in iter</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
