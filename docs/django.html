@@ -157,6 +157,7 @@
     <h2> <img src="resources/django.png" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ul style="line-height: 1.8;">
         <li><a href="#django-intro">Introduction</a></li>
+        <li><a href="#django-models">Models</a></li>
     </ul>
 </nav>
 <hr/>
@@ -526,6 +527,297 @@ latest = Post.objects.filter(title__icontains="hello")
         <li>The ORM allows you to work with databases using Python classes.</li>
         <li>Django is ideal for fast development, enterprise apps, APIs, and dashboards.</li>
     </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-models">Models in Django</h3>
+<ol>
+
+    <li><b>What Are Models?</b></li>
+    <br/>
+    <ul>
+        <li>A Django <code>model</code> is a Python class that represents a database table.</li>
+        <br/>
+        <li>Each class attribute in the <code>model</code> corresponds to a column in the table.</li>
+        <br/>
+        <li>Django uses its built-in <u>Object–Relational Mapper (ORM)</u> to convert model classes into SQL queries.</li>
+        <br/>
+        <li>Models are defined inside the <code>models.py</code> of each app.</li>
+        <br/>
+        <li>You do not write SQL — Django auto-generates it during migration steps.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Typical Workflow With Models</b></li>
+    <br/>
+    <ul>
+        <li>Create and activate a virtual environment:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m venv .venv
+source .venv/bin/activate
+</code></pre>
+
+    <ul>
+        <li>Install Django:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m pip install django
+</code></pre>
+
+    <ul>
+        <li>Create project and app:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m django startproject mysite
+cd mysite
+python3 -m django startapp blog
+</code></pre>
+
+    <ul>
+        <li>Edit <code>models.py</code>, then run:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
+python3 manage.py migrate
+</code></pre>
+
+    <ul>
+        <li>You now have database tables ready for use.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Defining Your First Model</b></li>
+    <br/>
+    <ul>
+        <li>All models inherit from <code>django.db.models.Model</code>.</li>
+        <li>Field types define how data is stored in the database.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># blog/models.py
+
+from django.db import models
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+</code></pre>
+
+    <ul>
+        <li><code>CharField</code>: short strings</li>
+        <li><code>TextField</code>: long text</li>
+        <li><code>DateTimeField(auto_now_add=True)</code>: timestamp when created</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Applying Migrations</b></li>
+    <br/>
+    <ul>
+        <li>After modifying models, create migration scripts:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
+</code></pre>
+
+    <ul>
+        <li>Apply them and update the database schema:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py migrate
+</code></pre>
+
+    <ul>
+        <li>Django now creates the corresponding SQL tables.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Common Django Model Fields</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Field Type</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>CharField</code></td>
+                <td>Short strings</td>
+                <td><code>CharField(max_length=100)</code></td>
+            </tr>
+            <tr>
+                <td><code>TextField</code></td>
+                <td>Large text</td>
+                <td><code>TextField()</code></td>
+            </tr>
+            <tr>
+                <td><code>IntegerField</code></td>
+                <td>Integers</td>
+                <td><code>IntegerField()</code></td>
+            </tr>
+            <tr>
+                <td><code>DateTimeField</code></td>
+                <td>Date and time values</td>
+                <td><code>DateTimeField(auto_now_add=True)</code></td>
+            </tr>
+            <tr>
+                <td><code>BooleanField</code></td>
+                <td>True/False</td>
+                <td><code>BooleanField(default=False)</code></td>
+            </tr>
+            <tr>
+                <td><code>ForeignKey</code></td>
+                <td>Many-to-one relationship</td>
+                <td><code>ForeignKey(User, on_delete=models.CASCADE)</code></td>
+            </tr>
+            <tr>
+                <td><code>FileField</code></td>
+                <td>File uploads</td>
+                <td><code>FileField(upload_to="uploads/")</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Adding Relationships Between Models</b></li>
+    <br/>
+    <ul>
+        <li>Django supports three common relational patterns:</li>
+        <ul>
+            <li><b>One-to-many</b> → <code>ForeignKey</code></li>
+            <li><b>Many-to-many</b> → <code>ManyToManyField</code></li>
+            <li><b>One-to-one</b> → <code>OneToOneField</code></li>
+        </ul>
+    </ul>
+
+<pre><code class="language-python line-numbers"># blog/models.py
+
+from django.db import models
+from django.contrib.auth.models import User
+
+class Comment(models.Model):
+    post = models.ForeignKey("Post", on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+</code></pre>
+
+    <ul>
+        <li><code>ForeignKey</code> links each comment to one post.</li>
+        <li><code>on_delete=models.CASCADE</code> ensures comments disappear when a post is deleted.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Useful Model Methods</b></li>
+    <br/>
+    <ul>
+        <li>You can add custom methods to models:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+
+    def __str__(self):
+        return self.title
+
+    def preview(self):
+        return self.body[:50] + "..."
+</code></pre>
+
+    <ul>
+        <li><code>__str__</code> improves admin display.</li>
+        <li><code>preview</code> returns a short snippet of the body.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Querying Models Using the ORM</b></li>
+    <br/>
+    <ul>
+        <li>Use the Django shell for experimenting:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py shell
+</code></pre>
+
+    <ul>
+        <li>Example operations:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from blog.models import Post
+
+# Create
+Post.objects.create(title="Hello", body="First post!")
+
+# Read
+Post.objects.all()
+
+# Filter
+Post.objects.filter(title__icontains="hello")
+
+# Order
+Post.objects.order_by("-created_at")
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Meta Options (Model Configuration)</b></li>
+    <br/>
+    <ul>
+        <li>The <code>Meta</code> class customizes model behavior.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Post(models.Model):
+    title = models.CharField(max_length=200)
+
+    class Meta:
+        ordering = ["-id"]
+        verbose_name = "Blog Post"
+        verbose_name_plural = "Blog Posts"
+</code></pre>
+
+    <ul>
+        <li><code>ordering</code> → default sort order</li>
+        <li><code>verbose_name</code> → human-friendly name in admin</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Registering Models in the Admin</b></li>
+    <br/>
+    <ul>
+        <li>To manage models via Django Admin, you must register them:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># blog/admin.py
+
+from django.contrib import admin
+from .models import Post, Comment
+
+admin.site.register(Post)
+admin.site.register(Comment)
+</code></pre>
+
     <br/><br/>
 
 </ol>
