@@ -171,6 +171,7 @@
         <li><a href="#vue-component-events">Component Events</a></li>
         <li><a href="#vue-component-v-model">Component v-model</a></li>
         <li><a href="#vue-fallthrough-attributes">Fallthrough Attributes</a></li>
+        <li><a href="#vue-lifecycle-hooks">Lifecycle Hooks</a></li>
     </ul>
 </nav>
 <hr/>
@@ -4771,6 +4772,318 @@ defineOptions({
             <tr>
                 <td>Multiple roots</td>
                 <td>Require manual placement of fallthrough attributes</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-lifecycle-hooks">Lifecycle Hooks in Vue (Composition API + TypeScript)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Every Vue component goes through a series of lifecycle stages:
+            <ul>
+                <li>creation</li>
+                <li>rendering</li>
+                <li>updating</li>
+                <li>unmounting</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Vue lets you run code at specific moments in this lifecycle, called <code>lifecycle hooks</code>.</li>
+        <br/>
+        <li>Each hook runs automatically at the correct phase.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Basic Example</b></li>
+    <br/>
+    <ul><li>Import the hook and write code inside it.</li></ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+import { onMounted, onUnmounted } from "vue"
+
+onMounted(() =&gt; {
+    console.log("Component mounted!")
+})
+
+onUnmounted(() =&gt; {
+    console.log("Component removed!")
+})
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Full List of Composition API Lifecycle Hooks</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Hook</th>
+                <th>When It Runs</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>onBeforeMount</code></td>
+                <td>Right before the component is mounted to the DOM</td>
+            </tr>
+            <tr>
+                <td><code>onMounted</code></td>
+                <td>After the component is mounted (DOM is available)</td>
+            </tr>
+            <tr>
+                <td><code>onBeforeUpdate</code></td>
+                <td>Before the component re-renders due to reactive changes</td>
+            </tr>
+            <tr>
+                <td><code>onUpdated</code></td>
+                <td>After the DOM is updated</td>
+            </tr>
+            <tr>
+                <td><code>onBeforeUnmount</code></td>
+                <td>Right before the component is removed</td>
+            </tr>
+            <tr>
+                <td><code>onUnmounted</code></td>
+                <td>After the component is removed from the DOM</td>
+            </tr>
+            <tr>
+                <td><code>onErrorCaptured</code></td>
+                <td>When an error occurs in a child component</td>
+            </tr>
+            <tr>
+                <td><code>onRenderTracked</code></td>
+                <td>Tracks reactive dependencies during render (debug only)</td>
+            </tr>
+            <tr>
+                <td><code>onRenderTriggered</code></td>
+                <td>Called when reactive dependencies cause re-render (debug only)</td>
+            </tr>
+            <tr>
+                <td><code>onActivated</code></td>
+                <td>When a component wrapped by &lt;KeepAlive&gt; becomes active</td>
+            </tr>
+            <tr>
+                <td><code>onDeactivated</code></td>
+                <td>When a kept-alive component is deactivated</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+
+    <li><b>onMounted()</b> — When DOM Is Available</li>
+    <br/>
+    <ul>
+        <li>Most commonly used hook.</li>
+        <li>Good for:
+            <ul>
+                <li>fetching API data</li>
+                <li>direct DOM access</li>
+                <li>starting timers</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">onMounted(() =&gt; {
+    console.log("Component ready!")
+})</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>onBeforeMount()</b> — Before Mounting</li>
+    <br/>
+    <ul>
+        <li>Runs right before component is added to the DOM.</li>
+        <li>Usually not needed unless debugging.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">onBeforeMount(() =&gt; {
+    console.log("About to mount...")
+})</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>onUpdated()</b> and <b>onBeforeUpdate()</b></li>
+    <br/>
+    <ul>
+        <li>Called when reactive data triggers a re-render.</li>
+        <li>Useful when working with:
+            <ul>
+                <li>scroll positions</li>
+                <li>DOM-based animations</li>
+                <li>manual DOM manipulation</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">onBeforeUpdate(() =&gt; {
+    console.log("DOM is about to update")
+})
+
+onUpdated(() =&gt; {
+    console.log("DOM updated")
+})
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>onUnmounted()</b> — Cleanup Logic</li>
+    <br/>
+    <ul>
+        <li>Used for cleanup:
+            <ul>
+                <li>event listeners</li>
+                <li>subscriptions</li>
+                <li>intervals</li>
+                <li>WebSocket connections</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">onUnmounted(() =&gt; {
+    console.log("Component destroyed")
+})</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Handling Errors with onErrorCaptured()</b></li>
+    <br/>
+    <ul>
+        <li>This hook catches errors from child components.</li>
+        <li>Useful for logging error messages or fallback UI.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">onErrorCaptured((err, instance, info) =&gt; {
+    console.error("Error:", err)
+    return false   // prevents further propagation
+})</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Debug Hooks: onRenderTracked() & onRenderTriggered()</b></li>
+    <br/>
+    <ul>
+        <li>Only for debugging reactivity.</li>
+        <li>Show which reactive values caused a re-render.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">onRenderTracked((event) =&gt; {
+    console.log("Tracked:", event)
+})
+
+onRenderTriggered((event) =&gt; {
+    console.log("Triggered:", event)
+})</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>KeepAlive Hooks: onActivated() & onDeactivated()</b></li>
+    <br/>
+    <ul>
+        <li>Used only when wrapping components in:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;KeepAlive&gt;
+    &lt;MyComponent /&gt;
+&lt;/KeepAlive&gt;</code></pre>
+
+    <ul>
+        <li><code>onActivated()</code>: component appears again</li>
+        <li><code>onDeactivated()</code>: component is hidden but preserved</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">onActivated(() =&gt; console.log("Activated"))
+onDeactivated(() =&gt; console.log("Deactivated"))</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Lifecycle Hooks with TypeScript</b></li>
+    <br/>
+    <ul>
+        <li>Hooks automatically get full type safety.</li>
+        <li>No special typing required.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">onMounted((): void =&gt; {
+    console.log("Typed hook example")
+})</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Hook</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>onMounted</code></td>
+                <td>Run code after initial render (DOM ready)</td>
+            </tr>
+            <tr>
+                <td><code>onUnmounted</code></td>
+                <td>Cleanup when component is removed</td>
+            </tr>
+            <tr>
+                <td><code>onUpdated</code></td>
+                <td>Run code after DOM updates</td>
+            </tr>
+            <tr>
+                <td><code>onBeforeMount</code></td>
+                <td>Before initial DOM insertion</td>
+            </tr>
+            <tr>
+                <td><code>onBeforeUpdate</code></td>
+                <td>Before DOM updates</td>
+            </tr>
+            <tr>
+                <td><code>onErrorCaptured</code></td>
+                <td>Error handling from descendants</td>
+            </tr>
+            <tr>
+                <td><code>onActivated / onDeactivated</code></td>
+                <td>Hooks for &lt;KeepAlive&gt; components</td>
             </tr>
         </tbody>
     </table>
