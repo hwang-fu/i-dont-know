@@ -173,6 +173,7 @@
         <li><a href="#django-models-meta">Understanding the <code>class Meta</code> Options in Django <code>models.Model</code></a></li>
         <li><a href="#django-models-tablespaces">Tablespaces in Django Models</a></li>
         <li><a href="#django-db-access-optimization">Database Access Optimization</a></li>
+        <li><a href="#django-db-instrumentation">Database Instrumentation</a></li>
     </ul>
 </nav>
 <hr/>
@@ -6393,7 +6394,302 @@ cursor.execute("SELECT COUNT(*) FROM app_table")
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-db-instrumentation">Database Instrumentation in Django</h3>
+<ol>
 
+    <li><b>What Is Database Instrumentation?</b></li>
+    <br/>
+    <ul>
+        <li><u>Database instrumentation</u> means collecting detailed information about how your Django application interacts with the database.</li>
+        <br/>
+        <li>It includes:
+            <ul>
+                <li>logging every database query</li>
+                <li>measuring execution time</li>
+                <li>tracking slow queries</li>
+                <li>monitoring connections and transactions</li>
+                <li>debugging ORM behavior</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The purpose is to <u>analyze, debug, and optimize</u> database usage.</li>
+        <br/>
+        <li>Instrumentation is essential when:
+            <ul>
+                <li>your application grows</li>
+                <li>performance becomes important</li>
+                <li>you suspect inefficient ORM calls</li>
+                <li>you need insight into query patterns</li>
+                <li>you want to detect N+1 problems</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>The Building Block: </b><code>django.db.connection.queries</code></li>
+    <br/>
+    <ul>
+        <li>Django stores executed queries when <code>DEBUG = True</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from django.db import connection
+
+print(connection.queries)
+</code></pre>
+
+    <ul>
+        <li>The output is a list of dictionaries like:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">[
+    {
+        "sql": "SELECT ...",
+        "time": "0.001",
+    },
+]
+</code></pre>
+
+    <ul>
+        <li>Useful for inspecting ORM behavior.</li>
+        <li>Only works in <u>DEBUG mode</u>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Measuring Query Time in Views</b></li>
+    <br/>
+    <ul>
+        <li>You can measure the cost of a code block:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from django.db import connection, reset_queries
+import time
+
+def view(request):
+    reset_queries()
+    start = time.time()
+
+    # Your ORM logic here
+    users = User.objects.select_related("profile").all()
+
+    total_time = time.time() - start
+    print("Queries:", len(connection.queries))
+    print("Time:", total_time)
+
+    return HttpResponse("OK")
+</code></pre>
+
+    <ul>
+        <li>This is a simple form of instrumentation suitable for debugging locally.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Using</b> <code>django-debug-toolbar</code> <b>for Query Profiling</b></li>
+    <br/>
+    <ul>
+        <li>One of the most powerful instrumentation tools.</li>
+        <li>Install:</li>
+<pre><code class="language-bash line-numbers">python3 -m pip install django-debug-toolbar
+</code></pre>
+    </ul>
+
+    <ul>
+        <li>It shows:
+            <ul>
+                <li>Total number of queries per page</li>
+                <li>SQL text for each query</li>
+                <li>Execution time</li>
+                <li>Duplicated queries</li>
+                <li>N+1 detection</li>
+                <li>Stack trace for each ORM call</li>
+            </ul>
+        </li>
+        <li>It is an essential tool for database instrumentation during development.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Using Logging to Capture SQL Queries</b></li>
+    <br/>
+    <ul>
+        <li>You can log all queries using Django’s built-in logging system.</li>
+        <li>In <code>settings.py</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">LOGGING = {
+    "version": 1,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+        },
+    },
+}
+</code></pre>
+
+    <ul>
+        <li>This prints every executed SQL query to your console.</li>
+        <li>You can instrument production behavior by redirecting to log files.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Using</b> <code>QuerySet.explain()</code> <b>to Analyze SQL Execution Plans</b></li>
+
+    <br/>
+    <ul>
+        <li>Modern Django versions let you inspect the database’s execution plan:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">qs = User.objects.filter(email__icontains="gmail.com")
+print(qs.explain())
+</code></pre>
+
+    <ul>
+        <li>The output depends on the database (PostgreSQL, MySQL, etc.).</li>
+        <li>Use this to detect:
+            <ul>
+                <li>missing indexes</li>
+                <li>full table scans</li>
+                <li>bad join strategies</li>
+                <li>sort vs index usage</li>
+            </ul>
+        </li>
+        <li>This is <b>critical for optimizing slow queries</b>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Tracking Connection Usage</b></li>
+
+<pre><code class="language-python line-numbers">from django.db import connection
+
+print("Connection open:", connection.connection is not None)
+print("In transaction:", connection.in_atomic_block)
+</code></pre>
+
+    <ul>
+        <li>Useful for debugging transaction behavior.</li>
+        <li>When using multiple databases, you can inspect:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from django.db import connections
+
+print(connections["default"].queries)
+print(connections["analytics"].queries)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Database-Level Monitoring Tools</b></li>
+    <ul>
+        <li>For production systems, database-native tools provide deeper instrumentation:</li>
+        <ul>
+            <li><b>PostgreSQL</b>: pg_stat_statements</li>
+            <li><b>MySQL</b>: performance_schema</li>
+            <li><b>Oracle</b>: AWR, STATSPACK</li>
+        </ul>
+        <li>Django queries automatically show up in these tools.</li>
+        <li>Examples:
+            <ul>
+                <li>Most frequent queries</li>
+                <li>Slowest queries</li>
+                <li>Query cache hit ratios</li>
+                <li>Full-table scans</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Instrumenting ORM Internals With Signals</b></li>
+    <ul>
+        <li>Django provides signals for tracking model lifecycle:</li>
+        <ul>
+            <li><code>pre_save</code></li>
+            <li><code>post_save</code></li>
+            <li><code>pre_delete</code></li>
+            <li><code>post_delete</code></li>
+            <li><code>pre_migrate</code></li>
+            <li><code>post_migrate</code></li>
+        </ul>
+        <li>You can instrument database changes globally:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save)
+def log_save(sender, instance, created, **kwargs):
+    if created:
+        print(f"Created row in table: {sender.__name__}")
+    else:
+        print(f"Updated row in table: {sender.__name__}")
+</code></pre>
+
+    <ul>
+        <li>Useful for auditing or debugging behavior.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Instrumenting Transactions</b></li>
+<pre><code class="language-python line-numbers">from django.db import transaction
+
+with transaction.atomic():
+    print("In transaction:", connection.in_atomic_block)
+</code></pre>
+
+    <ul>
+        <li>Useful for verifying nested transactions and savepoints.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Middleware for Query Profiling</b></li>
+    <br/>
+    <ul>
+        <li>You can instrument DB activity across each request:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from django.db import connection
+
+class QueryCountMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        num_before = len(connection.queries)
+        response = self.get_response(request)
+        num_after = len(connection.queries)
+        print("Queries this request:", num_after - num_before)
+        return response
+</code></pre>
+
+    <ul>
+        <li>This reports query load per page.</li>
+    </ul>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
