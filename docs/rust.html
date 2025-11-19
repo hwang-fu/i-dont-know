@@ -176,6 +176,7 @@
         <li><a href="#rust-custom-attributes-beginner">Defining Custom Attributes (Beginners Level)</a></li>
         <li><a href="#rust-dead-code">The <code>dead_code</code> Attribute</a></li>
         <li><a href="#rust-cfg">The <code>cfg</code> Attribute</a></li>
+        <li><a href="#rust-generics-fn">Generics in Functions</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -8242,6 +8243,264 @@ use libc::printf;
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-generics-fn">Generics in Functions in Rust</h3>
+<ol>
+    <li>Rust enforces that generics remain <u>zero-cost abstractions</u>:
+        <ul>
+            <li>No runtime overhead</li>
+            <li>All type checks happen at compile time</li>
+            <li>Monomorphization generates optimized code per concrete type</li>
+        </ul>
+    </li>
+    <br/><br/>
+
+
+    <li><b>Basic Syntax of Generic Functions</b></li>
+    <br/>
+    <ul>
+        <li>Generics are introduced with <code>&lt;T&gt;</code> after a function name.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn identity&lt;T&gt;(value: T) -&gt; T {
+    value
+}
+
+fn main() {
+    let x = identity(10);
+    let y = identity("hello");
+    println!("{}", x);
+    println!("{}", y);
+}
+</code></pre>
+
+    <ul>
+        <li><code>T</code> is a generic type parameter.</li>
+        <li>Each call to <code>identity</code> infers the concrete type.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Multiple Generic Parameters</b></li>
+<pre><code class="language-rust line-numbers">fn pair&lt;A, B&gt;(a: A, b: B) -&gt; (A, B) {
+    (a, b)
+}
+
+fn main() {
+    let p = pair(10, "abc");
+    println!("{:?}", p);
+}
+</code></pre>
+
+    <ul>
+        <li>You can introduce as many type parameters as needed.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Generics With Constraints (Traits)</b></li>
+    <br/>
+    <ul>
+        <li>Often you want to restrict generic types so they can perform certain actions.</li>
+        <li>This is done using <u>trait bounds</u>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn print_value&lt;T: std::fmt::Display&gt;(value: T) {
+    println!("{}", value);
+}
+
+fn main() {
+    print_value(123);
+    print_value("hello");
+}
+</code></pre>
+
+    <ul>
+        <li>Here <code>T</code> must implement <code>Display</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Where Clauses</b></li>
+    <br/>
+    <ul>
+        <li>For readability, trait bounds can be separated into a <code>where</code> clause.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn compare&lt;T&gt;(a: T, b: T) -&gt; bool
+where
+    T: PartialEq,
+{
+    a == b
+}
+</code></pre>
+
+    <ul>
+        <li>Preferred when there are many trait bounds.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Generic Functions With Multiple Trait Bounds</b></li>
+<pre><code class="language-rust line-numbers">fn summary&lt;T: std::fmt::Debug + Clone&gt;(value: T) {
+    println!("{:?}", value.clone());
+}
+
+fn main() {
+    summary(vec![1, 2, 3]);
+}
+</code></pre>
+
+    <ul>
+        <li>Use <code>+</code> to combine trait requirements.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Generic Functions and Monomorphization</b></li>
+    <br/>
+    <ul>
+        <li>At compile time, Rust creates concrete versions of the function for each type used.</li>
+        <br/>
+        <li>This avoids runtime overhead:
+            <ul>
+                <li>No dynamic dispatch</li>
+                <li>No boxing</li>
+                <li>No type erasure</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn square&lt;T: std::ops::Mul&lt;Output = T&gt; + Copy&gt;(x: T) -&gt; T {
+    x * x
+}
+
+fn main() {
+    println!("{}", square(3));     // generates int version
+    println!("{}", square(3.14));  // generates float version
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Generics for Utility Functions</b></li>
+<pre><code class="language-rust line-numbers">fn swap&lt;T&gt;(a: &amp;mut T, b: &amp;mut T) {
+    let temp = std::mem::replace(a, std::mem::take(b));
+    std::mem::replace(b, temp);
+}
+
+fn main() {
+    let mut x = 1;
+    let mut y = 2;
+    swap(&amp;mut x, &amp;mut y);
+    println!("{} {}", x, y);
+}
+</code></pre>
+
+    <ul>
+        <li>Generics let you write reusable low-level utilities.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Generics vs Dynamic Dispatch (Comparison)</b></li>
+    <br/>
+    <ul>
+        <li>Generics: compile-time polymorphism</li>
+        <li>Trait objects: runtime polymorphism (<code>Box&lt;dyn Trait&gt;</code>)</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn print_any&lt;T: std::fmt::Debug&gt;(value: T) {
+    println!("{:?}", value);     // generics
+}
+
+fn print_any_dyn(value: &amp;dyn std::fmt::Debug) {
+    println!("{:?}", value);     // trait object
+}
+</code></pre>
+
+    <ul>
+        <li>Use generics when performance matters.</li>
+        <li>Use trait objects when you need dynamic behavior.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Common Patterns with Generic Functions</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Pattern</th>
+                <th>Example</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Simple generic</td>
+                <td><code>fn foo&lt;T&gt;(...)</code></td>
+                <td>Type-independent algorithm</td>
+            </tr>
+            <tr>
+                <td>Trait bound</td>
+                <td><code>T: Display</code></td>
+                <td>Restrict types</td>
+            </tr>
+            <tr>
+                <td>Multiple bounds</td>
+                <td><code>T: Debug + Clone</code></td>
+                <td>Advanced constraints</td>
+            </tr>
+            <tr>
+                <td>Where clause</td>
+                <td><code>where T: Ord</code></td>
+                <td>Readable bound style</td>
+            </tr>
+            <tr>
+                <td>Multiple generics</td>
+                <td><code>&lt;A, B&gt;</code></td>
+                <td>Multi-type functions</td>
+            </tr>
+            <tr>
+                <td>Monomorphization</td>
+                <td><code>fn foo&lt;T&gt;(x: T)</code></td>
+                <td>Zero-cost abstractions</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li>Generics let functions operate on many types while staying fully type-safe.</li>
+        <li>Trait bounds restrict what types are allowed.</li>
+        <li><code>where</code> clauses improve readability with many constraints.</li>
+        <li>Rust performs monomorphization for optimized, zero-cost code.</li>
+        <li>Use generics for reusable, clean, efficient algorithms.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
