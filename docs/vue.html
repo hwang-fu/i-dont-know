@@ -5,10 +5,7 @@
     <meta charset="utf-8" />
     <title>VUE</title>
 
-    <!-- Theme (pick any from Prism site) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.css">
-
-    <!-- Prism core + Lisp language -->
     <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-core.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js"
             data-prismjs-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs/components/"></script>
@@ -45,11 +42,11 @@
     }
 
     .nav-icon {
-        width: 18px;          /* adjust size here */
+        width: 18px;
         height: 18px;
-        object-fit: contain;  /* keep aspect ratio */
+        object-fit: contain;
         vertical-align: middle;
-        margin-left: 0.3rem;  /* small gap from text */
+        margin-left: 0.3rem;
     }
 
     table {
@@ -85,18 +82,6 @@
     .token.keyword {
         font-weight: 500;
     }
-    /*
-    .token.comment {
-        color: #888;
-    }
-    */
-
-    .red-underline {
-        text-decoration-line: underline;
-        text-decoration-color: red;
-        text-decoration-thickness: 2px; /* optional: make it a bit thicker */
-        text-underline-offset: 2px;     /* optional: move it slightly down */
-    }
 
     body {
         font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
@@ -118,7 +103,6 @@
         line-height: 1.4;
     }
 
-    /* Block code container */
     pre {
         margin: 1rem 0;
         padding: .8rem 1rem;
@@ -129,7 +113,6 @@
         tab-size: 4;                      /* adjust as needed */
     }
 
-    /* Code inside pre: remove extra padding/background from inline style */
     pre code {
         display: block;                   /* ensure full-width */
         padding: 0;                       /* pre handles padding */
@@ -178,6 +161,7 @@
         <li><a href="#vue-event-handling">Event Handling</a></li>
         <li><a href="#vue-form-input-bindings">Form Input Bindings</a></li>
         <li><a href="#vue-scoped-slots">Scoped Slots</a></li>
+        <li><a href="#vue-provide-inject">Provide / Inject</a></li>
     </ul>
 </nav>
 <hr/>
@@ -6900,6 +6884,303 @@ function remove(index: number) {
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-provide-inject">Provide / Inject in Vue (Composition API + TypeScript)</h3>
+<ol>
+
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li><code>provide</code> and <code>inject</code> allow components to share data <u>across the component tree</u> without passing props through every level.</li>
+        <br/>
+        <li><code>provide</code> is used in an ancestor component, <code>inject</code> is used in any descendant component (not necessarily a direct child).</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Basic Usage</b></li>
+    <br/>
+
+    <ul>
+        <li><b>Parent component (provider):</b> <code>Parent.vue</code></li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;template&gt;
+    &lt;div&gt;
+        &lt;h2&gt;Parent&lt;/h2&gt;
+        &lt;Child /&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { provide } from "vue"
+import Child from "./Child.vue"
+
+const message = "Hello from Parent"
+
+provide("msg", message)  // key = "msg"
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li><b>Child component (injector):</b> <code>Child.vue</code></li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Child.vue --&gt;
+&lt;template&gt;
+    &lt;p&gt;Injected: {{ msg }}&lt;/p&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { inject } from "vue"
+
+const msg = inject("msg")
+&lt;/script&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>If the key does not exist, injected value is <code>undefined</code>
+            (You can also provide a default value).</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const msg = inject("msg", "default value")
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Typed Provide / Inject Using Injection Keys</b></li>
+    <br/>
+    <ul>
+        <li>Using string keys has no type safety.</li>
+        <li>The recommended Vue 3 approach is using a <code>Symbol</code> as an injection key with TypeScript type inference.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// keys.ts
+import type { InjectionKey } from "vue"
+
+export const userKey: InjectionKey&lt;string&gt; = Symbol("userKey")
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;script setup lang="ts"&gt;
+import { provide } from "vue"
+import { userKey } from "./keys"
+
+provide(userKey, "Alice")
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Child.vue --&gt;
+&lt;script setup lang="ts"&gt;
+import { inject } from "vue"
+import { userKey } from "./keys"
+
+const user = inject(userKey)
+&lt;/script&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>user</code> is automatically typed as <code>string | undefined</code>
+            (Provide a default if needed) :</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const user = inject(userKey, "Guest")
+</code></pre>
+
+    <br/><br/>
+
+
+
+
+    <li><b>Providing Reactive Values</b></li>
+    <br/>
+    <ul>
+        <li>You can provide <code>ref()</code> or <code>reactive()</code> values to descendants.</li>
+        <li>They remain reactive even across component boundaries.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.vue --&gt;
+&lt;script setup lang="ts"&gt;
+import { ref, provide } from "vue"
+import { countKey } from "./keys"
+
+const count = ref(0)
+
+provide(countKey, count)
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Child.vue --&gt;
+&lt;script setup lang="ts"&gt;
+import { inject } from "vue"
+import { countKey } from "./keys"
+
+const count = inject(countKey)
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;button @click="count.value++"&gt;Increment&lt;/button&gt;
+    &lt;p&gt;Count: {{ count.value }}&lt;/p&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <ul>
+        <li>Because <code>count</code> is reactive in parent, updating it in child updates all components sharing it.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Providing Complex Objects</b></li>
+
+<pre><code class="language-ts line-numbers">&lt;!-- keys.ts --&gt;
+import type { InjectionKey } from "vue"
+
+export interface AuthContext {
+    user: string
+    login: (name: string) =&gt; void
+    logout: () =&gt; void
+}
+
+export const authKey: InjectionKey&lt;AuthContext&gt; = Symbol("authKey")
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li><b>Provider:</b> <code>AuthProvider.vue</code></li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script setup lang="ts"&gt;
+import { provide, ref } from "vue"
+import { authKey } from "./keys"
+
+const user = ref("Guest")
+
+function login(name: string) {
+    user.value = name
+}
+
+function logout() {
+    user.value = "Guest"
+}
+
+provide(authKey, { user, login, logout })
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;slot /&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li><b>Child consumer:</b> <code>UserPanel.vue</code></li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script setup lang="ts"&gt;
+import { inject } from "vue"
+import { authKey } from "./keys"
+
+const auth = inject(authKey)
+
+if (!auth) throw new Error("AuthProvider is missing")
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;p&gt;Current user: {{ auth.user }}&lt;/p&gt;
+    &lt;button @click="auth.login('Alice')"&gt;Login as Alice&lt;/button&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Default Values</b></li>
+    <br/>
+    <ul>
+        <li>You can give <code>inject()</code> a default value:
+            <ul>
+                <li>if the provider does not exist</li>
+                <li>or you want fallback behavior</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const config = inject(configKey, { theme: "light" })
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Concept</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>provide()</code></td>
+                <td>Defines shared data from an ancestor component</td>
+            </tr>
+            <tr>
+                <td><code>inject()</code></td>
+                <td>Consumes shared data in any descendant</td>
+            </tr>
+            <tr>
+                <td>TypeScript keys</td>
+                <td>Use <code>InjectionKey&lt;T&gt;</code> + Symbol for type-safe injection</td>
+            </tr>
+            <tr>
+                <td>Reactivity</td>
+                <td>Reactive values stay reactive across components</td>
+            </tr>
+            <tr>
+                <td>Use cases</td>
+                <td>Global config, services, shared stores, avoiding prop drilling</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
