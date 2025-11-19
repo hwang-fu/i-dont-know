@@ -160,6 +160,7 @@
         <li><a href="#django-models">Models</a></li>
         <li><a href="#django-manage-py"><code>manage.py</code></a></li>
         <li><a href="#django-settings-basic">Basic Settings</a></li>
+        <li><a href="#django-orm">Object–Relational Mapper (ORM)</a></li>
     </ul>
 </nav>
 <hr/>
@@ -1485,6 +1486,312 @@ USE_TZ = True
         <li>Django provides defaults, but nearly everything is customizable.</li>
         <li>These settings integrate deeply with Django’s ORM, admin, views, and security.</li>
     </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-orm">Object–Relational Mapper (ORM) in Django</h3>
+<ol>
+
+    <li><b>What Is the Django ORM?</b></li>
+    <br/>
+    <ul>
+        <li>The Django ORM is a powerful system that allows you to interact with databases using <u>Python classes</u> instead of writing SQL manually.</li>
+        <br/>
+        <li>ORM converts Python model operations into SQL queries automatically.</li>
+        <br/>
+        <li>Supported databases:
+            <ul>
+                <li>SQLite (default)</li>
+                <li>PostgreSQL</li>
+                <li>MySQL</li>
+                <li>MariaDB</li>
+                <li>Oracle</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Prerequisite: Virtual Environment &amp; Project Setup</b></li>
+    <br/>
+    <ul>
+        <li>Create and activate virtual environment:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install django
+</code></pre>
+
+    <ul>
+        <li>Create project and app:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m django startproject mysite
+cd mysite
+python3 -m django startapp blog
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Models and Tables</b></li>
+    <br/>
+    <ul>
+        <li>Define a model (maps to a database table):</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># blog/models.py
+
+from django.db import models
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+</code></pre>
+
+    <ul>
+        <li>Each attribute becomes a database column.</li>
+        <li>Django creates the SQL table automatically through migrations.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Migrations: Create the Database Schema</b></li>
+    <br/>
+    <ul>
+        <li>Generate migration scripts:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
+</code></pre>
+
+    <ul>
+        <li>Apply migrations:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py migrate
+</code></pre>
+
+    <ul>
+        <li>Your database now contains a <code>Post</code> table.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Creating Objects (INSERT)</b></li>
+    <br/>
+    <ul>
+        <li>Use the model's manager <code>objects</code> to create records:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from blog.models import Post
+
+Post.objects.create(title="Hello", body="First post")
+</code></pre>
+
+    <ul>
+        <li>This generates SQL like:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">INSERT INTO blog_post (title, body, created_at) VALUES (...);
+</code></pre>
+
+    <ul>
+        <li>But you do not write SQL — Django handles it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Querying Objects (SELECT)</b></li>
+    <br/>
+    <ul>
+        <li>Get all objects:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.all()
+</code></pre>
+
+    <ul>
+        <li>Filter using conditions:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.filter(title__icontains="hello")
+</code></pre>
+
+    <ul>
+        <li>Get a single object:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.get(id=1)
+</code></pre>
+
+    <ul>
+        <li>If no object is found, <code>DoesNotExist</code> error is raised.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Common ORM Lookups</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Lookup</th>
+                <th>Example</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>exact</code></td>
+                <td><code>title__exact="Hello"</code></td>
+                <td>Exact match</td>
+            </tr>
+            <tr>
+                <td><code>icontains</code></td>
+                <td><code>title__icontains="hello"</code></td>
+                <td>Case-insensitive substring match</td>
+            </tr>
+            <tr>
+                <td><code>gt</code></td>
+                <td><code>id__gt=3</code></td>
+                <td>Greater than</td>
+            </tr>
+            <tr>
+                <td><code>lt</code></td>
+                <td><code>id__lt=10</code></td>
+                <td>Less than</td>
+            </tr>
+            <tr>
+                <td><code>in</code></td>
+                <td><code>id__in=[1, 2, 3]</code></td>
+                <td>Filter within a list</td>
+            </tr>
+            <tr>
+                <td><code>startswith</code></td>
+                <td><code>title__startswith="Django"</code></td>
+                <td>Prefix match</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Updating Objects (UPDATE)</b></li>
+    <br/>
+    <ul>
+        <li>Fetch an object, modify it, then save:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
+post.title = "Updated title"
+post.save()
+</code></pre>
+
+    <ul>
+        <li>This triggers an <code>UPDATE</code> query.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Deleting Objects (DELETE)</b></li>
+    <br/>
+    <ul>
+        <li>Delete a single object:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
+post.delete()
+</code></pre>
+
+    <ul>
+        <li>Delete multiple objects:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.filter(title__icontains="old").delete()
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>ORM and Relationships</b></li>
+    <br/>
+    <ul>
+        <li>Django ORM supports relationships via fields:</li>
+        <ul>
+            <li><code>ForeignKey</code> → one-to-many</li>
+            <li><code>ManyToManyField</code> → many-to-many</li>
+            <li><code>OneToOneField</code> → one-to-one</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Comment(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    text = models.TextField()
+</code></pre>
+
+    <ul>
+        <li>Query related objects:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
+comments = post.comment_set.all()
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Advanced ORM Features</b></li>
+    <br/>
+    <ul>
+        <li>Django ORM also supports:
+            <ul>
+                <li><b>aggregation</b> (Sum, Avg, Min, Max)</li>
+                <li><b>annotations</b></li>
+                <li><b>prefetch_related</b> and <b>select_related</b> for performance</li>
+                <li><b>raw SQL</b> when needed</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from django.db.models import Count
+
+Post.objects.annotate(comment_count=Count("comment"))
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Django Shell for ORM Testing</b></li>
+    <br/>
+    <ul>
+        <li>Highly recommended for experimentation:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py shell
+</code></pre>
+
+<pre><code class="language-python line-numbers">from blog.models import Post
+
+Post.objects.all()
+Post.objects.create(title="New", body="Hello ORM!")
+</code></pre>
+
     <br/><br/>
 
 </ol>
