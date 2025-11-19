@@ -158,6 +158,7 @@
     <ul style="line-height: 1.8;">
         <li><a href="#django-intro">Introduction</a></li>
         <li><a href="#django-models">Models</a></li>
+        <li><a href="#django-manage-py"><code>manage.py</code></a></li>
     </ul>
 </nav>
 <hr/>
@@ -828,7 +829,331 @@ admin.site.register(Comment)
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-manage-py"><code>manage.py</code> in Django</h3>
+<ol>
 
+    <li><b>What Is <code>manage.py</code>?</b></li>
+    <br/>
+    <ul>
+        <li><code>manage.py</code> is a helper script created for every Django project.</li>
+        <br/>
+        <li>It is the main entry point to run project-related commands during development.</li>
+        <br/>
+        <li>It wraps Django&#39;s command-line utility and automatically:
+            <ul>
+                <li>sets the correct <code>DJANGO_SETTINGS_MODULE</code> for your project</li>
+                <li>ensures commands run in the context of the current project</li>
+            </ul>
+        </li>
+        <br/>
+        <li>When you see commands like <code>python3 manage.py ...</code>, they all start from this script.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Creating a Project and Seeing <code>manage.py</code></b></li>
+    <br/>
+    <ul>
+        <li>Assuming you work inside a virtual environment:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install django
+
+python3 -m django startproject mysite
+cd mysite
+</code></pre>
+
+    <ul>
+        <li>Project structure:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">mysite/
+├── manage.py
+└── mysite/
+    ├── __init__.py
+    ├── asgi.py
+    ├── settings.py
+    ├── urls.py
+    └── wsgi.py
+</code></pre>
+
+    <ul>
+        <li><code>manage.py</code> sits at the <u>project root</u>, next to your app folders.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How</b> <code>manage.py</code> <b>Works Internally?</b></li>
+    <br/>
+    <ul>
+        <li>A typical <code>manage.py</code> file looks like this (simplified):</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">#!/usr/bin/env python3
+import os
+import sys
+
+def main():
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mysite.settings")
+    from django.core.management import execute_from_command_line
+    execute_from_command_line(sys.argv)
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+
+    <ul>
+        <li><code>os.environ.setdefault(...)</code> sets which settings module to use.</li>
+        <li><code>execute_from_command_line(sys.argv)</code> dispatches commands like <code>runserver</code>, <code>migrate</code>, etc.</li>
+        <li>You normally never modify <code>manage.py</code> by hand.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Usage Pattern</b></li>
+    <br/>
+    <ul>
+        <li>All core development actions go through <code>manage.py</code>:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers"># Always inside the virtual environment
+source .venv/bin/activate
+
+# Basic pattern:
+python3 manage.py &lt;command&gt; [options]
+</code></pre>
+
+    <ul>
+        <li>Examples:</li>
+        <ul>
+            <li><code>python3 manage.py runserver</code></li>
+            <li><code>python3 manage.py makemigrations</code></li>
+            <li><code>python3 manage.py migrate</code></li>
+            <li><code>python3 manage.py createsuperuser</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Frequently Used manage.py Commands</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Command</th>
+                <th>Usage</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>runserver</code></td>
+                <td><code>python3 manage.py runserver</code></td>
+                <td>Start the development server.</td>
+            </tr>
+            <tr>
+                <td><code>startapp</code></td>
+                <td><code>python3 manage.py startapp blog</code></td>
+                <td>Create a new Django app inside the project.</td>
+            </tr>
+            <tr>
+                <td><code>makemigrations</code></td>
+                <td><code>python3 manage.py makemigrations</code></td>
+                <td>Generate migration files from model changes.</td>
+            </tr>
+            <tr>
+                <td><code>migrate</code></td>
+                <td><code>python3 manage.py migrate</code></td>
+                <td>Apply migrations to the database.</td>
+            </tr>
+            <tr>
+                <td><code>createsuperuser</code></td>
+                <td><code>python3 manage.py createsuperuser</code></td>
+                <td>Create an admin user for the Django admin site.</td>
+            </tr>
+            <tr>
+                <td><code>shell</code></td>
+                <td><code>python3 manage.py shell</code></td>
+                <td>Open a Python shell with Django loaded.</td>
+            </tr>
+            <tr>
+                <td><code>test</code></td>
+                <td><code>python3 manage.py test</code></td>
+                <td>Run your test suite.</td>
+            </tr>
+            <tr>
+                <td><code>showmigrations</code></td>
+                <td><code>python3 manage.py showmigrations</code></td>
+                <td>List migrations and their applied status.</td>
+            </tr>
+            <tr>
+                <td><code>sqlmigrate</code></td>
+                <td><code>python3 manage.py sqlmigrate app_name 0001</code></td>
+                <td>Show the raw SQL for a migration.</td>
+            </tr>
+            <tr>
+                <td><code>check</code></td>
+                <td><code>python3 manage.py check</code></td>
+                <td>Run Django&#39;s system checks for common configuration issues.</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li><b>Running the Development Server</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>runserver</code> to start a lightweight development server:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py runserver
+</code></pre>
+
+    <ul>
+        <li>Specify a port if needed:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py runserver 8080
+</code></pre>
+
+    <ul>
+        <li>By default, the server binds to <code>127.0.0.1:8000</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Creating Apps with manage.py</b></li>
+    <br/>
+    <ul>
+        <li>Inside your project, you create apps via <code>startapp</code>:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py startapp blog
+</code></pre>
+
+    <ul>
+        <li>This generates an app structure:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">blog/
+├── admin.py
+├── apps.py
+├── models.py
+├── tests.py
+├── views.py
+└── migrations/
+</code></pre>
+
+    <ul>
+        <li>Then you add <code>"blog"</code> to <code>INSTALLED_APPS</code> in <code>mysite/settings.py</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Managing Database Schema: makemigrations and migrate</b></li>
+    <br/>
+    <ul>
+        <li>Whenever you change models, you must create and apply migrations:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers"># Generate migration files
+python3 manage.py makemigrations
+
+# Apply them to the database
+python3 manage.py migrate
+</code></pre>
+
+    <ul>
+        <li><code>makemigrations</code> looks at <code>models.py</code> and generates migration scripts.</li>
+        <li><code>migrate</code> executes those scripts and updates the actual database schema.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Admin User and Auth Management</b></li>
+    <br/>
+    <ul>
+        <li>To use Django&#39;s admin interface, you need a superuser:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py createsuperuser
+</code></pre>
+
+    <ul>
+        <li>You will be prompted for:
+            <ul>
+                <li>username</li>
+                <li>email</li>
+                <li>password (twice)</li>
+            </ul>
+        </li>
+        <li>After that, you can log in at <code>/admin/</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Django Shell for Interactive Work</b></li>
+    <br/>
+    <ul>
+        <li>The <code>shell</code> command opens a Python shell where Django is already configured.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py shell
+</code></pre>
+
+    <ul>
+        <li>Example usage:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from blog.models import Post
+
+Post.objects.create(title="Hello", body="From the shell")
+print(Post.objects.all())
+</code></pre>
+
+    <ul>
+        <li>This is very convenient for quick experiments and debugging.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>manage.py vs django-admin</b></li>
+    <br/>
+    <ul>
+        <li>Django also provides a global command: <code>django-admin</code>.</li>
+        <br/>
+        <li>Difference:
+            <ul>
+                <li><code>django-admin</code>: Does not automatically know which project settings to use.</li>
+                <li><code>manage.py</code>: Tied to a specific project and sets <code>DJANGO_SETTINGS_MODULE</code> for you.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>In practice:
+            <ul>
+                <li>Use <code>python3 manage.py ...</code> inside a project directory.</li>
+                <li>Use <code>django-admin</code> mainly to create new projects, or when you know what you are doing.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li><code>manage.py</code> is the project-specific command-line entry point in Django.</li>
+        <li>It loads the correct settings and dispatches commands like <code>runserver</code>, <code>migrate</code>, <code>startapp</code>, and more.</li>
+        <li>You should run it with <code>python3</code> from inside an active virtual environment.</li>
+        <li>Most of your everyday Django tasks go through <code>python3 manage.py &lt;command&gt;</code>.</li>
+        <li>Once you understand <code>manage.py</code>, controlling a Django project from the terminal becomes straightforward and powerful.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
