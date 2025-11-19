@@ -157,13 +157,14 @@
     <h2> <img src="resources/django.png" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ul style="line-height: 1.8;">
         <li><a href="#django-intro">Introduction</a></li>
-        <li><a href="#django-models">Models</a></li>
+        <li><a href="#django-project-vs-app">Project vs App</a></li>
         <li><a href="#django-manage-py"><code>manage.py</code></a></li>
         <li><a href="#django-settings-basic">Basic Settings</a></li>
-        <li><a href="#django-orm">Object–Relational Mapper (ORM)</a></li>
-        <li><a href="#django-project-vs-app">Project vs App</a></li>
         <li><a href="#django-urls-py"><code>urls.py</code></a></li>
         <li><a href="#django-wsgi-py"><code>wsgi.py</code></a></li>
+        <li><a href="#django-asgi-py"><code>asgi.py</code></a></li>
+        <li><a href="#django-models">Models</a></li>
+        <li><a href="#django-orm">Object–Relational Mapper (ORM)</a></li>
     </ul>
 </nav>
 <hr/>
@@ -543,158 +544,133 @@ latest = Post.objects.filter(title__icontains="hello")
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="django-models">Models in Django</h3>
+<h3 id="django-project-vs-app">Project vs App in Django</h3>
 <ol>
 
-    <li><b>What Are Models?</b></li>
-    <br/>
-    <ul>
-        <li>A Django <code>model</code> is a Python class that represents a database table.</li>
-        <br/>
-        <li>Each class attribute in the <code>model</code> corresponds to a column in the table.</li>
-        <br/>
-        <li>Django uses its built-in <u>Object–Relational Mapper (ORM)</u> to convert model classes into SQL queries.</li>
-        <br/>
-        <li>Models are defined inside the <code>models.py</code> of each app.</li>
-        <br/>
-        <li>You do not write SQL — Django auto-generates it during migration steps.</li>
-    </ul>
+    <li>Beginners are often confused by the difference between <b>Django Project</b> and <b>Django App</b></li>
     <br/><br/>
 
 
-    <li><b>Typical Workflow With Models</b></li>
+    <li><b>What Is a Django Project?</b></li>
     <br/>
     <ul>
-        <li>Create and activate a virtual environment:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 -m venv .venv
-source .venv/bin/activate
-</code></pre>
-
-    <ul>
-        <li>Install Django:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 -m pip install django
-</code></pre>
-
-    <ul>
-        <li>Create project and app:</li>
+        <li>A <b>Django project</b> is the <u>entire web application</u> that you are building.</li>
+        <li>It contains:
+            <ul>
+                <li>global configuration</li>
+                <li>settings</li>
+                <li>URL routing</li>
+                <li>WSGI/ASGI configuration</li>
+                <li>one or many Django apps</li>
+            </ul>
+        </li>
+        <li>You create a project using:</li>
     </ul>
 
 <pre><code class="language-bash line-numbers">python3 -m django startproject mysite
-cd mysite
-python3 -m django startapp blog
 </code></pre>
 
     <ul>
-        <li>Edit <code>models.py</code>, then run:</li>
+        <li>Project structure looks like this:</li>
     </ul>
 
-<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
-python3 manage.py migrate
+<pre><code class="language-bash line-numbers">mysite/
+├── manage.py
+└── mysite/
+    ├── __init__.py
+    ├── settings.py      # Global Django settings (DEBUG, DB, middleware, etc.)
+    ├── urls.py          # Root URL dispatcher
+    ├── wsgi.py          # For production servers
+    └── asgi.py          # For async servers
 </code></pre>
 
     <ul>
-        <li>You now have database tables ready for use.</li>
+        <li>The project is the container for your whole website.</li>
+        <li>It does NOT contain business logic by itself — apps do.</li>
     </ul>
     <br/><br/>
 
 
-    <li><b>Defining Your First Model</b></li>
+    <li><b>What Is a Django App?</b></li>
     <br/>
     <ul>
-        <li>All models inherit from <code>django.db.models.Model</code>.</li>
-        <li>Field types define how data is stored in the database.</li>
+        <li>A <b>Django app</b> is a <u>modular component</u> that provides one specific piece of functionality.</li>
+        <li>Examples of apps:
+            <ul>
+                <li><code>blog</code></li>
+                <li><code>users</code></li>
+                <li><code>payments</code></li>
+                <li><code>dashboard</code></li>
+            </ul>
+        </li>
+        <li>You create an app using:</li>
     </ul>
 
-<pre><code class="language-python line-numbers"># blog/models.py
-
-from django.db import models
-
-class Post(models.Model):
-    title = models.CharField(max_length=200)
-    body = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
+<pre><code class="language-bash line-numbers">python3 manage.py startapp blog
 </code></pre>
 
     <ul>
-        <li><code>CharField</code>: short strings</li>
-        <li><code>TextField</code>: long text</li>
-        <li><code>DateTimeField(auto_now_add=True)</code>: timestamp when created</li>
+        <li>App structure looks like:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">blog/
+├── admin.py        # Admin interface setup
+├── apps.py         # App configuration class
+├── models.py       # Database models
+├── views.py        # Request handlers (Controller logic)
+├── tests.py        # Unit tests
+└── migrations/     # Database migrations
+</code></pre>
+
+    <ul>
+        <li>An app contains <u>actual features</u> of your site.</li>
+        <li>A single project can contain many apps.</li>
+        <li>You can reuse apps between projects.</li>
     </ul>
     <br/><br/>
 
 
-    <li><b>Applying Migrations</b></li>
-    <br/>
-    <ul>
-        <li>After modifying models, create migration scripts:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
-</code></pre>
-
-    <ul>
-        <li>Apply them and update the database schema:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 manage.py migrate
-</code></pre>
-
-    <ul>
-        <li>Django now creates the corresponding SQL tables.</li>
-    </ul>
-    <br/><br/>
-
-
-    <li><b>Common Django Model Fields</b></li>
+    <li><b>Project vs App — Conceptual Difference</b></li>
     <br/>
 
     <table>
         <thead>
             <tr>
-                <th>Field Type</th>
-                <th>Description</th>
-                <th>Example</th>
+                <th>Aspect</th>
+                <th>Django Project</th>
+                <th>Django App</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td><code>CharField</code></td>
-                <td>Short strings</td>
-                <td><code>CharField(max_length=100)</code></td>
+                <td>Purpose</td>
+                <td>Overall configuration and container</td>
+                <td>Specific feature or module</td>
             </tr>
             <tr>
-                <td><code>TextField</code></td>
-                <td>Large text</td>
-                <td><code>TextField()</code></td>
+                <td>Number</td>
+                <td>One per website</td>
+                <td>Many per project</td>
             </tr>
             <tr>
-                <td><code>IntegerField</code></td>
-                <td>Integers</td>
-                <td><code>IntegerField()</code></td>
+                <td>Reusable?</td>
+                <td>No</td>
+                <td>Yes, apps can be placed on PyPI</td>
             </tr>
             <tr>
-                <td><code>DateTimeField</code></td>
-                <td>Date and time values</td>
-                <td><code>DateTimeField(auto_now_add=True)</code></td>
+                <td>Created by</td>
+                <td><code>startproject</code></td>
+                <td><code>startapp</code></td>
             </tr>
             <tr>
-                <td><code>BooleanField</code></td>
-                <td>True/False</td>
-                <td><code>BooleanField(default=False)</code></td>
+                <td>Main Files</td>
+                <td><code>settings.py</code>, <code>urls.py</code></td>
+                <td><code>models.py</code>, <code>views.py</code>, <code>admin.py</code></td>
             </tr>
             <tr>
-                <td><code>ForeignKey</code></td>
-                <td>Many-to-one relationship</td>
-                <td><code>ForeignKey(User, on_delete=models.CASCADE)</code></td>
-            </tr>
-            <tr>
-                <td><code>FileField</code></td>
-                <td>File uploads</td>
-                <td><code>FileField(upload_to="uploads/")</code></td>
+                <td>Scope</td>
+                <td>Entire website</td>
+                <td>Narrow, focused feature</td>
             </tr>
         </tbody>
     </table>
@@ -702,128 +678,103 @@ class Post(models.Model):
     <br/><br/>
 
 
-    <li><b>Adding Relationships Between Models</b></li>
+    <li><b>When Should You Create a New App?</b></li>
     <br/>
     <ul>
-        <li>Django supports three common relational patterns:</li>
+        <li>Create a new app when you add a <u>new feature</u> that:
+            <ul>
+                <li>has its own set of models</li>
+                <li>has its own views and logic</li>
+                <li>could logically be reused elsewhere</li>
+                <li>is independent of other parts of the project</li>
+            </ul>
+        </li>
+    </ul>
+
+    <ul>
+        <li>Examples:</li>
         <ul>
-            <li><b>One-to-many</b> → <code>ForeignKey</code></li>
-            <li><b>Many-to-many</b> → <code>ManyToManyField</code></li>
-            <li><b>One-to-one</b> → <code>OneToOneField</code></li>
+            <li>Add authentication → create <code>accounts</code> app</li>
+            <li>Add blog → create <code>blog</code> app</li>
+            <li>Add payment system → create <code>payments</code> app</li>
         </ul>
     </ul>
 
-<pre><code class="language-python line-numbers"># blog/models.py
-
-from django.db import models
-from django.contrib.auth.models import User
-
-class Comment(models.Model):
-    post = models.ForeignKey("Post", on_delete=models.CASCADE)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
-    text = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-</code></pre>
-
     <ul>
-        <li><code>ForeignKey</code> links each comment to one post.</li>
-        <li><code>on_delete=models.CASCADE</code> ensures comments disappear when a post is deleted.</li>
+        <li>Do NOT create an app for:</li>
+        <ul>
+            <li>small isolated functions</li>
+            <li>just one template</li>
+            <li>configuration-only changes</li>
+        </ul>
     </ul>
     <br/><br/>
 
 
-    <li><b>Useful Model Methods</b></li>
+    <li><b>How an App Integrates Into a Project</b></li>
     <br/>
     <ul>
-        <li>You can add custom methods to models:</li>
+        <li>After creating an app, you must add it to <code>INSTALLED_APPS</code>:</li>
     </ul>
 
-<pre><code class="language-python line-numbers">class Post(models.Model):
-    title = models.CharField(max_length=200)
-    body = models.TextField()
+<pre><code class="language-python line-numbers"># mysite/settings.py
 
-    def __str__(self):
-        return self.title
-
-    def preview(self):
-        return self.body[:50] + "..."
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "blog",   # your new app
+]
 </code></pre>
 
     <ul>
-        <li><code>__str__</code> improves admin display.</li>
-        <li><code>preview</code> returns a short snippet of the body.</li>
+        <li>This tells Django to load:
+            <ul>
+                <li>models</li>
+                <li>migrations</li>
+                <li>signals</li>
+                <li>admin configuration</li>
+            </ul>
+        </li>
     </ul>
-    <br/><br/>
-
-
-    <li><b>Querying Models Using the ORM</b></li>
-    <br/>
-    <ul>
-        <li>Use the Django shell for experimenting:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 manage.py shell
-</code></pre>
-
-    <ul>
-        <li>Example operations:</li>
-    </ul>
-
-<pre><code class="language-python line-numbers">from blog.models import Post
-
-# Create
-Post.objects.create(title="Hello", body="First post!")
-
-# Read
-Post.objects.all()
-
-# Filter
-Post.objects.filter(title__icontains="hello")
-
-# Order
-Post.objects.order_by("-created_at")
-</code></pre>
 
     <br/><br/>
 
 
-    <li><b>Meta Options (Model Configuration)</b></li>
+    <li><b>Example: One Project, Multiple Apps</b></li>
     <br/>
     <ul>
-        <li>The <code>Meta</code> class customizes model behavior.</li>
+        <li>A real-world project (e.g., Instagram clone) might contain:</li>
     </ul>
 
-<pre><code class="language-python line-numbers">class Post(models.Model):
-    title = models.CharField(max_length=200)
-
-    class Meta:
-        ordering = ["-id"]
-        verbose_name = "Blog Post"
-        verbose_name_plural = "Blog Posts"
+<pre><code class="language-bash line-numbers">mysite/
+├── accounts/      # login, signup, profiles
+├── posts/         # uploading + viewing posts
+├── comments/      # comments on posts
+├── notifications/ # user notifications
+└── messages/      # direct messaging
 </code></pre>
 
     <ul>
-        <li><code>ordering</code> → default sort order</li>
-        <li><code>verbose_name</code> → human-friendly name in admin</li>
+        <li>Each app focuses on a single, reusable part of the system.</li>
+        <li>Apps communicate via imports and relationships.</li>
     </ul>
+
     <br/><br/>
 
 
-    <li><b>Registering Models in the Admin</b></li>
+    <li><b>Summary</b></li>
     <br/>
     <ul>
-        <li>To manage models via Django Admin, you must register them:</li>
+        <li>A <b>Django project</b> is the entire website — global configuration, settings, URLs, WSGI/ASGI.</li>
+        <li>A <b>Django app</b> is a single feature inside the project — models, views, templates, logic.</li>
+        <li>Projects contain many apps; apps are reusable; projects are not.</li>
+        <li>You create projects using <code>startproject</code> and apps using <code>startapp</code>.</li>
+        <li>Apps must be added to <code>INSTALLED_APPS</code> to work.</li>
     </ul>
-
-<pre><code class="language-python line-numbers"># blog/admin.py
-
-from django.contrib import admin
-from .models import Post, Comment
-
-admin.site.register(Post)
-admin.site.register(Comment)
-</code></pre>
-
     <br/><br/>
 
 </ol>
@@ -1499,553 +1450,6 @@ USE_TZ = True
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="django-orm">Object–Relational Mapper (ORM) in Django</h3>
-<ol>
-
-    <li><b>What Is the Django ORM?</b></li>
-    <br/>
-    <ul>
-        <li>The Django ORM is a powerful system that allows you to interact with databases using <u>Python classes</u> instead of writing SQL manually.</li>
-        <br/>
-        <li>ORM converts Python model operations into SQL queries automatically.</li>
-        <br/>
-        <li>Supported databases:
-            <ul>
-                <li>SQLite (default)</li>
-                <li>PostgreSQL</li>
-                <li>MySQL</li>
-                <li>MariaDB</li>
-                <li>Oracle</li>
-            </ul>
-        </li>
-    </ul>
-    <br/><br/>
-
-
-    <li><b>Prerequisite: Virtual Environment &amp; Project Setup</b></li>
-    <br/>
-    <ul>
-        <li>Create and activate virtual environment:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 -m venv .venv
-source .venv/bin/activate
-python3 -m pip install django
-</code></pre>
-
-    <ul>
-        <li>Create project and app:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 -m django startproject mysite
-cd mysite
-python3 -m django startapp blog
-</code></pre>
-
-    <br/><br/>
-
-
-    <li><b>Models and Tables</b></li>
-    <br/>
-    <ul>
-        <li>Define a model (maps to a database table):</li>
-    </ul>
-
-<pre><code class="language-python line-numbers"># blog/models.py
-
-from django.db import models
-
-class Post(models.Model):
-    title = models.CharField(max_length=200)
-    body = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-</code></pre>
-
-    <ul>
-        <li>Each attribute becomes a database column.</li>
-        <li>Django creates the SQL table automatically through migrations.</li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li><b>Migrations: Create the Database Schema</b></li>
-    <br/>
-    <ul>
-        <li>Generate migration scripts:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
-</code></pre>
-
-    <ul>
-        <li>Apply migrations:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 manage.py migrate
-</code></pre>
-
-    <ul>
-        <li>Your database now contains a <code>Post</code> table.</li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li><b>Creating Objects (INSERT)</b></li>
-    <br/>
-    <ul>
-        <li>Use the model's manager <code>objects</code> to create records:</li>
-    </ul>
-
-<pre><code class="language-python line-numbers">from blog.models import Post
-
-Post.objects.create(title="Hello", body="First post")
-</code></pre>
-
-    <ul>
-        <li>This generates SQL like:</li>
-    </ul>
-
-<pre><code class="language-sql line-numbers">INSERT INTO blog_post (title, body, created_at) VALUES (...);
-</code></pre>
-
-    <ul>
-        <li>But you do not write SQL — Django handles it.</li>
-    </ul>
-    <br/><br/>
-
-
-    <li><b>Querying Objects (SELECT)</b></li>
-    <br/>
-    <ul>
-        <li>Get all objects:</li>
-    </ul>
-
-<pre><code class="language-python line-numbers">Post.objects.all()
-</code></pre>
-
-    <ul>
-        <li>Filter using conditions:</li>
-    </ul>
-
-<pre><code class="language-python line-numbers">Post.objects.filter(title__icontains="hello")
-</code></pre>
-
-    <ul>
-        <li>Get a single object:</li>
-    </ul>
-
-<pre><code class="language-python line-numbers">Post.objects.get(id=1)
-</code></pre>
-
-    <ul>
-        <li>If no object is found, <code>DoesNotExist</code> error is raised.</li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li><b>Common ORM Lookups</b></li>
-    <br/>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Lookup</th>
-                <th>Example</th>
-                <th>Description</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><code>exact</code></td>
-                <td><code>title__exact="Hello"</code></td>
-                <td>Exact match</td>
-            </tr>
-            <tr>
-                <td><code>icontains</code></td>
-                <td><code>title__icontains="hello"</code></td>
-                <td>Case-insensitive substring match</td>
-            </tr>
-            <tr>
-                <td><code>gt</code></td>
-                <td><code>id__gt=3</code></td>
-                <td>Greater than</td>
-            </tr>
-            <tr>
-                <td><code>lt</code></td>
-                <td><code>id__lt=10</code></td>
-                <td>Less than</td>
-            </tr>
-            <tr>
-                <td><code>in</code></td>
-                <td><code>id__in=[1, 2, 3]</code></td>
-                <td>Filter within a list</td>
-            </tr>
-            <tr>
-                <td><code>startswith</code></td>
-                <td><code>title__startswith="Django"</code></td>
-                <td>Prefix match</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <br/><br/>
-
-
-    <li><b>Updating Objects (UPDATE)</b></li>
-    <br/>
-    <ul>
-        <li>Fetch an object, modify it, then save:</li>
-    </ul>
-
-<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
-post.title = "Updated title"
-post.save()
-</code></pre>
-
-    <ul>
-        <li>This triggers an <code>UPDATE</code> query.</li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li><b>Deleting Objects (DELETE)</b></li>
-    <br/>
-    <ul>
-        <li>Delete a single object:</li>
-    </ul>
-
-<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
-post.delete()
-</code></pre>
-
-    <ul>
-        <li>Delete multiple objects:</li>
-    </ul>
-
-<pre><code class="language-python line-numbers">Post.objects.filter(title__icontains="old").delete()
-</code></pre>
-
-    <br/><br/>
-
-
-    <li><b>ORM and Relationships</b></li>
-    <br/>
-    <ul>
-        <li>Django ORM supports relationships via fields:</li>
-        <ul>
-            <li><code>ForeignKey</code> → one-to-many</li>
-            <li><code>ManyToManyField</code> → many-to-many</li>
-            <li><code>OneToOneField</code> → one-to-one</li>
-        </ul>
-    </ul>
-
-<pre><code class="language-python line-numbers">class Comment(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    text = models.TextField()
-</code></pre>
-
-    <ul>
-        <li>Query related objects:</li>
-    </ul>
-
-<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
-comments = post.comment_set.all()
-</code></pre>
-
-    <br/><br/>
-
-
-    <li><b>Advanced ORM Features</b></li>
-    <br/>
-    <ul>
-        <li>Django ORM also supports:
-            <ul>
-                <li><b>aggregation</b> (Sum, Avg, Min, Max)</li>
-                <li><b>annotations</b></li>
-                <li><b>prefetch_related</b> and <b>select_related</b> for performance</li>
-                <li><b>raw SQL</b> when needed</li>
-            </ul>
-        </li>
-    </ul>
-
-<pre><code class="language-python line-numbers">from django.db.models import Count
-
-Post.objects.annotate(comment_count=Count("comment"))
-</code></pre>
-
-    <br/><br/>
-
-
-    <li><b>Using Django Shell for ORM Testing</b></li>
-    <br/>
-    <ul>
-        <li>Highly recommended for experimentation:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 manage.py shell
-</code></pre>
-
-<pre><code class="language-python line-numbers">from blog.models import Post
-
-Post.objects.all()
-Post.objects.create(title="New", body="Hello ORM!")
-</code></pre>
-
-    <br/><br/>
-
-</ol>
-<!-- * * * * * * * * * * * * * * -->
-
-
-<hr/>
-
-
-<!-- * * * * * * * * * * * * * * -->
-<h3 id="django-project-vs-app">Project vs App in Django</h3>
-<ol>
-
-    <li>Beginners are often confused by the difference between <b>Django Project</b> and <b>Django App</b></li>
-    <br/><br/>
-
-
-    <li><b>What Is a Django Project?</b></li>
-    <br/>
-    <ul>
-        <li>A <b>Django project</b> is the <u>entire web application</u> that you are building.</li>
-        <li>It contains:
-            <ul>
-                <li>global configuration</li>
-                <li>settings</li>
-                <li>URL routing</li>
-                <li>WSGI/ASGI configuration</li>
-                <li>one or many Django apps</li>
-            </ul>
-        </li>
-        <li>You create a project using:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 -m django startproject mysite
-</code></pre>
-
-    <ul>
-        <li>Project structure looks like this:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">mysite/
-├── manage.py
-└── mysite/
-    ├── __init__.py
-    ├── settings.py      # Global Django settings (DEBUG, DB, middleware, etc.)
-    ├── urls.py          # Root URL dispatcher
-    ├── wsgi.py          # For production servers
-    └── asgi.py          # For async servers
-</code></pre>
-
-    <ul>
-        <li>The project is the container for your whole website.</li>
-        <li>It does NOT contain business logic by itself — apps do.</li>
-    </ul>
-    <br/><br/>
-
-
-    <li><b>What Is a Django App?</b></li>
-    <br/>
-    <ul>
-        <li>A <b>Django app</b> is a <u>modular component</u> that provides one specific piece of functionality.</li>
-        <li>Examples of apps:
-            <ul>
-                <li><code>blog</code></li>
-                <li><code>users</code></li>
-                <li><code>payments</code></li>
-                <li><code>dashboard</code></li>
-            </ul>
-        </li>
-        <li>You create an app using:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 manage.py startapp blog
-</code></pre>
-
-    <ul>
-        <li>App structure looks like:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">blog/
-├── admin.py        # Admin interface setup
-├── apps.py         # App configuration class
-├── models.py       # Database models
-├── views.py        # Request handlers (Controller logic)
-├── tests.py        # Unit tests
-└── migrations/     # Database migrations
-</code></pre>
-
-    <ul>
-        <li>An app contains <u>actual features</u> of your site.</li>
-        <li>A single project can contain many apps.</li>
-        <li>You can reuse apps between projects.</li>
-    </ul>
-    <br/><br/>
-
-
-    <li><b>Project vs App — Conceptual Difference</b></li>
-    <br/>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Aspect</th>
-                <th>Django Project</th>
-                <th>Django App</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Purpose</td>
-                <td>Overall configuration and container</td>
-                <td>Specific feature or module</td>
-            </tr>
-            <tr>
-                <td>Number</td>
-                <td>One per website</td>
-                <td>Many per project</td>
-            </tr>
-            <tr>
-                <td>Reusable?</td>
-                <td>No</td>
-                <td>Yes, apps can be placed on PyPI</td>
-            </tr>
-            <tr>
-                <td>Created by</td>
-                <td><code>startproject</code></td>
-                <td><code>startapp</code></td>
-            </tr>
-            <tr>
-                <td>Main Files</td>
-                <td><code>settings.py</code>, <code>urls.py</code></td>
-                <td><code>models.py</code>, <code>views.py</code>, <code>admin.py</code></td>
-            </tr>
-            <tr>
-                <td>Scope</td>
-                <td>Entire website</td>
-                <td>Narrow, focused feature</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <br/><br/>
-
-
-    <li><b>When Should You Create a New App?</b></li>
-    <br/>
-    <ul>
-        <li>Create a new app when you add a <u>new feature</u> that:
-            <ul>
-                <li>has its own set of models</li>
-                <li>has its own views and logic</li>
-                <li>could logically be reused elsewhere</li>
-                <li>is independent of other parts of the project</li>
-            </ul>
-        </li>
-    </ul>
-
-    <ul>
-        <li>Examples:</li>
-        <ul>
-            <li>Add authentication → create <code>accounts</code> app</li>
-            <li>Add blog → create <code>blog</code> app</li>
-            <li>Add payment system → create <code>payments</code> app</li>
-        </ul>
-    </ul>
-
-    <ul>
-        <li>Do NOT create an app for:</li>
-        <ul>
-            <li>small isolated functions</li>
-            <li>just one template</li>
-            <li>configuration-only changes</li>
-        </ul>
-    </ul>
-    <br/><br/>
-
-
-    <li><b>How an App Integrates Into a Project</b></li>
-    <br/>
-    <ul>
-        <li>After creating an app, you must add it to <code>INSTALLED_APPS</code>:</li>
-    </ul>
-
-<pre><code class="language-python line-numbers"># mysite/settings.py
-
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "blog",   # your new app
-]
-</code></pre>
-
-    <ul>
-        <li>This tells Django to load:
-            <ul>
-                <li>models</li>
-                <li>migrations</li>
-                <li>signals</li>
-                <li>admin configuration</li>
-            </ul>
-        </li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li><b>Example: One Project, Multiple Apps</b></li>
-    <br/>
-    <ul>
-        <li>A real-world project (e.g., Instagram clone) might contain:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">mysite/
-├── accounts/      # login, signup, profiles
-├── posts/         # uploading + viewing posts
-├── comments/      # comments on posts
-├── notifications/ # user notifications
-└── messages/      # direct messaging
-</code></pre>
-
-    <ul>
-        <li>Each app focuses on a single, reusable part of the system.</li>
-        <li>Apps communicate via imports and relationships.</li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li><b>Summary</b></li>
-    <br/>
-    <ul>
-        <li>A <b>Django project</b> is the entire website — global configuration, settings, URLs, WSGI/ASGI.</li>
-        <li>A <b>Django app</b> is a single feature inside the project — models, views, templates, logic.</li>
-        <li>Projects contain many apps; apps are reusable; projects are not.</li>
-        <li>You create projects using <code>startproject</code> and apps using <code>startapp</code>.</li>
-        <li>Apps must be added to <code>INSTALLED_APPS</code> to work.</li>
-    </ul>
-    <br/><br/>
-
-</ol>
-<!-- * * * * * * * * * * * * * * -->
-
-
-<hr/>
-
-
-<!-- * * * * * * * * * * * * * * -->
 <h3 id="django-urls-py">URL Routing with <code>urls.py</code> in Django</h3>
 <ol>
 
@@ -2535,7 +1939,873 @@ gunicorn mysite.wsgi:application
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-asgi-py">Understanding <code>asgi.py</code> in Django</h3>
+<ol>
 
+    <li><b>What Is ASGI?</b></li>
+    <br/>
+    <ul>
+        <li><b>ASGI</b> stands for <u>Asynchronous Server Gateway Interface</u>.</li>
+        <br/>
+        <li>ASGI is the spiritual successor to WSGI and enables:
+            <ul>
+                <li>asynchronous views</li>
+                <li>WebSockets</li>
+                <li>HTTP/2</li>
+                <li>long-lived connections</li>
+            </ul>
+        </li>
+        <br/>
+        <li>ASGI makes Django capable of modern real-time features like:
+            <ul>
+                <li>chat systems</li>
+                <li>live notifications</li>
+                <li>live dashboards</li>
+                <li>background tasks</li>
+            </ul>
+        </li>
+        <br/>
+        <li>While <code>wsgi.py</code> is for synchronous servers, <code>asgi.py</code> is for asynchronous servers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Where Is <code>asgi.py</code> Located?</b></li>
+    <br/>
+    <ul>
+        <li>It is created automatically in every new Django project:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">mysite/
+├── manage.py
+└── mysite/
+    ├── __init__.py
+    ├── settings.py
+    ├── urls.py
+    ├── asgi.py      &lt;-- here!
+    └── wsgi.py
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>The Default <code>asgi.py</code> File</b></li>
+    <br/>
+    <ul>
+        <li>Django generates the following code:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># mysite/asgi.py
+
+import os
+from django.core.asgi import get_asgi_application
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mysite.settings")
+
+application = get_asgi_application()
+</code></pre>
+
+    <ul>
+        <li>This file:
+            <ul>
+                <li>sets up Django settings</li>
+                <li>creates an ASGI-compatible application object</li>
+                <li>exposes <code>application</code> for ASGI servers</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Just like <code>wsgi.py</code>, you rarely need to modify it.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Why Does Django Need <code>asgi.py</code>?</b></li>
+    <br/>
+    <ul>
+        <li>Modern web apps rely heavily on:
+            <ul>
+                <li>real-time communication</li>
+                <li>live updates</li>
+                <li>async I/O operations</li>
+            </ul>
+        </li>
+        <li>ASGI makes Django compatible with:
+            <ul>
+                <li><b>WebSockets</b></li>
+                <li><b>Async Views</b> using <code>async def</code></li>
+                <li><b>Django Channels</b></li>
+            </ul>
+        </li>
+        <br/>
+        <li>ASGI is the future direction of Django for high-concurrency applications.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>WSGI vs ASGI — Key Differences</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>WSGI</th>
+                <th>ASGI</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Type</td>
+                <td>Synchronous</td>
+                <td>Asynchronous + synchronous</td>
+            </tr>
+            <tr>
+                <td>Supports WebSockets?</td>
+                <td>No</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Best Use Case</td>
+                <td>Traditional web apps</td>
+                <td>Real-time &amp; concurrent apps</td>
+            </tr>
+            <tr>
+                <td>Typical Server</td>
+                <td>Gunicorn, uWSGI</td>
+                <td>Uvicorn, Daphne, Hypercorn</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Example: Running Django With an ASGI Server</b></li>
+    <br/>
+    <ul>
+        <li>Inside a virtual environment:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m venv .venv
+source .venv/bin/activate
+
+python3 -m pip install uvicorn
+
+uvicorn mysite.asgi:application --reload
+</code></pre>
+
+    <ul>
+        <li>You now run Django on an ASGI server.</li>
+        <li>Supports both async and sync views.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Async Views in Django (ASGI Feature)</b></li>
+    <br/>
+    <ul>
+        <li>You can write fully asynchronous views:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># blog/views.py
+
+import asyncio
+from django.http import HttpResponse
+
+async def slow_view(request):
+    await asyncio.sleep(2)
+    return HttpResponse("This view waited 2 seconds asynchronously!")
+</code></pre>
+
+    <ul>
+        <li>Available only when Django runs under ASGI.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Using ASGI for WebSockets (Via Django Channels)</b></li>
+    <br/>
+    <ul>
+        <li>ASGI enables WebSocket support through Django Channels:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m pip install channels
+</code></pre>
+
+    <ul>
+        <li>You can create <code>routing.py</code> for WebSockets:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># mysite/routing.py
+
+from django.urls import path
+from channels.routing import ProtocolTypeRouter, URLRouter
+from blog.consumers import ChatConsumer
+
+application = ProtocolTypeRouter({
+    "websocket": URLRouter([
+        path("ws/chat/", ChatConsumer.as_asgi()),
+    ]),
+})
+</code></pre>
+
+    <ul>
+        <li>ASGI is essential for Channels to function.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>How ASGI Handles a Request (High Level)</b></li>
+    <br/>
+    <ul>
+        <li>1. Browser sends an HTTP or WebSocket request</li>
+        <li>2. ASGI server receives it (Uvicorn, Daphne, etc.)</li>
+        <li>3. Server calls Django’s <code>asgi.py</code> application object</li>
+        <li>4. Django routes request through middleware and URLs</li>
+        <li>5. View processes request (sync or async)</li>
+        <li>6. Response is returned through ASGI to the client</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Do You Ever Edit <code>asgi.py</code>?</b></li>
+    <br/>
+    <ul>
+        <li>Usually no — Django provides everything needed.</li>
+        <li>You would modify it only to:
+            <ul>
+                <li>integrate Django Channels</li>
+                <li>add additional ASGI middleware</li>
+                <li>customize routing between protocols (HTTP / WebSocket)</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li><code>asgi.py</code> is the entry point for running Django under an ASGI server.</li>
+        <li>It enables:
+            <ul>
+                <li>async views</li>
+                <li>WebSockets</li>
+                <li>real-time apps</li>
+                <li>Django Channels</li>
+            </ul>
+        </li>
+        <li>ASGI is more advanced than WSGI and represents the future of Django.</li>
+        <li>You run ASGI servers using Uvicorn, Daphne, or Hypercorn.</li>
+        <li><code>asgi.py</code> rarely requires changes unless building advanced async/websocket features.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-models">Models in Django</h3>
+<ol>
+
+    <li><b>What Are Models?</b></li>
+    <br/>
+    <ul>
+        <li>A Django <code>model</code> is a Python class that represents a database table.</li>
+        <br/>
+        <li>Each class attribute in the <code>model</code> corresponds to a column in the table.</li>
+        <br/>
+        <li>Django uses its built-in <u>Object–Relational Mapper (ORM)</u> to convert model classes into SQL queries.</li>
+        <br/>
+        <li>Models are defined inside the <code>models.py</code> of each app.</li>
+        <br/>
+        <li>You do not write SQL — Django auto-generates it during migration steps.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Typical Workflow With Models</b></li>
+    <br/>
+    <ul>
+        <li>Create and activate a virtual environment:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m venv .venv
+source .venv/bin/activate
+</code></pre>
+
+    <ul>
+        <li>Install Django:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m pip install django
+</code></pre>
+
+    <ul>
+        <li>Create project and app:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m django startproject mysite
+cd mysite
+python3 -m django startapp blog
+</code></pre>
+
+    <ul>
+        <li>Edit <code>models.py</code>, then run:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
+python3 manage.py migrate
+</code></pre>
+
+    <ul>
+        <li>You now have database tables ready for use.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Defining Your First Model</b></li>
+    <br/>
+    <ul>
+        <li>All models inherit from <code>django.db.models.Model</code>.</li>
+        <li>Field types define how data is stored in the database.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># blog/models.py
+
+from django.db import models
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+</code></pre>
+
+    <ul>
+        <li><code>CharField</code>: short strings</li>
+        <li><code>TextField</code>: long text</li>
+        <li><code>DateTimeField(auto_now_add=True)</code>: timestamp when created</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Applying Migrations</b></li>
+    <br/>
+    <ul>
+        <li>After modifying models, create migration scripts:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
+</code></pre>
+
+    <ul>
+        <li>Apply them and update the database schema:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py migrate
+</code></pre>
+
+    <ul>
+        <li>Django now creates the corresponding SQL tables.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Common Django Model Fields</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Field Type</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>CharField</code></td>
+                <td>Short strings</td>
+                <td><code>CharField(max_length=100)</code></td>
+            </tr>
+            <tr>
+                <td><code>TextField</code></td>
+                <td>Large text</td>
+                <td><code>TextField()</code></td>
+            </tr>
+            <tr>
+                <td><code>IntegerField</code></td>
+                <td>Integers</td>
+                <td><code>IntegerField()</code></td>
+            </tr>
+            <tr>
+                <td><code>DateTimeField</code></td>
+                <td>Date and time values</td>
+                <td><code>DateTimeField(auto_now_add=True)</code></td>
+            </tr>
+            <tr>
+                <td><code>BooleanField</code></td>
+                <td>True/False</td>
+                <td><code>BooleanField(default=False)</code></td>
+            </tr>
+            <tr>
+                <td><code>ForeignKey</code></td>
+                <td>Many-to-one relationship</td>
+                <td><code>ForeignKey(User, on_delete=models.CASCADE)</code></td>
+            </tr>
+            <tr>
+                <td><code>FileField</code></td>
+                <td>File uploads</td>
+                <td><code>FileField(upload_to="uploads/")</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Adding Relationships Between Models</b></li>
+    <br/>
+    <ul>
+        <li>Django supports three common relational patterns:</li>
+        <ul>
+            <li><b>One-to-many</b> → <code>ForeignKey</code></li>
+            <li><b>Many-to-many</b> → <code>ManyToManyField</code></li>
+            <li><b>One-to-one</b> → <code>OneToOneField</code></li>
+        </ul>
+    </ul>
+
+<pre><code class="language-python line-numbers"># blog/models.py
+
+from django.db import models
+from django.contrib.auth.models import User
+
+class Comment(models.Model):
+    post = models.ForeignKey("Post", on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+</code></pre>
+
+    <ul>
+        <li><code>ForeignKey</code> links each comment to one post.</li>
+        <li><code>on_delete=models.CASCADE</code> ensures comments disappear when a post is deleted.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Useful Model Methods</b></li>
+    <br/>
+    <ul>
+        <li>You can add custom methods to models:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+
+    def __str__(self):
+        return self.title
+
+    def preview(self):
+        return self.body[:50] + "..."
+</code></pre>
+
+    <ul>
+        <li><code>__str__</code> improves admin display.</li>
+        <li><code>preview</code> returns a short snippet of the body.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Querying Models Using the ORM</b></li>
+    <br/>
+    <ul>
+        <li>Use the Django shell for experimenting:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py shell
+</code></pre>
+
+    <ul>
+        <li>Example operations:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from blog.models import Post
+
+# Create
+Post.objects.create(title="Hello", body="First post!")
+
+# Read
+Post.objects.all()
+
+# Filter
+Post.objects.filter(title__icontains="hello")
+
+# Order
+Post.objects.order_by("-created_at")
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Meta Options (Model Configuration)</b></li>
+    <br/>
+    <ul>
+        <li>The <code>Meta</code> class customizes model behavior.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Post(models.Model):
+    title = models.CharField(max_length=200)
+
+    class Meta:
+        ordering = ["-id"]
+        verbose_name = "Blog Post"
+        verbose_name_plural = "Blog Posts"
+</code></pre>
+
+    <ul>
+        <li><code>ordering</code> → default sort order</li>
+        <li><code>verbose_name</code> → human-friendly name in admin</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Registering Models in the Admin</b></li>
+    <br/>
+    <ul>
+        <li>To manage models via Django Admin, you must register them:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># blog/admin.py
+
+from django.contrib import admin
+from .models import Post, Comment
+
+admin.site.register(Post)
+admin.site.register(Comment)
+</code></pre>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-orm">Object–Relational Mapper (ORM) in Django</h3>
+<ol>
+
+    <li><b>What Is the Django ORM?</b></li>
+    <br/>
+    <ul>
+        <li>The Django ORM is a powerful system that allows you to interact with databases using <u>Python classes</u> instead of writing SQL manually.</li>
+        <br/>
+        <li>ORM converts Python model operations into SQL queries automatically.</li>
+        <br/>
+        <li>Supported databases:
+            <ul>
+                <li>SQLite (default)</li>
+                <li>PostgreSQL</li>
+                <li>MySQL</li>
+                <li>MariaDB</li>
+                <li>Oracle</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Prerequisite: Virtual Environment &amp; Project Setup</b></li>
+    <br/>
+    <ul>
+        <li>Create and activate virtual environment:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install django
+</code></pre>
+
+    <ul>
+        <li>Create project and app:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m django startproject mysite
+cd mysite
+python3 -m django startapp blog
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Models and Tables</b></li>
+    <br/>
+    <ul>
+        <li>Define a model (maps to a database table):</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># blog/models.py
+
+from django.db import models
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+</code></pre>
+
+    <ul>
+        <li>Each attribute becomes a database column.</li>
+        <li>Django creates the SQL table automatically through migrations.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Migrations: Create the Database Schema</b></li>
+    <br/>
+    <ul>
+        <li>Generate migration scripts:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
+</code></pre>
+
+    <ul>
+        <li>Apply migrations:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py migrate
+</code></pre>
+
+    <ul>
+        <li>Your database now contains a <code>Post</code> table.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Creating Objects (INSERT)</b></li>
+    <br/>
+    <ul>
+        <li>Use the model's manager <code>objects</code> to create records:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from blog.models import Post
+
+Post.objects.create(title="Hello", body="First post")
+</code></pre>
+
+    <ul>
+        <li>This generates SQL like:</li>
+    </ul>
+
+<pre><code class="language-sql line-numbers">INSERT INTO blog_post (title, body, created_at) VALUES (...);
+</code></pre>
+
+    <ul>
+        <li>But you do not write SQL — Django handles it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Querying Objects (SELECT)</b></li>
+    <br/>
+    <ul>
+        <li>Get all objects:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.all()
+</code></pre>
+
+    <ul>
+        <li>Filter using conditions:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.filter(title__icontains="hello")
+</code></pre>
+
+    <ul>
+        <li>Get a single object:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.get(id=1)
+</code></pre>
+
+    <ul>
+        <li>If no object is found, <code>DoesNotExist</code> error is raised.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Common ORM Lookups</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Lookup</th>
+                <th>Example</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>exact</code></td>
+                <td><code>title__exact="Hello"</code></td>
+                <td>Exact match</td>
+            </tr>
+            <tr>
+                <td><code>icontains</code></td>
+                <td><code>title__icontains="hello"</code></td>
+                <td>Case-insensitive substring match</td>
+            </tr>
+            <tr>
+                <td><code>gt</code></td>
+                <td><code>id__gt=3</code></td>
+                <td>Greater than</td>
+            </tr>
+            <tr>
+                <td><code>lt</code></td>
+                <td><code>id__lt=10</code></td>
+                <td>Less than</td>
+            </tr>
+            <tr>
+                <td><code>in</code></td>
+                <td><code>id__in=[1, 2, 3]</code></td>
+                <td>Filter within a list</td>
+            </tr>
+            <tr>
+                <td><code>startswith</code></td>
+                <td><code>title__startswith="Django"</code></td>
+                <td>Prefix match</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Updating Objects (UPDATE)</b></li>
+    <br/>
+    <ul>
+        <li>Fetch an object, modify it, then save:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
+post.title = "Updated title"
+post.save()
+</code></pre>
+
+    <ul>
+        <li>This triggers an <code>UPDATE</code> query.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Deleting Objects (DELETE)</b></li>
+    <br/>
+    <ul>
+        <li>Delete a single object:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
+post.delete()
+</code></pre>
+
+    <ul>
+        <li>Delete multiple objects:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.filter(title__icontains="old").delete()
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>ORM and Relationships</b></li>
+    <br/>
+    <ul>
+        <li>Django ORM supports relationships via fields:</li>
+        <ul>
+            <li><code>ForeignKey</code> → one-to-many</li>
+            <li><code>ManyToManyField</code> → many-to-many</li>
+            <li><code>OneToOneField</code> → one-to-one</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-python line-numbers">class Comment(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    text = models.TextField()
+</code></pre>
+
+    <ul>
+        <li>Query related objects:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">post = Post.objects.get(id=1)
+comments = post.comment_set.all()
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Advanced ORM Features</b></li>
+    <br/>
+    <ul>
+        <li>Django ORM also supports:
+            <ul>
+                <li><b>aggregation</b> (Sum, Avg, Min, Max)</li>
+                <li><b>annotations</b></li>
+                <li><b>prefetch_related</b> and <b>select_related</b> for performance</li>
+                <li><b>raw SQL</b> when needed</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from django.db.models import Count
+
+Post.objects.annotate(comment_count=Count("comment"))
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Django Shell for ORM Testing</b></li>
+    <br/>
+    <ul>
+        <li>Highly recommended for experimentation:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 manage.py shell
+</code></pre>
+
+<pre><code class="language-python line-numbers">from blog.models import Post
+
+Post.objects.all()
+Post.objects.create(title="New", body="Hello ORM!")
+</code></pre>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
