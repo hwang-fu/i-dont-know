@@ -168,6 +168,7 @@
         <li><a href="#django-raw-sql">Performaing Raw SQL Queries</a></li>
         <li><a href="#django-transactions">Database Transactions in Django</a></li>
         <li><a href="#django-multiple-databases">Using Multiple Databases</a></li>
+        <li><a href="#django-settings-databse">Understanding the <code>DATABASES</code> Setting</a></li>
     </ul>
 </nav>
 <hr/>
@@ -4915,6 +4916,324 @@ with transaction.atomic(using="analytics"):
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-settings-databases">Understanding the <code>DATABASES</code> Setting in Django</h3>
+<ol>
+
+    <li><b>What Is the</b> <code>DATABASES</code> <b>Setting?</b></li>
+    <ul>
+        <br/>
+        <li>The <code>DATABASES</code> setting in <code>settings.py</code> tells Django:</li>
+        <ul>
+            <li>which database(s) to connect to</li>
+            <li>what driver/engine to use</li>
+            <li>what credentials and host to use</li>
+            <li>how to manage transactions</li>
+        </ul>
+        <br/>
+        <li>Every Django project must define at least one database — the <code>default</code> database.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The Basic Structure of <code>DATABASES</code></b></li>
+    <br/>
+
+<pre><code class="language-python line-numbers"># settings.py
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
+</code></pre>
+
+    <ul>
+        <li><code>DATABASES</code> is a dictionary.</li>
+        <li>Each key (e.g., <code>"default"</code>) is the alias of a database connection.</li>
+        <li>Each value is a dictionary containing configuration details.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Supported Database Engines</b></li>
+    <br/>
+    <ul>
+        <li>Django ships with built-in support for several databases.</li>
+    </ul>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ENGINE</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>django.db.backends.sqlite3</code></td>
+                <td>Default, file-based database (good for development).</td>
+                <td><code>"NAME": BASE_DIR / "db.sqlite3"</code></td>
+            </tr>
+            <tr>
+                <td><code>django.db.backends.postgresql</code></td>
+                <td>PostgreSQL (recommended for production).</td>
+                <td><code>"ENGINE": "django.db.backends.postgresql"</code></td>
+            </tr>
+            <tr>
+                <td><code>django.db.backends.mysql</code></td>
+                <td>MySQL or MariaDB.</td>
+                <td><code>"ENGINE": "django.db.backends.mysql"</code></td>
+            </tr>
+            <tr>
+                <td><code>django.db.backends.oracle</code></td>
+                <td>Oracle database.</td>
+                <td><code>"ENGINE": "django.db.backends.oracle"</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Full Configuration Example (PostgreSQL)</b></li>
+<pre><code class="language-python line-numbers">DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "mydatabase",
+        "USER": "myuser",
+        "PASSWORD": "mypassword",
+        "HOST": "localhost",
+        "PORT": "5432",
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>This is typical for production setups.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Explanation of All Common Options</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Option</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>ENGINE</code></td>
+                <td>Database backend to use.</td>
+                <td><code>"django.db.backends.postgresql"</code></td>
+            </tr>
+            <tr>
+                <td><code>NAME</code></td>
+                <td>Database name (or file path for SQLite).</td>
+                <td><code>"mydb"</code></td>
+            </tr>
+            <tr>
+                <td><code>USER</code></td>
+                <td>Database username.</td>
+                <td><code>"dbuser"</code></td>
+            </tr>
+            <tr>
+                <td><code>PASSWORD</code></td>
+                <td>Password for the database user.</td>
+                <td><code>"secret"</code></td>
+            </tr>
+            <tr>
+                <td><code>HOST</code></td>
+                <td>Database host (IP or domain).</td>
+                <td><code>"127.0.0.1"</code></td>
+            </tr>
+            <tr>
+                <td><code>PORT</code></td>
+                <td>Database port number.</td>
+                <td><code>"5432"</code></td>
+            </tr>
+            <tr>
+                <td><code>OPTIONS</code></td>
+                <td>Advanced backend-specific options.</td>
+                <td><code>{"sslmode": "require"}</code></td>
+            </tr>
+            <tr>
+                <td><code>ATOMIC_REQUESTS</code></td>
+                <td>If True: each HTTP request is wrapped in a DB transaction.</td>
+                <td><code>True</code></td>
+            </tr>
+            <tr>
+                <td><code>AUTOCOMMIT</code></td>
+                <td>True = auto commit transactions (recommended).</td>
+                <td><code>True</code></td>
+            </tr>
+            <tr>
+                <td><code>CONN_MAX_AGE</code></td>
+                <td>Persistent DB connections (seconds or <code>None</code>).</td>
+                <td><code>60</code></td>
+            </tr>
+            <tr>
+                <td><code>TEST</code></td>
+                <td>Overrides DB settings for testing.</td>
+                <td><code>{"NAME": "testdb"}</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>SQLite Special Case</b></li>
+    <br/>
+    <ul>
+        <li>SQLite does not require username, password, host, or port.</li>
+        <li>You simply specify a file path:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Environment Variables (Best Practice!)</b></li>
+    <br/>
+    <ul>
+        <li>Never hardcode database passwords into source code.</li>
+        <li>Use environment variables instead.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import os
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["DB_NAME"],
+        "USER": os.environ["DB_USER"],
+        "PASSWORD": os.environ["DB_PASSWORD"],
+        "HOST": os.environ["DB_HOST"],
+        "PORT": os.environ["DB_PORT"],
+    }
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Multiple Databases</b></li>
+    <br/>
+    <ul>
+        <li>You can define more than one database by adding more entries:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">DATABASES = {
+    "default": {...},
+    "analytics": {...},
+    "legacy": {...},
+}
+</code></pre>
+
+    <ul>
+        <li>Use with <code>using()</code> and database routers.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Database Transactions and</b> <code>ATOMIC_REQUESTS</code></li>
+    <br/>
+    <ul>
+        <li>If you set this:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">DATABASES = {
+    "default": {
+        ...
+        "ATOMIC_REQUESTS": True,
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Django will wrap <u>each HTTP request</u> in a database transaction.</li>
+        <li>Useful for:
+            <ul>
+                <li>financial systems</li>
+                <li>complex write operations</li>
+            </ul>
+        </li>
+        <li>But can be expensive for high-traffic apps.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Persistent Connections</b> (<code>CONN_MAX_AGE</code>)</li>
+    <br/>
+    <ul>
+        <li>By default, Django closes DB connections after each request.</li>
+        <li>To reuse the same connection:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">CONN_MAX_AGE = 60       # keep connection for one minute
+# CONN_MAX_AGE = None   # keep forever
+</code></pre>
+
+    <ul>
+        <li>Improves performance for PostgreSQL/MySQL.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Testing Database Settings</b></li>
+    <br/>
+    <ul>
+        <li>You can override DB settings for unit tests:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">DATABASES = {
+    "default": {
+        ...
+        "TEST": {
+            "NAME": "test_mysite"
+        }
+    }
+}
+</code></pre>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
