@@ -168,6 +168,7 @@
         <li><a href="#django-orm">Object–Relational Mapper (ORM)</a></li>
         <li><a href="#django-model-queries">Models Making Queries</a></li>
         <li><a href="#django-model-aggregation">Models Aggregation</a></li>
+        <li><a href="#django-model-research">Models Research</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3708,6 +3709,213 @@ Category.objects.annotate(
     <br/>
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-model-research">Models Research — Basic Searching in Django</h3>
+<ol>
+
+    <li><b>What Does It Mean?</b></li>
+    <br/>
+    <ul>
+        <li>In this context, "Models Research" means <u>searching through your Django model data</u>.</li>
+        <br/>
+        <li>You often search when users type something into a search bar:
+            <ul>
+                <li>search blog posts</li>
+                <li>filter products</li>
+                <li>find users</li>
+                <li>search comments</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example Model for Demonstration</b></li>
+<pre><code class="language-python line-numbers">from django.db import models
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Basic Searching With <code>filter()</code></b></li>
+    <br/>
+    <ul>
+        <li>The simplest form of searching uses <code>filter()</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.filter(title="Hello World")
+</code></pre>
+
+    <ul>
+        <li>Django translates this into an SQL <code>WHERE</code> query automatically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Useful Field Lookups for Searching</b></li>
+    <br/>
+    <ul>
+        <li>Django provides many flexible "lookup" keywords:</li>
+    </ul>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Lookup</th>
+                <th>Example</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>icontains</code></td>
+                <td><code>title__icontains="django"</code></td>
+                <td>Case-insensitive substring search (very commonly used)</td>
+            </tr>
+            <tr>
+                <td><code>contains</code></td>
+                <td><code>title__contains="Django"</code></td>
+                <td>Case-sensitive substring search</td>
+            </tr>
+            <tr>
+                <td><code>startswith</code></td>
+                <td><code>title__startswith="Hello"</code></td>
+                <td>Search by prefix</td>
+            </tr>
+            <tr>
+                <td><code>iexact</code></td>
+                <td><code>title__iexact="hello"</code></td>
+                <td>Case-insensitive exact match</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Using <code>Q</code> Objects for OR Conditions</b></li>
+    <br/>
+    <ul>
+        <li>By default, multiple conditions in <code>filter()</code> use <b>AND</b>.</li>
+        <li>To create an <b>OR</b> search, use <code>Q</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from django.db.models import Q
+
+Post.objects.filter(
+    Q(title__icontains="django") | Q(body__icontains="django")
+)
+</code></pre>
+
+    <ul>
+        <li>This finds posts where either field contains the word "django".</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Searching Across Multiple Fields</b></li>
+    <br/>
+    <ul>
+        <li>A common search bar pattern:</li>
+        <li>Query both <code>title</code> and <code>body</code> with the same user input.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">query = "hello"
+
+Post.objects.filter(
+    Q(title__icontains=query) |
+    Q(body__icontains=query)
+)
+</code></pre>
+
+    <ul>
+        <li>This is the simplest “multi-field search”.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Handling Search Input From a Form</b></li>
+<pre><code class="language-html line-numbers">&lt;form method="get"&gt;
+    &lt;input type="text" name="q" placeholder="Search..." /&gt;
+    &lt;button type="submit"&gt;Go&lt;/button&gt;
+&lt;/form&gt;
+</code></pre>
+
+    <ul>
+        <li>Then in the view:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">query = request.GET.get("q", "")
+
+results = Post.objects.filter(
+    Q(title__icontains=query) |
+    Q(body__icontains=query)
+)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Is SQL Injection Possible?</b></li>
+    <br/>
+    <ul>
+        <li>No — Django ORM always escapes user input safely.</li>
+        <li>This is safe even if the user types weird characters:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">Post.objects.filter(title__icontains=request.GET.get("q"))
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Displaying Simple Search Results</b></li>
+<pre><code class="language-html line-numbers">&lt;h2&gt;Results for "{{ q }}"&lt;/h2&gt;
+
+{% for post in results %}
+    &lt;div&gt;
+        &lt;h3&gt;{{ post.title }}&lt;/h3&gt;
+        &lt;p&gt;{{ post.body|truncatechars:150 }}&lt;/p&gt;
+    &lt;/div&gt;
+{% empty %}
+    &lt;p&gt;No matching posts found.&lt;/p&gt;
+{% endfor %}
+</code></pre>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
