@@ -175,6 +175,7 @@
         <li><a href="#vue-slots">Slots</a></li>
         <li><a href="#vue-conditional-rendering">Conditional Rendering</a></li>
         <li><a href="#vue-list-rendering">List Rendering</a></li>
+        <li><a href="#vue-event-handling">Event Handling</a></li>
     </ul>
 </nav>
 <hr/>
@@ -5877,7 +5878,270 @@ const todos = ref([
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-event-handling">Event Handling in Vue (Composition API + TypeScript)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Event handling in Vue uses the <code>v-on</code> directive (or the shorthand <code>@</code>) to listen to DOM events.</li>
+        <br/>
+        <li>Common use cases:
+            <ul>
+                <li>button clicks</li>
+                <li>keyboard events</li>
+                <li>form submission</li>
+                <li>custom component events</li>
+            </ul>
+        </li>
+    </ul>
 
+    <br/><br/>
+
+
+
+    <li><b>Basic Event Listening</b></li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;button @click="increment"&gt;Count: {{ count }}&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+
+const count = ref(0)
+
+function increment() {
+    count.value++
+}
+&lt;/script&gt;
+</code></pre>
+    <ul>
+        <li><code>@click</code> is shorthand for <code>v-on:click</code>.</li>
+        <li>Functions are called normally with no need for <code>this</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Passing Arguments to Event Handlers</b></li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;button @click="add(5)"&gt;+5&lt;/button&gt;
+
+&lt;script setup lang="ts"&gt;
+function add(amount: number) {
+    console.log("Added:", amount)
+}
+&lt;/script&gt;
+</code></pre>
+    <ul>
+        <li>You can pass multiple arguments to your handler.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Accessing the Native Event Object</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>$event</code> to access the original event.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;input @input="handleInput($event)" /&gt;
+
+&lt;script setup lang="ts"&gt;
+function handleInput(e: Event) {
+    const target = e.target as HTMLInputElement
+    console.log(target.value)
+}
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Inline Arrow Functions</b></li>
+<pre><code class="language-html line-numbers">&lt;button @click="() =&gt; count++"&gt;Increment&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Works but less readable—prefer named functions for larger components.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Event Modifiers</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Modifier</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>.stop</code></td>
+                <td>Calls <code>event.stopPropagation()</code></td>
+            </tr>
+            <tr>
+                <td><code>.prevent</code></td>
+                <td>Calls <code>event.preventDefault()</code></td>
+            </tr>
+            <tr>
+                <td><code>.capture</code></td>
+                <td>Use capture mode</td>
+            </tr>
+            <tr>
+                <td><code>.once</code></td>
+                <td>Listener runs only once</td>
+            </tr>
+            <tr>
+                <td><code>.passive</code></td>
+                <td>Use passive mode (scroll performance)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;button @click.stop="doSomething"&gt;Stop Propagation&lt;/button&gt;
+&lt;form @submit.prevent="submit"&gt;...&lt;/form&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Key Modifiers (Keyboard Events)</b></li>
+    <br/>
+    <ul>
+        <li>Keyboard shortcuts are easy using key modifiers like:</li>
+        <li><code>.enter</code>, <code>.esc</code>, <code>.space</code>, <code>.tab</code>, etc.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;input @keyup.enter="submit" /&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can also combine modifiers:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;input @keyup.ctrl.enter="save" /&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Mouse Button Modifiers</b></li>
+<pre><code class="language-html line-numbers">&lt;button @click.right="onRightClick"&gt;Right Click&lt;/button&gt;
+&lt;button @click.middle="onMiddleClick"&gt;Middle Click&lt;/button&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>v-on on &lt;template&gt;</b></li>
+    <br/>
+    <ul>
+        <li>You can attach event listeners to <code>&lt;template&gt;</code> when grouping elements.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template @click="clicked"&gt;
+    &lt;button&gt;A&lt;/button&gt;
+    &lt;button&gt;B&lt;/button&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Event Handling with TypeScript (Strong Typing)</b></li>
+    <br/>
+    <ul>
+        <li>You can strongly type events for better safety:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+function onInput(e: Event) {
+    const target = e.target as HTMLInputElement
+    console.log(target.value)
+}
+
+function onClick(e: MouseEvent) {
+    console.log("Mouse X:", e.clientX)
+}
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Events Inside Components</b></li>
+<pre><code class="language-html line-numbers">&lt;ChildComponent @update="handleUpdate" /&gt;
+
+&lt;script setup lang="ts"&gt;
+function handleUpdate(value: number) {
+    console.log("Updated:", value)
+}
+&lt;/script&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Child component emits events using <code>emit()</code> (covered in earlier chapters).</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>@click</code>, <code>@input</code>, etc.</td>
+                <td>Attach DOM event listeners</td>
+            </tr>
+            <tr>
+                <td>Event modifiers</td>
+                <td><code>.stop</code>, <code>.prevent</code>, <code>.once</code>, etc.</td>
+            </tr>
+            <tr>
+                <td>Key modifiers</td>
+                <td><code>.enter</code>, <code>.esc</code>, <code>.ctrl.enter</code>, etc.</td>
+            </tr>
+            <tr>
+                <td>Inline event handlers</td>
+                <td>Quick logic but less readable</td>
+            </tr>
+            <tr>
+                <td>Typed events</td>
+                <td>Use TypeScript for safe event handling</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
