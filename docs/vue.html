@@ -174,6 +174,7 @@
         <li><a href="#vue-lifecycle-hooks">Lifecycle Hooks</a></li>
         <li><a href="#vue-slots">Slots</a></li>
         <li><a href="#vue-conditional-rendering">Conditional Rendering</a></li>
+        <li><a href="#vue-list-rendering">List Rendering</a></li>
     </ul>
 </nav>
 <hr/>
@@ -5589,6 +5590,302 @@ onMounted(async () =&gt; {
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-list-rendering">List Rendering in Vue (Composition API + TypeScript)</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Vue's <u>list rendering</u> uses the <code>v-for</code> directive to loop through arrays, objects, or numbers.</li>
+        <br/>
+        <li>With the Composition API + TypeScript, list data is usually stored in <code>ref()</code> or <code>reactive()</code> variables.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Basic List Rendering with Arrays</b></li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;ul&gt;
+        &lt;li v-for="name in names" :key="name"&gt;
+            {{ name }}
+        &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+
+const names = ref&lt;string[]&gt;(["Alice", "Bob", "Charlie"])
+&lt;/script&gt;
+</code></pre>
+    <ul>
+        <li><code>:key</code> is required for efficient DOM updates.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Accessing Index in v-for</b></li>
+
+<pre><code class="language-html line-numbers">&lt;li v-for="(name, index) in names" :key="index"&gt;
+    {{ index }} - {{ name }}
+&lt;/li&gt;
+</code></pre>
+    <ul>
+        <li>Using <code>index</code> as key is allowed but not recommended when list items can change order.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Rendering a List of Objects</b></li>
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;ul&gt;
+        &lt;li v-for="user in users" :key="user.id"&gt;
+            {{ user.name }} ({{ user.age }})
+        &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+
+interface User {
+    id: number
+    name: string
+    age: number
+}
+
+const users = ref&lt;User[]&gt;([
+    { id: 1, name: "Alice", age: 20 },
+    { id: 2, name: "Bob", age: 25 }
+])
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using Computed Properties to Transform Lists</b></li>
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+import { ref, computed } from "vue"
+
+const numbers = ref([1, 2, 3, 4, 5])
+
+const evenNumbers = computed(() =&gt;
+    numbers.value.filter(n =&gt; n % 2 === 0)
+)
+&lt;/script&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;p v-for="num in evenNumbers" :key="num"&gt;
+        {{ num }}
+    &lt;/p&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>v-for on &lt;template&gt; (Multiple Elements)</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>&lt;template&gt;</code> when looping should render multiple sibling elements.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;template v-for="user in users" :key="user.id"&gt;
+    &lt;h3&gt;{{ user.name }}&lt;/h3&gt;
+    &lt;p&gt;Age: {{ user.age }}&lt;/p&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Looping Through Objects</b></li>
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;div v-for="(value, key) in settings" :key="key"&gt;
+        {{ key }}: {{ value }}
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { reactive } from "vue"
+
+const settings = reactive({
+    theme: "dark",
+    notifications: true,
+    version: 3
+})
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Looping Through a Range (v-for with Numbers)</b></li>
+<pre><code class="language-html line-numbers">&lt;li v-for="n in 5" :key="n"&gt;
+    Item {{ n }}
+&lt;/li&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Combining v-for with v-if (Warning)</b></li>
+    <br/>
+    <ul>
+        <li><b>Not recommended</b> because it can cause confusing rendering behavior.</li>
+        <li>Better to filter the list using computed properties.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- ❌ Avoid --&gt;
+&lt;li v-for="user in users" v-if="user.active" :key="user.id"&gt;
+    {{ user.name }}
+&lt;/li&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- ✔ Better --&gt;
+&lt;li v-for="user in activeUsers" :key="user.id"&gt;
+    {{ user.name }}
+&lt;/li&gt;
+</code></pre>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang="ts"&gt;
+import { ref, computed } from "vue"
+
+const users = ref([
+    { id: 1, name: "Alice", active: true },
+    { id: 2, name: "Bob", active: false }
+])
+
+const activeUsers = computed(() =&gt;
+    users.value.filter(u =&gt; u.active)
+)
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Tracking List Items with Unique Keys</b></li>
+    <br/>
+    <ul>
+        <li>The <code>:key</code> attribute helps Vue track items when the list changes.</li>
+        <li>Keys should be: <u>unique</u> and <u>stable</u> (does not change over time)</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;li v-for="todo in todos" :key="todo.id"&gt;
+    {{ todo.text }}
+&lt;/li&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Using List Rendering with Components</b></li>
+    <br/>
+
+<pre><code class="language-html line-numbers">&lt;template&gt;
+    &lt;TodoItem
+        v-for="todo in todos"
+        :key="todo.id"
+        :todo="todo"
+    /&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from "vue"
+import TodoItem from "./TodoItem.vue"
+
+const todos = ref([
+    { id: 1, text: "Study Vue" },
+    { id: 2, text: "Write components" }
+])
+&lt;/script&gt;
+</code></pre>
+
+
+    <br/><br/>
+
+
+
+    <li><b>Summary</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>v-for</code></td>
+                <td>Loop through arrays, objects, or numbers</td>
+            </tr>
+            <tr>
+                <td><code>:key</code></td>
+                <td>Helps Vue track elements efficiently</td>
+            </tr>
+            <tr>
+                <td>Computed filtering</td>
+                <td>Recommended instead of using v-if inside v-for</td>
+            </tr>
+            <tr>
+                <td>Object iteration</td>
+                <td>Access value + key</td>
+            </tr>
+            <tr>
+                <td>Range iteration</td>
+                <td>Loop n times using <code>v-for="n in 10"</code></td>
+            </tr>
+            <tr>
+                <td>Component lists</td>
+                <td>Use v-for with components and properly typed props</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
