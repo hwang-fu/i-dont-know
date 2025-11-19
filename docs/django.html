@@ -159,6 +159,7 @@
         <li><a href="#django-intro">Introduction</a></li>
         <li><a href="#django-models">Models</a></li>
         <li><a href="#django-manage-py"><code>manage.py</code></a></li>
+        <li><a href="#django-settings-basic">Basic Settings</a></li>
     </ul>
 </nav>
 <hr/>
@@ -1154,6 +1155,347 @@ print(Post.objects.all())
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-settings-basic">Basic Django Settings</h3>
+<ol>
+
+    <li><b>What Are Django Settings?</b></li>
+    <br/>
+    <ul>
+        <li>Django settings configure how your project behaves.</li>
+        <br/>
+        <li>The main settings file is located in: <code>mysite/settings.py</code></li>
+        <br/>
+        <li>This file controls:
+            <ul>
+                <li>debug mode</li>
+                <li>installed apps</li>
+                <li>database configuration</li>
+                <li>static files</li>
+                <li>middleware</li>
+                <li>URL configuration</li>
+                <li>templates</li>
+                <li>security settings</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Django loads this file automatically when using:
+            <ul>
+                <li><code>python3 manage.py runserver</code></li>
+                <li><code>python3 manage.py migrate</code></li>
+                <li><code>python3 manage.py shell</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Location of Settings</b></li>
+    <br/>
+    <ul>
+        <li>Create project inside virtual environment:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install django
+
+python3 -m django startproject mysite
+cd mysite
+</code></pre>
+
+    <ul>
+        <li>Project structure:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">mysite/
+├── manage.py
+└── mysite/
+    ├── __init__.py
+    ├── settings.py   &lt;-- settings file
+    ├── urls.py
+    ├── asgi.py
+    └── wsgi.py
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Important Settings in <code>settings.py</code></b></li>
+    <br/>
+
+    <ol>
+        <li><b>DEBUG</b></li>
+        <br/>
+        <ul>
+            <li><code>DEBUG</code> enables error pages, auto-reload, and rich debugging output.</li>
+            <li>Do <u>not</u> enable this in production.</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">DEBUG = True
+</code></pre>
+
+        <ul>
+            <li>In production:</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">DEBUG = False
+</code></pre>
+
+        <br/><br/>
+
+
+        <li><b>SECRET_KEY</b></li>
+        <br/>
+        <ul>
+            <li>Used for cryptographic signing (sessions, CSRF tokens, etc.).</li>
+            <li>Must remain secret in production.</li>
+            <li>Auto-generated when the project is created.</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">SECRET_KEY = "django-insecure-abcd1234..."
+</code></pre>
+
+        <br/><br/>
+
+
+        <li><b>ALLOWED_HOSTS</b></li>
+        <br/>
+        <ul>
+            <li>Controls which hosts are allowed to serve the project.</li>
+            <li>Required when <code>DEBUG = False</code>.</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+</code></pre>
+
+        <ul>
+            <li>In production you would add your domain, e.g.:</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">ALLOWED_HOSTS = ["mywebsite.com"]
+</code></pre>
+
+        <br/><br/>
+
+
+        <li><b>INSTALLED_APPS</b></li>
+        <br/>
+        <ul>
+            <li>List of all apps activated for this project.</li>
+            <li>Includes:
+                <ul>
+                    <li>Django default apps</li>
+                    <li>Your own apps</li>
+                    <li>Third-party apps</li>
+                </ul>
+            </li>
+        </ul>
+
+<pre><code class="language-python line-numbers">INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "blog",   # your app
+]
+</code></pre>
+
+        <br/><br/>
+
+
+        <li><b>MIDDLEWARE</b></li>
+        <br/>
+        <ul>
+            <li>Middleware is a chain of hooks that process every request/response.</li>
+            <li>Examples:
+                <ul>
+                    <li>SecurityMiddleware</li>
+                    <li>AuthenticationMiddleware</li>
+                    <li>CSRF middleware</li>
+                </ul>
+            </li>
+        </ul>
+
+<pre><code class="language-python line-numbers">MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+]
+</code></pre>
+
+        <br/><br/>
+
+
+        <li><b>ROOT_URLCONF</b></li>
+        <br/>
+        <ul>
+            <li>Points to the main URL routing module.</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">ROOT_URLCONF = "mysite.urls"
+</code></pre>
+
+        <ul>
+            <li>This file typically includes app URLs via <code>include()</code>.</li>
+        </ul>
+
+        <br/><br/>
+
+
+        <li><b>TEMPLATES</b></li>
+        <br/>
+        <ul>
+            <li>Configures Django’s template engine.</li>
+            <li>Defines template directories, context processors, and backend engine.</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
+</code></pre>
+
+        <br/><br/>
+
+
+        <li><b>DATABASES</b></li>
+        <br/>
+        <ul>
+            <li>Default database is SQLite (easy for development).</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
+</code></pre>
+
+        <ul>
+            <li>For PostgreSQL:</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "mydb",
+        "USER": "myuser",
+        "PASSWORD": "mypassword",
+        "HOST": "localhost",
+        "PORT": "5432",
+    }
+}
+</code></pre>
+
+        <br/><br/>
+
+
+        <li><b>AUTH_PASSWORD_VALIDATORS</b></li>
+        <br/>
+        <ul>
+            <li>Controls password requirements for users.</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+</code></pre>
+
+        <br/><br/>
+
+
+        <li><b>STATIC_URL and STATICFILES_DIRS</b></li>
+        <br/>
+        <ul>
+            <li>Static files include CSS, JS, and images.</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">STATIC_URL = "/static/"</code></pre>
+
+        <ul>
+            <li>Extra static directories (optional):</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+</code></pre>
+
+        <br/><br/>
+
+
+        <li><b>TIME_ZONE and LANGUAGE_CODE</b></li>
+        <br/>
+        <ul>
+            <li>Controls default language and timezone.</li>
+        </ul>
+
+<pre><code class="language-python line-numbers">LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
+USE_TZ = True
+</code></pre>
+
+        <ul>
+            <li>Examples:</li>
+            <ul>
+                <li>German: <code>"de"</code></li>
+                <li>Chinese: <code>"zh-hans"</code></li>
+                <li>Beijing timezone: <code>"Asia/Shanghai"</code></li>
+            </ul>
+        </ul>
+
+    </ol>
+
+        <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li><code>settings.py</code> controls all configuration aspects of a Django project.</li>
+        <li>Key elements include DEBUG status, installed apps, middleware, templates, and databases.</li>
+        <li>ALLOWED_HOSTS becomes important when <code>DEBUG = False</code>.</li>
+        <li>Django provides defaults, but nearly everything is customizable.</li>
+        <li>These settings integrate deeply with Django’s ORM, admin, views, and security.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
