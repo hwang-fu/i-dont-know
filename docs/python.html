@@ -196,6 +196,7 @@
         <li><a href="#python-async-intro">Introduction to Python Async Programming</a></li>
         <li><a href="#python-asyncio-run-vs-await">Understanding the Difference Between <code>asyncio.run()</code> and <code>await</code></a></li>
         <li><a href="#python-c-api-intro">Introduction to C API</a></li>
+        <li><a href="#python-call-c">Calling C Code from Python</a></li>
     </ul>
 </nav>
 <hr/>
@@ -13601,7 +13602,7 @@ print(mymodule.add(3, 4))   # 7
     <li><b>The Core Python Object Type:</b> <code>PyObject</code></li>
     <br/>
     <ul>
-        <li>Everything in Python is a <code>PyObject*</code>.</li>
+        <li>Everything in Python is a <code>PyObject *</code>.</li>
         <li>All Python objects share a common base:</li>
     </ul>
 
@@ -13834,6 +13835,404 @@ setup(
 <pre><code class="language-bash line-numbers">python3 setup.py build
 python3 setup.py install
 </code></pre>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="python-call-c">Calling C Code from Python</h3>
+<ol>
+
+    <li><b>Why Call C from Python?</b></li>
+    <br/>
+    <ul>
+        <li>Python is expressive and productive, but not always the fastest.</li>
+        <br/>
+        <li>Sometimes you already have code written in C:
+            <ul>
+                <li>Existing C libraries (e.g. math libraries, compression, graphics)</li>
+                <li>Low-level OS / hardware interfaces</li>
+                <li>Legacy code you don’t want to rewrite</li>
+            </ul>
+        </li>
+        <br/>
+        <li>There are multiple approaches:
+            <ul>
+                <li>C extension modules (Python C API)</li>
+                <li><code>ctypes</code> (standard library)</li>
+                <li><code>cffi</code> (3rd-party)</li>
+                <li>Cython (Python-like syntax compiled to C)</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Overview of Approaches</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Requires compiling?</th>
+                <th>Good for</th>
+                <th>Difficulty</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>C extension (Python C API)</td>
+                <td>Yes (.so / .pyd)</td>
+                <td>Deep integration, custom types</td>
+                <td>Hardest, but most powerful</td>
+            </tr>
+            <tr>
+                <td><code>ctypes</code></td>
+                <td>Uses existing .so / .dll</td>
+                <td>Quick bindings to shared libs</td>
+                <td>Medium</td>
+            </tr>
+            <tr>
+                <td><code>cffi</code></td>
+                <td>Often yes; can also use ABI mode</td>
+                <td>Nice C-like declarations in Python</td>
+                <td>Medium</td>
+            </tr>
+            <tr>
+                <td>Cython</td>
+                <td>Yes, compiles .pyx to C</td>
+                <td>Mixed Python + C performance</td>
+                <td>Medium</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Calling C via a Python C Extension Module</b></li>
+    <br/>
+    <ul>
+        <li>This is the "classic" way:
+            <ul>
+                <li>You write C code using the Python C API.</li>
+                <li>Compile it into a shared object.</li>
+                <li><code>import</code> it like a normal Python module.</li>
+            </ul>
+        </li>
+        <li>Example: expose a simple <code>add(a, b)</code> function from C to Python.</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">/* mymodule.c */
+#include &lt;Python.h&gt;
+
+static PyObject * my_add(PyObject * self, PyObject * args) {
+    int a, b;
+    if (!PyArg_ParseTuple(args, "ii", &amp;a, &amp;b)) {
+        return NULL;  /* raises TypeError automatically */
+    }
+    int result = a + b;
+    return PyLong_FromLong(result);
+}
+
+/* Method table */
+static PyMethodDef MyMethods[] = {
+    {"add", my_add, METH_VARARGS, "Add two integers"},
+    {NULL, NULL, 0, NULL}
+};
+
+/* Module definition */
+static struct PyModuleDef mymodule = {
+    PyModuleDef_HEAD_INIT,
+    "mymodule",       /* module name */
+    "Example module", /* optional docstring */
+    -1,               /* size of per-interpreter state, or -1 */
+    MyMethods
+};
+
+/* Initialization function */
+PyMODINIT_FUNC PyInit_mymodule(void) {
+    return PyModule_Create(&amp;mymodule);
+}
+</code></pre>
+
+    <ul>
+        <li>Build it with a <code>setup.py</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">
+# setup.py
+from setuptools import setup, Extension
+
+module = Extension(
+    "mymodule",
+    sources=["mymodule.c"],
+)
+
+setup(
+    name="mymodule",
+    version="0.1",
+    ext_modules=[module],
+)
+</code></pre>
+
+    <ul>
+        <li>Compile and install:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 setup.py build
+python3 setup.py install
+</code></pre>
+
+    <ul>
+        <li>Then in Python:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import mymodule
+
+print(mymodule.add(3, 5))   # 8
+</code></pre>
+
+    <ul>
+        <li>Here, Python calls directly into your compiled C function.</li>
+        <li>This method gives:
+            <ul>
+                <li>maximum speed</li>
+                <li>ability to create new Python types in C</li>
+                <li>tight integration with Python internals</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Calling C with <code>ctypes</code> (Standard Library)</b></li>
+    <br/>
+    <ul>
+        <li><code>ctypes</code> lets you:
+            <ul>
+                <li>load a C shared library (<code>.so</code>, <code>.dll</code>)</li>
+                <li>declare function signatures in Python</li>
+                <li>call the functions directly</li>
+            </ul>
+        </li>
+        <li>No need to write Python C API glue code — just compile your C into a shared library.</li>
+    </ul>
+
+    <ul>
+        <li>Example: create a C library.</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">/* mymath.c */
+int add(int a, int b) {
+    return a + b;
+}
+</code></pre>
+
+    <ul>
+        <li>Compile (Linux example):
+            <code class="language-bash line-numbers">gcc -shared -fPIC -o libmymath.so mymath.c</code>
+        </li>
+    </ul>
+
+
+    <ul>
+        <li>Now call it from Python:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import ctypes
+from ctypes import c_int
+
+# Load the shared library
+lib = ctypes.CDLL("./libmymath.so")
+
+# Declare argument and return types
+lib.add.argtypes = (c_int, c_int)
+lib.add.restype = c_int
+
+result = lib.add(2, 5)
+print(result)    # 7
+</code></pre>
+
+    <ul>
+        <li>Key points:</li>
+        <ul>
+            <li><code>ctypes.CDLL</code> loads the shared library.</li>
+            <li><code>argtypes</code> and <code>restype</code> define how Python should convert arguments and results.</li>
+            <li>Works on Windows (via <code>.dll</code>) and macOS too (with <code>.dylib</code> / <code>.so</code>).</li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Passing Pointers and Arrays with</b> <code>ctypes</code></li>
+    <br/>
+    <ul>
+        <li>You can also pass arrays, structs, and pointers.</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">/* sum_array.c */
+int sum_array(const int* data, int n) {
+    int s = 0;
+    for (int i = 0; i &lt; n; ++i) {
+        s += data[i];
+    }
+    return s;
+}
+</code></pre>
+
+    <ul>
+        <li>Compile to shared library, then:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import ctypes
+from ctypes import c_int
+
+lib = ctypes.CDLL("./libsumarray.so")
+lib.sum_array.argtypes = (ctypes.POINTER(c_int), c_int)
+lib.sum_array.restype = c_int
+
+# Create C array from Python list
+arr = (c_int * 4)(1, 2, 3, 4)
+result = lib.sum_array(arr, 4)
+print(result)   # 10
+</code></pre>
+
+    <ul>
+        <li>Here, Python passes the pointer to the array into the C function.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Calling C with</b> <code>cffi</code> (C Foreign Function Interface)</b></li>
+    <br/>
+    <ul>
+        <li><code>cffi</code> is a 3rd-party library that aims to be:
+            <ul>
+                <li>more C-like</li>
+                <li>cleaner than raw <code>ctypes</code></li>
+            </ul>
+        </li>
+        <li>
+            Install:<code class="language-bash line-numbers">python3 -m pip install cffi</code>
+        </li>
+    </ul>
+
+    <ul>
+        <li>Example (using the same <code>int add(int, int)</code>):</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">from cffi import FFI
+
+ffi = FFI()
+ffi.cdef("int add(int a, int b);")
+
+lib = ffi.dlopen("./libmymath.so")
+
+result = lib.add(2, 3)
+print(result)   # 5
+</code></pre>
+
+    <ul>
+        <li>Key benefits:</li>
+        <ul>
+            <li>You describe C functions with C-like declarations (<code>cdef</code>).</li>
+            <li><code>cffi</code> handles conversions.</li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Using Cython as a “Friendly Frontend” to C</b></li>
+    <br/>
+    <ul>
+        <li>Cython lets you write Python-like syntax, then compiles it to C.</li>
+        <li>Good for:
+            <ul>
+                <li>gradually accelerating Python code</li>
+                <li>calling C functions easily</li>
+            </ul>
+        </li>
+        <li>Example: calling a C function from Cython.</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">/* cmathlib.h */
+int add(int a, int b);
+</code></pre>
+
+<pre><code class="language-c line-numbers">/* cmathlib.c */
+int add(int a, int b) {
+    return a + b;
+}
+</code></pre>
+
+    <ul>
+        <li>Cython file <code>mymodule.pyx</code>:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># mymodule.pyx
+cdef extern from "cmathlib.h":
+    int add(int a, int b)
+
+def py_add(a: int, b: int) -&gt; int:
+    return add(a, b)
+</code></pre>
+
+    <ul>
+        <li>Then build with a Cython-aware <code>setup.py</code>, and use:</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">import mymodule
+print(mymodule.py_add(3, 4))  # 7
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Which Method Should I Use?</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Scenario</th>
+                <th>Recommended Method</th>
+                <th>Reason</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>You already have a compiled C library (.so / .dll)</td>
+                <td><code>ctypes</code> or <code>cffi</code></td>
+                <td>No need to touch the C code; write bindings in Python.</td>
+            </tr>
+            <tr>
+                <td>You want deep integration with Python objects</td>
+                <td>C extension (Python C API)</td>
+                <td>Maximum control, can define new Python types.</td>
+            </tr>
+            <tr>
+                <td>You want speed but prefer Python-like syntax</td>
+                <td>Cython</td>
+                <td>Gradual optimization, simpler than raw C API.</td>
+            </tr>
+            <tr>
+                <td>You want fine control of ABI/API with clean C syntax</td>
+                <td><code>cffi</code></td>
+                <td>C-like declarations with a nice interface.</td>
+            </tr>
+        </tbody>
+    </table>
 
     <br/><br/>
 
