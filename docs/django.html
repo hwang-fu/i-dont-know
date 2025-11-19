@@ -163,6 +163,7 @@
         <li><a href="#django-orm">Object–Relational Mapper (ORM)</a></li>
         <li><a href="#django-project-vs-app">Project vs App</a></li>
         <li><a href="#django-urls-py"><code>urls.py</code></a></li>
+        <li><a href="#django-wsgi-py"><code>wsgi.py</code></a></li>
     </ul>
 </nav>
 <hr/>
@@ -2297,12 +2298,9 @@ urlpatterns = [
         <li>Reverse the URL using a namespace:</li>
     </ul>
 
-<pre><code class="language-html line-numbers">{% url 'blog:hello' %}
-</code></pre>
-
-    <br/><br/>
-
+<pre><code class="language-html line-numbers">{% url 'blog:hello' %}</code></pre>
 </ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
@@ -2310,7 +2308,226 @@ urlpatterns = [
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-wsgi-py">Understanding <code>wsgi.py</code> in Django</h3>
+<ol>
 
+    <li><b>What Is WSGI?</b></li>
+    <br/>
+    <ul>
+        <li><b>WSGI</b> stands for <u>Web Server Gateway Interface</u>.</li>
+        <br/>
+        <li>It is a standard interface between a Python web application (like Django) and a production web server (like Gunicorn, uWSGI, Apache mod_wsgi)</li>
+        <br/>
+        <li>WSGI ensures that:
+            <ul>
+                <li>your Django project can run on any server that supports WSGI</li>
+                <li>your Python code is separated from the web server implementation</li>
+            </ul>
+        </li>
+        <br/>
+        <li>In short: WSGI is the <u>bridge</u> between Django and the outside world in production environments.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Where Is <code>wsgi.py</code> Located?</b></li>
+    <br/>
+    <ul>
+        <li>It is automatically created inside your project folder:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">mysite/
+├── manage.py
+└── mysite/
+    ├── __init__.py
+    ├── settings.py
+    ├── urls.py
+    ├── wsgi.py      &lt;-- here!
+    └── asgi.py
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>What Does <code>wsgi.py</code> Contain?</b></li>
+    <br/>
+    <ul>
+        <li>The file contains a small amount of boilerplate necessary for Django to run under WSGI servers.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers"># mysite/wsgi.py
+
+import os
+from django.core.wsgi import get_wsgi_application
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mysite.settings")
+
+application = get_wsgi_application()
+</code></pre>
+
+    <ul>
+        <li>Key parts:</li>
+        <ul>
+            <li><code>os.environ.setdefault()</code>: tells Django which settings module to load</li>
+            <li><code>get_wsgi_application()</code>: creates a WSGI-compatible application object</li>
+            <li><code>application</code>: the entry point the server will use</li>
+        </ul>
+        <br/>
+        <li>This file rarely needs modification.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Why Do We Need <code>wsgi.py</code>?</b></li>
+    <br/>
+    <ul>
+        <li>Django needs a standard interface to communicate with a production-ready server.</li>
+        <br/>
+        <li>WSGI:
+            <ul>
+                <li>handles HTTP requests</li>
+                <li>passes them to Django</li>
+                <li>returns Django’s HTTP responses to the server</li>
+            </ul>
+        </li>
+
+        <br/>
+
+        <li>Without WSGI, your Django project cannot run on servers like:
+            <ul>
+                <li>Gunicorn</li>
+                <li>uWSGI</li>
+                <li>Apache with mod_wsgi</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Relationship Between <code>manage.py</code> and <code>wsgi.py</code></b></li>
+    <br/>
+    <ul>
+        <li><code>manage.py</code> is used for development commands:
+            <ul>
+                <li>runserver</li>
+                <li>migrate</li>
+                <li>createsuperuser</li>
+            </ul>
+        </li>
+        <br/>
+        <li><code>wsgi.py</code> is used for deploying your project to a real server.</li>
+        <br/>
+        <li>Both load the Django settings module.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Running Django in Production With WSGI</b></li>
+    <br/>
+    <ul>
+        <li>Example using <u>Gunicorn</u> inside your virtual environment:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install gunicorn
+gunicorn mysite.wsgi:application
+</code></pre>
+
+    <ul>
+        <li>Gunicorn loads:
+            <ul>
+                <li>your project</li>
+                <li>your Django settings</li>
+                <li>the WSGI application object</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>How WSGI Processes a Request (Step-by-Step)</b></li>
+    <br/>
+    <ol>
+        <li>Browser sends an HTTP request → web server receives it</li>
+        <li>Web server calls your WSGI application object</li>
+        <li><code>wsgi.py</code> gives Django the request</li>
+        <li>Django:
+            <ul>
+                <li>loads URL configuration</li>
+                <li>dispatches to the correct view</li>
+                <li>produces an HttpResponse</li>
+            </ul>
+        </li>
+        <li>Response is passed back through WSGI to the server</li>
+        <li>Server sends response to the browser</li>
+    </ol>
+
+    <br/><br/>
+
+
+    <li><b>WSGI vs. ASGI</b></li>
+    <br/>
+    <ul>
+        <li>Django also includes <code>asgi.py</code> for async servers.</li>
+        <li>The difference:</li>
+    </ul>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Interface</th>
+                <th>Purpose</th>
+                <th>Typical Server</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><b>WSGI</b></td>
+                <td>Traditional synchronous web apps</td>
+                <td>Gunicorn, uWSGI, mod_wsgi</td>
+            </tr>
+            <tr>
+                <td><b>ASGI</b></td>
+                <td>Async features (WebSockets, HTTP/2)</td>
+                <td>Uvicorn, Daphne</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/>
+
+    <ul>
+        <li>If your app is basic HTTP — WSGI is enough.</li>
+        <li>If you need WebSockets or async — use ASGI.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Do You Ever Edit <code>wsgi.py</code>?</b></li>
+    <br/>
+    <ul>
+        <li>Most projects never change it.</li>
+        <br/>
+        <li>Possible edge cases:
+            <ul>
+                <li>adding environment variables</li>
+                <li>overriding settings module</li>
+                <li>custom logging setup</li>
+            </ul>
+        </li>
+        <br/>
+        <li>But for beginners → leave it untouched.</li>
+    </ul>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
