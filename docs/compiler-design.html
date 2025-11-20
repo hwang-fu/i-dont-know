@@ -158,6 +158,7 @@
     <ul style="line-height: 1.8;">
         <li><a href="#compiler-intro">Introduction</a></li>
         <li><a href="#compiler-phases">Phases</a></li>
+        <li><a href="#compiler-lexical-analyzer">Lexical Analyzer</a></li>
     </ul>
 </nav>
 <hr/>
@@ -702,6 +703,206 @@ mov [x], eax
     Executable
 </code></pre>
 
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="compiler-lexical-analyzer">Introduction to the Lexical Analyzer</h3>
+<ol>
+
+    <li><b>What Is a Lexical Analyzer?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>lexical analyzer</b>, also called a <b>lexer</b> or <b>scanner</b>, is the first phase of a compiler.</li>
+        <br/>
+        <li>Its job is to transform raw source code (a stream of characters) into a stream of <b>tokens</b>.</li>
+        <br/>
+        <li>A token is a structured, meaningful element such as:
+            <ul>
+                <li>Keywords: <code>if</code>, <code>let</code>, <code>while</code></li>
+                <li>Identifiers: <code>x</code>, <code>totalAmount</code></li>
+                <li>Literals: <code>42</code>, <code>"hello"</code>, <code>true</code></li>
+                <li>Operators: <code>+</code>, <code>-</code>, <code>==</code>, <code>=</code></li>
+                <li>Punctuation: <code>;</code>, <code>(</code>, <code>)</code>, <code>{</code>, <code>}</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>The lexer removes:
+            <ul>
+                <li>whitespace (spaces, tabs, newlines),</li>
+                <li>comments,</li>
+                <li>formatting irrelevant to syntax.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The output of a lexer is a clean token stream ready for parsing.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Why Is Lexical Analysis Needed?</b></li>
+    <br/>
+    <ul>
+        <li>Languages are easier to reason about when reduced to meaningful units.</li>
+        <br/>
+        <li>A parser should process <b>tokens</b>, not raw characters.</li>
+        <br/>
+        <li>Lexers simplify parsing by:
+            <ul>
+                <li>grouping multi-character operators (<code>==</code>, <code>&gt;=</code>)</li>
+                <li>handling keywords vs identifiers</li>
+                <li>normalizing whitespace</li>
+                <li>detecting early lexical errors (invalid characters)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Without a lexer, parsers become extremely complicated.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The Lexical Unit: Tokens</b></li>
+    <br/>
+    <ul>
+        <li>Each token has generally:
+            <ul>
+                <li><b>type</b> (e.g., NUMBER, IDENTIFIER)</li>
+                <li><b>lexeme</b> — the exact string matched</li>
+                <li><b>literal value</b> (optional, e.g. integer value 42)</li>
+                <li><b>position</b> (line/column for error reporting)</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Token {
+    type: IDENTIFIER,
+    lexeme: "total",
+    literal: null,
+    line: 3
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Tokens form a clean “interface” between source text and syntax analysis.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How the Lexer Works</b></li>
+    <br/>
+    <ul>
+        <li>Lexers commonly operate using:
+            <ul>
+                <li><b>Deterministic Finite Automata (DFA)</b></li>
+                <li><b>Regular expressions</b></li>
+            </ul>
+        </li>
+        <br/>
+        <li>The lexer scans the input left to right, grouping characters into the longest valid token.</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Example:
+Input:   x = 12 + 7
+Output:  IDENT("x"), EQUALS, NUMBER(12), PLUS, NUMBER(7)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Token Categories (Example)</b></li>
+    <br/>
+
+    <ul>
+        <li><b>Identifiers</b></li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">myVar, count1, is_valid</code></pre>
+
+    <ul>
+        <li><b>Keywords</b></li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">if, else, while, return</code></pre>
+
+    <ul>
+        <li><b>Literals</b>: integers, floats, strings, booleans</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">42, 3.14, "abc", true</code></pre>
+
+    <ul>
+        <li><b>Operators</b></li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">+, -, *, /, ==, !=, &gt;=, &lt;=, =</code></pre>
+
+    <ul>
+        <li><b>Punctuation</b></li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">;, ,, (, ), {, }</code></pre>
+
+    <ul>
+        <li><b>Comments</b> (ignored by the lexer)</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">// single-line
+/* multi-line */
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Lexical Errors</b></li>
+    <br/>
+    <ul>
+        <li>The lexer is also responsible for catching invalid characters:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">abc @ def
+    ^
+    error: unexpected character '@'
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>If an invalid lexeme is encountered, compilation stops at the lexical phase.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>There are several common ways to build a lexer:</li>
+    <ul>
+        <br/>
+        <li><b>Regex-based lexers</b></li>
+        <br/>
+        <li><b>DFA-based scanners</b></li>
+        <br/>
+        <li><b>Hand-written lexers</b> — common in simpler compilers</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Longest Match Rule</b></li>
+    <br/>
+    <ul>
+        <li>Lexers usually apply the <b>maximal match</b> principle:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Input:           &gt;=
+Lexer picks:    "&gt;="   (not just "&gt;")
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This ensures ambiguous prefixes are handled properly.</li>
+    </ul>
     <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
