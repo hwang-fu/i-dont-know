@@ -163,6 +163,7 @@
         <li><a href="#haskell-typeclasses">Typeclasses</a></li>
         <li><a href="#haskell-pattern-matching">Pattern Matching</a></li>
         <li><a href="#haskell-guards">Guards</a></li>
+        <li><a href="#haskell-built-in-types">Built-in Types</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3551,7 +3552,675 @@ triangleType a b c
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-built-in-types">Built-in Types in Haskell</h3>
+<ol>
+    <li><b>Big Picture</b></li>
+    <br/>
+    <ul>
+        <li>Many types you use come from:
+            <ul>
+                <li>The <code>Prelude</code> (imported automatically),</li>
+                <li>The <code>base</code> library (standard library),</li>
+                <li>Other common libraries (<code>containers</code>, <code>text</code>, <code>bytestring</code>, <code>scientific</code>, etc.).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This chapter focuses on:
+            <ul>
+                <li><b>Primitive &amp; core types</b>: <code>Bool</code>, <code>Char</code>, numeric types</li>
+                <li><b>Composite types</b>: lists, tuples</li>
+                <li><b>Algebraic types</b>: <code>Maybe</code>, <code>Either</code>, <code>Ordering</code></li>
+                <li><b>Special types</b>: <code>()</code>, <code>IO a</code>, function types <code>a -&gt; b</code></li>
+                <li><b>Type constructors &amp; kinds</b>, and <b>typeclass relationships</b></li>
+                <li>Some widely used numeric &amp; scientific types (<code>Rational</code>, <code>Complex</code>, <code>Natural</code>, <code>Scientific</code>-like)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 
+
+    <li><b><code>Bool</code>: Boolean Type</b></li>
+    <br/>
+    <ul>
+        <li><code>Bool</code> has exactly two values:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Bool = False | True
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Main operations:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(&amp;&amp;) :: Bool -&gt; Bool -&gt; Bool
+(||) :: Bool -&gt; Bool -&gt; Bool
+not  :: Bool -&gt; Bool
+
+True  &amp;&amp; False   -- False
+True  || False   -- True
+not True        -- False
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Bool</code> instances:
+            <ul>
+                <li><code>Eq</code> (can compare with <code>==</code>),</li>
+                <li><code>Ord</code> (<code>False &lt; True</code>),</li>
+                <li><code>Show</code> (<code>show True == "True"</code>).</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>Char</code><b>: Unicode Characters</b></li>
+    <br/>
+    <ul>
+        <li><code>Char</code> represents a single Unicode code point.</li>
+        <li>Written with <b>single quotes</b>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">'a'  :: Char
+'Z'  :: Char
+'\n' :: Char
+'中' :: Char
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Common operations (from <code>Data.Char</code>):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">isAlpha  :: Char -&gt; Bool
+isDigit  :: Char -&gt; Bool
+toUpper  :: Char -&gt; Char
+toLower  :: Char -&gt; Char
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.Char (toUpper, isDigit)
+
+toUpper 'a'        -- 'A'
+isDigit '3'        -- True
+isDigit 'x'        -- False
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><code>String</code><b>: Text Built from</b> <code>[Char]</code></li>
+    <br/>
+    <ul>
+        <li><code>String</code> is just a <b>type synonym</b> for a list of characters:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">type String = [Char]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Text literals are written with <b>double quotes</b>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">"hello"       :: String
+"λ-calculus"  :: String
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Because <code>String = [Char]</code>, all list operations work on strings:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">length :: [a] -&gt; Int
+
+length "haskell"       -- 7
+'h' : "askell"         -- "haskell"
+"foo" ++ "bar"         -- "foobar"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>String</code> is easy to reason about but inefficient for large text (linked list of <code>Char</code>).</li>
+        <li>For serious text processing, libraries use:
+            <ul>
+                <li><code>Data.Text.Text</code> (Unicode, packed array),</li>
+                <li><code>Data.ByteString.ByteString</code> (binary data, bytes).</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Numeric Tower Overview</b></li>
+    <br/>
+    <ul>
+        <li>Haskell uses <b>typeclasses</b> to organize numeric types:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">class Num a where ...
+class Real a where ...
+class Integral a where ...
+class Fractional a where ...
+class Floating a where ...
+class RealFrac a where ...
+class RealFloat a where ...
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Rough hierarchy (simplified):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Integral ⊆ Real ⊆ Num
+Fractional ⊆ Num
+Floating   ⊆ Fractional
+RealFrac   ⊆ Real &amp; Fractional
+RealFloat  ⊆ RealFrac &amp; Floating
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Numeric literals are polymorphic:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">5   :: Num a =&gt; a         -- can be Int, Integer, Double, ...
+3.5 :: Fractional a =&gt; a  -- can be Float or Double
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Integral Types</b></li>
+    <br/>
+    <ul>
+        <li><code>Int</code>:
+            <ul>
+                <li>Fixed-size, machine integer (usually 64-bit).</li>
+                <li>Fast, but can <b>overflow</b> on very large values.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">42    :: Int
+(-10) :: Int
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Integer</code>:
+            <ul>
+                <li>Arbitrary-precision integer (no overflow, limited only by memory).</li>
+                <li>Great for exact math or big integers, slower than <code>Int</code>.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">123456789012345678901234567890 :: Integer
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Fixed-width integer types</b> (from <code>Data.Int</code>):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.Int
+
+Int8, Int16, Int32, Int64  -- signed fixed-width
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Unsigned</b> integer types (from <code>Data.Word</code>):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.Word
+
+Word8, Word16, Word32, Word64  -- unsigned
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Natural</code> (from <code>Numeric.Natural</code>):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Numeric.Natural
+
+0    :: Natural
+123  :: Natural
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Integral typeclass:</b></li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">class (Real a, Enum a) =&gt; Integral a where
+    quot, rem, div, mod :: a -&gt; a -&gt; a
+    ...
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Instances include <code>Int</code>, <code>Integer</code>, and some fixed-width variants.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Fractional &amp; Floating Types</b></li>
+    <br/>
+    <ul>
+        <li><code>Float</code>:
+            <ul>
+                <li>Single-precision floating point (32-bit, IEEE 754).</li>
+                <li>Usually used less often.</li>
+            </ul>
+        </li>
+        <li><code>Double</code>:
+            <ul>
+                <li>Double-precision floating point (64-bit, IEEE 754).</li>
+                <li>Default for most real-number computations.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">3.14   :: Float
+2.718  :: Double
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Fractional</code> typeclass:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">class (Num a) =&gt; Fractional a where
+    (/)          :: a -&gt; a -&gt; a
+    fromRational :: Rational -&gt; a
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Exact rational numbers: <code>Rational</code></li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">type Rational = Ratio Integer
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Constructed using <code>%</code> (from <code>Data.Ratio</code>):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.Ratio
+
+1 % 3        :: Rational
+(1 % 3) + (1 % 6)  -- 1 % 2  (exact 1/2)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Scientific / decimal types</b>:
+            <ul>
+                <li>Libraries (e.g. <code>Data.Scientific</code>) provide decimal-like types for precise numeric I/O (e.g. JSON numbers).</li>
+                <li>Not in Prelude but very common in practice.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Complex Numbers</b></li>
+    <br/>
+    <ul>
+        <li>From <code>Data.Complex</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.Complex
+
+(3 :+ 4)        :: Complex Double
+magnitude (3 :+ 4)   -- 5.0
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Definition (simplified):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Complex a = !a :+ !a
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Supports standard numeric operations (<code>Num</code>, <code>Fractional</code>, <code>Floating</code> instances).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Lists:</b> <code>[a]</code> <b>and Lazy Sequences</b></li>
+    <br/>
+    <ul>
+        <li>Lists are homogeneous, immutable, linked lists.</li>
+        <li>Definition (conceptually):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data [] a = [] | a : [a]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Syntax examples:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[1,2,3]        :: [Int]
+[]             :: [a]
+1 : 2 : 3 : [] :: [Int]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Common operations:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">head, tail     :: [a] -&gt; a / [a]
+length         :: [a] -&gt; Int
+(++)           :: [a] -&gt; [a] -&gt; [a]
+map, filter    :: (a -&gt; b) -&gt; [a] -&gt; [b] / (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Infinite lists</b> via laziness:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[1..]              -- infinite list of Ints
+take 5 [1..]       -- [1,2,3,4,5]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Lists are very flexible but not always optimal for performance; other structures (<code>Vector</code>, <code>Seq</code>, etc.) may be better.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Tuples and the Unit Type</b> <code>()</code></li>
+    <br/>
+    <ul>
+        <li>Tuples group a fixed number of possibly heterogeneous values.</li>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(1, "hi")         :: (Int, String)
+(True, 3.14, 'x') :: (Bool, Double, Char)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Special case: the <b>unit type</b> <code>()</code> is a tuple of length 0:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">() :: ()
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Unit is used when a function conceptually returns “no meaningful value” (similar to <code>void</code>):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">print :: Show a =&gt; a -&gt; IO ()
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>For pairs, there are helpers:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">fst :: (a, b) -&gt; a
+snd :: (a, b) -&gt; b
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><code>Maybe a</code>: <b>Optional Values</b></li>
+    <br/>
+    <ul>
+        <li><code>Maybe</code> is a core ADT representing optional values:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Maybe a = Nothing | Just a
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Just 5      :: Maybe Int
+Nothing     :: Maybe a
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Used heavily to avoid <code>null</code>-like errors.</li>
+        <li>Typical usage:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">safeHead :: [a] -&gt; Maybe a
+safeHead []    = Nothing
+safeHead (x:_) = Just x
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Maybe</code> has <code>Functor</code>, <code>Applicative</code>, and <code>Monad</code> instances; it composes nicely in pure code.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>Either e a</code>: <b>Two-way Choice (Often for Errors)</b></li>
+    <br/>
+    <ul>
+        <li>Definition:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Either a b = Left a | Right b
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Common convention:
+            <ul>
+                <li><code>Left e</code>: error or exceptional value</li>
+                <li><code>Right x</code>: successful result</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">parseInt :: String -&gt; Either String Int
+parseInt s =
+    case reads s of
+        [(n, "")] -&gt; Right n
+        _         -&gt; Left "not a number"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Either e</code> also has <code>Functor</code>, <code>Applicative</code>, and <code>Monad</code> instances (biased toward <code>Right</code>).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>Ordering</code>: <b>Result of Comparisons</b></li>
+    <br/>
+    <ul>
+        <li>Used by the <code>Ord</code> typeclass, especially <code>compare</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Ordering = LT | EQ | GT
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">compare 3 5  -- LT
+compare 5 5  -- EQ
+compare 7 2  -- GT
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Useful when writing custom sort logic or combining comparisons.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Function Types:</b> <code>a -&gt; b</code></li>
+    <br/>
+    <ul>
+        <li>Functions themselves are values and have types:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">increment :: Int -&gt; Int
+increment x = x + 1
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Functions are <u>curried</u> by default:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">add :: Int -&gt; Int -&gt; Int
+add x y = x + y
+
+-- add has type: Int -&gt; (Int -&gt; Int)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can pass functions as arguments and return them (higher-order functions):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">applyTwice :: (a -&gt; a) -&gt; a -&gt; a
+applyTwice f x = f (f x)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>There is also a <b>function type constructor</b> at the type level, commonly written as <code>(-&gt;)</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">( -&gt; ) :: * -&gt; * -&gt; *
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><code>IO a</code>: <b>Side Effects and the Outside World</b></li>
+    <br/>
+    <ul>
+        <li><code>IO a</code> is the type of an <b>effectful computation</b> that, when executed by the runtime, may:
+            <ul>
+                <li>perform side effects (read/write files, print, network I/O, etc.),</li>
+                <li>and eventually produce a value of type <code>a</code>.</li>
+            </ul>
+        </li>
+        <li>Some examples:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">getLine  :: IO String
+putStrLn :: String -&gt; IO ()
+readFile :: FilePath -&gt; IO String
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>A typical <code>main</code> function:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main :: IO ()
+main = do
+    putStrLn "What is your name?"
+    name &lt;- getLine
+    putStrLn ("Hello, " ++ name)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Key idea:</b> <code>IO a</code> keeps <b>pure code</b> separate from <b>effectful code</b>, while still being strongly typed.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Type Constructors &amp; Kinds for Built-in Types</b></li>
+    <br/>
+    <ul>
+        <li>Many built-in types are actually <b>type constructors</b>:
+            <ul>
+                <li><code>Maybe    :: * -&gt; *</code></li>
+                <li><code>[]       :: * -&gt; *</code></li>
+                <li><code>Either   :: * -&gt; * -&gt; *</code></li>
+                <li><code>(-&gt;)  :: * -&gt; * -&gt; *</code></li>
+                <li><code>IO       :: * -&gt; *</code></li>
+            </ul>
+        </li>
+        <li><b>Kinds</b> are “types of types”:
+            <ul>
+                <li><code>*</code> (or <code>Type</code>) means “a concrete type of values”.</li>
+                <li><code>* -&gt; *</code> means “takes a type and returns a type”.</li>
+            </ul>
+        </li>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Maybe     :: * -&gt; *
+Maybe Int :: *
+
+Either :: * -&gt; * -&gt; *
+Either String Int :: *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is analogous to generics/templated types in other languages, but with a more explicit type-level structure.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Laziness, Memory, and Performance Notes</b></li>
+    <br/>
+    <ul>
+        <li><b>Laziness:</b>
+            <ul>
+                <li>Most Haskell types are evaluated lazily: values are computed when needed.</li>
+                <li>Lists and <code>String</code> can represent infinite sequences thanks to laziness.</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Strict fields:</b>
+            <ul>
+                <li>Some types (like <code>Complex</code>) use <code>!</code> to make fields strict, avoiding thunks and reducing memory overhead.</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Performance rules of thumb:</b>
+            <ul>
+                <li>Use <code>Int</code> when you want speed and can tolerate overflow, <code>Integer</code> for exact big integers.</li>
+                <li>Use <code>Double</code> for most floating-point computations, <code>Rational</code> for exact rational math.</li>
+                <li>Use <code>String</code> for simple examples and small text, <code>Text</code> or <code>ByteString</code> for serious IO or large data.</li>
+                <li>Lists are great for streaming and combinators, arrays/vectors are better for random access and numeric performance.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
