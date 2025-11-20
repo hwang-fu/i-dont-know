@@ -1,0 +1,403 @@
+<!-- * * * * * * * * * * * * * * -->
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Compression Algorithms</title>
+
+    <!-- Theme (pick any from Prism site) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.css">
+
+    <!-- Prism core + Lisp language -->
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js"
+            data-prismjs-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs/components/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.js"></script>
+
+<style>
+    html {
+        scroll-behavior: smooth;
+    }
+
+    .back-to-top {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #333;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 22px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        opacity: 0.75;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        z-index: 999;
+    }
+
+    .back-to-top:hover {
+        opacity: 1;
+        transform: translateY(-2px);
+    }
+
+    .nav-icon {
+        width: 35px;          /* adjust size here */
+        height: 35px;
+        object-fit: contain;  /* keep aspect ratio */
+        vertical-align: middle;
+        margin-left: 0.3rem;  /* small gap from text */
+    }
+
+    table {
+        border-collapse: collapse;      /* merge borders so you don't get double lines */
+        width: 100%;                    /* optional: make it full width */
+        font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
+        font-size: 14px;
+    }
+
+    th {
+        background-color: #f5f5f5;      /* light gray header background */
+        text-align: left;               /* header text alignment */
+        font-weight: 600;
+    }
+
+    th, td {
+        border: 1px solid #ddd;         /* subtle border color */
+        padding: 8px 12px;              /* breathing room */
+    }
+
+    tr:nth-child(even) {
+        background-color: #fafafa;      /* zebra striping for readability */
+    }
+
+    tr:hover {
+        background-color: #f0f8ff;      /* light hover highlight */
+    }
+
+    .comment {
+        color: grey;
+    }
+
+    .token.keyword {
+        font-weight: 500;
+    }
+    /*
+    .token.comment {
+        color: #888;
+    }
+    */
+
+    .red-underline {
+        text-decoration-line: underline;
+        text-decoration-color: red;
+        text-decoration-thickness: 2px; /* optional: make it a bit thicker */
+        text-underline-offset: 2px;     /* optional: move it slightly down */
+    }
+
+    body {
+        font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
+        font-variant-ligatures: none;
+    }
+
+    ul > li {
+        list-style-type: disc;
+    }
+
+    code {
+        color: #24292e;                     /* text */
+        background-color: #f6f8fa;          /* bg */
+        border: 1px solid #d0d7de;          /* subtle frame */
+        border-radius: .375rem;
+        padding: .15rem .35rem;
+        font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 0.875rem;                /* 14px-ish; avoid bare numbers */
+        line-height: 1.4;
+    }
+
+    /* Block code container */
+    pre {
+        margin: 1rem 0;
+        padding: .8rem 1rem;
+        background-color: #f6f8fa;       /* match inline bg */
+        border: 1px solid #d0d7de;
+        border-radius: .5rem;
+        overflow: auto;                   /* scroll if long */
+        tab-size: 4;                      /* adjust as needed */
+    }
+
+    /* Code inside pre: remove extra padding/background from inline style */
+    pre code {
+        display: block;                   /* ensure full-width */
+        padding: 0;                       /* pre handles padding */
+        background: transparent;          /* avoid double bg */
+        border: 0;                        /* avoid double border */
+        color: #24292e;
+        font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        white-space: pre;                 /* preserve spacing; use pre-wrap to wrap long lines */
+    }
+</style>
+</head>
+<!-- * * * * * * * * * * * * * * -->
+<body>
+<a href="#" class="back-to-top" aria-label="Back to top">
+    &#8593;
+</a>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<!-- * * * * * * * * * * * * * * -->
+<hr/>
+<nav id="toc" style="margin-bottom: 2rem;">
+    <h2> <img src="resources/compression.png" alt="Logo" class="nav-icon"/></h2>
+    <ul style="line-height: 1.8;">
+        <li><a href="#compression-intro">Introduction</a></li>
+    </ul>
+</nav>
+<hr/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="compression-intro">Introduction to Compression Algorithms</h3>
+<ol>
+    <li><b>What Is Compression?</b></li>
+    <br/>
+    <ul>
+        <li>Compression is the process of reducing the size of data by removing redundancy.</li>
+        <br/>
+        <li>Compression algorithms fall mainly into:
+            <ul>
+                <li><u>Lossless</u> compression</li>
+                <li><u>Lossy</u> compression</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Lossless Compression</b></li>
+    <br/>
+    <ul>
+        <li>Lossless algorithms preserve all data exactly.</li>
+        <li>Used for text, source code, executables, database dumps, configuration files, etc.</li>
+        <li>Common techniques:
+            <ul>
+                <li>Dictionary-based compression (e.g., <code>LZ77</code>, <code>LZ78</code>, <code>LZW</code>)</li>
+                <li>Entropy coding (<code>Huffman</code>, <code>Arithmetic Coding</code>)</li>
+                <li>Context-based models (<code>PPM</code>, <code>bzip2 BWT</code>)</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-text line-numbers">Example formats:
+ZIP, GZIP, PNG, FLAC, Zstandard, Brotli
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Lossy Compression</b></li>
+    <br/>
+    <ul>
+        <li>Lossy algorithms remove data that is less noticeable to human senses.</li>
+        <li>Used for images, audio, and video.</li>
+        <li>Common techniques:
+            <ul>
+                <li>Transform coding (e.g., <code>DCT</code> in JPEG)</li>
+                <li>Frequency-domain reduction (e.g., <code>MP3</code>, <code>AAC</code>)</li>
+                <li>Motion compensation + frame prediction (e.g., <code>H.264</code>, <code>H.265</code>)</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-text line-numbers">Example formats:
+JPEG, MP3, AAC, WebM, H.264 / H.265, AV1
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Dictionary-Based Algorithms</b></li>
+    <br/>
+    <ul>
+        <li>Basic idea: Replace repeated patterns with references to earlier occurrences.</li>
+    </ul>
+    <ul>
+        <li><code>LZ77</code>: Sliding window + references to earlier substrings.</li>
+        <li><code>LZ78</code>: Builds a dictionary of repeated patterns.</li>
+        <li><code>LZW</code>: Popular variant used in GIF and old compression tools.</li>
+    </ul>
+<pre><code class="language-text line-numbers">Example:
+"abcabcabc" →
+(abc)(3 repeats) →
+much smaller representation
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Entropy Coding</b></li>
+    <br/>
+    <ul>
+        <li>Entropy coding assigns shorter bit patterns to more frequent symbols.</li>
+        <br/>
+        <li><b>Huffman Coding</b>:
+            <ul>
+                <li>Tree-based coding method</li>
+                <li>Guaranteed prefix-free bit patterns</li>
+            </ul>
+        </li>
+        <li><b>Arithmetic Coding</b>:
+            <ul>
+                <li>Represents whole messages as a fraction</li>
+                <li>Achieves better compression than Huffman in many cases</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-text line-numbers">Example:
+Frequent 'A' → 0
+Less frequent 'Z' → 11011
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Burrows–Wheeler Transform (BWT)</b></li>
+    <br/>
+    <ul>
+        <li>BWT rearranges text so similar characters stay close together.
+        This makes the text more compressible with RLE or Huffman.</li>
+        <li>Used in <code>bzip2</code> and modern high-compression tools.</li>
+        <li>Reversible transform—no data is lost.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Modern High-Performance Algorithms</b></li>
+    <br/>
+    <ul>
+        <li><b>Zstandard (zstd)</b>:
+            <ul>
+                <li>Very fast</li>
+                <li>Excellent compression ratio</li>
+                <li>Widely used in Linux, Docker, Facebook systems</li>
+            </ul>
+        </li>
+        <li><b>Brotli</b>:
+            <ul>
+                <li>Used in web browsers</li>
+                <li>Designed for HTTP compression</li>
+                <li>Better than gzip for many workloads</li>
+            </ul>
+        </li>
+        <li><b>LZ4</b>:
+            <ul>
+                <li>Extremely fast</li>
+                <li>Great for real-time logging or database compression</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-text line-numbers">Speed vs Ratio:
+LZ4 → fastest
+Zstandard → balanced
+Brotli → best ratio for web
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Applications of Compression</b></li>
+    <br/>
+    <ul>
+        <li>Web assets (CSS, JS, HTML)</li>
+        <li>Data transmission (HTTP, gRPC, WebSocket)</li>
+        <li>File formats (ZIP, PNG, MP3)</li>
+        <li>Databases (PostgreSQL TOAST, RocksDB block compression)</li>
+        <li>Backups and archives</li>
+        <li>Embedded systems</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary of Compression Types</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Examples</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Lossless</td>
+                <td>Preserves exact data</td>
+                <td><code>gzip</code>, <code>PNG</code>, <code>ZIP</code></td>
+            </tr>
+            <tr>
+                <td>Lossy</td>
+                <td>Removes perceptually unnecessary data</td>
+                <td><code>JPEG</code>, <code>MP3</code>, <code>H.264</code></td>
+            </tr>
+            <tr>
+                <td>Dictionary-based</td>
+                <td>Reuses repeated fragments</td>
+                <td><code>LZ77</code>, <code>LZW</code></td>
+            </tr>
+            <tr>
+                <td>Entropy coding</td>
+                <td>Shorter codes for frequent symbols</td>
+                <td><code>Huffman</code>, <code>Arithmetic</code></td>
+            </tr>
+            <tr>
+                <td>Modern fast</td>
+                <td>Optimized for speed + ratio</td>
+                <td><code>Zstd</code>, <code>LZ4</code>, <code>Brotli</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <ul>
+        <li>Compression is essential for performance, storage, networking, and modern computing efficiency.</li>
+        <li>Choosing the right algorithm depends on your trade-off: speed vs ratio vs quality.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+<!-- * * * * * * * * * * * * * * -->
+
+<footer>
+    <p>&copy; 2025 Hwangfucius. All rights reserved.</p>
+</footer>
+</body>
+<!-- * * * * * * * * * * * * * * -->
+</html>
+<!-- * * * * * * * * * * * * * * -->
