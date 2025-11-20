@@ -168,6 +168,7 @@
         <li><a href="#haskell-higher-order-functions">Higher Order Functions</a></li>
         <li><a href="#haskell-lambdas">Lambdas</a></li>
         <li><a href="#haskell-modules">Modules</a></li>
+        <li><a href="#haskell-deriving">Deriving Instances</a></li>
     </ul>
 </nav>
 <hr/>
@@ -5619,6 +5620,397 @@ main = putStrLn (capitalize "hello world")
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-deriving">Deriving Instances in Haskell</h3>
+<ol>
+    <li><b>What Does &quot;Deriving&quot; Mean in Haskell?</b></li>
+    <br/>
+    <ul>
+        <li>In Haskell, many behaviors are expressed via <b>typeclasses</b> (e.g. <code>Eq</code>, <code>Show</code>, <code>Ord</code>).</li>
+        <br/>
+        <li>An <b>instance</b> tells the compiler how a specific type supports a given typeclass.</li>
+        <br/>
+        <li><b>Deriving</b> allows the compiler to automatically generate <b>standard</b> instance implementations for many common typeclasses.</li>
+        <br/>
+        <li>Instead of writing:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Color = Red | Green | Blue
+
+instance Eq Color where
+    Red   == Red   = True
+    Green == Green = True
+    Blue  == Blue  = True
+    _     == _     = False
+
+instance Show Color where
+    show Red   = &quot;Red&quot;
+    show Green = &quot;Green&quot;
+    show Blue  = &quot;Blue&quot;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>you can simply write:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Color = Red | Green | Blue
+    deriving (Eq, Show)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The compiler generates the &quot;obvious&quot; instances for you, based on the data declaration.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Deriving Syntax</b></li>
+    <br/>
+    <ul>
+        <li>The simplest form is attached directly to a <code>data</code> or <code>newtype</code> definition:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Point = Point Int Int
+    deriving (Eq, Show)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This creates:
+            <ul>
+                <li><code>Eq Point</code> instance: two <code>Point</code>s are equal if both coordinates are equal.</li>
+                <li><code>Show Point</code> instance: <code>show (Point 1 2)</code> produces something like <code>&quot;Point 1 2&quot;</code>.</li>
+            </ul>
+        </li>
+        <li>You can derive multiple classes at once by listing them in parentheses separated by commas.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Example: Deriving Eq and Show for an ADT</b></li>
+    <br/>
+    <ul>
+        <li>Consider an expression tree:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Expr
+    = Lit Int
+    | Add Expr Expr
+    | Mul Expr Expr
+    deriving (Eq, Show)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Now you can:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">e1 :: Expr
+e1 = Add (Lit 1) (Mul (Lit 2) (Lit 3))
+
+e2 :: Expr
+e2 = Add (Lit 1) (Mul (Lit 2) (Lit 3))
+
+e3 :: Expr
+e3 = Add (Lit 1) (Lit 2)
+
+e1 == e2       -- True
+e1 == e3       -- False
+show e1        -- &quot;Add (Lit 1) (Mul (Lit 2) (Lit 3))&quot;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>No manual <code>Eq</code> or <code>Show</code> instance required.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Deriving Enum and Bounded</b></li>
+    <br/>
+    <ul>
+        <li>For simple enumerations, deriving <code>Enum</code> and <code>Bounded</code> is very convenient:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Color = Red | Green | Blue
+    deriving (Eq, Ord, Show, Enum, Bounded)
+
+allColors :: [Color]
+allColors = [minBound .. maxBound]
+-- [Red,Green,Blue]
+
+succ Red    -- Green
+pred Blue   -- Green
+fromEnum Red   -- 0
+fromEnum Blue  -- 2
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The order is the declaration order: <code>Red &lt; Green &lt; Blue</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Deriving for Parameterized Types</b></li>
+    <br/>
+    <ul>
+        <li>You can derive instances for types with type parameters too:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Pair a = Pair a a
+    deriving (Eq, Ord, Show, Functor)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Some classes (like <code>Functor</code>) require GHC extensions (<code>DeriveFunctor</code>):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE DeriveFunctor #-}
+
+data Tree a
+    = Leaf a
+    | Node (Tree a) (Tree a)
+    deriving (Eq, Show, Functor)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Now you can <code>fmap</code> over trees:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">fmap (+1) (Leaf 3)     -- Leaf 4
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Deriving for Newtypes</b></li>
+    <br/>
+    <ul>
+        <li><code>newtype</code> defines a type with exactly one constructor and one field, with <b>no runtime overhead</b>.</li>
+        <li>You can often derive instances for a <code>newtype</code> based on the underlying type.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">newtype UserId = UserId Int
+    deriving (Eq, Ord, Show)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This works because <code>UserId</code> has the same runtime representation as <code>Int</code>.</li>
+        <li>You can also use more advanced newtype-deriving via extensions (see below).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Standalone Deriving</b></li>
+    <br/>
+    <ul>
+        <li>With the <code>StandaloneDeriving</code> extension, you can write <b>deriving declarations separate</b> from the type definition.</li>
+        <li>Enable the extension:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE StandaloneDeriving #-}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Then:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Foo a = Foo a
+
+-- later in the file, or even another module (with some restrictions):
+deriving instance Eq a =&gt; Eq (Foo a)
+deriving instance Show a =&gt; Show (Foo a)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Useful when:
+            <ul>
+                <li>you cannot or do not want to modify the original type definition,</li>
+                <li>you want instances in a different module,</li>
+                <li>you have conditional instances depending on constraints.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Deriving Strategies: stock, newtype, anyclass, via</b></li>
+    <br/>
+    <ul>
+        <li>GHC supports multiple <b>deriving strategies</b> (with <code>DerivingStrategies</code> extension):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE DerivingStrategies #-}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Then you can annotate each deriving clause:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">newtype Age = Age Int
+    deriving stock    (Eq, Show)
+    deriving newtype  (Ord, Num)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>stock</b>:
+            <ul>
+                <li>Use the compiler’s built-in deriving mechanism (for types like <code>Eq</code>, <code>Ord</code>, <code>Show</code>, <code>Enum</code>, etc.).</li>
+            </ul>
+        </li>
+        <li><b>newtype</b>:
+            <ul>
+                <li>Derive an instance by reusing the instance of the underlying type.</li>
+            </ul>
+        </li>
+        <li><b>anyclass</b>:
+            <ul>
+                <li>Provide a default instance for any class that has default methods.</li>
+                <li>Often used in combination with generic programming.</li>
+            </ul>
+        </li>
+        <li><b>via</b> (with <code>DerivingVia</code> extension):
+            <ul>
+                <li>Derive via another &quot;helper&quot; type that already has the desired instance.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example: Newtype Deriving for Numeric Behavior</b></li>
+    <br/>
+    <ul>
+        <li>Suppose you have a type representing a quantity that should behave like a number:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+newtype Distance = Distance Double
+    deriving (Eq, Ord, Show, Num, Fractional)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Now you can use numeric operations directly:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">d1 :: Distance
+d1 = 10
+
+d2 :: Distance
+d2 = 2.5
+
+d1 + d2         -- Distance 12.5
+d1 * 2          -- Distance 20.0
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This uses <b>newtype deriving</b> to reuse <code>Double</code>&apos;s instances.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Deriving Generic / Generic1</b></li>
+    <br/>
+    <ul>
+        <li>With <code>DeriveGeneric</code>, you can derive <code>Generic</code> and <code>Generic1</code> to support generic programming and libraries like Aeson (JSON).</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE DeriveGeneric #-}
+
+import GHC.Generics (Generic)
+
+data User = User
+    { name :: String
+    , age  :: Int
+    } deriving (Show, Generic)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Then libraries can auto-derive things like JSON encoders/decoders using the <code>Generic</code> representation.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Deriving Anyclass</b></li>
+    <br/>
+    <ul>
+        <li>With <code>DeriveAnyClass</code>, you can derive instances for custom typeclasses that provide default method implementations.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
+
+import GHC.Generics (Generic)
+
+class MyClass a where
+    describe :: a -&gt; String
+    describe _ = &quot;default&quot;
+
+data Foo = Foo Int
+    deriving (Generic, MyClass)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Here the <code>MyClass</code> instance for <code>Foo</code> uses the default <code>describe</code> implementation.</li>
+        <li>Often combined with <code>Generic</code> to write generic default definitions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Deriving Via (Advanced)</b></li>
+    <br/>
+    <ul>
+        <li><code>DerivingVia</code> lets you derive an instance &quot;via&quot; another type that already has the right behavior.</li>
+        <li>You need the <code>DerivingVia</code> extension and a helper newtype.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+import Data.Monoid (Sum(..))
+
+newtype Score = Score Int
+    deriving (Eq, Show)
+    deriving (Semigroup, Monoid) via (Sum Int)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Now <code>Score</code> has <code>Semigroup</code> and <code>Monoid</code> instances that behave like <code>Sum Int</code>, without writing any instance code.</li>
+    </ul>
+    <br/><br/>
+
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
