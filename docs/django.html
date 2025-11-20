@@ -176,6 +176,7 @@
         <li><a href="#django-db-instrumentation">Database Instrumentation</a></li>
         <li><a href="#django-db-fixtures">Database Fixtures</a></li>
         <li><a href="#django-url-dispatcher">URL Dispatcher</a></li>
+        <li><a href="#django-views">Views</a></li>
     </ul>
 </nav>
 <hr/>
@@ -7499,6 +7500,377 @@ if settings.DEBUG:
     <ul>
         <li>The admin itself (<code>/admin/</code>) is just another URL pattern registered in the dispatcher.</li>
     </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-views">Views in Django</h3>
+<ol>
+
+    <li><b>What Is a View?</b></li>
+    <br/>
+    <ul>
+        <li>A <u>view</u> in Django is a Python function or class that receives a request and returns a response.</li>
+        <br/>
+        <li>Views contain the <u>business logic</u> of your application:
+            <ul>
+                <li>querying the database</li>
+                <li>rendering templates</li>
+                <li>processing forms</li>
+                <li>returning JSON or HTML</li>
+                <li>redirecting users</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Every view must return some kind of <code>HttpResponse</code> object.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Simple Function-Based View (FBV)</b></li>
+    <br/>
+    <ul>
+        <li>A basic function-based view looks like this:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/views.py
+
+from django.http import HttpResponse
+
+def hello(request):
+    return HttpResponse(&quot;Hello from a Django view!&quot;)
+</code></pre>
+
+    <ul>
+        <li>Mapped in <code>urls.py</code>:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/urls.py
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path(&quot;hello/&quot;, views.hello),
+]
+</code></pre>
+
+    <ul>
+        <li>Request path → <code>/hello/</code> executes <code>hello()</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Returning HTML with HttpResponse</b></li>
+    <br/>
+    <ul>
+        <li>You can return raw HTML as a string:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def home(request):
+    return HttpResponse(&quot;&lt;h1&gt;Welcome!&lt;/h1&gt;&lt;p&gt;This is raw HTML.&lt;/p&gt;&quot;)
+</code></pre>
+
+    <ul>
+        <li>Good for testing, not for real applications.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Rendering Templates</b></li>
+    <br/>
+    <ul>
+        <li>Most views return HTML produced by templates.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/views.py
+
+from django.shortcuts import render
+
+def home(request):
+    return render(request, &quot;blog/home.html&quot;)
+</code></pre>
+
+    <ul>
+        <li>Example template:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/home.html --&gt;
+&lt;h1&gt;Blog Home&lt;/h1&gt;
+&lt;p&gt;Rendered by Django.&lt;/p&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Passing Data to Templates</b></li>
+    <br/>
+    <ul>
+        <li>You can send context variables:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def home(request):
+    context = {
+        &quot;title&quot;: &quot;My Blog&quot;,
+        &quot;posts&quot;: [&quot;Post A&quot;, &quot;Post B&quot;],
+    }
+    return render(request, &quot;blog/home.html&quot;, context)
+</code></pre>
+
+    <ul>
+        <li>In template:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;h1&gt;{{ title }}&lt;/h1&gt;
+&lt;ul&gt;
+    {% for p in posts %}
+        &lt;li&gt;{{ p }}&lt;/li&gt;
+    {% endfor %}
+&lt;/ul&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Returning JSON Responses</b></li>
+    <br/>
+    <ul>
+        <li>Django provides <code>JsonResponse</code> for structured data (APIs).</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.http import JsonResponse
+
+def api_info(request):
+    return JsonResponse({&quot;status&quot;: &quot;ok&quot;, &quot;version&quot;: 1})
+</code></pre>
+
+    <ul>
+        <li>This is very common in modern REST or AJAX applications.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Handling URL Parameters</b></li>
+    <br/>
+    <ul>
+        <li>URL patterns can pass arguments to views.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/views.py
+
+def show_post(request, post_id):
+    return HttpResponse(f&quot;Post ID is {post_id}&quot;)
+</code></pre>
+
+    <ul>
+        <li>URL route:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">path(&quot;post/&lt;int:post_id&gt;/&quot;, views.show_post)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Class-Based Views (CBV)</b></li>
+    <br/>
+    <ul>
+        <li>Django offers class-based views for reusable, structured logic.</li>
+        <li>A simple CBV:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.views import View
+from django.http import HttpResponse
+
+class HelloView(View):
+    def get(self, request):
+        return HttpResponse(&quot;Hello from a class-based view!&quot;)
+</code></pre>
+
+    <ul>
+        <li>URL mapping:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">path(&quot;hello/&quot;, HelloView.as_view())
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Advantages of Class-Based Views</b></li>
+    <br/>
+    <ul>
+        <li>CBVs provide:
+            <ul>
+                <li>built-in methods (<code>get</code>, <code>post</code>, <code>put</code>, etc.)</li>
+                <li>clean separation of HTTP methods</li>
+                <li>mixins for reusable behavior</li>
+                <li>generic views for CRUD operations</li>
+            </ul>
+        </li>
+        <br/>
+        <li>For example, <code>ListView</code>, <code>DetailView</code>, <code>CreateView</code>, etc. help build apps faster.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Generic Class-Based Views (GCBV)</b></li>
+    <br/>
+    <ul>
+        <li>Generic Class-Based Views are ready-made view classes that perform common tasks for you.</li>
+        <li>You do <u>not</u> need to manually query the database or write boilerplate logic.</li>
+        <li>Django already knows how to list objects, show details, create forms, update records, delete records, etc.</li>
+        <li>Here is a simple example: <u>displaying a list of all <code>Post</code> objects</u>.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.views.generic import ListView
+from .models import Post
+
+class PostListView(ListView):
+    model = Post                             # Tell Django which model you want to list
+    template_name = &quot;blog/posts.html&quot;
+    context_object_name = "posts"
+</code></pre>
+    <ul>
+        <li><b>How this works:</b></li>
+        <ul>
+            <li>Django automatically runs <code>Post.objects.all()</code> for you.</li>
+            <li>The result is stored in a context variable called <code>object_list</code> (or <code>post_list</code>).</li>
+            <li>The view then renders your template <code>blog/posts.html</code> and provides the list of posts as data.</li>
+        </ul>
+    </ul>
+
+    <br/>
+
+    <ul>
+        <li><b>Connecting the View to a URL:</b></li>
+    </ul>
+
+<pre><code class="language-py line-numbers">path(&quot;posts/&quot;, PostListView.as_view())
+</code></pre>
+
+    <ul>
+        <li>Django will now serve <code>/posts/</code> using your <code>PostListView</code>.</li>
+        <li>Whenever a user visits that page, Django automatically fetches the posts and renders the template.</li>
+    </ul>
+
+    <br/>
+
+    <ul>
+        <li><b>Example content of <code>blog/posts.html</code>:</b></li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/posts.html --&gt;
+&lt;!doctype html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot; /&gt;
+    &lt;title&gt;All Posts&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;All Posts&lt;/h1&gt;
+
+    &lt;ul&gt;
+    {% for post in posts %}
+        &lt;li&gt;
+            &lt;h2&gt;{{ post.title }}&lt;/h2&gt;
+            &lt;p&gt;{{ post.body|truncatechars:100 }}&lt;/p&gt;
+        &lt;/li&gt;
+    {% empty %}
+        &lt;li&gt;No posts yet.&lt;/li&gt;
+    {% endfor %}
+    &lt;/ul&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+    <ul>
+        <li><b>What is going on in this template:</b></li>
+        <br/>
+        <ul>
+            <li><code>{% for post in posts %}</code> loops over the list provided by the view (the context variable <code>posts</code>).</li>
+            <li><code>{{ post.title }}</code> and <code>{{ post.body }}</code> access fields on each <code>Post</code> object.</li>
+            <li><code>|truncatechars:100</code> is a filter that shortens the text to 100 characters (optional).</li>
+            <li><code>{% empty %}</code> is used if the list is empty (no posts in the database).</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Redirecting from Views</b></li>
+    <br/>
+    <ul>
+        <li>You can redirect using <code>redirect()</code>.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.shortcuts import redirect
+
+def go_home(request):
+    return redirect(&quot;/hello/&quot;)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Handling HTTP Methods Manually</b></li>
+    <br/>
+    <ul>
+        <li>Function-based views can inspect the request method.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def contact(request):
+    if request.method == &quot;GET&quot;:
+        return HttpResponse(&quot;Form page&quot;)
+    elif request.method == &quot;POST&quot;:
+        return HttpResponse(&quot;Processing form...&quot;)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Decorators in Views</b></li>
+    <br/>
+    <ul>
+        <li>Django provides view decorators such as <code>login_required</code>:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.contrib.auth.decorators import login_required
+
+@login_required
+def dashboard(request):
+    return HttpResponse(&quot;Dashboard&quot;)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Error Views</b></li>
+    <br/>
+    <ul>
+        <li>Views can act as custom error handlers:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># in mysite/urls.py
+
+handler404 = &quot;mysite.views.not_found&quot;
+handler500 = &quot;mysite.views.server_error&quot;
+</code></pre>
+
+    <ul>
+        <li>Custom view example:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def not_found(request, exception):
+    return HttpResponse(&quot;Page not found&quot;, status=404)
+</code></pre>
+
     <br/><br/>
 
 </ol>
