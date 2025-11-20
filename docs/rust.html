@@ -186,6 +186,7 @@
         <li><a href="#rust-phantom-type-parameters">Phantom Type Parameters</a></li>
         <li><a href="#rust-scoping-rules">Scoping Rules</a></li>
         <li><a href="#rust-lifetimes">Lifetimes</a></li>
+        <li><a href="#rust-borrowing">Borrowing</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -11099,6 +11100,237 @@ closure();
     </ul>
     <br/>
     <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-borrowing">Borrowing in Rust</h3>
+<ol>
+    <li><b>What Is Borrowing?</b></li>
+    <br/>
+    <ul>
+        <li>Borrowing is Rust’s mechanism for temporarily accessing data <u>without</u> taking ownership.</li>
+        <br/>
+        <li>Instead of transferring ownership, you create a <u>reference</u> to a value.</li>
+        <br/>
+        <li>The reference does not own the data:
+            <ul>
+                <li>it cannot move it,</li>
+                <li>cannot drop it,</li>
+                <li>does not affect its lifetime beyond the borrowing rules.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Types of borrows:
+            <ul>
+                <li><b>Immutable borrow</b>: <code>&amp;T</code></li>
+                <li><b>Mutable borrow</b>: <code>&amp;mut T</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Immutable Borrow: <code>&amp;T</code></b></li>
+    <br/>
+    <ul>
+        <li>An immutable borrow allows read-only access to a value.</li>
+        <li>You can have multiple immutable borrows at the same time.</li>
+        <li>This is safe because none of them can mutate the data.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let s = String::from("hello");
+
+let r1 = &amp;s;
+let r2 = &amp;s;
+
+println!("{}, {}", r1, r2); // OK: multiple reads allowed
+</code></pre>
+    <br/><br/>
+
+    <li><b>Mutable Borrow: <code>&amp;mut T</code></b></li>
+    <br/>
+    <ul>
+        <li>A mutable borrow gives exclusive, write-access to the data.</li>
+        <li>Only <u>one</u> mutable borrow is allowed at a time.</li>
+        <li>No immutable references are allowed while a mutable borrow exists.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let mut s = String::from("hello");
+
+let r = &amp;mut s;
+r.push_str(" world");
+// println!("{}", s); // ERROR: s borrowed mutably
+</code></pre>
+    <br/><br/>
+
+    <li><b>The Borrowing Rules (Critical to Understand)</b></li>
+    <br/>
+    <ul>
+        <li><b>Rule 1:</b> You can have <u>any number of</u> immutable borrows.</li>
+        <li><b>Rule 2:</b> You can have <u>exactly one</u> mutable borrow.</li>
+        <li><b>Rule 3:</b> You cannot mix mutable and immutable borrows at the same time.</li>
+        <li><b>Rule 4:</b> A borrow must always be valid — its lifetime must not outlive its owner.</li>
+        <li><b>Rule 5:</b> Borrows end at the last usage of the reference (non-lexical lifetimes).</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Temporary Scopes Help Borrowing</b></li>
+    <br/>
+    <ul>
+        <li>You can use a small scope to limit a borrow’s lifetime and allow further mutable access.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let mut s = String::from("hello");
+
+{
+    let r = &amp;s;
+    println!("{}", r);
+} // r ends here
+
+let r2 = &amp;mut s; // now allowed
+r2.push_str(" world");
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Borrowing in Function Arguments</b></li>
+    <br/>
+    <ul>
+        <li>Functions borrow data by taking <code>&amp;T</code> or <code>&amp;mut T</code>.</li>
+        <li>This avoids copies and ownership transfer.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn print_len(s: &amp;String) {
+    println!("len = {}", s.len());
+}
+
+fn main() {
+    let s = String::from("hello");
+    print_len(&amp;s);  // Borrowing
+    println!("{}", s); // Still own s
+}
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Mutable Borrow in Functions</b></li>
+    <br/>
+    <ul>
+        <li>Passing <code>&amp;mut</code> allows the function to modify the original value.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn append_world(s: &amp;mut String) {
+    s.push_str(" world");
+}
+
+fn main() {
+    let mut s = String::from("hello");
+    append_world(&amp;mut s); // mutable borrow
+    println!("{}", s);     // "hello world"
+}
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Borrowing and Return Values</b></li>
+    <br/>
+    <ul>
+        <li>You cannot return a reference to a local variable because the variable will be dropped at the end of the function.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn bad() -&gt; &amp;i32 {
+    let x = 10;
+    &amp;x  // ERROR: x does not live long enough
+}
+</code></pre>
+
+    <ul>
+        <li>This is where <u>lifetimes</u> come in to ensure references never outlive data.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Borrowing with Mutable Iteration</b></li>
+    <br/>
+    <ul>
+        <li>Iteration borrows each element immutably or mutably depending on the iterator type.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let mut data = vec![1, 2, 3];
+
+for x in &amp;data {      // immutable borrow
+    println!("{}", x);
+}
+
+for x in &amp;mut data {  // mutable borrow
+    *x *= 2;
+}
+</code></pre>
+
+    <ul>
+        <li>After each loop, the borrow ends automatically at the end of the loop.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Borrowing and Slices</b></li>
+    <br/>
+    <ul>
+        <li>Slices (<code>&amp;[T]</code>, <code>&amp;str</code>) are just borrowed views into contiguous memory.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let nums = vec![1, 2, 3, 4, 5];
+let slice = &amp;nums[1..4]; // borrow a view
+println!("{:?}", slice);
+</code></pre>
+
+    <ul>
+        <li>Slices obey the same borrow rules as references.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Borrowing in Structs</b></li>
+    <br/>
+    <ul>
+        <li>Structs can store borrowed references, but require lifetime annotations.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Holder&lt;'a&gt; {
+    value: &amp;'a str,
+}
+
+fn main() {
+    let s = String::from("hello");
+    let h = Holder { value: &amp;s };
+    println!("{}", h.value);
+}
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Non-Lexical Lifetimes (NLL)</b></li>
+    <br/>
+    <ul>
+        <li>Rust 2018 introduced Non-Lexical Lifetimes:
+            <ul>
+                <li>borrows end when the reference is last used, not when the scope ends,</li>
+                <li>reduces borrow checker errors,</li>
+                <li>allows more flexible code.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let mut s = String::from("hello");
+let r = &amp;s;
+println!("{}", r); // r ends here automatically
+
+let r2 = &amp;mut s; // OK now
+r2.push_str("!");
+</code></pre>
+
+    <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
