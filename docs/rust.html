@@ -182,6 +182,7 @@
         <li><a href="#rust-generics-placement">&lt;T&gt; Placement Guide</a></li>
         <li><a href="#rust-generics-bound">Generics Bound</a></li>
         <li><a href="#rust-newtype-idiom">The Newtype Idiom</a></li>
+        <li><a href="#rust-associated-items"></a>Associated Items and Associated Types</li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -10036,7 +10037,263 @@ impl From&lt;String&gt; for Username {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-associated-items">Associated Items and Associated Types in Rust</h3>
+<ol>
+    <li><b>What Are Associated Items?</b></li>
+    <br/>
+    <ul>
+        <li>Associated items are things that are tied to a type or trait:
+            <ul>
+                <li>Associated functions (including constructors like <code>new()</code>),</li>
+                <li>Associated constants,</li>
+                <li>Associated types (inside traits).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>They are &quot;namespaces&quot; under a type or trait:
+            <ul>
+                <li><code>Vec::new()</code> is an associated function of <code>Vec&lt;T&gt;</code>,</li>
+                <li><code>u32::MAX</code> is an associated constant of <code>u32</code>,</li>
+                <li><code>Iterator::Item</code> is an associated type of the <code>Iterator</code> trait.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Idea: &quot;This function / constant / type belongs to that type or trait.&quot;</li>
+    </ul>
+    <br/><br/>
 
+    <li><b>Associated Functions (Inherent Methods)</b></li>
+    <br/>
+    <ul>
+        <li><u>Associated functions</u> are functions defined inside an <code>impl</code> block that do not take <code>&amp;self</code>, <code>&amp;mut self</code>, or <code>self</code>.</li>
+        <li>They are called using the type name, like <code>MyType::new()</code>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl Point {
+    // Associated function (like a constructor)
+    fn new(x: i32, y: i32) -&gt; Self {
+        Self { x, y }
+    }
+
+    // Method (has &amp;self)
+    fn length_squared(&amp;self) -&gt; i32 {
+        self.x * self.x + self.y * self.y
+    }
+}
+
+fn main() {
+    let p = Point::new(3, 4);           // call associated function
+    println!("{}", p.length_squared()); // call method
+}
+</code></pre>
+    <br/><br/>
+
+    <li><b>Associated Constants</b></li>
+    <br/>
+    <ul>
+        <li><u>Associated constants</u> are constants tied to a type or trait.</li>
+        <li>They live inside <code>impl</code> blocks or trait definitions.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Circle {
+    radius: f64,
+}
+
+impl Circle {
+    const PI: f64 = 3.141592653589793;
+
+    fn area(&amp;self) -&gt; f64 {
+        Self::PI * self.radius * self.radius
+    }
+}
+
+fn main() {
+    println!("{}", Circle::PI);   // access associated constant
+    let c = Circle { radius: 2.0 };
+    println!("{}", c.area());
+}
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Associated Types in Traits: The Basic Idea</b></li>
+    <br/>
+    <ul>
+        <li>An <u>associated type</u> is a type placeholder inside a trait.</li>
+        <li>Instead of writing the trait as <code>Trait&lt;Foo&gt;</code>, the trait itself carries a &quot;slot&quot; for a type.</li>
+        <li>Famous example: <code>Iterator</code>:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait Iterator {
+    type Item; // associated type
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt;;
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Each type that implements <code>Iterator</code> chooses what <code>Item</code> is.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Counter {
+    current: u32,
+}
+
+impl Iterator for Counter {
+    type Item = u32; // choose the concrete type
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
+        if self.current &lt; 5 {
+            self.current += 1;
+            Some(self.current)
+        } else {
+            None
+        }
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>When you see <code>Self::Item</code>: It is the associated type chosen by the concrete implementation.</li>
+        <li>This lets you write APIs like &quot;this trait has a type slot, and implementors fill it in&quot;.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Associated Types vs. Generic Parameters on Traits</b></li>
+    <br/>
+    <ul>
+        <li>Without associated types, you could model <code>Iterator</code> as:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait IteratorGeneric&lt;T&gt; {
+    fn next(&amp;mut self) -&gt; Option&lt;T&gt;;
+}
+</code></pre>
+
+    <ul>
+        <li>But this leads to different ergonomics:</li>
+        <ol>
+            <li>Generic parameter approach:
+                <ul>
+                    <li>The &quot;item type&quot; is chosen <u>per use site</u>: <code>IteratorGeneric&lt;i32&gt;</code>, <code>IteratorGeneric&lt;String&gt;</code>, etc.</li>
+                    <li>Sometimes you want to say: &quot;this type <u>as implemented</u> has a fixed item type&quot;.</li>
+                </ul>
+            </li>
+            <li>Associated type approach:
+                <ul>
+                    <li>The implementor chooses the concrete type once in the <code>impl</code> block.</li>
+                    <li>Users do not need to write <code>Iterator&lt;Item = T&gt;</code> everywhere, they can just refer to <code>Self::Item</code> inside the trait.</li>
+                </ul>
+            </li>
+        </ol>
+    </ul>
+
+<pre><code class="language-rust line-numbers">// Associated type style:
+trait IntoIterator {
+    type Item;
+    type IntoIter: Iterator&lt;Item = Self::Item&gt;;
+
+    fn into_iter(self) -&gt; Self::IntoIter;
+}
+</code></pre>
+
+    <ul>
+        <li>Key difference:
+            <ul>
+                <li><u>Associated types</u>: a single type per implementation (more &quot;fixed&quot;),</li>
+                <li><u>Generic parameters</u>: type can vary at each usage site.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Associated Types in Trait Bounds</b></li>
+    <br/>
+    <ul>
+        <li>You can write <u>trait bounds</u> that mention associated types.</li>
+        <li>Example: a function that accepts any iterator of <code>i32</code>:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn sum_iter&lt;I&gt;(mut iter: I) -&gt; i32
+where
+    I: Iterator&lt;Item = i32&gt;,
+{
+    let mut sum = 0;
+    while let Some(x) = iter.next() {
+        sum += x;
+    }
+    sum
+}
+</code></pre>
+
+    <ul>
+        <li>Here <code>I: Iterator&lt;Item = i32&gt;</code> means: <code>I</code> must implement <code>Iterator</code>, and its associated type <code>Item</code> must be <code>i32</code>.</li>
+        <li>This is a very common pattern in generic Rust code.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Associated Types with Lifetimes</b></li>
+    <br/>
+    <ul>
+        <li>Associated types can themselves involve lifetimes.</li>
+        <li>A famous example: borrowing iterators and streaming APIs.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait DataSource {
+    type Item&lt;'a&gt;
+    where
+        Self: 'a;
+
+    fn get_items&lt;'a&gt;(&amp;'a self) -&gt; Box&lt;dyn Iterator&lt;Item = Self::Item&lt;'a&gt;&gt; + 'a&gt;;
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Here <code>Item&lt;'a&gt;</code> is a <u>generic associated type</u> (GAT).</li>
+        <li>GATs allow associated types that themselves depend on lifetimes or other generics.</li>
+        <li>This is advanced, but conceptually it is &quot;an associated type that varies with some parameter&quot;.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Associated Constants in Traits</b></li>
+    <br/>
+    <ul>
+        <li>Traits can also define <u>associated constants</u> that implementors must provide.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait Bounded {
+    const MIN: i32;
+    const MAX: i32;
+
+    fn clamp(&amp;self) -&gt; i32;
+}
+
+struct SensorValue(i32);
+
+impl Bounded for SensorValue {
+    const MIN: i32 = 0;
+    const MAX: i32 = 100;
+
+    fn clamp(&amp;self) -&gt; i32 {
+        self.0.clamp(Self::MIN, Self::MAX)
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Each type implementing <code>Bounded</code> chooses its own <code>MIN</code> and <code>MAX</code> constants.</li>
+        <li>This is analogous to associated types but for constant values.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
