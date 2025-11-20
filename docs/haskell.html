@@ -167,6 +167,7 @@
         <li><a href="#haskell-import"><code>import</code></a></li>
         <li><a href="#haskell-higher-order-functions">Higher Order Functions</a></li>
         <li><a href="#haskell-lambdas">Lambdas</a></li>
+        <li><a href="#haskell-modules">Modules</a></li>
     </ul>
 </nav>
 <hr/>
@@ -5223,6 +5224,397 @@ pipeline [1,2,3,4]
     </ul>
 
 <pre><code class="language-haskell line-numbers">(\x -&gt; x + 1) :: Int -&gt; Int
+</code></pre>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-modules">Modules in Haskell</h3>
+<ol>
+    <li><b>What Are Modules in Haskell?</b></li>
+    <br/>
+    <ul>
+        <li>A <code>module</code> is Haskell’s fundamental unit of code organization.</li>
+        <br/>
+        <li>Every Haskell file defines exactly one module.</li>
+        <br/>
+        <li>Modules:
+            <ul>
+                <li>group related functions, types, and typeclasses,</li>
+                <li>control what is <u>visible</u> to other modules,</li>
+                <li>enable namespace management,</li>
+                <li>improve maintainability and structure.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Modules correspond to files, and hierarchical module names correspond to folder structure.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Module Declaration</b></li>
+    <br/>
+    <ul>
+        <li>Each file begins with a <code>module</code> declaration:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">module MyModule where
+
+x = 42
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>If no module is declared, the file is assumed to be <code>Main</code>.</li>
+        <li>File name must match the module name and folder hierarchy:
+            <ul>
+                <li><code>MyModule.hs</code> defines module <code>MyModule</code></li>
+                <li><code>Data/ListUtils.hs</code> defines module <code>Data.ListUtils</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Export Lists</b></li>
+    <br/>
+    <ul>
+        <li>A module can selectively expose names using an <u>export list</u>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">module Math.Utils (square, cube) where
+
+square x = x * x
+cube x   = x * x * x
+secret   = 123   -- not exported
+</code></pre>
+    <ul>
+        <li>Anything not listed in the export list is <u>private</u>.</li>
+        <br/>
+        <li>To export everything, omit the export list.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">module Math.Utils where
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Exporting Types and Constructors</b></li>
+    <br/>
+    <ul>
+        <li>You may export:
+            <ul>
+                <li>just the type name,</li>
+                <li>the type with all constructors,</li>
+                <li>or specific constructors.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">module Shapes
+    ( Shape(Circle, Rectangle)
+    , area
+    ) where
+
+data Shape = Circle Double | Rectangle Double Double
+area (Circle r)       = pi * r * r
+area (Rectangle w h)  = w * h
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Exporting all constructors:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">module Shapes (Shape(..)) where
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Importing Modules</b> (Short Summary)</li>
+    <br/>
+    <ul>
+        <li>Imported using <code>import Module.Name</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.List (sort, nub)
+import qualified Data.Map as M
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>For full rules of importing, see your previous “Haskell import” chapter.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Hierarchical Modules</b></li>
+    <br/>
+    <ul>
+        <li>Modules support hierarchical naming using dots.</li>
+        <li>For example:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">module MyApp.Utils.Math where
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>File structure must mirror the hierarchy:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">MyApp/
+ └─ Utils/
+     └─ Math.hs
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This improves organization in large codebases.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The Prelude Module</b></li>
+    <br/>
+    <ul>
+        <li><code>Prelude</code> is automatically imported into every module:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Prelude
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>It provides:
+            <ul>
+                <li>basic types (<code>Int</code>, <code>Bool</code>, <code>Maybe</code>, <code>[]</code>, <code>Either</code>, ...),</li>
+                <li>basic functions (<code>map</code>, <code>foldr</code>, <code>not</code>, <code>(++)</code>).</li>
+            </ul>
+        </li>
+        <li>You can disable it:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE NoImplicitPrelude #-}
+module Main where
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Useful for custom preludes (e.g. CodeWorld, Yesod, commercial codebases).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Re-exporting from Modules</b></li>
+    <br/>
+    <ul>
+        <li>A module can <b>re-export</b> items from another module.</li>
+        <li>This is used to create module “bundles”.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">module MyPrelude
+    ( module Data.List
+    , module Data.Maybe
+    ) where
+
+import Data.List
+import Data.Maybe
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>User code can now just do:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import MyPrelude
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Large frameworks like Yesod and Servant heavily use this technique.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Qualified Re-exports</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes a module re-exports symbolic operators to avoid conflicts.</li>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">module Operators (module M) where
+import qualified MyApp.Operators as M
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Internal Modules</b></li>
+    <br/>
+    <ul>
+        <li>A common convention in Haskell projects is “public vs internal modules”.</li>
+        <li>Example layout:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">src/
+ ├─ MyLib.hs
+ ├─ MyLib/
+ │   ├─ Core.hs
+ │   ├─ Utils.hs
+ │   └─ Internal/
+ │       └─ Helpers.hs
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Modules inside <code>Internal</code>:
+            <ul>
+                <li>are <b>not</b> exported publicly,</li>
+                <li>may change without warning,</li>
+                <li>are implementation details.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Module Initialization and Side Effects</b></li>
+    <br/>
+    <ul>
+        <li>Modules do <b>not</b> have “init blocks” like Python or Java.</li>
+        <li>No code runs at module load time except:
+            <ul>
+                <li>top-level CAFs (constants) are lazy,</li>
+                <li>IO actions <b>cannot</b> appear at the top-level, except inside <code>main</code>.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main :: IO ()
+main = putStrLn "Program started"
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Modules and Name Resolution</b></li>
+    <br/>
+    <ul>
+        <li>To avoid collisions, Haskell prefers <b>qualified imports</b>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import qualified Data.Map as M
+
+M.lookup "a" (M.fromList [("a",1)])
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Haskell supports:
+            <ul>
+                <li>unqualified imports,</li>
+                <li>qualified imports (<code>qualified</code>),</li>
+                <li>import lists (<code>(x,y,z)</code>),</li>
+                <li>hiding lists (<code>hiding (a,b)</code>).</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Modules for Namespacing</b></li>
+    <br/>
+    <ul>
+        <li>Names inside modules cannot conflict across modules:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">-- In File A:
+module Foo where
+x = 10
+
+-- In File B:
+module Bar where
+x = 20
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>To refer explicitly:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import qualified Foo
+import qualified Bar
+
+Foo.x    -- 10
+Bar.x    -- 20
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Modules and Cabal/Stack Projects</b></li>
+    <br/>
+    <ul>
+        <li>In Cabal and Stack, the <b>exposed-modules</b> field determines:
+            <ul>
+                <li>which modules form the public API of a library,</li>
+                <li>which ones are hidden internally.</li>
+            </ul>
+        </li>
+        <li>Example <code>package.yaml</code> or <code>.cabal</code> entry:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">exposed-modules:
+    MyLib
+    MyLib.Core
+other-modules:
+    MyLib.Internal.Helpers
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Creating Your Own Module</b></li>
+    <br/>
+    <ul>
+        <li>Example: <code>src/Utils/StringTools.hs</code></li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">module Utils.StringTools
+    ( capitalize
+    , reverseWords
+    ) where
+
+import Data.Char (toUpper)
+
+capitalize :: String -&gt; String
+capitalize [] = []
+capitalize (x:xs) = toUpper x : xs
+
+reverseWords :: String -&gt; String
+reverseWords = unwords . reverse . words
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Use it in <code>Main.hs</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">module Main where
+
+import Utils.StringTools
+
+main = putStrLn (capitalize "hello world")
 </code></pre>
 
     <br/><br/>
