@@ -155,6 +155,7 @@
         <li><a href="#haskell-ghci">Using GHCi: The Interactive Haskell Environment</a></li>
         <li><a href="#haskell-comparison-operations">Comparison Operations</a></li>
         <li><a href="#haskell-lists-introduction"></a>Lists Introduction</li>
+        <li><a href="#haskell-list-concatenation"></a>List Concatenation</li>
     </ul>
 </nav>
 <hr/>
@@ -1372,6 +1373,196 @@ take 5 evens        -- [0,2,4,6,8]
         <li>Beware of using <code>!!</code> too often (linear time access).</li>
         <li>Heavy list concatenation <code>++</code> inside loops can be slow — prefer <code>:</code> and build from the left.</li>
     </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-list-concatenation">List Concatenation in Haskell</h3>
+<ol>
+    <li><b>What Is List Concatenation?</b></li>
+    <br/>
+    <ul>
+        <li><u>List concatenation</u> is the operation of joining two (or more) lists into a single list.</li>
+        <li>In Haskell, concatenation is performed using the <code>++</code> operator.</li>
+        <li>Type of <code>++</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(++) :: [a] -&gt; [a] -&gt; [a]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Both operands must be lists of the same element type.</li>
+        <li>The result is a new list containing all elements of the first list followed by all elements of the second.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Examples</b></li>
+    <br/>
+    <ul>
+        <li>Concatenating two lists:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[1,2,3] ++ [4,5]       -- [1,2,3,4,5]
+"hi" ++ "!"            -- "hi!"
+['a'] ++ ['b','c']     -- ['a','b','c']
+</code></pre>
+
+    <ul>
+        <li><b>NOTE</b>: <code>String</code>s in Haskell are lists of characters (<code>[Char]</code>), so <code>++</code> works naturally on them.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Concatenating Multiple Lists</b></li>
+    <br/>
+    <ul>
+        <li>Concatenating several lists is simply repeated application of <code>++</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[1] ++ [2] ++ [3,4]     -- [1,2,3,4]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can also use <code>concat</code> to flatten a list of lists:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">concat [[1,2], [3], [4,5]]   -- [1,2,3,4,5]
+concat ["hi", " ", "there"]  -- "hi there"
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Performance Characteristics</b></li>
+    <br/>
+    <ul>
+        <li>Lists in Haskell are linked lists (constructed via <code>:</code>), so concatenation is <b>linear in the length of the first list</b>.</li>
+        <li>Specifically: <code>xs ++ ys</code> must traverse all elements of <code>xs</code> to attach <code>ys</code>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">-- Slow pattern:
+xs = [1..100000]
+result = xs ++ [100001]   -- O(length xs)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Best Practice:</b> Prefer placing the shorter list on the left side of <code>++</code> when possible.</li>
+        <li>Better alternative for building long lists: use <code>:</code> repeatedly, then reverse at the end.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">buildSlow xs = xs ++ [1]         -- bad
+buildFast xs = 1 : xs            -- good
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>How</b> <code>++</code> <b>Actually Works (Definition)</b></li>
+    <br/>
+    <ul>
+        <li>The operator is defined recursively in the Prelude:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[]     ++ ys = ys
+(x:xs) ++ ys = x : (xs ++ ys)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This explains the performance behavior:
+            <ul>
+                <li>The left list is walked until empty (base case),</li>
+                <li>Then <code>ys</code> is attached.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Concatenating Strings</b></li>
+    <br/>
+    <ul>
+        <li>Since <code>String = [Char]</code>, concatenation works the same:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">"Hello " ++ "World"      -- "Hello World"
+['H'] ++ "askell"        -- "Haskell"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>However, for performance-sensitive text operations, alternatives like <b>Text</b> or <b>ByteString</b> are recommended.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using</b> <code>concatMap</code> <b>for Mapping + Concatenation</b></li>
+    <br/>
+    <ul>
+        <li><code>concatMap</code> applies a function that returns a list and then concatenates the results:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">concatMap (\x -&gt; [x,x]) [1,2,3]
+-- [1,1,2,2,3,3]
+</code></pre>
+
+    <ul>
+        <li>Equivalent to: <code>concat (map f xs)</code></li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Concatenation Using List Comprehensions</b></li>
+    <br/>
+    <ul>
+        <li>List comprehensions produce lists, which may then be concatenated:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ x | x &lt;- [1..3] ] ++ [ x | x &lt;- [4..6] ]
+-- [1,2,3,4,5,6]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Nested comprehensions can naturally produce a list of lists, which <code>concat</code> can flatten:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">concat [[ (x,y) | y &lt;- [1..3] ] | x &lt;- [1..2] ]
+-- [(1,1),(1,2),(1,3),(2,1),(2,2),(2,3)]
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Concatenation and Infinite Lists</b></li>
+    <br/>
+    <ul>
+        <li>Because Haskell is lazy, <code>++</code> works with infinite lists as long as the left list is <b>finite</b>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[1,2,3] ++ [4..]
+-- [1,2,3,4,5,6,7,8,...]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>But if the left list is infinite:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[1..] ++ [999]
+-- never reaches 999 (left list never ends)
+</code></pre>
+
     <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
