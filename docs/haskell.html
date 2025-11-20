@@ -162,6 +162,7 @@
         <li><a href="#haskell-adts">ADTs</a></li>
         <li><a href="#haskell-typeclasses">Typeclasses</a></li>
         <li><a href="#haskell-pattern-matching">Pattern Matching</a></li>
+        <li><a href="#haskell-guards">Guards</a></li>
     </ul>
 </nav>
 <hr/>
@@ -3279,6 +3280,278 @@ describeMaybe Nothing  = "none"
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-guards">Guards in Haskell</h3>
+<ol>
+    <li><b>What Are Guards?</b></li>
+    <br/>
+    <ul>
+        <li><b>Guards</b> are Boolean expressions used to choose between different function definitions or cases.</li>
+        <br/>
+        <li>Think of guards as a more elegant alternative to nested <code>if/else</code>.</li>
+        <br/>
+        <li>General form:</li>
+<pre><code class="language-haskell line-numbers">function args
+    | condition1 = result1
+    | condition2 = result2
+    | otherwise  = defaultResult
+</code></pre>
+    </ul>
+
+    <br/>
+    <ul>
+        <li>Each guard is checked from <b>top to bottom</b>.</li>
+        <br/>
+        <li><code>otherwise</code> is just a synonym for <code>True</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Example of Guards</b></li>
+    <br/>
+    <ul>
+        <li>Using guards to classify numbers:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">sign :: Int -&gt; String
+sign n
+    | n &lt; 0     = "negative"
+    | n == 0    = "zero"
+    | otherwise = "positive"
+</code></pre>
+
+    <ul>
+        <li>This replaces what in many languages would be a clumsy chain of <code>if/else if</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Guards with Multiple Conditions</b></li>
+    <br/>
+    <ul>
+        <li>You can combine guards with logical operators:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">bmiInfo :: Double -&gt; String
+bmiInfo bmi
+    | bmi &lt; 18.5                     = "underweight"
+    | bmi &gt;= 18.5 &amp;&amp; bmi &lt; 25.0      = "normal"
+    | bmi &gt;= 25.0 &amp;&amp; bmi &lt; 30.0      = "overweight"
+    | otherwise                      = "obese"
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Pattern Matching Combined with Guards</b></li>
+    <br/>
+    <ul>
+        <li>Guards and pattern matching are often used together.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">classifyList :: [a] -&gt; String
+classifyList [] = "empty"
+classifyList xs
+    | length xs == 1 = "singleton"
+    | length xs &lt; 5  = "short list"
+    | otherwise      = "long list"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Order of evaluation: first match a pattern, then check guards inside that pattern’s branch.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Guards in</b> <code>case</code> <b>Expressions</b></li>
+    <br/>
+    <ul>
+        <li>You can use guards directly inside a <code>case</code> expression:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">describe :: Int -&gt; String
+describe n = case n of
+    _ | n &lt; 0     -&gt; "negative"
+    _ | n == 0    -&gt; "zero"
+    _ | otherwise -&gt; "positive"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is useful when you want expression-style matching rather than function-level matching.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Guards with Let Bindings</b></li>
+    <br/>
+    <ul>
+        <li>Guards can use additional logic defined with <code>where</code> or <code>let</code> to keep the guard expressions clean and readable.</li>
+        <br/>
+        <li>This is useful when multiple guards rely on the same computed value.</li>
+        <br/>
+        <li><code>where</code> attaches definitions to the entire set of guards, while <code>let</code> introduces bindings inside a single guard expression.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">bmiTell :: Double -&gt; Double -&gt; String
+bmiTell weight height
+    | bmi &lt; 18.5 = "underweight"
+    | bmi &lt; 25.0 = "normal"
+    | bmi &lt; 30.0 = "overweight"
+    | otherwise  = "obese"
+  where
+    bmi = weight / (height ^ 2)
+</code></pre>
+    <ul>
+        <li>Here <code>bmi</code> is computed once in the <code>where</code> block and shared across all guards.</li>
+        <br/>
+        <li>Without <code>where</code>, you would have to repeat the computation in each guard, making the code harder to maintain.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">-- Equivalent but repetitive:
+bmiTell w h
+    | w / (h ^ 2) &lt; 18.5 = "underweight"
+    | w / (h ^ 2) &lt; 25.0 = "normal"
+    | w / (h ^ 2) &lt; 30.0 = "overweight"
+    | otherwise          = "obese"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can also use <code>let</code> inside a guard if only one guard needs extra logic.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">bmiTell2 weight height
+    | let bmi = weight / (height ^ 2)
+    , bmi &lt; 18.5 = "underweight"
+    | otherwise  = "others"
+</code></pre>
+
+    <ul>
+        <li>Here <code>let</code> binds <code>bmi</code> only for this single guard.</li>
+        <li>Multiple comma-separated conditions act as multiple guard checks.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Using</b> <code>otherwise</code> <b>Safely</b></li>
+    <br/>
+    <ul>
+        <li><code>otherwise</code> is simply:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">otherwise = True
+</code></pre>
+
+    <ul>
+        <li>It must appear at the last. If placed earlier, all following guards become unreachable.</li>
+        <li>A correct example:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">describe n
+    | n &gt; 10    = "big"
+    | otherwise = "small or equal to 10"
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Guards vs If/Else</b></li>
+    <br/>
+    <ul>
+        <li>Guards:
+            <ul>
+                <li>cleaner syntax for many branches,</li>
+                <li>work well with pattern matching,</li>
+                <li>read top–down like logic rules,</li>
+                <li>avoid nesting.</li>
+            </ul>
+        </li>
+
+        <li>If/else:
+            <ul>
+                <li>better for small, inline conditions,</li>
+                <li>less readable for multi-branch logic.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Guards with Multiple Arguments</b></li>
+    <br/>
+    <ul>
+        <li>Patterns can match arguments, and guards refine conditions:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">max3 :: Ord a =&gt; a -&gt; a -&gt; a -&gt; a
+max3 x y z
+    | x &gt;= y &amp;&amp; x &gt;= z = x
+    | y &gt;= x &amp;&amp; y &gt;= z = y
+    | otherwise        = z
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Guards with Pattern Guards (Advanced)</b></li>
+    <br/>
+    <ul>
+        <li>Pattern guards allow matching and binding inside a guard expression.</li>
+        <li>Syntax:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">f x
+    | Just y &lt;- lookup x table = "found " ++ show y
+    | otherwise                = "not found"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Pattern guards:
+            <ul>
+                <li>first try the pattern,</li>
+                <li>bind its contents,</li>
+                <li>continue if match succeeds.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example: Combining Everything</b></li>
+    <br/>
+    <ul>
+        <li>A function that classifies triangles:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">triangleType :: (Eq a, Ord a, Num a) =&gt; a -&gt; a -&gt; a -&gt; String
+triangleType a b c
+    | a + b &lt;= c || b + c &lt;= a || a + c &lt;= b = "not a triangle"
+    | a == b &amp;&amp; b == c                       = "equilateral"
+    | a == b || b == c || a == c             = "isosceles"
+    | otherwise                              = "scalene"
+</code></pre>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
