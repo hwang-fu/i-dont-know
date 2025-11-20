@@ -163,6 +163,7 @@
         <li><a href="#vue-scoped-slots">Scoped Slots</a></li>
         <li><a href="#vue-provide-inject">Provide / Inject</a></li>
         <li><a href="#vue-async-components">Async Components</a></li>
+        <li><a href="#vue-composables">Composables</a></li>
     </ul>
 </nav>
 <hr/>
@@ -7419,7 +7420,268 @@ const HeavyPanel = defineAsyncComponent(() =&gt; import("./HeavyPanel.vue"))
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-composables">Composables in Vue</h3>
+<ol>
 
+    <li><b>What Are Composables in Vue?</b></li>
+    <br/>
+    <ul>
+        <li>A <u>composable</u> is simply a <u>reusable function</u> that uses Vue’s Composition API features (like <code>ref</code>, <code>reactive</code>, <code>computed</code>, <code>watch</code>, etc.).</li>
+        <br/>
+        <li>Instead of repeating the same code across components, you extract the logic into a JavaScript/TypeScript function and reuse it.</li>
+        <br/>
+        <li>They usually live inside a <code>composables/</code> folder.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Example: A Counter Composable</b></li>
+    <br/>
+    <ul>
+        <li>Let’s create a simple reusable counter.</li>
+        <li>File structure:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/
+└── composables/
+    └── useCounter.ts
+</code></pre>
+
+    <ul>
+        <li>Composable code:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import { ref } from &quot;vue&quot;;
+
+export function useCounter() {
+    const count = ref(0);
+
+    function increment() {
+        count.value++;
+    }
+
+    function decrement() {
+        count.value--;
+    }
+
+    return { count, increment, decrement };
+}
+</code></pre>
+
+    <ul>
+        <li>Using it inside a Vue component:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang=&quot;ts&quot;&gt;
+import { useCounter } from &quot;@/composables/useCounter&quot;;
+
+const { count, increment, decrement } = useCounter();
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;button @click=&quot;decrement&quot;&gt;-&lt;/button&gt;
+    {{ count }}
+    &lt;button @click=&quot;increment&quot;&gt;+&lt;/button&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <ul>
+        <li>Now any component in your app can reuse this logic.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example: Fetch Data Composable</b></li>
+    <br/>
+    <ul>
+        <li>A very common composable is a reusable <u>fetch</u> function.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import { ref, onMounted } from &quot;vue&quot;;
+
+export function useFetch(url: string) {
+    const data    = ref(null);
+    const loading = ref(true);
+    const error   = ref(null);
+
+    async function load() {
+        loading.value = true;
+        try {
+            const res = await fetch(url);
+            data.value = await res.json();
+        } catch (err: any) {
+            error.value = err.message;
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    onMounted(load);
+
+    return { data, loading, error, load };
+}
+</code></pre>
+
+    <ul>
+        <li>Usage:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang=&quot;ts&quot;&gt;
+import { useFetch } from &quot;@/composables/useFetch&quot;;
+
+const { data, loading, error } = useFetch(&quot;https://api.example.com/posts&quot;);
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;p v-if=&quot;loading&quot;&gt;Loading...&lt;/p&gt;
+    &lt;p v-if=&quot;error&quot;&gt;Error: {{ error }}&lt;/p&gt;
+    &lt;pre v-if=&quot;data&quot;&gt;{{ data }}&lt;/pre&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <ul>
+        <li>Now any component can fetch any URL easily.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Rules of Composables</b></li>
+    <br/>
+    <ul>
+        <li>1. The composable name should start with <code>use...</code> like <code>useUser</code>, <code>useCounter</code>, <code>useDarkMode</code>.</li>
+        <br/>
+        <li>2. Composables must be called inside <code>setup()</code> or another composable.</b></li>
+        <br/>
+        <li>3. They can return anything:
+            <ul>
+                <li>refs</li>
+                <li>reactive objects</li>
+                <li>methods</li>
+                <li>computed values</li>
+            </ul>
+        </li>
+        <br/>
+        <li>4. They are not components.
+            <ul>
+                <li>No template</li>
+                <li>No HTML</li>
+                <li>No <code>&lt;template&gt;</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>5. They can hold state that multiple components share.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example: Shared Global State (Simple Store)</b></li>
+    <br/>
+    <ul>
+        <li>Composables can behave like a tiny store (similar to Pinia/Vuex).</li>
+        <li>Example: global theme switch:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import { ref } from &quot;vue&quot;;
+
+const dark = ref(false);  // &lt;-- shared across all components
+
+export function useDarkMode() {
+    function toggle() {
+        dark.value = !dark.value;
+    }
+
+    return { dark, toggle };
+}
+</code></pre>
+
+    <ul>
+        <li>Using it in Component A:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const { dark, toggle } = useDarkMode();
+</code></pre>
+
+    <ul>
+        <li>Using it in Component B:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">const { dark } = useDarkMode();
+</code></pre>
+
+    <ul>
+        <li>Both components share the same reactive state!</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example: Listening to Window Resize</b></li>
+    <br/>
+    <ul>
+        <li>Composables are great for browser event listeners.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import { ref, onMounted, onUnmounted } from &quot;vue&quot;;
+
+export function useWindowSize() {
+    const width = ref(window.innerWidth);
+    const height = ref(window.innerHeight);
+
+    function update() {
+        width.value = window.innerWidth;
+        height.value = window.innerHeight;
+    }
+
+    onMounted(() =&gt; window.addEventListener(&quot;resize&quot;, update));
+    onUnmounted(() =&gt; window.removeEventListener(&quot;resize&quot;, update));
+
+    return { width, height };
+}
+</code></pre>
+
+    <ul>
+        <li>Usage:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;template&gt;
+    Width: {{ width }}
+    Height: {{ height }}
+&lt;/template&gt;
+
+&lt;script setup lang=&quot;ts&quot;&gt;
+import { useWindowSize } from &quot;@/composables/useWindowSize&quot;;
+
+const { width, height } = useWindowSize();
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Folder Organization (Recommended)</b></li>
+    <br/>
+    <ul>
+        <li>Typical organization:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/
+├── composables/
+│   ├── useCounter.ts
+│   ├── useFetch.ts
+│   ├── useDarkMode.ts
+│   ├── useWindowSize.ts
+│   └── useForm.ts
+├── components/
+├── pages/
+└── ...
+</code></pre>
+
+    <ul>
+        <li>Each composable is a standalone function you can import anywhere.</li>
+    </ul>
+    <br/>
+
+</ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
