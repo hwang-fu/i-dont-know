@@ -186,6 +186,7 @@
         <li><a href="#django-generic-views">Generic Views</a></li>
         <li><a href="#django-middleware">Middleware</a></li>
         <li><a href="#django-sessions">Sessions</a></li>
+        <li><a href="#django-template">Template</a></li>
     </ul>
 </nav>
 <hr/>
@@ -10197,6 +10198,545 @@ class SimpleLogMiddleware:
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-template">Django Template Language</h3>
+<ol>
+
+    <li><b>What Is a Django Template?</b></li>
+    <br/>
+    <ul>
+        <li>A <u>template</u> in Django is an HTML file with special placeholders and tags that Django fills with data.</li>
+        <br/>
+        <li>You can think of it like:
+            <ul>
+                <li>Normal HTML
+                + places to insert dynamic values (e.g. user name, list of posts)
+                + simple logic (if/for loops)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Views prepare data (Python objects) and pass it to templates. Templates then render the final HTML for the browser.</li>
+        <br/>
+        <li>Django templates are:
+            <ul>
+                <li>designed for <u>presentation</u>, not for heavy business logic</li>
+                <li>safe by default (auto-escaping)</li>
+                <li>extensible with custom tags and filters</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Where Templates Live in Your Project</b></li>
+    <br/>
+    <ul>
+        <li>Typical project layout:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">mysite/
+├── manage.py
+├── mysite/
+│   ├── settings.py
+│   └── urls.py
+└── blog/
+    ├── views.py
+    ├── models.py
+    └── templates/
+        └── blog/
+            └── home.html
+</code></pre>
+
+    <ul>
+        <li>Common convention:
+            <ul>
+                <li>Each app has its own <code>templates/&lt;app_name&gt;/</code> folder.</li>
+                <li>For app <code>blog</code>, template paths look like <code>blog/home.html</code>, <code>blog/post_detail.html</code>, etc.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Django finds these app templates because in <code>settings.py</code> we normally have:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">TEMPLATES = [
+    {
+        &quot;BACKEND&quot;: &quot;django.template.backends.django.DjangoTemplates&quot;,
+        &quot;DIRS&quot;: [],          # extra global template folders (optional)
+        &quot;APP_DIRS&quot;: True,    # &lt;-- search in app/templates/
+        &quot;OPTIONS&quot;: {
+            &quot;context_processors&quot;: [
+                # default processors...
+            ],
+        },
+    },
+]
+</code></pre>
+
+    <ul>
+        <li><code>APP_DIRS = True</code> tells Django to look inside each app&#39;s <code>templates/</code> folder.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Rendering a Template from a View</b></li>
+    <br/>
+    <ul>
+        <li>Basic usage in a view:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.shortcuts import render
+
+def home(request):
+    context = {
+        &quot;name&quot;: &quot;Junzhe&quot;,
+        &quot;age&quot;: 22,
+    }
+    return render(request, &quot;blog/home.html&quot;, context)
+</code></pre>
+
+    <ul>
+        <li>Template <code>blog/home.html</code> might look like:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/home.html --&gt;
+&lt;h1&gt;Hello {{ name }}!&lt;/h1&gt;
+&lt;p&gt;You are {{ age }} years old.&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li><code>context</code> is just a Python dict.</li>
+        <li>Keys in the dict become variables in the template.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Template Variables: {{ ... }}</b></li>
+    <br/>
+    <ul>
+        <li>To show dynamic values, use double curly braces: <code>{{ variable_name }}</code></li>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;p&gt;User: {{ username }}&lt;/p&gt;
+&lt;p&gt;Today is {{ current_date }}&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li>You can access attributes and dictionary keys using dots:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;p&gt;Title: {{ post.title }}&lt;/p&gt;
+&lt;p&gt;Author: {{ post.author.username }}&lt;/p&gt;
+&lt;p&gt;First tag: {{ post.tags.0 }}&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li>If a variable does not exist, Django shows an empty string by default.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Template Filters: {{ variable|filter }}</b></li>
+    <br/>
+    <ul>
+        <li>Filters transform the value of a variable.</li>
+        <li>Syntax: <code>{{ value|filter_name:argument }}</code> (argument is optional).</li>
+        <li>Common filters:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;p&gt;Original: {{ username }}&lt;/p&gt;
+&lt;p&gt;Uppercase: {{ username|upper }}&lt;/p&gt;
+&lt;p&gt;Lowercase: {{ username|lower }}&lt;/p&gt;
+&lt;p&gt;Length: {{ username|length }}&lt;/p&gt;
+&lt;p&gt;Default if empty: {{ nickname|default:&quot;No nickname&quot; }}&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li>Some other useful filters:</li>
+    </ul>
+
+    <ul>
+        <li><code>truncatechars:50</code> &rarr; cut a string after 50 characters</li>
+        <li><code>date:&quot;Y-m-d&quot;</code> &rarr; format a date</li>
+        <li><code>safe</code> &rarr; mark string as safe HTML (disables auto-escaping for that value)</li>
+        <li><code>escape</code> &rarr; escape HTML characters</li>
+        <li><code>join:&quot;, &quot;</code> &rarr; join list elements</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Template Tags: {% ... %}</b></li>
+    <br/>
+    <ul>
+        <li>Tags do actions: conditions, loops, template inheritance, etc.</li>
+        <li>Syntax: <code>{% tag_name ... %}</code></li>
+        <li>We&#39;ll look at the most important ones.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The {% if %} Tag (Conditions)</b></li>
+    <br/>
+    <ul>
+        <li>Basic <code>if</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">{% if user_is_logged_in %}
+    &lt;p&gt;Welcome back!&lt;/p&gt;
+{% endif %}
+</code></pre>
+
+    <ul>
+        <li><code>if / else</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">{% if user.is_authenticated %}
+    &lt;p&gt;Hello {{ user.username }}!&lt;/p&gt;
+{% else %}
+    &lt;p&gt;You are not logged in.&lt;/p&gt;
+{% endif %}
+</code></pre>
+
+    <ul>
+        <li><code>if / elif / else</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">{% if score &gt;= 90 %}
+    &lt;p&gt;Grade: A&lt;/p&gt;
+{% elif score &gt;= 80 %}
+    &lt;p&gt;Grade: B&lt;/p&gt;
+{% else %}
+    &lt;p&gt;Keep trying!&lt;/p&gt;
+{% endif %}
+</code></pre>
+
+    <ul>
+        <li>Template conditions are simple; they are not full Python expressions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The {% for %} Tag (Loops)</b></li>
+    <br/>
+    <ul>
+        <li>Used to loop over lists or querysets.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;ul&gt;
+{% for post in posts %}
+    &lt;li&gt;{{ post.title }}&lt;/li&gt;
+{% endfor %}
+&lt;/ul&gt;
+</code></pre>
+
+    <ul>
+        <li>You can use <code>forloop</code> variables inside the loop:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">{% for item in items %}
+    &lt;p&gt;{{ forloop.counter }}. {{ item }}&lt;/p&gt;
+{% endfor %}
+</code></pre>
+
+    <ul>
+        <li>Useful attributes:
+            <ul>
+                <li><code>forloop.counter</code> &rarr; 1-based index</li>
+                <li><code>forloop.counter0</code> &rarr; 0-based index</li>
+                <li><code>forloop.first</code> &rarr; True on first iteration</li>
+                <li><code>forloop.last</code> &rarr; True on last iteration</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>{% url %} Tag (Reverse URL Resolution)</b></li>
+    <br/>
+    <ul>
+        <li>Instead of hardcoding URLs like <code>/blog/hello/</code>, you use URL names.</li>
+        <li>Example URL pattern:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">path(&quot;hello/&quot;, views.hello, name=&quot;hello&quot;)
+</code></pre>
+
+    <ul>
+        <li>In template:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;a href=&quot;{% url 'hello' %}&quot;&gt;Say Hello&lt;/a&gt;
+</code></pre>
+
+    <ul>
+        <li>With parameters:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">path(&quot;post/&lt;int:pk&gt;/&quot;, views.post_detail, name=&quot;post-detail&quot;)
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;a href=&quot;{% url 'post-detail' pk=post.id %}&quot;&gt;Read more&lt;/a&gt;
+</code></pre>
+
+    <ul>
+        <li>This keeps your templates independent of hardcoded URL paths.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Template Comments: {# ... #}</b></li>
+    <br/>
+    <ul>
+        <li>Use comments to leave notes that will not appear in output HTML:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">{# This is a Django template comment #}
+&lt;p&gt;Visible to user&lt;/p&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Template Inheritance: {% extends %} and {% block %}</b></li>
+    <br/>
+    <ul>
+        <li>Template inheritance lets you define a <b>base layout</b> (header, footer, nav) and reuse it on many pages.</li>
+        <li>Step 1: create a base template, e.g. <code>base.html</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/base.html --&gt;
+&lt;!doctype html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot; /&gt;
+    &lt;title&gt;My Site - {% block title %}Default Title{% endblock %}&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;header&gt;
+        &lt;h1&gt;My Blog&lt;/h1&gt;
+    &lt;/header&gt;
+
+    &lt;main&gt;
+        {% block content %}{% endblock %}
+    &lt;/main&gt;
+
+    &lt;footer&gt;
+        &lt;p&gt;Copyright 2025&lt;/p&gt;
+    &lt;/footer&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+    <ul>
+        <li>Step 2: child template that extends it:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/home.html --&gt;
+{% extends &quot;blog/base.html&quot; %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    &lt;h2&gt;Welcome!&lt;/h2&gt;
+    &lt;p&gt;This is the home page.&lt;/p&gt;
+{% endblock %}
+</code></pre>
+
+    <ul>
+        <li>Key rules:
+            <ul>
+                <li><code>{% extends %}</code> must be the first tag in the template (except comments).</li>
+                <li>Child templates can override blocks defined in the base.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>{% include %} for Reusing Small Pieces</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>{% include %}</code> for small reusable fragments like navigation bars or forms.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/nav.html --&gt;
+&lt;nav&gt;
+    &lt;a href=&quot;{% url 'home' %}&quot;&gt;Home&lt;/a&gt;
+    &lt;a href=&quot;{% url 'post-list' %}&quot;&gt;Posts&lt;/a&gt;
+&lt;/nav&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- in base.html --&gt;
+&lt;body&gt;
+    {% include &quot;blog/nav.html&quot; %}
+    &lt;main&gt;
+        {% block content %}{% endblock %}
+    &lt;/main&gt;
+&lt;/body&gt;
+</code></pre>
+
+    <ul>
+        <li>Included templates receive the same context by default.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Static Files in Templates: {% load static %}</b></li>
+    <br/>
+    <ul>
+        <li>To include CSS, JS, or images managed by Django’s staticfiles system:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">{% load static %}
+
+&lt;link rel=&quot;stylesheet&quot; href=&quot;{% static 'css/style.css' %}&quot; /&gt;
+&lt;img src=&quot;{% static 'images/logo.png' %}&quot; alt=&quot;Logo&quot; /&gt;
+</code></pre>
+
+    <ul>
+        <li><code>{% load static %}</code> imports the <code>static</code> template tag library.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Auto-Escaping and Safety</b></li>
+    <br/>
+    <ul>
+        <li>By default, Django escapes HTML in variables to prevent XSS attacks.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">{{ user_input }}
+</code></pre>
+
+    <ul>
+        <li>If <code>user_input</code> is <code>&quot;&lt;script&gt;alert('xss')&lt;/script&gt;&quot;</code>, Django will output:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&amp;lt;script&amp;gt;alert(&#39;xss&#39;)&amp;lt;/script&amp;gt;
+</code></pre>
+
+    <ul>
+        <li>This way, the browser shows it as text instead of executing it as JavaScript.</li>
+        <br/>
+        <li>If you really want to output HTML safely (for trusted content only!), you can use the <code>safe</code> filter:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">{{ html_content|safe }}
+</code></pre>
+
+    <ul>
+        <li>Never apply <code>safe</code> to untrusted user input.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Context: What Data Is Available in Templates?</b></li>
+    <br/>
+    <ul>
+        <li>Everything you pass from the view via <code>context</code>:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">return render(request, &quot;blog/home.html&quot;, {&quot;name&quot;: &quot;Junzhe&quot;})
+</code></pre>
+
+    <ul>
+        <li>Plus variables added by <b>context processors</b> (depending on your settings), for example:</li>
+    </ul>
+
+    <ul>
+        <li><code>request</code> &rarr; the request object</li>
+        <li><code>user</code> &rarr; current logged-in user</li>
+        <li><code>messages</code> &rarr; message framework</li>
+    </ul>
+
+    <ul>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">{% if user.is_authenticated %}
+    &lt;p&gt;Logged in as {{ user.username }}&lt;/p&gt;
+{% else %}
+    &lt;p&gt;Not logged in&lt;/p&gt;
+{% endif %}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Template Language Limitations (On Purpose)</b></li>
+    <br/>
+    <ul>
+        <li>Django templates are deliberately simple. Things you <u>cannot</u> do in templates:</li>
+        <ul>
+            <li>arbitrary Python code</li>
+            <li>complex calculations</li>
+            <li>access private attributes or call dangerous methods</li>
+        </ul>
+        <br/>
+        <li>Rule of thumb:
+            <ul>
+                <li>views handle business logic</li>
+                <li>templates handle display and simple conditions/loops</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Custom Template Filters and Tags (Very Brief Intro)</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes built-in filters are not enough. You can create your own.</li>
+        <li>Create a file <code>templatetags/blog_extras.py</code> inside your app:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">blog/
+├── templatetags/
+│   ├── __init__.py
+│   └── blog_extras.py
+</code></pre>
+
+<pre><code class="language-py line-numbers"># blog/templatetags/blog_extras.py
+
+from django import template
+
+register = template.Library()
+
+@register.filter
+def shout(value):
+    return str(value).upper() + &quot;!!!&quot;
+</code></pre>
+
+    <ul>
+        <li>In your template:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">{% load blog_extras %}
+
+&lt;p&gt;{{ &quot;hello&quot;|shout }}&lt;/p&gt;  {# outputs HELLO!!! #}
+</code></pre>
+
+    <ul>
+        <li>This is an advanced topic, but good to know that it exists.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
