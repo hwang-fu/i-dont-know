@@ -164,6 +164,7 @@
         <li><a href="#vue-provide-inject">Provide / Inject</a></li>
         <li><a href="#vue-async-components">Async Components</a></li>
         <li><a href="#vue-composables">Composables</a></li>
+        <li><a href="#vue-custom-directives">Custom Directives</a></li>
     </ul>
 </nav>
 <hr/>
@@ -7682,6 +7683,221 @@ const { width, height } = useWindowSize();
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-custom-directives">Custom Directives in Vue (Composition API + TypeScript)</h3>
+<ol>
+
+    <li><b>What Are Directives in Vue?</b></li>
+    <br/>
+    <ul>
+        <li>Directives are <u>special attributes</u> in Vue templates that give elements extra behavior.</li>
+    <br/>
+        <li>You already know Vue’s built-in directives:
+            <ul>
+                <li><code>v-if</code></li>
+                <li><code>v-for</code></li>
+                <li><code>v-model</code></li>
+                <li><code>v-bind</code> / <code>:</code></li>
+                <li><code>v-on</code> / <code>@</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Use composables for logic. Use directives for DOM manipulation.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Directive Lifecycle Hooks (TypeScript)</b></li>
+
+<pre><code class="language-ts line-numbers">import type { Directive, DirectiveBinding } from &quot;vue&quot;;
+
+export const myDirective: Directive = {
+    created(el: HTMLElement, binding: DirectiveBinding) {},
+    beforeMount(el: HTMLElement, binding: DirectiveBinding) {},
+    mounted(el: HTMLElement, binding: DirectiveBinding) {},
+    beforeUpdate(el: HTMLElement, binding: DirectiveBinding) {},
+    updated(el: HTMLElement, binding: DirectiveBinding) {},
+    beforeUnmount(el: HTMLElement, binding: DirectiveBinding) {},
+    unmounted(el: HTMLElement, binding: DirectiveBinding) {},
+};
+</code></pre>
+
+    <ul>
+        <li>Usually you only need:</li>
+        <ul>
+            <li><code>mounted</code></li>
+            <li><code>updated</code></li>
+            <li><code>unmounted</code> for cleanup</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Your First Custom Directive: v-focus (Auto-Focus Input)</b></li>
+    <br/>
+
+    <ul>
+        <li>Create file:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/
+└── directives/
+    └── vFocus.ts
+</code></pre>
+
+<pre><code class="language-ts line-numbers">import type { Directive } from &quot;vue&quot;;
+
+export const vFocus: Directive = {
+    mounted(el: HTMLElement) {
+        el.focus();
+    }
+};
+</code></pre>
+
+    <ul>
+        <li>Register globally in <code>main.ts</code>:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import { createApp } from &quot;vue&quot;;
+import App from &quot;./App.vue&quot;;
+import { vFocus } from &quot;./directives/vFocus&quot;;
+
+const app = createApp(App);
+
+app.directive(&quot;focus&quot;, vFocus);
+
+app.mount(&quot;#app&quot;);
+</code></pre>
+
+    <ul>
+        <li>Use in component:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;input v-focus /&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Example: v-color (Change Text Color Dynamically)</b></li>
+
+<pre><code class="language-ts line-numbers">export const vColor: Directive = {
+    mounted(el: HTMLElement, binding) {
+        el.style.color = String(binding.value);
+    },
+    updated(el: HTMLElement, binding) {
+        el.style.color = String(binding.value);
+    }
+};
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;p v-color=&quot;'red'&quot;&gt;Red text&lt;/p&gt;
+&lt;p v-color=&quot;dynamicColor&quot;&gt;Dynamic&lt;/p&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Example: v-click-outside (Dropdown / Modal Usage)</b></li>
+
+<pre><code class="language-ts line-numbers">export const vClickOutside: Directive = {
+    beforeMount(el: HTMLElement, binding) {
+        el.__handler__ = (event: MouseEvent) =&gt; {
+            if (!el.contains(event.target as Node)) {
+                binding.value(event);
+            }
+        };
+        document.addEventListener(&quot;click&quot;, el.__handler__);
+    },
+    unmounted(el: HTMLElement) {
+        document.removeEventListener(&quot;click&quot;, el.__handler__);
+    }
+};
+</code></pre>
+
+    <ul><li>Using the directive:</li></ul>
+
+<pre><code class="language-html line-numbers">&lt;div v-click-outside=&quot;onOutside&quot;&gt;
+    Click outside me!
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang=&quot;ts&quot;&gt;
+function onOutside() {
+    alert(&quot;Clicked outside!&quot;);
+}
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Example: v-autosize (Auto-Grow Textarea)</b></li>
+
+<pre><code class="language-ts line-numbers">export const vAutosize: Directive = {
+    mounted(el: HTMLTextAreaElement) {
+        const resize = () =&gt; {
+            el.style.height = &quot;auto&quot;;
+            el.style.height = el.scrollHeight + &quot;px&quot;;
+        };
+
+        el.__autosize__ = resize;
+        el.addEventListener(&quot;input&quot;, resize);
+        resize();
+    },
+    unmounted(el: HTMLTextAreaElement) {
+        el.removeEventListener(&quot;input&quot;, el.__autosize__);
+    }
+};
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;textarea v-autosize&gt;&lt;/textarea&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Local Registration (Composition API)</b></li>
+    <br/>
+    <ul>
+        <li>In <code>&lt;script setup&gt;</code>, local directives are registered using <code>defineProps</code> API:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang=&quot;ts&quot;&gt;
+import { vColor } from &quot;@/directives/vColor&quot;;
+
+const directives = { color: vColor };
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;p v-color=&quot;'blue'&quot;&gt;Hello&lt;/p&gt;
+&lt;/template&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Passing Arguments and Modifiers</b></li>
+
+<pre><code class="language-html line-numbers">&lt;div v-example:foo.bar=&quot;123&quot;&gt;&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-ts line-numbers">mounted(el, binding) {
+    console.log(binding.value);      // 123
+    console.log(binding.arg);        // "foo"
+    console.log(binding.modifiers);  // { bar: true }
+}
+</code></pre>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
