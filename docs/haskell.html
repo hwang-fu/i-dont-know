@@ -160,6 +160,7 @@
         <li><a href="#haskell-tuples">Tuples</a></li>
         <li><a href="#haskell-types-typeclasses">Types and Typeclasses</a></li>
         <li><a href="#haskell-adts">ADTs</a></li>
+        <li><a href="#haskell-typeclasses">Typeclasses</a></li>
     </ul>
 </nav>
 <hr/>
@@ -2665,6 +2666,288 @@ describeColor Blue  = "Cool color"
 <pre><code class="language-haskell line-numbers">handle :: Result Int -&gt; String
 handle (Success n) = "Value: " ++ show n
 handle (Error msg) = "Error: " ++ msg
+</code></pre>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-typeclasses">Typeclasses in Haskell</h3>
+<ol>
+    <li><b>What Are Typeclasses?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>typeclass</b> in Haskell defines a set of behaviors (operations) that a type can implement.</li>
+        <br/>
+        <li>You can think of a typeclass as:
+            <ul>
+                <li>an interface (like in Java or TypeScript), but more general and more powerful,</li>
+                <li>a way to describe <b>overloaded functions</b> that behave differently based on type,</li>
+                <li>a mechanism for <b>ad-hoc polymorphism</b>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>A typeclass does <u>not</u> define data, it defines functions that types must provide.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">class Eq a where
+    (==) :: a -&gt; a -&gt; Bool
+    (/=) :: a -&gt; a -&gt; Bool
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This means: any type <code>a</code> that implements <code>Eq</code> must define <code>(==)</code> and <code>(/=)</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>The Role of Typeclass Constraints</b></li>
+    <br/>
+    <ul>
+        <li>Functions often restrict type variables to only those types that implement a required typeclass.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">equalMessage :: Eq a =&gt; a -&gt; a -&gt; String
+equalMessage x y =
+    if x == y then "Equal" else "Not equal"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Eq a =&gt;</code> is a <u>constraint</u> meaning: "this function only works for types that implement <code>Eq</code>."</li>
+        <li>You can have multiple constraints:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">describe :: (Eq a, Show a) =&gt; a -&gt; a -&gt; String
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Defining a Typeclass</b></li>
+    <br/>
+    <ul>
+        <li>You define a typeclass using the <code>class</code> keyword.</li>
+        <li>Example of a custom typeclass:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">class Printable a where
+    toText :: a -&gt; String
+</code></pre>
+
+    <ul>
+        <li>Any type that implements <code>Printable</code> must define <code>toText</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Creating a Typeclass Instance</b></li>
+    <br/>
+    <ul>
+        <li>To make a type implement a typeclass, write an <code>instance</code>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Color = Red | Green | Blue
+
+instance Printable Color where
+    toText Red   = "Red"
+    toText Green = "Green"
+    toText Blue  = "Blue"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Now you can call:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">toText Red      -- "Red"
+toText Blue     -- "Blue"
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Automatic Instance Derivation</b></li>
+    <br/>
+    <ul>
+        <li>Haskell can auto-generate implementations for many standard typeclasses:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Point = Point Int Int
+    deriving (Eq, Show)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Eq</code>: now <code>(==)</code> compares coordinates</li>
+        <li><code>Show</code>: allows <code>show (Point 1 2)</code> =&gt; <code>"Point 1 2"</code></li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Typeclasses as Constraints on Polymorphic Functions</b></li>
+    <br/>
+    <ul>
+        <li>Typeclasses let you write functions that work for many types, but only those that implement required behaviors.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">max3 :: Ord a =&gt; a -&gt; a -&gt; a -&gt; a
+max3 a b c = max a (max b c)
+</code></pre>
+
+    <ul>
+        <li>Because <code>max</code> needs ordering, the function requires <code>Ord a</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Multiple Typeclass Constraints</b></li>
+    <br/>
+    <ul>
+        <li>You can require several typeclasses at once:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">format :: (Show a, Ord a) =&gt; a -&gt; a -&gt; String
+format x y =
+    if x &lt; y
+        then "Ascending: " ++ show x ++ ", " ++ show y
+        else "Descending: " ++ show y ++ ", " ++ show x
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Typeclasses for Parameterized Types</b></li>
+    <br/>
+    <ul>
+        <li>Typeclasses can reference types of the form <code>f a</code> (e.g., <code>Maybe a</code>, <code>[a]</code>).</li>
+        <li>This allows modeling behaviors of containers.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">instance Functor Maybe where
+    fmap _ Nothing  = Nothing
+    fmap f (Just x) = Just (f x)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Any type constructor <code>f</code> of kind <code>* -&gt; *</code> can implement <code>Functor</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Subclassing in Typeclasses</b></li>
+    <br/>
+    <ul>
+        <li>Typeclasses can depend on other typeclasses.</li>
+        <li>Example: <code>Ord</code> requires <code>Eq</code>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">class Eq a =&gt; Ord a where
+    (&lt;)  :: a -&gt; a -&gt; Bool
+    (&gt;)  :: a -&gt; a -&gt; Bool
+    compare :: a -&gt; a -&gt; Ordering
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Meaning: "Any <code>Ord</code> instance must also implement <code>Eq</code>."</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Advanced Feature: Default Method Implementations</b></li>
+    <br/>
+    <ul>
+        <li>Typeclasses can provide default method bodies, which instances may override or keep.</li>
+        <li>If an instance does not define the method, the default version is used automatically.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">class Size a where
+    size :: a -&gt; Int
+    size _ = 1     -- default implementation
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Here, any type that derives <code>Size</code> without defining <code>size</code> will return <code>1</code>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Point = Point Int Int
+
+-- Using the default implementation
+instance Size Point
+</code></pre>
+
+<pre><code class="language-haskell line-numbers">main = print (size (Point 3 4))   -- prints 1
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can also override the default:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Pair a = Pair a a
+
+instance Size (Pair a) where
+    size (Pair _ _) = 2   -- custom implementation
+</code></pre>
+
+<pre><code class="language-haskell line-numbers">main = do
+    print (size (Point 3 4))      -- uses default: 1
+    print (size (Pair 10 20))     -- uses custom: 2
+</code></pre>
+
+    <br/><br/>
+
+
+
+
+    <li><b>Higher-Kinded Typeclasses</b></li>
+    <br/>
+    <ul>
+        <li>Some typeclasses work on <u>type constructors</u> (not simple types).</li>
+        <li>Examples:
+            <ul>
+                <li><b>Functor</b>: <code>fmap</code></li>
+                <li><b>Applicative</b>: <code>pure</code>, <code>(&lt;*&gt;)</code></li>
+                <li><b>Monad</b>: <code>(&gt;&gt;=)</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Real-World Example: Defining Equality and Display</b></li>
+    <br/>
+    <ul>
+        <li>Create a custom type and implement two typeclasses:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Pair a = Pair a a
+
+instance Eq a =&gt; Eq (Pair a) where
+    Pair x1 y1 == Pair x2 y2 = x1 == x2 &amp;&amp; y1 == y2
+
+instance Show a =&gt; Show (Pair a) where
+    show (Pair x y) = "Pair(" ++ show x ++ ", " ++ show y ++ ")"
 </code></pre>
 
     <br/><br/>
