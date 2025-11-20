@@ -181,6 +181,7 @@
         <li><a href="#django-httpresponse"><code>HttpResponse</code> in Django</a></li>
         <li><a href="#django-writing-views">Writing Views</a></li>
         <li><a href="#django-views-decorators">View Decorators</a></li>
+        <li><a href="#django-file-uploads">File Uploads</a></li>
     </ul>
 </nav>
 <hr/>
@@ -8854,6 +8855,269 @@ def profile(request):
         </li>
         <br/>
         <li>The others are useful but not needed for your first 2–3 weeks of Django learning.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-file-uploads">File Uploads in Django (Beginner&#39;s Guide)</h3>
+<ol>
+
+    <li><b>What Does "File Upload" Mean in Django?</b></li>
+    <br/>
+    <ul>
+        <li>File upload means allowing users to send files (images, PDFs, documents, videos) from their browser to your server.</li>
+        <br/>
+        <li>Django makes file uploads simple using:
+            <ul>
+                <li><code>request.FILES</code> → where uploaded files live</li>
+                <li>HTML forms with <code>enctype=&quot;multipart/form-data&quot;</code></li>
+                <li>Django settings for where to store the files</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You should understand basic views before continuing.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Step 1: Configure MEDIA Settings</b></li>
+    <br/>
+    <ul>
+        <li>Open <code>settings.py</code> and add:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">MEDIA_ROOT = BASE_DIR / &quot;media&quot;
+MEDIA_URL = &quot;/media/&quot;
+</code></pre>
+
+    <ul>
+        <li><b>MEDIA_ROOT</b> → folder on your server where files are stored.</li>
+        <li><b>MEDIA_URL</b> → URL prefix used to access uploaded files.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Step 2: Serve Media Files in Development</b></li>
+    <br/>
+    <ul>
+        <li>In development (not production!), add this to <code>mysite/urls.py</code>:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.conf import settings
+from django.conf.urls.static import static
+
+urlpatterns = [
+    # your existing routes
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+</code></pre>
+
+    <ul>
+        <li>This tells Django how to serve uploaded files during development.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Step 3: Create an HTML Upload Form</b></li>
+    <br/>
+    <ul>
+        <li>Your HTML form <u>must</u> use both:</li>
+        <ul>
+            <li><code>method=&quot;POST&quot;</code></li>
+            <li><code>enctype=&quot;multipart/form-data&quot;</code></li>
+        </ul>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/upload.html --&gt;
+
+&lt;h1&gt;Upload a File&lt;/h1&gt;
+
+&lt;form method=&quot;POST&quot; enctype=&quot;multipart/form-data&quot;&gt;
+    {% csrf_token %}
+    &lt;input type=&quot;file&quot; name=&quot;file&quot; /&gt;
+    &lt;br/&gt;&lt;br/&gt;
+    &lt;button type=&quot;submit&quot;&gt;Upload&lt;/button&gt;
+&lt;/form&gt;
+</code></pre>
+
+    <ul>
+        <li><u>csrf_token</u> is required for POST forms in Django.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Step 4: Write the Upload View</b></li>
+    <br/>
+    <ul>
+        <li>In <code>blog/views.py</code>, create a view to handle the upload.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.shortcuts import render
+from django.http import HttpResponse
+
+def upload_file(request):
+    if request.method == &quot;POST&quot;:
+        uploaded = request.FILES[&quot;file&quot;] # get the uploaded file object
+
+        with open(f&quot;media/{uploaded.name}&quot;, &quot;wb&quot;) as f:
+            for chunk in uploaded.chunks():
+                f.write(chunk)
+
+        return HttpResponse(f&quot;Uploaded: {uploaded.name}&quot;)
+
+    return render(request, &quot;blog/upload.html&quot;)
+</code></pre>
+
+    <ul>
+        <li>Important points:
+            <ul>
+                <li><code>request.FILES</code> stores uploaded files.</li>
+                <li><code>uploaded.chunks()</code> helps safely handle large files.</li>
+                <li>Saving manually demonstrates how uploads work internally.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Step 5: Add URL for File Upload</b></li>
+    <br/>
+    <ul>
+        <li>In <code>blog/urls.py</code>:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.urls import path
+from . import views
+
+urlpatterns = [
+    path(&quot;upload/&quot;, views.upload_file, name=&quot;upload&quot;),
+]
+</code></pre>
+
+    <ul>
+        <li>Now visiting <code>/blog/upload/</code> shows the upload page.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How to Access Uploaded Files</b></li>
+    <br/>
+    <ul>
+        <li>If you uploaded <code>picture.jpg</code>, Django saved it inside:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">media/
+└── picture.jpg
+</code></pre>
+
+    <ul>
+        <li>You can display it in a template using:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;img src=&quot;/media/picture.jpg&quot; /&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Models for File Uploads (Common Approach)</b></li>
+    <br/>
+    <ul>
+        <li>Most real apps store uploaded file paths in the database.</li>
+        <li>Create a model:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/models.py
+
+from django.db import models
+
+class Upload(models.Model):
+    file = models.FileField(upload_to=&quot;uploads/&quot;)
+</code></pre>
+
+    <ul>
+        <li>This automatically stores files inside <code>media/uploads/</code>.</li>
+        <li><code>FileField</code> also stores the file path in the database.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Upload View Using Model</b></li>
+    <br/>
+
+<pre><code class="language-py line-numbers">from .models import Upload
+
+def upload_with_model(request):
+    if request.method == &quot;POST&quot;:
+        file_obj = request.FILES[&quot;file&quot;]
+        Upload.objects.create(file=file_obj)
+        return HttpResponse(&quot;File uploaded using model!&quot;)
+
+    return render(request, &quot;blog/upload.html&quot;)
+</code></pre>
+
+    <ul>
+        <li>This is cleaner and recommended for real projects.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Displaying Uploaded Files in Templates</b></li>
+
+<pre><code class="language-py line-numbers">def show_uploads(request):
+    files = Upload.objects.all()
+    return render(request, &quot;blog/files.html&quot;, {&quot;files&quot;: files})
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/files.html --&gt;
+
+&lt;h2&gt;Uploaded Files&lt;/h2&gt;
+
+{% for f in files %}
+    &lt;p&gt;&lt;a href=&quot;{{ f.file.url }}&quot;&gt;{{ f.file.name }}&lt;/a&gt;&lt;/p&gt;
+{% endfor %}
+</code></pre>
+
+    <ul>
+        <li>Django automatically creates <code>file.url</code> for downloads.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Common Beginner Mistakes</b></li>
+    <br/>
+    <ul>
+        <li>Forgetting <code>enctype=&quot;multipart/form-data&quot;</code></li>
+        <li>Not using <code>csrf_token</code> inside the form</li>
+        <li>Trying to read uploaded file from request.POST (it lives in <code>request.FILES</code>!)</li>
+        <li>Not configuring MEDIA_URL / MEDIA_ROOT</li>
+        <li>Forgetting to serve media files during DEBUG mode</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li>Django handles file uploads using <code>request.FILES</code> and a special form encoding.</li>
+        <li>You must configure:
+            <ul>
+                <li><code>MEDIA_URL</code></li>
+                <li><code>MEDIA_ROOT</code></li>
+            </ul>
+        </li>
+        <li>You can save files manually or by using <code>FileField</code> with a model.</li>
+        <li>Uploaded files can be displayed using <code>{{ f.file.url }}</code>.</li>
+        <li>For beginners: practice uploading images, PDFs, and showing them back on a page.</li>
     </ul>
     <br/><br/>
 
