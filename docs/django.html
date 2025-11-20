@@ -185,6 +185,7 @@
         <li><a href="#django-shortcut-http-functions">Shortcut HTTP Functions</a></li>
         <li><a href="#django-generic-views">Generic Views</a></li>
         <li><a href="#django-middleware">Middleware</a></li>
+        <li><a href="#django-sessions">Sessions</a></li>
     </ul>
 </nav>
 <hr/>
@@ -9954,7 +9955,248 @@ class SimpleLogMiddleware:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-sessions">Beginner&#39;s Guide to Using Sessions in Django</h3>
+<ol>
 
+    <li><b>What Are Sessions in Django?</b></li>
+    <br/>
+    <ul>
+        <li>A <u>session</u> lets Django remember information about a specific user across multiple requests.</li>
+        <br/>
+        <li>This is useful because HTTP is <u>stateless</u> — normally, each request forgets everything about previous ones.</li>
+        <br/>
+        <li>With sessions, Django can store data such as:
+            <ul>
+                <li>whether a user is logged in</li>
+                <li>shopping cart items</li>
+                <li>user preferences</li>
+                <li>a page visit counter</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Sessions store data on the server, while the browser holds only a <u>session ID cookie</u>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How Sessions Work (Beginner Explanation)</b></li>
+    <br/>
+    <ul>
+        <li>Step 1: Django creates a session ID (e.g., &quot;xyz123&quot;).</li>
+        <li>Step 2: Browser stores it in a cookie named <code>sessionid</code>.</li>
+        <li>Step 3: Django stores session data in the database by default.</li>
+        <li>Step 4: On every request, Django matches the cookie to the stored data.</li>
+    </ul>
+
+    <br/>
+    <ul>
+        <li>Django always makes sessions available through:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">request.session
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Check That Sessions Are Enabled</b></li>
+    <br/>
+    <ul>
+        <li>Two things must be present in your <code>settings.py</code>:</li>
+        <br/>
+
+        <li><b>1. SessionMiddleware</b>:</li>
+<pre><code class="language-py line-numbers">MIDDLEWARE = [
+    &quot;django.contrib.sessions.middleware.SessionMiddleware&quot;,
+    ...
+]
+</code></pre>
+
+        <li><b>2. sessions app</b>:</li>
+<pre><code class="language-py line-numbers">INSTALLED_APPS = [
+    &quot;django.contrib.sessions&quot;,
+    ...
+]
+</code></pre>
+
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Storing Data in a Session</b></li>
+    <br/>
+    <ul>
+        <li>Store data like using a Python dictionary:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def set_session(request):
+    request.session[&quot;username&quot;] = &quot;Junzhe&quot;
+    request.session[&quot;role&quot;] = &quot;admin&quot;
+    return HttpResponse(&quot;Session data saved!&quot;)
+</code></pre>
+
+    <ul>
+        <li>Django automatically saves the session after modifying it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Retrieving Data from a Session</b></li>
+
+<pre><code class="language-py line-numbers">def get_session(request):
+    username = request.session.get(&quot;username&quot;, &quot;Guest&quot;)
+    return HttpResponse(f&quot;Hello {username}!&quot;)
+</code></pre>
+
+    <ul>
+        <li><code>get()</code> avoids errors if the key does not exist.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Checking If a Session Key Exists</b></li>
+
+<pre><code class="language-py line-numbers">if &quot;username&quot; in request.session:
+    ...
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Deleting a Single Session Key</b></li>
+
+<pre><code class="language-py line-numbers">def delete_key(request):
+    if &quot;username&quot; in request.session:
+        del request.session[&quot;username&quot;]
+    return HttpResponse(&quot;Username deleted.&quot;)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Clearing the Entire Session</b></li>
+    <br/>
+    <ul>
+        <li>This removes all data for this user:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">request.session.flush()
+</code></pre>
+
+    <ul>
+        <li>Useful for logout.</li>
+        <li>It also creates a new empty session ID.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Setting Session Expiration</b></li>
+    <br/>
+    <ul>
+        <li>Sessions expire when the browser closes by default.</li>
+    </ul>
+
+    <ul>
+        <li>You can set a custom timeout in seconds:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">request.session.set_expiry(60 * 60)  # 1 hour
+</code></pre>
+
+    <ul>
+        <li>Or make the session never expire:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">request.session.set_expiry(None)
+</code></pre>
+
+    <ul>
+        <li>Or expire immediately on browser close:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">request.session.set_expiry(0)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Where Does Django Store Session Data?</b></li>
+    <br/>
+    <ul>
+        <li>By default, Django stores sessions in the database table:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">django_session
+</code></pre>
+
+    <ul>
+        <li>But Django also supports storing sessions in:</li>
+        <ul>
+            <li>cache</li>
+            <li>file system</li>
+            <li>signed cookies (session data stored in browser)</li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Example: Simple Page Visit Counter</b></li>
+    <br/>
+    <ul>
+        <li>A classic beginner example:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def counter(request):
+    count = request.session.get(&quot;count&quot;, 0)
+    request.session[&quot;count&quot;] = count + 1
+    return HttpResponse(f&quot;You have visited this page {count} times.&quot;)
+</code></pre>
+
+    <ul>
+        <li>This shows how sessions persist data across page reloads.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How Sessions Relate to Authentication</b></li>
+    <br/>
+    <ul>
+        <li>Django&#39;s login system uses sessions:</li>
+        <ul>
+            <li>When a user logs in → Django stores their user ID inside the session.</li>
+            <li>This gives you <code>request.user</code> for every request.</li>
+        </ul>
+        <br/>
+        <li>So sessions are the foundation of Django&#39;s authentication system.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Quick Checklist for Beginners</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>request.session[&quot;key&quot;] = value</code> to store data.</li>
+        <li>Use <code>request.session.get(&quot;key&quot;)</code> to read data safely.</li>
+        <li>Use <code>del request.session[&quot;key&quot;]</code> to delete.</li>
+        <li>Use <code>request.session.flush()</code> to clear all data (logout).</li>
+        <li>Make sure SessionMiddleware is enabled.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li>Django sessions let you store user-specific data between requests.</li>
+        <li>The data lives on the server, and the browser only stores a session ID.</li>
+        <li>You can add, read, delete, or clear session data easily via <code>request.session</code>.</li>
+        <li>Sessions power features like login systems, shopping carts, and preferences.</li>
+        <li>They are a fundamental concept for almost any web application.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
