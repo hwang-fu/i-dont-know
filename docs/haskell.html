@@ -164,6 +164,7 @@
         <li><a href="#haskell-pattern-matching">Pattern Matching</a></li>
         <li><a href="#haskell-guards">Guards</a></li>
         <li><a href="#haskell-built-in-types">Built-in Types</a></li>
+        <li><a href="#haskell-import"><code>import</code></a></li>
     </ul>
 </nav>
 <hr/>
@@ -4218,6 +4219,362 @@ Either String Int :: *
                 <li>Lists are great for streaming and combinators, arrays/vectors are better for random access and numeric performance.</li>
             </ul>
         </li>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-import">Imports and Modules in Haskell</h3>
+<ol>
+    <li><b>What Does <code>import</code> Do in Haskell?</b></li>
+    <br/>
+    <ul>
+        <li>Haskell code is organized into <b>modules</b>. Each source file typically defines one module.</li>
+        <br/>
+        <li>The <code>import</code> keyword brings names (functions, types, typeclasses, constructors) from another module into the current module’s scope.</li>
+        <br/>
+        <li>Imports are usually placed at the top of the file, after the optional <code>module</code> declaration.</li>
+<pre><code class="language-haskell line-numbers">module Main where
+
+import Data.List
+
+main :: IO ()
+main = print (sort [3,1,2])   -- sort comes from Data.List
+</code></pre>
+    </ul>
+
+
+    <br/>
+    <ul>
+        <li>Without <code>import Data.List</code>, the name <code>sort</code> would not be available in this module.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic</b> <code>import</code> <b>Syntax</b></li>
+    <br/>
+    <ul>
+        <li>The simple form of an import is:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Module.Name
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.Maybe
+import System.IO
+import Control.Monad
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This brings <u>all exported names</u> from the module into scope (unqualified, unless you add <code>qualified</code>).</li>
+        <li>Haskell modules form a hierarchy that mirrors directories:
+            <ul>
+                <li><code>Data.List</code> usually comes from <code>Data/List.hs</code></li>
+                <li><code>MyApp.Utils.Strings</code> from <code>MyApp/Utils/Strings.hs</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Importing Specific Names</b></li>
+    <br/>
+    <ul>
+        <li>You can restrict imports to a <u>selected list</u> of names using an import list in parentheses:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.List (sort, nub)
+</code></pre>
+
+    <ul>
+        <li>This imports only <code>sort</code> and <code>nub</code> from <code>Data.List</code>.</li>
+        <br/>
+        <li>You can also import type constructors and their constructors:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.Maybe (Maybe(..))
+-- imports the type Maybe and its constructors: Just, Nothing
+
+import Data.Either (Either(Left, Right))
+</code></pre>
+
+    <ul>
+        <li><code>Type(..)</code> means “import the type and all of its constructors”.</li>
+        <li>You may also list constructors explicitly instead of <code>(..)</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Hiding Names with</b> <code>hiding</code></li>
+    <br/>
+    <ul>
+        <li>You can import everything <u>except</u> some names using <code>hiding</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.List hiding (sort)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This imports all exported names from <code>Data.List</code> except <code>sort</code>.</li>
+        <li>You can hide multiple names:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Prelude hiding (head, tail)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Useful when:
+            <ul>
+                <li>you want to define your own version of a common function (e.g. a safer <code>head</code>), or</li>
+                <li>you want to avoid name clashes with another module.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Qualified Imports</b></li>
+    <br/>
+    <ul>
+        <li>A <u>qualified import</u> requires you to prefix names with the module name when using them:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import qualified Data.Map
+
+example :: Data.Map.Map String Int
+example = Data.Map.fromList [("a", 1), ("b", 2)]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Advantages:
+            <ul>
+                <li>avoids name clashes (e.g. <code>Data.Map.lookup</code> vs <code>Data.List.lookup</code>),</li>
+                <li>makes code more explicit about where functions come from.</li>
+            </ul>
+        </li>
+        <li>Disadvantage:
+            <ul>
+                <li>can be verbose, especially with long module names.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Qualified Imports with</b> <code>as</code> (Aliases)</li>
+    <br/>
+    <ul>
+        <li>You can combine <code>qualified</code> with an alias using <code>as</code> to shorten names:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import qualified Data.Map as M
+
+example :: M.Map String Int
+example = M.fromList [("a", 1), ("b", 2)]
+</code></pre>
+
+    <ul>
+        <br/>
+        <li>This is a very common style:
+            <ul>
+                <li><code>Data.Map</code> as <code>M</code></li>
+                <li><code>Data.Set</code> as <code>S</code></li>
+                <li><code>Data.Text</code> as <code>T</code> or <code>Text</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>You must always use the alias to refer to imported names.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Combining Qualified, Explicit, and Hiding</b></li>
+    <br/>
+    <ul>
+        <li>You can combine many import options:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">-- 1. Qualified with explicit import list
+import qualified Data.Map as M (Map, fromList, lookup)
+
+-- 2. Unqualified with explicit list
+import Data.List (sort, nub)
+
+-- 3. Qualified hiding some names (less common)
+import qualified Data.List as L hiding (nub)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Most typical patterns in real projects:
+            <ul>
+                <li>Unqualified + explicit list for small utility modules.</li>
+                <li>Qualified + alias for large libraries (Maps, Sets, Text, Conduit, etc.).</li>
+                <li><code>hiding</code> to avoid conflicts with Prelude or to override a function.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Dealing with Name Clashes</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes two modules export functions with the same name (e.g. <code>Data.List.map</code> and <code>Prelude.map</code>).</li>
+        <li>Strategies to handle clashes:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">-- Strategy 1: qualified import
+import qualified Data.Map as M
+
+-- Strategy 2: hide conflicting names
+import Prelude hiding (lookup)
+import qualified Data.Map as M
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example: using both <code>lookup</code> from <code>Data.Map</code> and <code>Data.List</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import qualified Data.Map as M
+import qualified Data.List as L
+
+foo :: Maybe Int
+foo =
+    let m = M.fromList [("a", 1)]
+    in  M.lookup "a" m   -- clearly from Data.Map
+
+bar :: Maybe Int
+bar =
+    L.lookup "a" [("a", 1)]  -- from Data.List
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>The Prelude and Turning It Off</b></li>
+    <br/>
+    <ul>
+        <li><code>Prelude</code> is the default module imported into every Haskell module:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">-- Implicitly:
+import Prelude
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>It provides:
+            <ul>
+                <li>basic types (<code>Int</code>, <code>Bool</code>, <code>Maybe</code>, <code>[]</code>, <code>Either</code>...)</li>
+                <li>basic functions (<code>map</code>, <code>foldr</code>, <code>length</code>, etc.)</li>
+            </ul>
+        </li>
+        <li>You can <u>disable</u> the implicit Prelude import with a language pragma:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE NoImplicitPrelude #-}
+module Main where
+
+import MyCustomPrelude
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is used in some projects to define their own “prelude” or to have stricter control over imports.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Importing Your Own Modules</b></li>
+    <br/>
+    <ul>
+        <li>Project modules are just modules you define yourself.</li>
+        <li>Directory structure mirrors module hierarchy:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">-- File: src/MyApp/Utils/Math.hs
+module MyApp.Utils.Math where
+
+square :: Int -&gt; Int
+square x = x * x
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>From another module:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">-- File: src/MyApp/Main.hs
+module MyApp.Main where
+
+import MyApp.Utils.Math (square)
+
+foo :: Int
+foo = square 10
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Your build tool (Cabal, Stack, etc.) must be configured so that <code>src</code> is on the module search path.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>import</code> <b>in GHCi</b></li>
+    <br/>
+    <ul>
+        <li>In GHCi (the interactive REPL), you can also use <code>import</code> statements, or the <code>:m</code> command:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; import Data.List
+Prelude Data.List&gt; sort [3,1,2]
+[1,2,3]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Or using <code>:m</code> (module command):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :m + Data.List Data.Maybe
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>:m +</code> adds modules; <code>:m -</code> removes.</li>
+        <li>You can still use <code>qualified</code> and <code>as</code> in GHCi just like in source files.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Safe Imports (Safe Haskell)</b></li>
+    <br/>
+    <ul>
+        <li>Safe Haskell is a feature for controlling what code can do, especially in untrusted contexts.</li>
+        <li>You may see imports like:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import safe Data.List
+</code></pre>
+
+    <ul>
+        <li>This is a more advanced feature and not needed for everyday coding, but you may encounter it in libraries focused on security or sandboxing.</li>
     </ul>
     <br/><br/>
 </ol>
