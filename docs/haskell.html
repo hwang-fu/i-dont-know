@@ -175,6 +175,7 @@
         <li><a href="#haskell-functor-applicative-monoid">Functors, Applicative Functors, and Monoids</a></li>
         <li><a href="#haskell-type-constructors">What Exactly Does <code>f a</code> (Type Constructor) Mean?</a></li>
         <li><a href="#haskell-monads">Monads</a></li>
+        <li><a href="#haskell-zippers">Zippers</a></li>
     </ul>
 </nav>
 <hr/>
@@ -7706,7 +7707,308 @@ sumInts a b = do
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-zippers">Zippers in Haskell</h3>
+<ol>
 
+    <li><b>What Is a Zipper?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>zipper</b> is a functional data structure that allows:
+            <ul>
+                <li><b>efficient navigation</b> through a data structure,</li>
+                <li><b>local editing</b> of a focus element,</li>
+                <li>while preserving the immutability of the original structure.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Originally introduced by Gérard Huet in 1997, zippers are widely used for:
+            <ul>
+                <li>navigating trees,</li>
+                <li>writing editors or cursors,</li>
+                <li>interpreters or evaluation machines,</li>
+                <li>Undo/redo structures,</li>
+                <li>data manipulation with context preservation.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>A zipper stores the <u>current focus</u>, and the <u>context</u> needed to rebuild the entire structure.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>An Intuitive Example: List Zipper</b></li>
+    <br/>
+    <ul>
+        <li>We introduce zippers using lists:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data ListZipper a = ListZipper [a] a [a]
+</code></pre>
+
+    <ul>
+        <li>This represents:</li>
+        <ul>
+            <li>the list of elements <u>to the left</u> of the focus, in reverse order,</li>
+            <li>the <u>current element</u> in focus,</li>
+            <li>the list of elements <u>to the right</u> of the focus.</li>
+        </ul>
+        <br/>
+        <li>Example for the list <code>[1,2,3,4,5]</code> with focus on <code>3</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">ListZipper [2,1] 3 [4,5]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Moving left and right</b> becomes efficient:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">goLeft (ListZipper (l:ls) x rs) = ListZipper ls l (x:rs)
+goRight (ListZipper ls x (r:rs)) = ListZipper (x:ls) r rs
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>We never reconstruct the entire list; we just update small pieces.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Zippers for Trees</b> (The classical application)</li>
+    <br/>
+    <ul>
+        <li>Consider a binary tree:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Tree a
+    = Empty
+    | Node a (Tree a) (Tree a)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>A zipper for trees allows navigation like:</li>
+        <ul>
+            <li>go to left child</li>
+            <li>go to right child</li>
+            <li>go back to parent</li>
+            <li>edit or replace any node</li>
+        </ul>
+    </ul>
+
+    <br/>
+    <ul>
+        <li><b>Idea:</b> store the current subtree and the path (context) back to the root.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The Tree Zipper Context</b></li>
+    <br/>
+    <ul>
+        <li>To move down a tree, you must remember:</li>
+        <ul>
+            <li>which child you came from,</li>
+            <li>the value at the parent,</li>
+            <li>the sibling subtree.</li>
+        </ul>
+        <li>Define a &quot;breadcrumb&quot; that stores this context:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Crumb a
+    = LeftCrumb  a (Tree a)     -- went left, store value &amp; right subtree
+    | RightCrumb a (Tree a)     -- went right, store value &amp; left subtree
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Zipper is then:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">type Breadcrumbs a = [Crumb a]
+type Zipper a       = (Tree a, Breadcrumbs a)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Now the zipper holds:
+            <ul>
+                <li><b>focused subtree</b></li>
+                <li><b>breadcrumbs</b> describing the path back up</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Navigating the Tree</b></li>
+    <br/>
+    <ul>
+        <li><b>Go left</b>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">goLeft :: Zipper a -&gt; Zipper a
+goLeft (Node x l r, bs) = (l, LeftCrumb x r : bs)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Go right</b>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">goRight :: Zipper a -&gt; Zipper a
+goRight (Node x l r, bs) = (r, RightCrumb x l : bs)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Go up</b> (using stored information):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">goUp :: Zipper a -&gt; Zipper a
+goUp (t, LeftCrumb x r : bs)  = (Node x t r, bs)
+goUp (t, RightCrumb x l : bs) = (Node x l t, bs)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Each move requires <b>O(1)</b> time.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Editing with a Zipper</b></li>
+    <br/>
+    <ul>
+        <li>Zippers make edits simple because you operate only on the focused node.</li>
+        <li><b>Replace the focused value</b>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">modify :: (a -&gt; a) -&gt; Zipper a -&gt; Zipper a
+modify f (Node x l r, bs) = (Node (f x) l r, bs)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Replace the focused subtree entirely</b>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">attach :: Tree a -&gt; Zipper a -&gt; Zipper a
+attach t (_, bs) = (t, bs)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can modify deeply nested values without reconstructing the whole tree.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Building and Rebuilding the Entire Structure</b></li>
+    <br/>
+    <ul>
+        <li>Once edits are done, return to the root:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">top :: Zipper a -&gt; Zipper a
+top z@(_, []) = z
+top z         = top (goUp z)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Then extract the full updated tree:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">getTree :: Zipper a -&gt; Tree a
+getTree = fst . top
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Example: Walking and Editing</b></li>
+    <br/>
+    <ul>
+        <li>Given the tree:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">myTree =
+    Node 1
+        (Node 2 Empty Empty)
+        (Node 3 Empty Empty)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Walk to node <code>2</code> and increment it:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(tree1, ctx1) = goLeft (myTree, [])
+(tree2, ctx2) = modify (+1) (tree1, ctx1)
+resultTree    = getTree (tree2, ctx2)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Resulting tree:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Node 1 (Node 3 Empty Empty) (Node 3 Empty Empty)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Zippers Are Not Just for Trees</b></li>
+    <br/>
+    <ul>
+        <li>Zippers can be built for any data structure that is:
+            <ul>
+                <li>recursive,</li>
+                <li>traversable,</li>
+                <li>built from sum + product type constructors.</li>
+            </ul>
+        </li>
+        <li>They can represent:
+            <ul>
+                <li>file system directories,</li>
+                <li>syntax trees,</li>
+                <li>JSON objects,</li>
+                <li>n-dimensional grids,</li>
+                <li>buffers with cursors.</li>
+            </ul>
+        </li>
+        <li>The general zipper machinery (with generics) appears in <code>Control.Lens</code> as <code>zipper</code> and <code>Top</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Zipper Intuition Explained</b></li>
+    <br/>
+    <ul>
+        <li>Imagine navigating a tree like navigating folders on a computer:</li>
+        <ul>
+            <li><b>goLeft / goRight</b> = <i>enter subfolder</i></li>
+            <li><b>goUp</b> = <i>go to parent directory</i></li>
+            <li><b>breadcrumbs</b> = <i>list of what you visited and what remains</i></li>
+        </ul>
+        <li>This way, you never lose information about where you came from.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Performance</b></li>
+    <br/>
+    <ul>
+        <li>All operations (navigate left/right/up, modify, attach) are <b>O(1)</b>.</li>
+        <li>Reassembling the entire structure takes <b>O(depth)</b> where depth is usually small.</li>
+        <li>Zippers preserve immutability, making them ideal for functional editors and interpreters.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
