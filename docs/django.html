@@ -177,6 +177,7 @@
         <li><a href="#django-db-fixtures">Database Fixtures</a></li>
         <li><a href="#django-url-dispatcher">URL Dispatcher</a></li>
         <li><a href="#django-views">Views</a></li>
+        <li><a href="#django-httpresponse"><code>HttpResponse</code> in Django</a></li>
     </ul>
 </nav>
 <hr/>
@@ -7881,7 +7882,246 @@ handler500 = &quot;mysite.views.server_error&quot;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-httpresponse">HttpResponse in Django</h3>
+<ol>
 
+    <li><b>What Is HttpResponse?</b></li>
+    <br/>
+    <ul>
+        <li><code>HttpResponse</code> is the core Django class used to return data back to the browser.</li>
+        <br/>
+        <li>Whenever a Django view finishes processing a request, it must return an <code>HttpResponse</code> (or a subclass of it).</li>
+        <br/>
+        <li>It represents:
+            <ul>
+                <li>the response body (HTML, JSON, text, binary)</li>
+                <li>HTTP status code (200, 404, 500, etc.)</li>
+                <li>response headers (Content-Type, cookies, etc.)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>All responses in Django originate from <code>HttpResponse</code> or one of its subclasses.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Usage of HttpResponse</b></li>
+    <br/>
+    <ul>
+        <li>A simple view that returns plain text:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.http import HttpResponse
+
+def hello(request):
+    return HttpResponse(&quot;Hello World!&quot;)
+</code></pre>
+
+    <ul>
+        <li>This returns an HTTP response with:
+            <ul>
+                <li>status = 200</li>
+                <li>content = &quot;Hello World!&quot;</li>
+                <li>Content-Type = text/html; charset=utf-8</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Returning HTML via HttpResponse</b></li>
+    <br/>
+    <ul>
+        <li>You can put raw HTML inside your response:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def home(request):
+    return HttpResponse(&quot;&lt;h1&gt;Welcome&lt;/h1&gt;&lt;p&gt;This is direct HTML.&lt;/p&gt;&quot;)
+</code></pre>
+
+    <ul>
+        <li>Good for testing; templates are preferred for real applications.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Setting Content Types</b></li>
+    <br/>
+    <ul>
+        <li>Specify the <code>Content-Type</code> using the <code>content_type</code> parameter.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def plain_text(request):
+    return HttpResponse(&quot;Just text&quot;, content_type=&quot;text/plain&quot;)
+</code></pre>
+
+    <ul>
+        <li>Other examples:
+            <ul>
+                <li><code>application/json</code></li>
+                <li><code>text/csv</code></li>
+                <li><code>application/pdf</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Returning Binary Data</b></li>
+    <br/>
+    <ul>
+        <li>You can send images, files, or other binary streams.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def raw_png(request):
+    with open(&quot;logo.png&quot;, &quot;rb&quot;) as f:
+        data = f.read()
+    return HttpResponse(data, content_type=&quot;image/png&quot;)
+</code></pre>
+
+    <ul>
+        <li>Use <code>FileResponse</code> for really large files (more efficient).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Setting HTTP Status Codes</b></li>
+    <br/>
+    <ul>
+        <li>You can override the status code:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def not_found(request):
+    return HttpResponse(&quot;Not here&quot;, status=404)
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Adding Custom Headers</b></li>
+    <br/>
+    <ul>
+        <li>You can modify response headers before returning:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def custom_headers(request):
+    response = HttpResponse(&quot;OK&quot;)
+    response[&quot;X-Powered-By&quot;] = &quot;Django&quot;
+    return response
+</code></pre>
+
+    <ul>
+        <li>Useful for:
+            <ul>
+                <li>security headers</li>
+                <li>custom caching rules</li>
+                <li>rate-limiting information</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>HttpResponse Subclasses</b></li>
+    <br/>
+    <ul>
+        <li>Django offers built-in convenience response classes:</li>
+        <ul>
+            <li><code>JsonResponse</code> → returns JSON</li>
+            <li><code>HttpResponseRedirect</code> → redirect</li>
+            <li><code>HttpResponsePermanentRedirect</code></li>
+            <li><code>FileResponse</code> → efficient streaming responses</li>
+            <li><code>StreamingHttpResponse</code> → large or infinite data streams</li>
+        </ul>
+        <br/>
+        <li>Example JSON:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.http import JsonResponse
+
+def api(request):
+    return JsonResponse({&quot;result&quot;: 123})
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>HttpResponse and Templates</b></li>
+    <br/>
+    <ul>
+        <li><code>render()</code> returns an <code>HttpResponse</code> behind the scenes.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.shortcuts import render
+
+def home(request):
+    return render(request, &quot;blog/home.html&quot;)
+</code></pre>
+
+    <ul>
+        <li><code>render()</code> is simply a wrapper around:
+            <ul>
+                <li>loading a template</li>
+                <li>rendering HTML</li>
+                <li>returning an <code>HttpResponse</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>HttpResponse with Cookies</b></li>
+    <br/>
+    <ul>
+        <li>You can set cookies in a response:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def set_cookie(request):
+    response = HttpResponse(&quot;Cookie set&quot;)
+    response.set_cookie(&quot;theme&quot;, &quot;dark&quot;)
+    return response
+</code></pre>
+
+    <ul>
+        <li>Reading cookies is done via <code>request.COOKIES</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>StreamingHttpResponse</b> (Advanced)</li>
+    <br/>
+    <ul>
+        <li>For extremely large or infinite data:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.http import StreamingHttpResponse
+
+def stream_numbers(request):
+    def generator():
+        for i in range(1, 6):
+            yield f&quot;Number: {i}\n&quot;
+    return StreamingHttpResponse(generator())
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>FileResponse</b> (Efficient File Downloads)</li>
+    <br/>
+    <ul>
+        <li>Django recommends <code>FileResponse</code> for serving files:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.http import FileResponse
+
+def download(request):
+    return FileResponse(open(&quot;report.pdf&quot;, &quot;rb&quot;), as_attachment=True)
+</code></pre>
+
+    <ul>
+        <li>Streams file data instead of loading the entire file into memory.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
