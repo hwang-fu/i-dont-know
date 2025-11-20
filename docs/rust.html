@@ -183,6 +183,7 @@
         <li><a href="#rust-generics-bound">Generics Bound</a></li>
         <li><a href="#rust-newtype-idiom">The Newtype Idiom</a></li>
         <li><a href="#rust-associated-items"></a>Associated Items and Associated Types</li>
+        <li><a href="#rust-phantom-type-parameters">Phantom Type Parameters</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -10301,7 +10302,171 @@ impl Bounded for SensorValue {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-phantom-type-parameters">Phantom Type Parameters in Rust</h3>
+<ol>
+    <li><b>What Are Phantom Type Parameters?</b></li>
+    <br/>
+    <ul>
+        <li>A <u>phantom type parameter</u> is a generic type parameter that does not appear in a type’s runtime fields.</li>
+        <br/>
+        <li>It affects <u>compile-time type checking</u> but has <u>zero runtime cost</u>.</li>
+        <br/>
+        <li>Rust requires you to signal that a generic parameter is intentionally unused using <code>PhantomData&lt;T&gt;</code>.</li>
+    </ul>
+    <br/><br/>
 
+    <li><b>Why Rust Needs <code>PhantomData</code></b></li>
+    <br/>
+    <ul>
+        <li>If a generic parameter does not appear in any field, Rust considers it <u>unused</u> and gives a warning (or error in some cases involving variance).</li>
+        <br/>
+        <li><code>PhantomData</code> tells the compiler:
+            <ul>
+                <li>&quot;Even though this type doesn’t store <code>T</code>, it conceptually owns or relates to a <code>T</code>.&quot;</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This enables important behaviors like:
+            <ul>
+                <li>ensuring two types with different phantom parameters are not interchangeable,</li>
+                <li>type-safe zero-cost wrappers.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Basic Example: Type-Level Marker</b></li>
+    <br/>
+    <ul>
+        <li>You may want to differentiate between units or modes without storing extra data.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::marker::PhantomData;
+
+struct Meters;
+struct Kilometers;
+
+struct Distance&lt;Unit&gt; {
+    value: f64,
+    _unit: PhantomData&lt;Unit&gt;,
+}
+
+fn main() {
+    let d1: Distance&lt;Meters&gt; = Distance { value: 100.0, _unit: PhantomData };
+    let d2: Distance&lt;Kilometers&gt; = Distance { value: 2.0, _unit: PhantomData };
+
+    // They are NOT interchangeable:
+    // let mix = d1 + d2; // compile error unless you define how to add different units
+}
+</code></pre>
+
+    <ul>
+        <li>Even though <code>Unit</code> has no runtime data, it enforces type-level separation.</li>
+        <li>This prevents bugs like mixing meters and kilometers incorrectly.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Phantom Types for API Safety</b></li>
+    <br/>
+    <ul>
+        <li>You can design APIs that enforce state transitions only allowed in the correct order.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::marker::PhantomData;
+
+struct Disconnected;
+struct Connected;
+
+struct Network&lt;State&gt; {
+    _state: PhantomData&lt;State&gt;,
+}
+
+impl Network&lt;Disconnected&gt; {
+    fn connect(self) -&gt; Network&lt;Connected&gt; {
+        Network { _state: PhantomData }
+    }
+}
+
+impl Network&lt;Connected&gt; {
+    fn send(&amp;self, msg: &amp;str) {
+        println!("Sending: {}", msg);
+    }
+}
+
+fn main() {
+    let net = Network&lt;Disconnected&gt; { _state: PhantomData };
+    let net = net.connect();  // OK, returns Network&lt;Connected&gt;
+    net.send("Hi!");          // Only allowed after connecting
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This enforces a <u>typestate pattern</u>.</li>
+        <li>Impossible states (e.g. sending before connecting) are detected at compile time.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Phantom Types for Lifetime Tracking</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes a struct has no fields referencing a lifetime but conceptually depends on one.</li>
+        <li><code>PhantomData&lt;&amp;'a T&gt;</code> allows you to express this relationship.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::marker::PhantomData;
+
+struct SliceInfo&lt;'a, T&gt; {
+    start: usize,
+    end: usize,
+    _marker: PhantomData&lt;&amp;'a T&gt;, // expresses lifetime dependency
+}
+
+fn main() {
+    let xs = vec![1, 2, 3];
+    let info = SliceInfo&lt;'_, i32&gt; {
+        start: 0,
+        end: 2,
+        _marker: PhantomData,
+    };
+
+    // Rust now knows that 'info' cannot outlive xs, conceptually.
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Used in low-level crates (iterators, cursors, custom smart pointers).</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Zero-Sized Types (ZSTs)</b></li>
+    <br/>
+    <ul>
+        li>Types containing only <code>PhantomData</code> (and possibly no fields) are <u>zero-sized types</u>.</li>
+        <li>They:
+            <ul>
+                <li>take up no memory at runtime,</li>
+                <li>still carry type information at compile time.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Marker&lt;T&gt; {
+    _marker: PhantomData&lt;T&gt;,
+}
+
+fn main() {
+    println!("size = {}", std::mem::size_of::&lt;Marker&lt;i32&gt;&gt;()); // prints 0
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Important for patterns where the type is relevant but no runtime representation is needed.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
