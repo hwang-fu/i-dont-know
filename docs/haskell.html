@@ -170,6 +170,7 @@
         <li><a href="#haskell-modules">Modules</a></li>
         <li><a href="#haskell-deriving">Deriving Instances</a></li>
         <li><a href="#haskell-constraint-arrow">The <code>=></code> Operator (Constraint Arrow)</a></li>
+        <li><a href="#haskell-kinds-star">Kinds <code>*</code> and <code>* -&gt; *</code> Operators</a></li>
     </ul>
 </nav>
 <hr/>
@@ -6289,6 +6290,363 @@ bar f = (f 3, f "hi")
         <li>Here <code>Show a =&gt;</code> applies inside a universal quantifier.</li>
     </ul>
 
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-kinds-star">Kinds <code>*</code> and <code>* -&gt; *</code> in Haskell</h3>
+<ol>
+    <li><b>What Are Kinds?</b></li>
+    <br/>
+    <ul>
+        <li>In Haskell, <b>types</b> classify <b>values</b>, and <b>kinds</b> classify <b>types</b>.</li>
+        <li>You can think of kinds as "types of types".</li>
+        <li>The most common kind is <code>*</code>, pronounced &quot;star&quot; or &quot;Type&quot;.</li>
+        <li>Historically and in GHCi, you will often see <code>*</code>; more modern notation uses <code>Type</code> (from <code>Data.Kind</code>), but the idea is the same.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">-- Value has a type:
+42       :: Int
+
+-- Type has a kind:
+Int      :: *
+Maybe    :: * -&gt; *
+Either   :: * -&gt; * -&gt; *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can inspect kinds in GHCi with <code>:k</code> or <code>:kind</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Kind <code>*</code>: Concrete (Fully Applied) Types</b></li>
+    <br/>
+    <ul>
+        <li>A type of kind <code>*</code> is a <b>concrete type</b> that can have <b>values</b>.</li>
+        <li>Examples of types of kind <code>*</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Int       :: *
+Bool      :: *
+Char      :: *
+[Int]     :: *
+Maybe Int :: *
+Either String Int :: *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>All of these can appear as the type of a value or function parameter/result:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">x    :: Int
+x = 42
+
+name :: String
+name = "haskell"
+
+maybeNum :: Maybe Int
+maybeNum = Just 10
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Key point: <b>only types of kind <code>*</code> classify actual runtime values</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Kind <code>* -&gt; *</code>: Type Constructors</b></li>
+    <br/>
+    <ul>
+        <li>A type of kind <code>* -&gt; *</code> is a <b>type constructor</b> that takes a concrete type and returns a concrete type.</li>
+        <li>It is &quot;waiting for one type argument&quot;.</li>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Maybe :: * -&gt; *
+[]    :: * -&gt; *
+IO    :: * -&gt; *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>When you apply them to a type of kind <code>*</code>, you get a new type of kind <code>*</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Maybe Int :: *
+Maybe Bool :: *
+
+[Char]   :: *
+IO Int   :: *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Think of <code>Maybe</code> as a function at the type level:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Maybe   :: * -&gt; *
+Maybe a :: *   -- when a :: *
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Types vs Type Constructors</b></li>
+    <br/>
+    <ul>
+        <li>Important distinction:</li>
+    </ul>
+
+    <ul>
+        <li><b>Type constructor</b> (kind <code>* -&gt; *</code> or more complex):
+            <ul>
+                <li><code>Maybe</code>, <code>[]</code>, <code>IO</code>, <code>Either</code>.</li>
+                <li>Works at the type level, constructing types from types.</li>
+            </ul>
+        </li>
+        <li><b>Concrete type</b> (kind <code>*</code>):
+            <ul>
+                <li><code>Maybe Int</code>, <code>[Bool]</code>, <code>IO String</code>, <code>Either String Int</code>.</li>
+                <li>Can be used as the type of actual values.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">-- Type constructors:
+Maybe  :: * -&gt; *
+Either :: * -&gt; * -&gt; *
+
+-- After application to type arguments:
+Maybe Int        :: *
+Either String Int :: *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You <b>cannot</b> write:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">x :: Maybe      -- error: kind mismatch, Maybe :: * -&gt; *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Because <code>Maybe</code> alone is not a concrete type (<code>*</code>), it still needs one type parameter.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Higher-Kinded Types: <code>* -&gt; * -&gt; *</code> and Beyond</b></li>
+    <br/>
+    <ul>
+        <li>Some type constructors take <b>two</b> or more type parameters:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Either :: * -&gt; * -&gt; *
+(,)    :: * -&gt; * -&gt; *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Either</code> takes two <code>*</code> types:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Either String Int :: *
+
+Either String  :: * -&gt; *   -- partially applied
+Either         :: * -&gt; * -&gt; *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can partially apply type constructors, just like functions.</li>
+        <li>Higher kinds (like <code>(* -&gt; *) -&gt; *</code>, etc.) appear with more advanced type-level programming, but the core idea stays the same.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Why <code>* -&gt; *</code> Matters: Typeclasses Like Functor and Monad</b></li>
+    <br/>
+    <ul>
+        <li>Many important typeclasses (like <code>Functor</code>, <code>Applicative</code>, <code>Monad</code>) work on <b>type constructors</b> of kind <code>* -&gt; *</code>, not on concrete types.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">class Functor f where
+    fmap :: (a -&gt; b) -&gt; f a -&gt; f b
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Here <code>f</code> must have kind <code>* -&gt; *</code>, because we use <code>f a</code> and <code>f b</code> where <code>a</code> and <code>b</code> are concrete types (<code>*</code>).</li>
+        <li>Examples of valid <code>Functor</code> instances:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">instance Functor Maybe where ...
+instance Functor [] where ...
+instance Functor IO where ...
+instance Functor (Either e) where ...
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Notice <code>Either</code> has kind <code>* -&gt; * -&gt; *</code>, but we turn it into a <code>* -&gt; *</code> by fixing the first argument: <code>(Either e)</code>.</li>
+        <li>You <b>cannot</b> write <code>instance Functor Int where ...</code>, because <code>Int :: *</code>, not <code>* -&gt; *</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using <code>:kind</code> in GHCi</b></li>
+    <br/>
+    <ul>
+        <li>GHCi lets you inspect kinds with <code>:k</code> (or <code>:kind</code>):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :k Int
+Int :: *
+
+Prelude&gt; :k Maybe
+Maybe :: * -&gt; *
+
+Prelude&gt; :k Maybe Int
+Maybe Int :: *
+
+Prelude&gt; :k Either
+Either :: * -&gt; * -&gt; *
+
+Prelude&gt; :k Either String
+Either String :: * -&gt; *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is extremely helpful for understanding whether something is a concrete type or a type constructor.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Value Level vs Type Level vs Kind Level (Analogy)</b></li>
+    <br/>
+    <ul>
+        <li>You can think in three layers:</li>
+    </ul>
+
+    <ul>
+        <li><b>Value level</b>:
+            <ul>
+                <li>Values have types.</li>
+                <li><code>42 :: Int</code>, <code>Just True :: Maybe Bool</code>.</li>
+            </ul>
+        </li>
+        <li><b>Type level</b>:
+            <ul>
+                <li>Types have kinds.</li>
+                <li><code>Int :: *</code>, <code>Maybe :: * -&gt; *</code>.</li>
+            </ul>
+        </li>
+        <li><b>Kind level</b>:
+            <ul>
+                <li>Kinds describe how types are formed.</li>
+                <li><code>*</code> (concrete types), <code>* -&gt; *</code> (unary type constructors), <code>* -&gt; * -&gt; *</code>, etc.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Data Constructors vs Type Constructors vs Kinds</b></li>
+    <br/>
+    <ul>
+        <li>Careful: there are two different &quot;constructors&quot;:</li>
+    </ul>
+
+    <ul>
+        <li><b>Type constructor</b>:
+            <ul>
+                <li>Lives at the <b>type level</b>.</li>
+                <li>Example: <code>Maybe :: * -&gt; *</code>.</li>
+            </ul>
+        </li>
+        <li><b>Data constructor</b>:
+            <ul>
+                <li>Lives at the <b>value level</b>.</li>
+                <li>Example: <code>Just :: a -&gt; Maybe a</code>, <code>Nothing :: Maybe a</code>.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Maybe a = Nothing | Just a
+-- Type constructor:  Maybe
+-- Data constructors: Nothing, Just
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The type constructor <code>Maybe</code> has kind <code>* -&gt; *</code>.</li>
+        <li>The data constructors work at the value level and involve concrete types (like <code>Maybe Int</code>).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b><code>*</code> vs <code>Type</code></b></li>
+    <br/>
+    <ul>
+        <li>Modern GHC internally uses <code>Type</code> (from <code>Data.Kind</code>) instead of <code>*</code>, but conceptually they are equivalent.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.Kind (Type)
+
+-- These are conceptually the same:
+Int   :: Type
+Maybe :: Type -&gt; Type
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You will still often see <code>*</code> in documentation and GHCi output, especially in older code; just read <code>*</code> as &quot;Type&quot;.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Advanced: Beyond <code>*</code> (Other Kinds)</b></li>
+    <br/>
+    <ul>
+        <li>With extensions like <code>DataKinds</code>, kinds become richer:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE DataKinds #-}
+
+-- Promoted values become types, and types get more specific kinds
+data Color = Red | Green | Blue
+-- Kinds: Color, not just *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>But for a large amount of everyday Haskell, focusing on <code>*</code> and <code>* -&gt; *</code> is enough.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li><b>Kinds</b> classify types, just as types classify values.</li>
+        <li><code>*</code> (or <code>Type</code>) is the kind of <b>concrete types</b> that have values (<code>Int</code>, <code>Bool</code>, <code>Maybe Int</code>, <code>[Char]</code>, ...).</li>
+        <li><code>* -&gt; *</code> is the kind of <b>unary type constructors</b> (<code>Maybe</code>, <code>[]</code>, <code>IO</code>, <code>Either e</code> when partially applied).</li>
+        <li>Type constructors of kind <code>* -&gt; *</code> are crucial for typeclasses like <code>Functor</code>, <code>Applicative</code>, and <code>Monad</code>.</li>
+        <li>GHCi’s <code>:kind</code> command helps you inspect and understand kinds.</li>
+        <li>Understanding <code>*</code> and <code>* -&gt; *</code> is the first big step into type-level thinking in Haskell.</li>
+    </ul>
     <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
