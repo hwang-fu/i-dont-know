@@ -184,6 +184,7 @@
         <li><a href="#django-file-uploads">File Uploads</a></li>
         <li><a href="#django-shortcut-http-functions">Shortcut HTTP Functions</a></li>
         <li><a href="#django-generic-views">Generic Views</a></li>
+        <li><a href="#django-middleware">Middleware</a></li>
     </ul>
 </nav>
 <hr/>
@@ -9715,6 +9716,245 @@ class PostCreateView(CreateView):
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-middleware">Beginner&#39;s Guide to Django Middleware</h3>
+<ol>
+
+    <li><b>What Is Middleware?</b></li>
+    <br/>
+    <ul>
+        <li>Middleware in Django is like a series of filters that every request and response passes through.</li>
+        <br/>
+        <li>Every time a user opens a page:
+            <ul>
+                <li>the request enters Django</li>
+                <li>it travels through the middleware chain</li>
+                <li>reaches your view</li>
+                <li>the response travels back through middleware</li>
+                <li>finally reaches the user</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Django comes with many built-in middleware, but you can also write your own.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Where Is Middleware Defined?</b></li>
+    <br/>
+    <ul>
+        <li>In your project settings file:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># mysite/settings.py
+
+MIDDLEWARE = [
+    &quot;django.middleware.security.SecurityMiddleware&quot;,
+    &quot;django.contrib.sessions.middleware.SessionMiddleware&quot;,
+    &quot;django.middleware.common.CommonMiddleware&quot;,
+    &quot;django.middleware.csrf.CsrfViewMiddleware&quot;,
+    &quot;django.contrib.auth.middleware.AuthenticationMiddleware&quot;,
+    &quot;django.contrib.messages.middleware.MessageMiddleware&quot;,
+    &quot;django.middleware.clickjacking.XFrameOptionsMiddleware&quot;,
+]
+</code></pre>
+
+    <ul>
+        <li>The order matters — each middleware wraps the next.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How Middleware Works (Simple Explanation)</b></li>
+    <br/>
+    <ul>
+        <li>Example chain:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">Request → Middleware 1 → Middleware 2 → ... → View
+Response ← Middleware 1 ← Middleware 2 ← ... ← View
+</code></pre>
+
+    <ul>
+        <li>Each middleware can:
+            <ul>
+                <li>modify the request</li>
+                <li>block the request</li>
+                <li>run code before the view</li>
+                <li>run code after the view</li>
+                <li>modify the response</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Django’s Most Important Built-In Middleware (Beginner-Friendly)</b></li>
+    <br/>
+
+    <ul>
+        <li><b>SecurityMiddleware</b></li>
+        <ul>
+            <li>Adds security headers (HTTPS, HSTS, etc.).</li>
+        </ul>
+        <br/>
+
+        <li><b>SessionMiddleware</b></li>
+        <ul>
+            <li>Enables sessions (used for login, carts, preferences).</li>
+        </ul>
+        <br/>
+
+        <li><b>CommonMiddleware</b></li>
+        <ul>
+            <li>URL rewriting, simple debugging features.</li>
+        </ul>
+        <br/>
+
+        <li><b>CsrfViewMiddleware</b></li>
+        <ul>
+            <li>Protects from CSRF attacks in forms.</li>
+        </ul>
+        <br/>
+
+        <li><b>AuthenticationMiddleware</b></li>
+        <ul>
+            <li>Adds <code>request.user</code> so you know who is logged in.</li>
+        </ul>
+        <br/>
+
+        <li><b>MessageMiddleware</b></li>
+        <ul>
+            <li>Enables temporary messages like “Post created successfully!”.</li>
+        </ul>
+        <br/>
+
+        <li><b>Clickjacking Protection Middleware</b></li>
+        <ul>
+            <li>Adds <code>X-Frame-Options</code> header to prevent framing attacks.</li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Writing Your First Custom Middleware</b></li>
+    <br/>
+    <ul>
+        <li>Here is a super simple middleware example that prints a message every time a request arrives.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/middleware.py
+
+class SimpleLogMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        print(&quot;A request just arrived!&quot;)
+
+        response = self.get_response(request)
+
+        print(&quot;A response is leaving!&quot;)
+        return response
+</code></pre>
+
+    <ul>
+        <li>Now activate it in <code>settings.py</code>:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">MIDDLEWARE += [
+    &quot;blog.middleware.SimpleLogMiddleware&quot;,
+]
+</code></pre>
+
+    <ul>
+        <li>Every page refresh will now print messages in your console.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Middleware That Runs Before the View</b></li>
+    <br/>
+    <ul>
+        <li>You can add custom processing before the view runs by writing <code>process_view()</code>.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">class CheckAdminMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        print(f&quot;About to call: {view_func.__name__}&quot;)
+</code></pre>
+
+    <ul>
+        <li>Django calls <code>process_view()</code> right before running the actual view.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Middleware That Runs After the View</b></li>
+    <br/>
+    <ul>
+        <li>Anything you want to modify in the response goes here.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">class AddHeaderMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        response[&quot;X-My-Header&quot;] = &quot;Hello&quot;
+        return response
+</code></pre>
+
+    <ul>
+        <li>This example adds a custom header to every response.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Key Rules to Remember</b></li>
+    <br/>
+    <ul>
+        <li><u>Order matters</u>: middleware runs from top to bottom for requests.</li>
+        <li><u>Reverse order</u> for responses.</li>
+        <li>Middleware must be a <b>class</b> with:
+            <ul>
+                <li><code>__init__()</code></li>
+                <li><code>__call__()</code></li>
+            </ul>
+        </li>
+        <li>You can optionally add:
+            <ul>
+                <li><code>process_view()</code></li>
+                <li><code>process_exception()</code></li>
+                <li><code>process_template_response()</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
