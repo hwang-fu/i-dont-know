@@ -156,6 +156,7 @@
         <li><a href="#haskell-comparison-operations">Comparison Operations</a></li>
         <li><a href="#haskell-lists-introduction">Lists Introduction</a></li>
         <li><a href="#haskell-list-concatenation">List Concatenation</a></li>
+        <li><a href="#haskell-list-comprehension">List Comprehension</a></li>
     </ul>
 </nav>
 <hr/>
@@ -1565,6 +1566,245 @@ buildFast xs = 1 : xs            -- good
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-list-comprehension">List Comprehension in Haskell</h3>
+<ol>
+    <li><b>What Are List Comprehensions?</b></li>
+    <br/>
+    <ul>
+        <li>A <u>list comprehension</u> is a concise and expressive way to construct lists in Haskell.</li>
+        <br/>
+        <li>Inspired by mathematical set-builder notation, such as:
+            <ul>
+                <li>{ x² | x ∈ ℕ, x &lt; 10 }</li>
+            </ul>
+        </li>
+        <br/>
+        <li>General syntax:</li>
+<pre><code class="language-haskell line-numbers">[ expression | qualifiers ]
+</code></pre>
+    <ul>
+        <li><code>expression</code>: what values to produce</li>
+        <li><code>qualifiers</code>: generators, filters, or let bindings</li>
+    </ul>
+    </ul>
+
+    <br/><br/>
+
+    <li><b>Basic List Comprehension</b></li>
+    <br/>
+    <ul>
+        <li>The simplest form uses a generator:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ x * 2 | x &lt;- [1,2,3] ]
+-- [2,4,6]
+</code></pre>
+
+    <ul>
+        <li>This reads: "for each <code>x</code> drawn from <code>[1,2,3]</code>, compute <code>x * 2</code>."</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Generators</b></li>
+    <br/>
+    <ul>
+        <li>A generator has the form <code>x &lt;- someList</code>.</li>
+        <li>You can have multiple generators:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ (x, y) | x &lt;- [1,2], y &lt;- [10,20] ]
+-- [(1,10),(1,20),(2,10),(2,20)]
+</code></pre>
+
+    <ul>
+        <li>Multiple generators produce a Cartesian product.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Filters (Predicates)</b></li>
+    <br/>
+    <ul>
+        <li>Filters restrict results by keeping only values that satisfy conditions.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ x | x &lt;- [1..10], even x ]
+-- [2,4,6,8,10]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Filters appear after generators and must evaluate to <code>Bool</code>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ (x,y) | x &lt;- [1..5], y &lt;- [1..5], x &lt; y ]
+-- [(1,2),(1,3),(1,4),(1,5),(2,3),(2,4),(2,5),(3,4),(3,5),(4,5)]
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Using</b> <code>let</code> <b>Bindings Inside Comprehensions</b></li>
+    <br/>
+    <ul>
+        <li>You can define local variables using <code>let</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ area | r &lt;- [1..5], let area = pi * r^2 ]
+-- [3.14,12.56,28.27,50.27,78.54]
+</code></pre>
+
+    <ul>
+        <li>A <code>let</code> binding does not require an <code>in</code> clause inside a comprehension.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Combining Generators, Filters, and Let</b></li>
+    <br/>
+    <ul>
+        <li>You can mix all three kinds of qualifiers seamlessly:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ (x, y, z)
+| x &lt;- [1..5]
+, let y = x * 2
+, z &lt;- [y..10]
+, odd z
+]
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>List Comprehensions as Map + Filter</b></li>
+    <br/>
+    <ul>
+        <li>Many list comprehensions correspond directly to:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">map f (filter p xs)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ x*2 | x &lt;- [1..10], odd x ]
+-- same as:
+map (*2) (filter odd [1..10])
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Nested Comprehensions</b></li>
+    <br/>
+    <ul>
+        <li>Comprehensions can be nested to generate structured output:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ [ x*y | y &lt;- [1..3] ] | x &lt;- [1..3] ]
+-- [[1,2,3],[2,4,6],[3,6,9]]
+</code></pre>
+
+    <ul>
+        <li>This is especially common when constructing matrices or grids.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>List Comprehensions and Strings</b></li>
+    <br/>
+    <ul>
+        <li>Strings work naturally because <code>String = [Char]</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ toUpper c | c &lt;- "hello" ]
+-- "HELLO"
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Guards and Multiple Filters</b></li>
+    <br/>
+    <ul>
+        <li>You can chain multiple conditions:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ x | x &lt;- [1..50], x `mod` 7 == 0, x &gt; 20 ]
+-- [28,35,42,49]
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Using</b> <code>if</code> <b>Expressions Inside Comprehensions</b></li>
+    <br/>
+    <ul>
+        <li>Because the expression is unrestricted, you can use <code>if</code> statements to transform results:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ if even x then "even" else "odd" | x &lt;- [1..5] ]
+-- ["odd","even","odd","even","odd"]
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Flattening with</b> <code>concat</code> <b>and Comprehensions</b></li>
+    <br/>
+    <ul>
+        <li>A list comprehension with multiple generators is equivalent to <code>concat</code> of mapped lists:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ (x,y) | x &lt;- [1..2], y &lt;- [1..2] ]
+-- same as:
+concat [ [ (x,y) | y &lt;- [1..2] ] | x &lt;- [1..2] ]
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Infinite Lists and Laziness</b></li>
+    <br/>
+    <ul>
+        <li>List comprehensions work naturally with infinite lists:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">take 10 [ x^2 | x &lt;- [1..] ]
+-- [1,4,9,16,25,36,49,64,81,100]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Laziness ensures values are computed only on demand.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Common Pitfalls</b></li>
+    <br/>
+    <ul>
+        <li><b>Order of qualifiers matters</b>: Generators must appear before filters dependent on them.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ x | even x, x &lt;- [1..10] ]
+-- ERROR: x is used before its generator
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Correct version:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[ x | x &lt;- [1..10], even x ]
+</code></pre>
+
+    <ul>
+        <li>Be careful when using multiple generators with infinite lists: Some comprehensions may fail to terminate.</li>
+    </ul>
+    <br/><br/>
+</ol>
+
 <!-- * * * * * * * * * * * * * * -->
 
 
