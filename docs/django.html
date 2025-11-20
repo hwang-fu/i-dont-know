@@ -180,6 +180,7 @@
         <li><a href="#django-views">Views</a></li>
         <li><a href="#django-httpresponse"><code>HttpResponse</code> in Django</a></li>
         <li><a href="#django-writing-views">Writing Views</a></li>
+        <li><a href="#django-views-decorators">View Decorators</a></li>
     </ul>
 </nav>
 <hr/>
@@ -8608,6 +8609,251 @@ class HelloView(View):
         </ul>
         <br/>
         <li>This flow becomes second nature once you practice it a few times.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-view-decorators">Beginner&#39;s Guide to View Decorators in Django</h3>
+<ol>
+
+    <li><b>What Is a View Decorator?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>decorator</b> in Django is something you place <u>on top of a view function</u> to give that view extra features or behavior.</li>
+        <br/>
+        <li>You can think of it like:
+            <ul>
+                <li>“this view needs login first”</li>
+                <li>“this view should only accept certain HTTP methods”</li>
+                <li>“this view should run extra checks before executing”</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The syntax always looks like this:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">@decorator_name
+def my_view(request):
+    ...
+</code></pre>
+
+    <ul>
+        <li>The <code>@decorator</code> line wraps your view and adds extra rules.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Why Do We Use Decorators?</b></li>
+    <br/>
+    <ul>
+        <li>They help you avoid repeating the same logic in many views.</li>
+        <li>They make your code cleaner and more readable.</li>
+        <li>Django provides many useful built-in decorators.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Decorator #1: login_required</b></li>
+    <br/>
+    <ul>
+        <li>This is the most common decorator.</li>
+        <li>It makes sure the user is logged in before accessing the view.</li>
+        <li>If not logged in, Django automatically redirects to the login page.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+
+@login_required
+def dashboard(request):
+    return HttpResponse(&quot;Welcome to your dashboard!&quot;)
+</code></pre>
+
+    <ul>
+        <li>If the user is not logged in:
+            <ul>
+                <li>Django redirects them to <code>/accounts/login/</code> (default)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Decorator #2: require_http_methods</b></li>
+    <br/>
+    <ul>
+        <li>This decorator restricts which HTTP methods are allowed for a view.</li>
+        <li>Example: allow only GET and POST:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.views.decorators.http import require_http_methods
+from django.http import HttpResponse
+
+@require_http_methods([&quot;GET&quot;, &quot;POST&quot;])
+def contact(request):
+    return HttpResponse(&quot;This view accepts only GET and POST&quot;)
+</code></pre>
+
+    <ul>
+        <li>If someone sends a PUT request, Django returns 405 (Method Not Allowed).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Decorator #3: require_GET and require_POST</b></li>
+    <br/>
+    <ul>
+        <li>These shortcuts restrict views to a <u>single</u> method.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.views.decorators.http import require_GET
+
+@require_GET
+def homepage(request):
+    return HttpResponse(&quot;Only GET requests are allowed here!&quot;)
+</code></pre>
+
+<pre><code class="language-py line-numbers">from django.views.decorators.http import require_POST
+
+@require_POST
+def save_data(request):
+    return HttpResponse(&quot;Only POST requests accepted.&quot;)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Decorator #4: csrf_exempt</b></li>
+    <br/>
+    <ul>
+        <li>This decorator disables Django&#39;s CSRF protection for a specific view.</li>
+        <li>Beginners should use this carefully (only when you know why).</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def webhook(request):
+    return HttpResponse(&quot;CSRF check skipped for this view.&quot;)
+</code></pre>
+
+    <ul>
+        <li>Useful for external services posting data (GitHub webhooks, Stripe, etc.)</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Decorator #5: cache_page</b></li>
+    <br/>
+    <ul>
+        <li>This caches (saves) the output of a view for a certain number of seconds.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.views.decorators.cache import cache_page
+
+@cache_page(60)  # cache for 60 seconds
+def news(request):
+    return HttpResponse(&quot;This page is cached for 1 minute.&quot;)
+</code></pre>
+
+    <ul>
+        <li>Meaning: the view won&#39;t run again until the cache expires.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How Decorators Work (beginner explanation)</b></li>
+    <br/>
+    <ul>
+        <li>When you add <code>@something</code> above a view, Django replaces your view with a “wrapped” version.</li>
+        <li>You don’t need to fully understand decorators in Python yet, but the idea is:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">@my_decorator
+def my_view(request):
+    ...
+</code></pre>
+
+    <ul>
+        <li>This is the same as:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">my_view = my_decorator(my_view)
+</code></pre>
+
+    <ul>
+        <li>So the decorator can add rules <u>before</u> or <u>after</u> your view runs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Decorators With Arguments</b></li>
+    <br/>
+    <ul>
+        <li>Some decorators need extra information.</li>
+        <li>Example: restrict to certain HTTP methods:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">@require_http_methods([&quot;GET&quot;, &quot;POST&quot;])
+def example(request):
+    return HttpResponse(&quot;This view accepts only GET and POST&quot;)
+</code></pre>
+
+    <ul>
+        <li>The decorator receives your list <code>[&quot;GET&quot;, &quot;POST&quot;]</code> as a parameter.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Using Multiple Decorators</b></li>
+    <br/>
+    <ul>
+        <li>You can “stack” decorators on top of each other.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_GET
+
+@login_required
+@require_GET
+def profile(request):
+    return HttpResponse(&quot;Your profile&quot;)
+</code></pre>
+
+    <ul>
+        <li>Order matters: the top-most decorator runs first</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Decorators and Class-Based Views (Beginner Note)</b></li>
+    <br/>
+    <ul>
+        <li>Decorators can be used on CBVs using <code>method_decorator</code>, but beginners can skip this for now.</li>
+        <li>Just know that decorators <u>do</u> work with CBVs too.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Which Decorators Should Beginners Learn First?</b></li>
+    <br/>
+    <ul>
+        <li>If you are new, learn these 3:
+            <ul>
+                <li><code>login_required</code></li>
+                <li><code>require_GET</code> / <code>require_POST</code></li>
+                <li><code>csrf_exempt</code> (use sparingly)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The others are useful but not needed for your first 2–3 weeks of Django learning.</li>
     </ul>
     <br/><br/>
 
