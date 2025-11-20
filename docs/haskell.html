@@ -166,6 +166,7 @@
         <li><a href="#haskell-built-in-types">Built-in Types</a></li>
         <li><a href="#haskell-import"><code>import</code></a></li>
         <li><a href="#haskell-higher-order-functions">Higher Order Functions</a></li>
+        <li><a href="#haskell-lambdas">Lambdas</a></li>
     </ul>
 </nav>
 <hr/>
@@ -4935,6 +4936,293 @@ isPositive (-1) -- Left "not positive"
     </ul>
 
 <pre><code class="language-haskell line-numbers">processNumbers [1,2,3,4]  -- [4,8]
+</code></pre>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-lambdas">Lambda Expressions (Anonymous Functions) in Haskell</h3>
+<ol>
+    <li><b>What Are Lambda Expressions?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>lambda expression</b> (also called an <b>anonymous function</b>) is a function defined without a name.</li>
+        <br/>
+        <li>In Haskell, lambdas use a special syntax based on mathematical lambda calculus:</li>
+<pre><code class="language-haskell line-numbers">\x -&gt; expression
+</code></pre>
+
+    <br/>
+        <li>The backslash <code>\</code> represents λ (lambda).</li>
+        <br/>
+        <li>Lambdas are used when:
+            <ul>
+                <li>you need a function <b>only once</b>,</li>
+                <li>you want to pass inline behavior into another function,</li>
+                <li>you want to avoid naming trivial helper functions.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Syntax</b></li>
+    <br/>
+    <ul>
+        <li>The simplest lambda:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">\x -&gt; x + 1
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Equivalent named version:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">addOne x = x + 1
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>A lambda is just another ordinary function.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(\x -&gt; x + 1) 5   -- 6
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Multiple Arguments</b></li>
+    <br/>
+    <ul>
+        <li>Lambdas can have multiple parameters:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">\x y -&gt; x + y
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Equivalent to:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">add x y = x + y
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>And because Haskell is curried:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(\x -&gt; \y -&gt; x + y)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Lambdas Inside Higher-Order Functions</b></li>
+    <br/>
+    <ul>
+        <li>Lambdas shine when passed to higher-order functions:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">map (\x -&gt; x * 2) [1,2,3]
+-- [2,4,6]
+
+filter (\x -&gt; x &gt; 5) [3,4,5,6,7]
+-- [6,7]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Using a lambda avoids having to name trivial helpers:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">map (\c -&gt; toUpper c) "lambda"
+-- "LAMBDA"
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Lambdas with Pattern Matching</b></li>
+    <br/>
+    <ul>
+        <li>You can pattern match directly in a lambda:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">\ (x, y) -&gt; x + y
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example with tuple destructuring:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">map (\(x,y) -&gt; x * y) [(2,3), (4,5)]
+-- [6,20]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Or matching list patterns:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">\ (x:_) -&gt; x
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Pattern failures inside lambdas cause runtime errors, so they should be used carefully.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Lambdas in Let and Where Bindings</b></li>
+    <br/>
+    <ul>
+        <li>Lambdas can appear in <code>let</code> or <code>where</code>:</li>
+
+<pre><code class="language-haskell line-numbers">let f = \x -&gt; x * 2
+in f 10
+</code></pre>
+
+    <br/>
+        <li>Equivalent to:</li>
+
+<pre><code class="language-haskell line-numbers">let f x = x * 2 in f 10
+</code></pre>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Lambda Case</b> (<code>\case</code>)</li>
+    <br/>
+    <ul>
+        <li>Using the <code>LambdaCase</code> extension, you can write pattern-matching lambdas without naming the argument.</li>
+        <br/>
+        <li>Enable the extension:</li>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE LambdaCase #-}
+</code></pre>
+
+    <br/>
+        <li>Then write:</li>
+
+<pre><code class="language-haskell line-numbers">\case
+    Just x  -&gt; x * 2
+    Nothing -&gt; 0
+</code></pre>
+
+    <br/>
+        <li>Equivalent to:</li>
+
+<pre><code class="language-haskell line-numbers">\m -&gt; case m of
+    Just x  -&gt; x * 2
+    Nothing -&gt; 0
+</code></pre>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Lambda Patterns with <code>\\</code> Syntax (Multi-Clause Lambdas)</b></li>
+    <br/>
+    <ul>
+        <li>With the <code>LambdaCase</code> or <code>MultiWayIf</code> extension, lambdas can have multiple pattern branches.</li>
+        <li>Using <code>\\</code> (double-backslash):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">\case
+    (x,y) -&gt; x
+    _     -&gt; 0
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is cleaner than wrapping everything in <code>case ... of</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Common Lambda Shorthands</b></li>
+    <br/>
+    <ul>
+        <li>Lambdas can be simplified using operators or partial application:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">\x -&gt; x + 1      ==  (+1)
+\x -&gt; 1 + x      ==  (1+)
+\x -&gt; x * y      ==  (*y)
+\x -&gt; f (g x)    ==  (f . g)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Many lambdas can be rewritten more concisely using sectioning or composition.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Examples of Real-World Lambda Usage</b></li>
+    <br/>
+    <ul>
+        <li><b>Sorting with custom comparators:</b></li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.List (sortBy)
+
+sortBy (\a b -&gt; compare (length a) (length b)) ["hi", "hello", "a"]
+-- ["a","hi","hello"]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Parsing transforms:</b></li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">map (\x -&gt; read x :: Int) ["1","2","3"]
+-- [1,2,3]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Functional pipelines:</b></li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">let pipeline = filter (\x -&gt; x &gt; 3) . map (\x -&gt; x * 2)
+pipeline [1,2,3,4]
+-- [8]
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Do Lambdas Have Types?</b></li>
+    <br/>
+    <ul>
+        <li>Yes — every lambda has a type just like any function.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">:t \x -&gt; x + 1
+-- :: Num a =&gt; a -&gt; a
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Types can also be added explicitly:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(\x -&gt; x + 1) :: Int -&gt; Int
 </code></pre>
 
     <br/><br/>
