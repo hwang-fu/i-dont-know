@@ -185,6 +185,7 @@
         <li><a href="#rust-associated-items"></a>Associated Items and Associated Types</li>
         <li><a href="#rust-phantom-type-parameters">Phantom Type Parameters</a></li>
         <li><a href="#rust-scoping-rules">Scoping Rules</a></li>
+        <li><a href="#rust-lifetimes">Lifetimes</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -10570,7 +10571,7 @@ println!("outer x = {}", x);
         <li>A borrowed value must not outlive the owner’s scope.</li>
     </ul>
 
-<pre><code class="language-rust line-numbers">let s = String::from("hello");
+<pre><code class="language-rust line-numbers">let mut s = String::from("hello");
 
 let r = &amp;s; // immutable borrow in scope
 println!("{}", r);
@@ -10782,6 +10783,322 @@ println!("{}", r);
         <li>This is why lifetimes and scopes are inseparable concepts.</li>
     </ul>
     <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-lifetimes">Lifetimes in Rust</h3>
+<ol>
+    <li><b>What Are Lifetimes in Rust?</b></li>
+    <br/>
+    <ul>
+        <li>A <u>lifetime</u> is a compile-time annotation that describes how long a reference is valid.</li>
+        <br/>
+        <li>Every reference in Rust has a lifetime, even if you do not write it explicitly.</li>
+        <br/>
+        <li>Rust uses lifetimes to ensure:
+            <ul>
+                <li><b>no dangling references</b>,</li>
+                <li><b>no double-free / use-after-free</b>,</li>
+                <li><b>borrows never outlive owners</b>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Lifetimes do <u>not</u> exist at runtime, they are entirely a static compile-time concept.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Why Are Lifetimes Needed?</b></li>
+    <br/>
+    <ul>
+        <li>If Rust only had <code>&amp;T</code> without lifetimes, the compiler would have no way to know whether a reference remains valid.</li>
+        <li>Consider this invalid scenario:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let r;
+
+{
+    let x = 10;
+    r = &amp;x;  // ERROR: x does not live long enough
+} // x dropped here
+
+println!("{}", r);
+</code></pre>
+
+    <ul>
+        <li><code>r</code> would reference dropped memory — Rust prevents this via lifetime analysis.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>How Lifetimes Work: The Basic Rules</b></li>
+    <br/>
+    <ul>
+        <li><b>Rule 1:</b> A reference cannot outlive its owner.</li>
+        <li><b>Rule 2:</b> A borrowed reference cannot outlive the scope in which it is valid.</li>
+        <li><b>Rule 3:</b> Lifetimes are inferred most of the time.</li>
+        <li><b>Rule 4:</b> Lifetime annotations do not change lifetimes—they only express constraints.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn foo&lt;'a&gt;(x: &amp;'a i32) -&gt; &amp;'a i32 {
+    x
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This means: the returned reference must not outlive the input reference.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Lifetime Syntax and Meaning</b></li>
+    <br/>
+    <ul>
+        <li>A lifetime parameter starts with <code>'</code>, e.g. <code>'a</code>, <code>'b</code>, <code>'static</code>.</li>
+        <li>Lifetimes appear in:
+            <ul>
+                <li><code>&amp;'a T</code></li>
+                <li>functions (<code>fn foo&lt;'a&gt;</code>)</li>
+                <li>struct definitions</li>
+                <li>trait definitions and impl blocks</li>
+            </ul>
+        </li>
+        <li>Interpretation:
+            <ul>
+                <li><code>&amp;'a T</code> = reference valid for at least lifetime <code>'a</code>.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn borrow&lt;'a&gt;(x: &amp;'a i32) -&gt; &amp;'a i32 {
+    x
+}
+</code></pre>
+
+    <ul>
+        <li>Here <code>'a</code> connects the input reference with the output reference.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Multiple Input Lifetimes</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes different inputs have different lifetimes. Example:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn choose&lt;'a, 'b&gt;(x: &amp;'a str, y: &amp;'b str) -&gt; &amp;'a str {
+    x
+}
+</code></pre>
+
+    <ul>
+        <li>This says:
+            <ul>
+                <li>The returned reference must live at least as long as <code>'a</code>.</li>
+                <li>The lifetime of <code>y</code> is unrelated.</li>
+            </ul>
+        </li>
+        <li>You cannot return <code>y</code> in this function unless <code>'b: 'a</code> is proven.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>The Famous Example: Returning the Longer String</b></li>
+    <br/>
+    <ul>
+        <li>Rust needs explicit lifetimes when returning references from multiple inputs.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn longest&lt;'a&gt;(x: &amp;'a str, y: &amp;'a str) -&gt; &amp;'a str {
+    if x.len() &gt; y.len() { x } else { y }
+}
+</code></pre>
+
+    <ul>
+        <li>Here:
+            <ul>
+                <li><code>'a</code> represents the <u>shortest</u> of x’s and y’s lifetimes.</li>
+                <li>Return reference cannot outlive either.</li>
+            </ul>
+        </li>
+        <li>This enforces safety even for complex logic.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Lifetime Elision Rules (When You Don’t Need to Write Lifetimes)</b></li>
+    <br/>
+    <ul>
+        <li><b>Rule 1:</b> Every reference input gets its own lifetime.</li>
+        <li><b>Rule 2:</b> If a function has exactly 1 input reference, the output reference gets its lifetime.</li>
+        <li><b>Rule 3:</b> If a method has a <code>&amp;self</code> or <code>&amp;mut self</code> parameter, the output lifetime is tied to <code>self</code>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">// No annotations needed:
+fn identity(x: &amp;i32) -&gt; &amp;i32 {
+    x
+}
+</code></pre>
+
+    <ul>
+        <li>Without elision, it would have been:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn identity&lt;'a&gt;(x: &amp;'a i32) -&gt; &amp;'a i32 {
+    x
+}
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Lifetimes in Structs</b></li>
+    <br/>
+    <ul>
+        <li>Structs holding references must declare lifetimes so Rust knows how long the struct is valid.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Holder&lt;'a&gt; {
+    value: &amp;'a str,
+}
+
+fn main() {
+    let s = String::from("hello");
+    let h = Holder { value: &amp;s };
+    println!("{}", h.value);
+}
+</code></pre>
+
+    <ul>
+        <li>The struct cannot outlive the reference it contains.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Methods and Lifetimes</b></li>
+    <br/>
+    <ul>
+        <li>Methods that borrow self typically don’t need explicit lifetime annotations because of elision Rule 3.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">impl&lt;'a&gt; Holder&lt;'a&gt; {
+    fn get(&amp;self) -&gt; &amp;'a str {
+        self.value
+    }
+}
+</code></pre>
+    <ul>
+        <li>Rust infers <code>&amp;'a self</code> automatically.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Lifetimes in Traits</b></li>
+    <br/>
+    <ul>
+        <li>Traits can also have lifetime parameters.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait Logger&lt;'a&gt; {
+    fn log(&amp;self) -&gt; &amp;'a str;
+}
+</code></pre>
+
+    <ul>
+        <li>Implementations must respect the lifetime constraints.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Static Lifetime <code>'static</code></b></li>
+    <br/>
+    <ul>
+        <li><code>'static</code> means “valid for the entire program duration”.</li>
+        <li>Examples:
+            <ul>
+                <li>string literals (<code>"hello"</code>)</li>
+                <li>global constants</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let s: &amp;'static str = "hello world";
+</code></pre>
+
+    <ul>
+        <li>Do not assume <b>'static = safe</b>, it often means your references are too broad.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Lifetimes and Borrow Checker Interaction</b></li>
+    <br/>
+    <ul>
+        <li>The borrow checker ensures:
+            <ul>
+                <li>No dangling references</li>
+                <li>No conflicting mutable/immutable borrows</li>
+                <li>Reference lifetimes stay within valid scopes</li>
+            </ul>
+        </li>
+
+        <br/>
+        <li>Example of conflict:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let mut s = String::from("hello");
+
+let r1 = &amp;s;
+let r2 = &amp;mut s; // ERROR: cannot borrow mutably while immutably borrowed
+
+println!("{}", r1);
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Fix by introducing a scope:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let mut s = String::from("hello");
+
+{
+    let r1 = &amp;s;
+    println!("{}", r1);
+} // r1 dead here
+
+let r2 = &amp;mut s; // OK
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Lifetimes in Closures</b></li>
+    <br/>
+    <ul>
+        <li>Closures inherit references from the surrounding scope.</li>
+        <li>Lifetimes ensure closures don’t outlive captured variables.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let s = String::from("hi");
+let closure = || println!("{}", s); // closure borrows s
+closure();
+// s dropped after closure no longer needs it
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Generic Associated Types (GATs) and Lifetimes</b></li>
+    <br/>
+    <ul>
+        <li>Lifetimes can even appear in associated types:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">trait DataSource {
+    type Iter&lt;'a&gt;: Iterator&lt;Item = &amp;'a str&gt;;
+    fn iter&lt;'a&gt;(&amp;'a self) -&gt; Self::Iter&lt;'a&gt;;
+}
+</code></pre>
+
+    <ul>
+        <li>This allows return types that depend on lifetimes.</li>
+    </ul>
+    <br/>
+    <br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
