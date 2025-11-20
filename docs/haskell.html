@@ -157,6 +157,7 @@
     <h2> <img src="resources/haskell.png" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ul style="line-height: 1.8;">
         <li><a href="#haskell-intro">Introduction</a></li>
+        <li><a href="#haskell-ghci">Using GHCi: The Interactive Haskell Environment</a></li>
     </ul>
 </nav>
 <hr/>
@@ -515,7 +516,353 @@ stack run
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-ghci">Using GHCi: The Interactive Haskell Environment</h3>
+<ol>
 
+    <li><b>What Is GHCi?</b></li>
+    <br/>
+    <ul>
+        <li><b>GHCi</b> (Glasgow Haskell Compiler interactive) is Haskell’s interactive REPL:</li>
+        <ul>
+            <li>runs Haskell expressions immediately</li>
+            <li>loads modules and files</li>
+            <li>tests functions without compiling a full project</li>
+            <li>inspects types, evaluates expressions, debugs code</li>
+            <li>ideal for learning, experimenting, and prototyping</li>
+        </ul>
+        <br/>
+        <li>GHCi comes bundled with GHC, Stack, and Cabal.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Starting GHCi</b></li>
+    <br/>
+    <ul>
+        <li>Simply run:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">ghci
+</code></pre>
+
+    <ul>
+        <li>You will see a prompt like:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">GHCi, version 9.x.x: http://www.haskell.org/ghc/  :? for help
+Prelude&gt;
+</code></pre>
+
+    <ul>
+        <li>Now you can type Haskell expressions directly.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Evaluating Expressions</b></li>
+    <br/>
+    <ul>
+        <li>GHCi acts like a calculator:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; 2 + 3 * 4
+14
+
+Prelude&gt; take 5 [1..]
+[1,2,3,4,5]
+</code></pre>
+
+    <ul>
+        <li>Expressions can be arbitrarily complex:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; map (*2) [1..10]
+[2,4,6,8,10,12,14,16,18,20]
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Checking Types with</b> <code>:type</code> <b>or</b> <code>:t</code></b></li>
+    <br/>
+    <ul>
+        <li>GHCi’s type inspection is one of its greatest strengths.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :t 42
+42 :: Num a =&gt; a
+
+Prelude&gt; :t map
+map :: (a -&gt; b) -&gt; [a] -&gt; [b]
+</code></pre>
+
+    <ul>
+        <li>Useful for learning Haskell’s type system.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Loading Haskell Files</b></li>
+    <br/>
+    <ul>
+        <li>You can load a file (e.g., <code>mycode.hs</code>):</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">ghci mycode.hs
+</code></pre>
+
+    <ul>
+        <li>Inside GHCi you can reload after edits using:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :reload
+-- or shorthand:
+Prelude&gt; :r
+</code></pre>
+
+    <ul>
+        <li>Useful workflow:
+            <ul>
+                <li>edit code in editor</li>
+                <li>reload in GHCi</li>
+                <li>test functions live</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Running Main</b></li>
+    <br/>
+    <ul>
+        <li>If a file defines <code>main :: IO ()</code> in a module, GHCi can run it:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :main
+</code></pre>
+
+    <ul>
+        <li>You can pass arguments too:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :main 10 20
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using</b> <code>let</code> <b>to Define Local Bindings</b></li>
+    <br/>
+    <ul>
+        <li>Inside GHCi, use <code>let</code> to define values:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; let x = 10
+Prelude&gt; x * 2
+20
+</code></pre>
+
+    <ul>
+        <li>You can also define functions:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; let square n = n * n
+Prelude&gt; square 7
+49
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Browsing Loaded Modules</b></li>
+    <br/>
+    <ul>
+        <li>List loaded modules:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :show modules
+</code></pre>
+
+    <ul>
+        <li>List functions in the current module:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :browse
+</code></pre>
+
+    <ul>
+        <li>Browse a specific module:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :browse Data.List
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Reloading Automatically</b></li>
+    <br/>
+    <ul>
+        <li>Enable auto-reload when files change:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :set -fobject-code
+Prelude&gt; :set -fdefer-type-errors
+Prelude&gt; :set -package mtl
+</code></pre>
+
+    <ul>
+        <li>Or reload manually:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :reload
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Importing Modules</b></li>
+    <br/>
+    <ul>
+        <li>You can import modules directly:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; import Data.List
+Prelude Data.List&gt;
+</code></pre>
+
+    <ul>
+        <li>Qualified import:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; import qualified Data.Map as M
+Prelude&gt; M.fromList [(1,"a"), (2,"b")]
+fromList [(1,"a"),(2,"b")]
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Loading Multiple Files</b></li>
+    <br/>
+    <ul>
+        <li>GHCi understands projects with multiple modules:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">ghci Main.hs Utils.hs Types.hs
+</code></pre>
+
+    <ul>
+        <li>Or load an entire directory using <code>:set</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :set -i src
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Debugging with GHCi</b></li>
+    <br/>
+    <ul>
+        <li>GHCi includes a debugger:</li>
+        <ul>
+            <li>set breakpoints</li>
+            <li>step through evaluation</li>
+            <li>inspect variables</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :break myFunction
+Prelude&gt; :trace main
+Prelude&gt; :history
+Prelude&gt; :continue
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Useful GHCi Commands</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Command</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>:t expr</code></td>
+                <td>Show the type of an expression</td>
+            </tr>
+            <tr>
+                <td><code>:i name</code></td>
+                <td>Show info about a type or function</td>
+            </tr>
+            <tr>
+                <td><code>:l file</code></td>
+                <td>Load a file</td>
+            </tr>
+            <tr>
+                <td><code>:r</code></td>
+                <td>Reload current modules</td>
+            </tr>
+            <tr>
+                <td><code>:main</code></td>
+                <td>Run the <code>main</code> function</td>
+            </tr>
+            <tr>
+                <td><code>:q</code></td>
+                <td>Quit GHCi</td>
+            </tr>
+            <tr>
+                <td><code>:set -XExtension</code></td>
+                <td>Enable language extensions</td>
+            </tr>
+            <tr>
+                <td><code>:browse</code></td>
+                <td>List contents of current module</td>
+            </tr>
+            <tr>
+                <td><code>:module + Data.Map</code></td>
+                <td>Temporarily import a module</td>
+            </tr>
+            <tr>
+                <td><code>:set prompt "ghci&gt;"</code></td>
+                <td>Customize the prompt based on your taste</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li>GHCi is Haskell’s interactive environment — powerful for learning and development.</li>
+        <li>Helps evaluate expressions, inspect types, load modules, and debug programs.</li>
+        <li>Common uses include:
+            <ul>
+                <li>testing functions quickly</li>
+                <li>experimenting with the type system</li>
+                <li>loading and reloading project files</li>
+                <li>interactive debugging</li>
+                <li>prototype-driven development</li>
+            </ul>
+        </li>
+        <li>Mastering GHCi greatly improves Haskell productivity.</li>
+    </ul>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
