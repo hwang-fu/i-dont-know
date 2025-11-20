@@ -159,6 +159,7 @@
         <li><a href="#compiler-intro">Introduction</a></li>
         <li><a href="#compiler-phases">Phases</a></li>
         <li><a href="#compiler-lexical-analyzer">Lexical Analyzer</a></li>
+        <li><a href="#compiler-dfa-intro">Deterministic Finite Automata (DFA)</a></li>
     </ul>
 </nav>
 <hr/>
@@ -904,6 +905,228 @@ Lexer picks:    "&gt;="   (not just "&gt;")
         <li>This ensures ambiguous prefixes are handled properly.</li>
     </ul>
     <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="compiler-dfa-intro">Introduction to Deterministic Finite Automata (DFA)</h3>
+<ol>
+
+    <li><b>What Is a DFA? (In Simple Words, About Strict Definitions Please Go Read A Professional Book)</b></li>
+    <br/>
+    <ul>
+        <li>A Deterministic Finite Automaton (<u>DFA</u>) is a simple mathematical machine used to recognize and process patterns in strings.</li>
+        <br/>
+        <li>A DFA reads an input string character by character and uses <u>states</u> to decide what to do next.</li>
+        <br/>
+        <li>If the machine ends in an <u>accept state</u>, then the string matches the pattern.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Formal Definition of a DFA</b></li>
+    <br/>
+    <ul>
+        <li>A DFA consists of 5 components:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">DFA = (Q, Σ, δ, q₀, F)
+
+Q   = set of states
+Σ   = input alphabet (characters allowed)
+δ   = transition function: Q × Σ → Q
+q₀  = start state
+F   = set of accepting states
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Example 1: DFA for Recognizing Strings That End With "ab"</b></li>
+    <br/>
+
+<pre><code class="language-plaintext line-numbers">Alphabet: {a, b}
+Language: All strings that end with "ab"
+Examples accept:  "ab", "aab", "bbab", "aaab"
+Examples reject:  "a", "ba", "abb", "bbaa"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The DFA Transition Table:</li>
+        <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>State</th>
+                <th>On <code>a</code></th>
+                <th>On <code>b</code></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>q0</code> (start)</td>
+                <td><code>q1</code></td>
+                <td><code>q0</code></td>
+            </tr>
+            <tr>
+                <td><code>q1</code></td>
+                <td><code>q1</code></td>
+                <td><code>q2</code></td>
+            </tr>
+            <tr>
+                <td><code>q2</code> (accept)</td>
+                <td><code>q1</code></td>
+                <td><code>q0</code></td>
+            </tr>
+        </tbody>
+    </table>
+    </ul>
+
+    <br/>
+    <ul>
+        <li>State meanings:</li>
+        <ul>
+            <li><b>q0</b>: nothing matched yet</li>
+            <li><b>q1</b>: last char was 'a'</li>
+            <li><b>q2</b> (accept): last two chars are "ab"</li>
+        </ul>
+    </ul>
+
+    <br/>
+    <ul>
+        <li>Simulating input <code>aab</code>:</li>
+
+<pre><code class="language-plaintext line-numbers">Start in q0
+Read 'a' → q1
+Read 'a' → q1
+Read 'b' → q2 (accept!)
+</code></pre>
+
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Example 2: DFA for Numbers with Even Number of 0s</b></li>
+    <br/>
+    <ul>
+        <li>This DFA checks whether the number of <code>0</code> characters is <b>even</b>.</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Alphabet: {0, 1}
+Accept: strings with even number of 0s
+</code></pre>
+
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>State</th>
+                <th>On <code>0</code></th>
+                <th>On <code>1</code></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>Even</code> (start, accept)</td>
+                <td><code>Odd</code></td>
+                <td><code>Even</code></td>
+            </tr>
+            <tr>
+                <td><code>Odd</code></td>
+                <td><code>Even</code></td>
+                <td><code>Odd</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+
+    <ul>
+        <li>State meaning:
+            <ul>
+                <li><b>Even</b>: seen even number of 0s (accept state)</li>
+                <li><b>Odd</b>: seen odd number of 0s</li>
+            </ul>
+        </li>
+
+<pre><code class="language-plaintext line-numbers">Example: 10100
+Even --1--> Even --0--> Odd --1--> Odd --0--> Even --0--> Odd (reject)
+</code></pre>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Transition Table Representation</b></li>
+    <br/>
+    <ul>
+        <li>A DFA can also be represented using a table.</li>
+        <li>For the &quot;ends with ab&quot; automaton:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">       |   a   |   b
+--------------------------------
+q0     |  q1   |  q0
+q1     |  q1   |  q2
+q2     |  q1   |  q0
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The table precisely defines the behaviour of the machine.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>DFA Simulation (Pseudocode)</b></li>
+    <br/>
+    <ul>
+        <li>Every DFA can be simulated by repeatedly applying the transition function.</li>
+    </ul>
+
+<pre><code class="language-c line-numbers">def run_dfa(trans, start, accepts, s):
+    state = start
+    for c in s:
+        state = trans[state][c]
+    return state in accepts
+
+transition = {
+    "q0": {"a": "q1", "b": "q0"},
+    "q1": {"a": "q1", "b": "q2"},
+    "q2": {"a": "q1", "b": "q0"},
+}
+
+print(run_dfa(transition, "q0", {"q2"}, "aab"))   // True
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>DFA vs NFA (Briefly)</b></li>
+    <br/>
+    <ul>
+        <li>A DFA has:
+            <ul>
+                <li>exactly one transition per input symbol,</li>
+                <li>exactly one active state at any time.</li>
+            </ul>
+        </li>
+        <li>An NFA (nondeterministic finite automaton) may have:
+            <ul>
+                <li>multiple possible transitions,</li>
+                <li>ε-transitions (move without input),</li>
+                <li>multiple active states.</li>
+            </ul>
+        </li>
+        <li>But both recognize exactly the same class of languages (<u>regular languages</u>).</li>
+    </ul>
+    <br/><br/>
+
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
