@@ -171,6 +171,7 @@
         <li><a href="#haskell-deriving">Deriving Instances</a></li>
         <li><a href="#haskell-constraint-arrow">The <code>=></code> Operator (Constraint Arrow)</a></li>
         <li><a href="#haskell-kinds-star">Kinds <code>*</code> and <code>* -&gt; *</code> Operators</a></li>
+        <li><a href="#haskell-io">Input and Output</a></li>
     </ul>
 </nav>
 <hr/>
@@ -6305,9 +6306,12 @@ bar f = (f 3, f "hi")
     <br/>
     <ul>
         <li>In Haskell, <b>types</b> classify <b>values</b>, and <b>kinds</b> classify <b>types</b>.</li>
+        <br/>
         <li>You can think of kinds as "types of types".</li>
+        <br/>
         <li>The most common kind is <code>*</code>, pronounced &quot;star&quot; or &quot;Type&quot;.</li>
-        <li>Historically and in GHCi, you will often see <code>*</code>; more modern notation uses <code>Type</code> (from <code>Data.Kind</code>), but the idea is the same.</li>
+        <br/>
+        <li>Historically and in GHCi, you will often see <code>*</code>, more modern notation uses <code>Type</code> (from <code>Data.Kind</code>), but the idea is the same.</li>
     </ul>
 
 <pre><code class="language-haskell line-numbers">-- Value has a type:
@@ -6346,7 +6350,7 @@ Either String Int :: *
         <li>All of these can appear as the type of a value or function parameter/result:</li>
     </ul>
 
-<pre><code class="language-haskell line-numbers">x    :: Int
+<pre><code class="language-haskell line-numbers">x :: Int
 x = 42
 
 name :: String
@@ -6381,7 +6385,7 @@ IO    :: * -&gt; *
         <li>When you apply them to a type of kind <code>*</code>, you get a new type of kind <code>*</code>:</li>
     </ul>
 
-<pre><code class="language-haskell line-numbers">Maybe Int :: *
+<pre><code class="language-haskell line-numbers">Maybe Int  :: *
 Maybe Bool :: *
 
 [Char]   :: *
@@ -6397,51 +6401,6 @@ IO Int   :: *
 Maybe a :: *   -- when a :: *
 </code></pre>
 
-    <br/><br/>
-
-
-    <li><b>Types vs Type Constructors</b></li>
-    <br/>
-    <ul>
-        <li>Important distinction:</li>
-    </ul>
-
-    <ul>
-        <li><b>Type constructor</b> (kind <code>* -&gt; *</code> or more complex):
-            <ul>
-                <li><code>Maybe</code>, <code>[]</code>, <code>IO</code>, <code>Either</code>.</li>
-                <li>Works at the type level, constructing types from types.</li>
-            </ul>
-        </li>
-        <li><b>Concrete type</b> (kind <code>*</code>):
-            <ul>
-                <li><code>Maybe Int</code>, <code>[Bool]</code>, <code>IO String</code>, <code>Either String Int</code>.</li>
-                <li>Can be used as the type of actual values.</li>
-            </ul>
-        </li>
-    </ul>
-
-<pre><code class="language-haskell line-numbers">-- Type constructors:
-Maybe  :: * -&gt; *
-Either :: * -&gt; * -&gt; *
-
--- After application to type arguments:
-Maybe Int        :: *
-Either String Int :: *
-</code></pre>
-
-    <br/>
-    <ul>
-        <li>You <b>cannot</b> write:</li>
-    </ul>
-
-<pre><code class="language-haskell line-numbers">x :: Maybe      -- error: kind mismatch, Maybe :: * -&gt; *
-</code></pre>
-
-    <br/>
-    <ul>
-        <li>Because <code>Maybe</code> alone is not a concrete type (<code>*</code>), it still needs one type parameter.</li>
-    </ul>
     <br/><br/>
 
 
@@ -6504,7 +6463,7 @@ instance Functor (Either e) where ...
     <br/><br/>
 
 
-    <li><b>Using <code>:kind</code> in GHCi</b></li>
+    <li><b>Using</b> <code>:kind</code> <b>in GHCi</b></li>
     <br/>
     <ul>
         <li>GHCi lets you inspect kinds with <code>:k</code> (or <code>:kind</code>):</li>
@@ -6529,70 +6488,6 @@ Either String :: * -&gt; *
     <br/>
     <ul>
         <li>This is extremely helpful for understanding whether something is a concrete type or a type constructor.</li>
-    </ul>
-    <br/><br/>
-
-
-    <li><b>Value Level vs Type Level vs Kind Level (Analogy)</b></li>
-    <br/>
-    <ul>
-        <li>You can think in three layers:</li>
-    </ul>
-
-    <ul>
-        <li><b>Value level</b>:
-            <ul>
-                <li>Values have types.</li>
-                <li><code>42 :: Int</code>, <code>Just True :: Maybe Bool</code>.</li>
-            </ul>
-        </li>
-        <li><b>Type level</b>:
-            <ul>
-                <li>Types have kinds.</li>
-                <li><code>Int :: *</code>, <code>Maybe :: * -&gt; *</code>.</li>
-            </ul>
-        </li>
-        <li><b>Kind level</b>:
-            <ul>
-                <li>Kinds describe how types are formed.</li>
-                <li><code>*</code> (concrete types), <code>* -&gt; *</code> (unary type constructors), <code>* -&gt; * -&gt; *</code>, etc.</li>
-            </ul>
-        </li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li><b>Data Constructors vs Type Constructors vs Kinds</b></li>
-    <br/>
-    <ul>
-        <li>Careful: there are two different &quot;constructors&quot;:</li>
-    </ul>
-
-    <ul>
-        <li><b>Type constructor</b>:
-            <ul>
-                <li>Lives at the <b>type level</b>.</li>
-                <li>Example: <code>Maybe :: * -&gt; *</code>.</li>
-            </ul>
-        </li>
-        <li><b>Data constructor</b>:
-            <ul>
-                <li>Lives at the <b>value level</b>.</li>
-                <li>Example: <code>Just :: a -&gt; Maybe a</code>, <code>Nothing :: Maybe a</code>.</li>
-            </ul>
-        </li>
-    </ul>
-
-<pre><code class="language-haskell line-numbers">data Maybe a = Nothing | Just a
--- Type constructor:  Maybe
--- Data constructors: Nothing, Just
-</code></pre>
-
-    <br/>
-    <ul>
-        <li>The type constructor <code>Maybe</code> has kind <code>* -&gt; *</code>.</li>
-        <li>The data constructors work at the value level and involve concrete types (like <code>Maybe Int</code>).</li>
     </ul>
     <br/><br/>
 
@@ -6635,20 +6530,376 @@ data Color = Red | Green | Blue
         <li>But for a large amount of everyday Haskell, focusing on <code>*</code> and <code>* -&gt; *</code> is enough.</li>
     </ul>
     <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
 
 
-    <li><b>Summary</b></li>
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-io">Input and Output in Haskell</h3>
+<ol>
+    <li><b>Why Is IO Special in Haskell?</b></li>
     <br/>
     <ul>
-        <li><b>Kinds</b> classify types, just as types classify values.</li>
-        <li><code>*</code> (or <code>Type</code>) is the kind of <b>concrete types</b> that have values (<code>Int</code>, <code>Bool</code>, <code>Maybe Int</code>, <code>[Char]</code>, ...).</li>
-        <li><code>* -&gt; *</code> is the kind of <b>unary type constructors</b> (<code>Maybe</code>, <code>[]</code>, <code>IO</code>, <code>Either e</code> when partially applied).</li>
-        <li>Type constructors of kind <code>* -&gt; *</code> are crucial for typeclasses like <code>Functor</code>, <code>Applicative</code>, and <code>Monad</code>.</li>
-        <li>GHCi’s <code>:kind</code> command helps you inspect and understand kinds.</li>
-        <li>Understanding <code>*</code> and <code>* -&gt; *</code> is the first big step into type-level thinking in Haskell.</li>
+        <li>Haskell is a <b>pure functional language</b>:
+            <ul>
+                <li>Functions cannot have side effects (e.g., printing, reading files, randomness) unless explicitly marked.</li>
+                <li>Every pure function must always produce the same output for the same input.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>But real programs must interact with the world.</li>
+        <br/>
+        <li>Haskell solves this using the <b>IO type</b> and the <b>IO Monad</b>.</li>
+        <br/>
+        <li>Key idea:
+            <ul>
+                <li>IO values describe actions.</li>
+                <li>The runtime <b>executes</b> them only inside <code>main</code>.</li>
+            </ul>
+
+<pre><code class="language-haskell line-numbers">main :: IO ()
+main = putStrLn "Hello!"
+</code></pre>
+        </li>
+    </ul>
+
+    <br/>
+    <ul>
+        <li><code>putStrLn "Hello!"</code> has type <code>IO ()</code> meaning:
+            <ul>
+                <li>an IO action that outputs a string,</li>
+                <li>with no useful return value (<code>()</code>).</li>
+            </ul>
+        </li>
     </ul>
     <br/><br/>
+
+
+    <li><b>The IO Type</b></li>
+    <br/>
+    <ul>
+        <li>IO is a <b>type constructor</b> with kind <code>* -&gt; *</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">IO :: * -&gt; *
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This means IO wraps a “normal type” to represent an action returning that type:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">IO Int       -- an action that returns an Int
+IO String    -- an action that returns a String
+IO ()        -- an action with no meaningful result
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You do NOT execute IO actions yourself, Haskell's runtime does.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Do-notation: Sequencing IO</b></li>
+    <br/>
+    <ul>
+        <li>IO actions are sequenced with <code>do</code>-notation:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main :: IO ()
+main = do
+    putStrLn "Enter your name:"
+    name &lt;- getLine
+    putStrLn ("Hello, " ++ name ++ "!")
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Facts about do-notation:</li>
+        <ul>
+            <li>LHS of <code>&lt;-</code> extracts the <b>pure value</b> from an IO action.</li>
+            <li>You may only use <code>&lt;-</code> with IO actions.</li>
+            <li>Last expression in a <code>do</code>-block must be an IO action.</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">x &lt;- 3           -- ❌ illegal, 3 is not an IO action
+y &lt;- getLine     -- ✔️ OK
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Basic IO Operations</b></li>
+    <br/>
+    <ul>
+        <li><b>Printing</b></li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">putStr    :: String -&gt; IO ()
+putStrLn  :: String -&gt; IO ()
+print     :: Show a =&gt; a -&gt; IO ()
+</code></pre>
+
+    <ul>
+        <li><code>print</code> is equivalent to <code>putStrLn . show</code>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">print 123         -- outputs "123"
+putStr "hi"       -- outputs hi
+putStrLn "hi"     -- outputs hi\n
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Input</b></li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">getLine :: IO String
+getChar :: IO Char
+getContents :: IO String   -- lazy input until EOF
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Reading and parsing input</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>read</code> when input should be parsed:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main :: IO ()
+main = do
+    putStrLn "Enter a number:"
+    s &lt;- getLine
+    let n = read s :: Int
+    print (n + 10)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Use <code>readMaybe</code> (from <code>Text.Read</code>) for safe parsing.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Lazy IO vs Strict IO</b></li>
+    <br/>
+    <ul>
+        <li><b>Lazy IO</b> (e.g., <code>getContents</code>):
+            <ul>
+                <li>reads input lazily on demand,</li>
+                <li>may keep file handles open longer,</li>
+                <li>can cause unexpected side effects or resource leaks.</li>
+            </ul>
+        </li>
+        <li><b>Strict IO</b> using <code>hGetContents'</code> or <code>ByteString</code> usually preferred.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>IO as a Monad</b></li>
+    <br/>
+    <ul>
+        <li><code>IO</code> implements <b>Functor</b>, <b>Applicative</b>, and <b>Monad</b>.</li>
+        <li>You can use:
+            <ul>
+                <li><code>&lt;$&gt;</code> / <code>fmap</code></li>
+                <li><code>&lt;*&gt;</code></li>
+                <li><code>&gt;&gt;=</code> (bind)</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main =
+    getLine &gt;&gt;= \name -&gt;
+    putStrLn ("Hello " ++ name)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is exactly equivalent to:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main = do
+    name &lt;- getLine
+    putStrLn ("Hello " ++ name)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Chaining IO Actions Without Extracting Values</b></li>
+    <br/>
+    <ul>
+        <li>When no value is needed, use <code>&gt;&gt;</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">putStrLn "A"
+    &gt;&gt; putStrLn "B"
+    &gt;&gt; putStrLn "C"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Or inside a <code>do</code>-block:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">do
+    putStrLn "A"
+    putStrLn "B"
+    putStrLn "C"
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Working with Files</b></li>
+    <br/>
+    <ul>
+        <li>Useful functions (from <code>System.IO</code>):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">readFile  :: FilePath -&gt; IO String
+writeFile :: FilePath -&gt; String -&gt; IO ()
+appendFile :: FilePath -&gt; String -&gt; IO ()
+
+openFile  :: FilePath -&gt; IOMode -&gt; IO Handle
+hGetLine  :: Handle -&gt; IO String
+hPutStrLn :: Handle -&gt; String -&gt; IO ()
+hClose    :: Handle -&gt; IO ()
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example of file reading:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main = do
+    content &lt;- readFile "data.txt"
+    putStrLn "File contents:"
+    putStrLn content
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example of manual handle management:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main = do
+    h &lt;- openFile "log.txt" AppendMode
+    hPutStrLn h "new log entry"
+    hClose h
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Exception Handling in IO</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>Control.Exception</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Control.Exception (catch, IOException)
+
+main = do
+    content &lt;- catch (readFile "xxx.txt")
+                    (\e -&gt; do let _ = e :: IOException
+                              putStrLn "File not found!"
+                              return "")
+    putStrLn content
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>IO with pure functions</b></li>
+    <br/>
+    <ul>
+        <li>You cannot call IO inside pure code.</li>
+        <li>But pure functions can be used *inside* IO for transformations:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">process :: String -&gt; Int
+process = length
+
+main = do
+    s &lt;- getLine
+    print (process s)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Always separate <b>pure computation</b> from <b>IO orchestration</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Returning values from IO</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>return</code> (or <code>pure</code>) to inject a pure value into IO:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main = do
+    let x = 10
+    y &lt;- return (x * 2)
+    print y
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>return</code> does NOT exit a function; it wraps a value in <code>IO</code>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">return x :: IO x
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Infinite IO Loops</b></li>
+    <br/>
+    <ul>
+        <li>Because IO is monadic, infinite loops are easy:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">forever :: IO a -&gt; IO b
+</code></pre>
+
+<pre><code class="language-haskell line-numbers">main = forever $ do
+    putStrLn "Enter something:"
+    s &lt;- getLine
+    print (length s)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Sequencing a List of IO Actions</b></li>
+    <br/>
+    <ul>
+        <li>Haskell provides:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">sequence  :: [IO a] -&gt; IO [a]
+mapM      :: (a -&gt; IO b) -&gt; [a] -&gt; IO [b]
+mapM_     :: (a -&gt; IO b) -&gt; [a] -&gt; IO ()
+traverse  :: Applicative f =&gt; (a -&gt; f b) -&gt; [a] -&gt; f [b]
+</code></pre>
+
+<pre><code class="language-haskell line-numbers">main = do
+    names &lt;- mapM (\_ -&gt; getLine) [1..3]
+    print names
+</code></pre>
+
+    <br/><br/>
 </ol>
+
 <!-- * * * * * * * * * * * * * * -->
 
 
