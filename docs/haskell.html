@@ -169,6 +169,7 @@
         <li><a href="#haskell-lambdas">Lambdas</a></li>
         <li><a href="#haskell-modules">Modules</a></li>
         <li><a href="#haskell-deriving">Deriving Instances</a></li>
+        <li><a href="#haskell-constraint-arrow">The <code>=></code> Operator (Constraint Arrow)</a></li>
     </ul>
 </nav>
 <hr/>
@@ -6010,7 +6011,286 @@ newtype Score = Score Int
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-constraint-arrow">The <code>=&gt;</code> Operator (Constraint Arrow) in Haskell</h3>
+<ol>
+    <li><b>What Is the</b> <code>=&gt;</code> <b>Operator?</b></li>
+    <br/>
+    <ul>
+        <li>The <code>=&gt;</code> operator in Haskell is called the <b>constraint arrow</b>.</li>
+        <br/>
+        <li>It appears in type signatures and separates:
+            <ul>
+                <li>a list of <b>typeclass constraints</b>, and</li>
+                <li>the <b>actual type</b> of the function.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>General shape:</li>
+<pre><code class="language-haskell line-numbers">constraint1, constraint2, ... =&gt; type
+</code></pre>
+    </ul>
 
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-haskell line-numbers">show :: Show a =&gt; a -&gt; String
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Constraints Are Typeclass Requirements</b></li>
+    <br/>
+    <ul>
+        <li>A constraint has the form:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">ClassName typeVariable
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Eq a        -- a supports equality
+Ord a       -- a supports ordering
+Num a       -- a acts like a number
+Monad m     -- m is a monad
+Functor f   -- f is a functor
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>In the type signature:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Eq a =&gt; a -&gt; a -&gt; Bool
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This means the function:
+            <ul>
+                <li>takes two values of type <code>a</code>,</li>
+                <li>requires that <code>a</code> belongs to <code>Eq</code>,</li>
+                <li>returns a <code>Bool</code>.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Multiple Constraints Using a Tuple</b></li>
+    <br/>
+    <ul>
+        <li>Multiple constraints appear inside parentheses and separated by commas:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(Eq a, Show a) =&gt; a -&gt; String
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This means:
+            <ul>
+                <li><code>a</code> must support both <code>Eq</code> and <code>Show</code>.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How GHC Interprets the Constraint Arrow</b></li>
+    <br/>
+    <ul>
+        <li>Conceptually, the type:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Eq a =&gt; a -&gt; a -&gt; Bool
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>means “for all types <code>a</code> that satisfy <code>Eq a</code>”.</li>
+        <li>Behind the scenes, GHC passes dictionaries containing the functions of the typeclass instance.</li>
+        <li>For example:
+            <ul>
+                <li><code>Eq a</code> provides <code>(==)</code> and <code>(/=)</code>.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Example: Using a Constraint in a Function</b></li>
+    <br/>
+    <ul>
+        <li>Here is a function using the <code>Eq</code> constraint:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">isIn :: Eq a =&gt; a -&gt; [a] -&gt; Bool
+isIn x xs = any (== x) xs
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Why do we need the constraint?</li>
+        <li>Because <code>(==)</code> is only defined for types in <code>Eq</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Constraint Arrow with Polymorphic Functions</b></li>
+    <br/>
+    <ul>
+        <li>Functions may require multiple constraints to use multiple typeclass methods:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">compareAndShow :: (Ord a, Show a) =&gt; a -&gt; a -&gt; String
+compareAndShow x y =
+    if x &gt; y
+    then show x ++ " &gt; " ++ show y
+    else if x == y
+    then show x ++ " == " ++ show y
+    else show x ++ " &lt; " ++ show y
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b><code>=&gt;</code> vs <code>-&gt;</code></b></li>
+    <br/>
+    <ul>
+        <li>These look similar but have completely different meanings.</li>
+    </ul>
+
+    <table>
+        <tr>
+            <th>Symbol</th>
+            <th>Meaning</th>
+        </tr>
+        <tr>
+            <td><code>-&gt;</code></td>
+            <td>Function arrow: maps inputs to outputs.</td>
+        </tr>
+        <tr>
+            <td><code>=&gt;</code></td>
+            <td>Constraint arrow: says that certain typeclasses must be satisfied.</td>
+        </tr>
+    </table>
+
+    <br/>
+    <ul>
+        <li>Example of both in one signature:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">foo :: (Eq a, Show a) =&gt; a -&gt; a -&gt; String
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Constraint Arrow in Typeclass Definitions</b></li>
+    <br/>
+    <ul>
+        <li>Typeclasses themselves may impose constraints on their parameters:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">class (Eq a, Show a) =&gt; MyClass a where
+    foo :: a -&gt; String
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This means any instance of <code>MyClass</code> must also be an instance of <code>Eq</code> and <code>Show</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Constraint Arrow in Instance Declarations</b></li>
+    <br/>
+    <ul>
+        <li>Instance declarations can also have constraints:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">instance (Eq a, Show a) =&gt; Show (Pair a) where
+    show (Pair x y) = "(" ++ show x ++ "," ++ show y ++ ")"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Here, <code>Pair a</code> has a <code>Show</code> instance as long as <code>a</code> has both <code>Eq</code> and <code>Show</code> instances.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Constraint Arrow Inside Type Synonyms</b> (Using <code>ConstraintKinds</code>)</li>
+    <br/>
+    <ul>
+        <li>With the <code>ConstraintKinds</code> extension, constraints themselves become first-class:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE ConstraintKinds #-}
+
+type Number a = (Num a, Ord a)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Use it like this:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">foo :: Number a =&gt; a -&gt; a -&gt; a
+foo x y = if x &gt; y then x else y
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Constraint Arrow in Higher-Kinded Types</b></li>
+    <br/>
+    <ul>
+        <li>Some typeclasses operate on type constructors, requiring constraints on type parameters:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">class Functor f =&gt; Applicative f where
+    pure  :: a -&gt; f a
+    (&lt;*&gt;) :: f (a -&gt; b) -&gt; f a -&gt; f b
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The constraint <code>Functor f =&gt;</code> ensures that every <code>Applicative</code> is also a <code>Functor</code>.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Constraint Arrow with Forall Quantifiers</b> (Advanced)</li>
+    <br/>
+    <ul>
+        <li>Using extensions like <code>RankNTypes</code>, constraints can appear in polymorphic types:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE RankNTypes #-}
+
+bar :: (forall a. Show a =&gt; a -&gt; String) -&gt; (String, String)
+bar f = (f 3, f "hi")
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Here <code>Show a =&gt;</code> applies inside a universal quantifier.</li>
+    </ul>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
