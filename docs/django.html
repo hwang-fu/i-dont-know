@@ -183,6 +183,7 @@
         <li><a href="#django-views-decorators">View Decorators</a></li>
         <li><a href="#django-file-uploads">File Uploads</a></li>
         <li><a href="#django-shortcut-http-functions">Shortcut HTTP Functions</a></li>
+        <li><a href="#django-generic-views">Generic Views</a></li>
     </ul>
 </nav>
 <hr/>
@@ -9464,7 +9465,256 @@ def missing(request):
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-generic-views">Beginner&#39;s Guide to Django Generic Views</h3>
+<ol>
 
+    <li><b>What Are Generic Views?</b></li>
+    <br/>
+    <ul>
+        <li>Django comes with many built-in views called <u>generic views</u>.</li>
+        <br/>
+        <li>A <u>generic view</u> is a reusable view class that already knows how to do common tasks such as:
+            <ul>
+                <li>showing a list of database objects</li>
+                <li>showing details of a single object</li>
+                <li>creating, editing, deleting objects</li>
+                <li>rendering templates</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This means you don’t have to write the logic yourself. Django handles it for you.</li>
+        <br/>
+        <li>You only specify:
+            <ul>
+                <li>which model should be used</li>
+                <li>which template to render</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Generic views help avoid writing repetitive CRUD code.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The Two Most Common Generic Views</b></li>
+    <br/>
+    <ul>
+        <li>Django’s generic views include many types, but beginners should start with these:</li>
+        <ul>
+            <li><code>ListView</code>: displays a list of objects</li>
+            <li><code>DetailView</code>: displays one object</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>ListView — Display a List of Objects</b></li>
+    <br/>
+    <ul>
+        <li>Suppose you have a model:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/models.py
+
+from django.db import models
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+
+    def __str__(self):
+        return self.title
+</code></pre>
+
+    <ul>
+        <li>You can create a view to list all posts:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/views.py
+
+from django.views.generic import ListView
+from .models import Post
+
+class PostListView(ListView):
+    model = Post
+    template_name = &quot;blog/post_list.html&quot;
+</code></pre>
+
+    <ul>
+        <li>Add a URL pattern:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/urls.py
+
+from django.urls import path
+from .views import PostListView
+
+urlpatterns = [
+    path(&quot;posts/&quot;, PostListView.as_view(), name=&quot;post-list&quot;),
+]
+</code></pre>
+
+    <ul>
+        <li>Create the template:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/post_list.html --&gt;
+
+&lt;h1&gt;All Posts&lt;/h1&gt;
+
+{% for post in object_list %}
+    &lt;h3&gt;{{ post.title }}&lt;/h3&gt;
+    &lt;p&gt;{{ post.body|truncatechars:80 }}&lt;/p&gt;
+{% endfor %}
+</code></pre>
+
+    <ul>
+        <li><code>object_list</code> is provided automatically by Django.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>DetailView — Show One Object</b></li>
+    <br/>
+    <ul>
+        <li>To show a single post:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/views.py
+
+from django.views.generic import DetailView
+
+class PostDetailView(DetailView):
+    model = Post
+    template_name = &quot;blog/post_detail.html&quot;
+</code></pre>
+
+    <ul>
+        <li>Add a URL pattern with a dynamic ID:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/urls.py
+
+from .views import PostDetailView
+
+urlpatterns += [
+    path(&quot;posts/&lt;int:pk&gt;/&quot;, PostDetailView.as_view(), name=&quot;post-detail&quot;),
+]
+</code></pre>
+
+    <ul>
+        <li>Create the template:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/post_detail.html --&gt;
+
+&lt;h1&gt;{{ object.title }}&lt;/h1&gt;
+&lt;p&gt;{{ object.body }}&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li><b>object</b> is automatically passed into the template (the Post instance).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Understanding `pk` in the URL</b></li>
+    <br/>
+    <ul>
+        <li><code>DetailView</code> automatically looks for a parameter called <code>pk</code>.</li>
+        <li>So the URL must use <code>&lt;int:pk&gt;</code> unless you customize it.</li>
+        <li>This <code>pk</code> is used to fetch a single object from the database.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Other Useful Generic Views (Beginner Overview)</b></li>
+    <br/>
+    <ul>
+        <li>Generic views for creating, editing, and deleting objects:</li>
+<ul>
+    <li><code>CreateView</code>: create a new object</li>
+    <li><code>UpdateView</code>: edit an existing object</li>
+    <li><code>DeleteView</code>: delete an object</li>
+    <li><code>FormView</code>: display and process forms</li>
+</ul>
+    </ul>
+
+    <br/>
+
+    <ul>
+        <li>For example, a simple <code>CreateView</code>:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.views.generic import CreateView
+from .models import Post
+
+class PostCreateView(CreateView):
+    model = Post
+    fields = [&quot;title&quot;, &quot;body&quot;]
+    template_name = &quot;blog/post_form.html&quot;
+    success_url = &quot;/blog/posts/&quot;
+</code></pre>
+
+    <ul>
+        <li>This automatically:
+            <ul>
+                <li>generates a form</li>
+                <li>saves the data</li>
+                <li>redirects after success</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How Generic Views Know What to Do</b></li>
+    <br/>
+    <ul>
+        <li>You must provide at least two things:
+            <ul>
+                <li><code>model</code> → which database model to use</li>
+                <li><code>template_name</code> → which HTML file to load</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Optional:
+            <ul>
+                <li><code>context variables</code></li>
+                <li><code>ordering</code></li>
+                <li><code>fields</code> (for CreateView/UpdateView)</li>
+                <li><code>success_url</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Customizing Context Data</b></li>
+    <br/>
+    <ul>
+        <li>You can add your own variables by overriding <code>get_context_data()</code>.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">class PostListView(ListView):
+    model = Post
+    template_name = &quot;blog/post_list.html&quot;
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context[&quot;extra&quot;] = &quot;Hello from context!&quot;
+        return context
+</code></pre>
+
+    <ul>
+        <li>Then in the template:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">{{ extra }}</code></pre>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
