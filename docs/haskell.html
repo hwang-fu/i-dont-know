@@ -159,6 +159,7 @@
         <li><a href="#haskell-list-comprehension">List Comprehension</a></li>
         <li><a href="#haskell-tuples">Tuples</a></li>
         <li><a href="#haskell-types-typeclasses">Types and Typeclasses</a></li>
+        <li><a href="#haskell-adts">ADTs</a></li>
     </ul>
 </nav>
 <hr/>
@@ -2394,6 +2395,278 @@ describePoints p1 p2 =
             </ul>
         </li>
     </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-adts">Algebraic Data Types (ADTs) in Haskell</h3>
+<ol>
+    <li><b>What Are ADTs?</b></li>
+    <br/>
+    <ul>
+        <li>An <b>Algebraic Data Type (ADT)</b> is a user-defined type created by combining other types using either <b>Sum types</b> (choices) or <b>Product types</b> (combinations)</li>
+        </li>
+        <br/>
+        <li>They are called “algebraic” because they combine types using algebra-like operations:
+            <ul>
+                <li><b>+</b> = either/or (sum types)</li>
+                <li><b>×</b> = “and” (product types)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Sum Types: Representing Alternatives</b></li>
+    <br/>
+    <ul>
+        <li>A sum type describes a value that may be one of several <u>variants</u>.</li>
+        <li>Each variant is called a <u>constructor</u>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Shape
+    = Circle Double             -- radius
+    | Rectangle Double Double   -- width height
+</code></pre>
+
+    <ul>
+        <li>A <code>Shape</code> value is either a <code>Circle</code> with a radius, or a <code>Rectangle</code> with width and height.</li>
+        <br/>
+        <li>Pattern matching is used to work with sum types:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">area :: Shape -&gt; Double
+area (Circle r)        = pi * r^2
+area (Rectangle w h)   = w * h
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Product Types: Grouping Multiple Values Together</b></li>
+    <br/>
+    <ul>
+        <li>A product type contains <b>multiple fields at once</b>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Person = Person String Int
+--            name   age
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Meaning: a <code>Person</code> is constructed with a <code>String</code> and an <code>Int</code>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">greet :: Person -&gt; String
+greet (Person name age) =
+    "Hello, " ++ name ++ ", age " ++ show age
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Record Syntax for Product Types</b></li>
+    <br/>
+    <ul>
+        <li>Record syntax provides named fields:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data User = User
+    { username :: String
+    , password :: String
+    , userAge  :: Int
+    }
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Automatic getters are created:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">username (User "a" "b" 21)   -- "a"
+userAge  (User "a" "b" 21)   -- 21
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Record updates create modified copies:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">let u = User "bob" "pass" 30
+u { userAge = 31 }
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Combining Sum + Product: The Real Power of ADTs</b></li>
+    <br/>
+    <ul>
+        <li>Real-world ADTs often combine both approaches:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Expr
+    = Lit Int                 -- product type (literal)
+    | Add Expr Expr           -- product type
+    | Mul Expr Expr
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Pattern matching lets us write logic elegantly:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">eval :: Expr -&gt; Int
+eval (Lit n)     = n
+eval (Add a b)   = eval a + eval b
+eval (Mul a b)   = eval a * eval b
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>ADTs can model algebraic expressions, ASTs, API responses, states, and more.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Recursive ADTs</b></li>
+    <br/>
+    <ul>
+        <li>Constructors can refer to the type being defined.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data List a
+    = Empty
+    | Cons a (List a)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is essentially how Haskell’s built-in list <code>[a]</code> works!</li>
+        <li>Recursive types allow:
+            <ul>
+                <li>trees</li>
+                <li>graphs</li>
+                <li>linked structures</li>
+                <li>ASTs (Abstract Syntax Trees)</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Tree a
+    = Leaf a
+    | Node (Tree a) (Tree a)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Parameterized ADTs (Generics)</b></li>
+    <br/>
+    <ul>
+        <li>ADTs often take type parameters:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Maybe a
+    = Nothing
+    | Just a
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is a generic container type:
+            <ul>
+                <li><code>Maybe Int</code></li>
+                <li><code>Maybe String</code></li>
+                <li><code>Maybe (Int, Bool)</code></li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Just 5     :: Maybe Int
+Nothing    :: Maybe a
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Derived Instances for ADTs</b></li>
+    <br/>
+    <ul>
+        <li>Most ADTs can automatically derive useful typeclass instances:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Color
+    = Red | Green | Blue
+    deriving (Eq, Show, Ord)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Automatic benefits:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Red == Blue    -- False
+show Green     -- "Green"
+Red &lt; Blue     -- True (constructor order)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Pattern Matching with ADTs</b></li>
+    <br/>
+    <ul>
+        <li>Pattern matching is the primary way to consume ADTs.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">describeColor :: Color -&gt; String
+describeColor Red   = "Warm color"
+describeColor Green = "Natural color"
+describeColor Blue  = "Cool color"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Pattern matching ensures:
+            <ul>
+                <li>exhaustiveness checking,</li>
+                <li>safe decomposition of product types,</li>
+                <li>errors caught at compile time.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Real-World Example: Handling API Results</b></li>
+    <br/>
+    <ul>
+        <li>ADTs allow representing cases cleanly:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Result a
+    = Success a
+    | Error String
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Usage:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">handle :: Result Int -&gt; String
+handle (Success n) = "Value: " ++ show n
+handle (Error msg) = "Error: " ++ msg
+</code></pre>
+
     <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
