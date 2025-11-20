@@ -175,6 +175,7 @@
         <li><a href="#django-db-access-optimization">Database Access Optimization</a></li>
         <li><a href="#django-db-instrumentation">Database Instrumentation</a></li>
         <li><a href="#django-db-fixtures">Database Fixtures</a></li>
+        <li><a href="#django-url-dispatcher">URL Dispatcher</a></li>
     </ul>
 </nav>
 <hr/>
@@ -7076,6 +7077,439 @@ class ProductTests(TestCase):
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-url-dispatcher">URL Dispatcher in Django</h3>
+<ol>
+
+    <li><b>What Is the URL Dispatcher?</b></li>
+    <br/>
+    <ul>
+        <li>The <b>URL dispatcher</b> is the core mechanism in Django that decides <u>which view</u> should handle an incoming HTTP request.</li>
+        <br/>
+        <li>When the browser requests a URL (for example <code>/blog/hello/</code>), Django:
+            <ul>
+                <li>reads the path part of the URL</li>
+                <li>matches it against <code>urlpatterns</code> in one or more <code>urls.py</code> files</li>
+                <li>calls the first matching view function or class-based view</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The dispatcher is configured by:
+            <ul>
+                <li><code>ROOT_URLCONF</code> in <code>settings.py</code></li>
+                <li>top-level <code>urls.py</code> in the project</li>
+                <li>app-level <code>urls.py</code> files, included via <code>include()</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Request Flow: From Browser to View</b></li>
+    <br/>
+    <ul>
+        <li>A high-level flow for a request to <code>/blog/hello/</code>:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">Browser  --&gt;  Django (WSGI/ASGI)  --&gt;  ROOT_URLCONF (mysite/urls.py)
+                                         |
+                                         V
+                                  urlpatterns list
+                                         |
+                                         V
+                               include("blog.urls") for "blog/"
+                                         |
+                                         V
+                                blog/urls.py: path("hello/", views.hello)
+                                         |
+                                         V
+                                   views.hello(request)
+</code></pre>
+
+    <ul>
+        <li>Django:
+            <ul>
+                <li>reads <code>ROOT_URLCONF</code> (usually <code>"mysite.urls"</code>) from <code>settings.py</code></li>
+                <li>imports <code>mysite/urls.py</code></li>
+                <li>iterates over <code>urlpatterns</code> in order until one pattern matches</li>
+                <li>calls the associated view with <code>request</code> and any captured arguments</li>
+                <li>if nothing matches, returns a 404 response</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic URL Patterns with</b> <code>path()</code></li>
+    <br/>
+    <ul>
+        <li>Most routes are defined via the <code>path()</code> helper.</li>
+        <li>Project-level <code>urls.py</code>:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># mysite/urls.py
+
+from django.contrib import admin
+from django.urls import path
+from blog import views
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("hello/", views.hello),   # maps /hello/ to views.hello
+]
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li>View example:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/views.py
+
+from django.http import HttpResponse
+
+def hello(request):
+    return HttpResponse("Hello from the URL dispatcher!")
+</code></pre>
+
+    <ul>
+        <li>Now <code>http://127.0.0.1:8000/hello/</code> invokes <code>hello()</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Regular Expressions with</b> <code>re_path()</code></li>
+    <br/>
+    <ul>
+        <li>For complex patterns, Django offers <code>re_path()</code>, which uses regular expressions.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.urls import re_path
+from blog import views
+
+urlpatterns = [
+    re_path(r"^archive/(?P&lt;year&gt;[0-9]{4})/$", views.year_archive),
+]
+</code></pre>
+
+    <ul>
+        <li>Example view:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def year_archive(request, year):
+    return HttpResponse(f"Archive for year {year}")
+</code></pre>
+
+    <ul>
+        <li>Now <code>/archive/2024/</code> calls <code>year_archive(request, year="2024")</code>.</li>
+        <li><code>path()</code> is simpler and recommended for most cases; <code>re_path()</code> is for advanced patterns.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Splitting Routes by App with</b> <code>include()</code></li>
+    <br/>
+    <ul>
+        <li>For better organization, each app usually defines its own <code>urls.py</code>.</li>
+        <li>App-level <code>urls.py</code>:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/urls.py
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path("hello/", views.hello),
+    path("about/", views.about),
+]
+</code></pre>
+
+    <ul>
+        <li>Project-level <code>urls.py</code> includes the app URLs:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># mysite/urls.py
+
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("blog/", include("blog.urls")),   # mounts blog.urls under /blog/
+]
+</code></pre>
+
+    <ul>
+        <li>Resulting URLs:
+            <ul>
+                <li><code>/blog/hello/</code></li>
+                <li><code>/blog/about/</code></li>
+            </ul>
+        </li>
+        <li><code>include()</code> lets you build a tree of URLconfs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Dynamic Segments with Path Converters</b></li>
+    <br/>
+    <ul>
+        <li>With <code>path()</code> you can capture parts of the URL as parameters.</li>
+        <li>Syntax: <code>&lt;converter:name&gt;</code></li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/urls.py
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path("post/&lt;int:post_id&gt;/", views.post_detail, name="post-detail"),
+]
+</code></pre>
+
+    <ul>
+        <li>View receives the argument:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/views.py
+
+def post_detail(request, post_id):
+    return HttpResponse(f"Post id is {post_id}")
+</code></pre>
+
+    <ul>
+        <li>Built-in converters:
+            <ul>
+                <li><code>int</code>  → integer</li>
+                <li><code>str</code>  → non-empty string (no slash)</li>
+                <li><code>slug</code> → letters, numbers, hyphen, underscore</li>
+                <li><code>uuid</code> → UUID string</li>
+                <li><code>path</code> → string including slashes</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Custom Path Converters (Advanced)</b></li>
+    <br/>
+    <ul>
+        <li>You can define your own converters when built-ins are not enough.</li>
+        <li>Example: only accept lowercase letters.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/converters.py
+
+class LowercaseConverter:
+    regex = "[a-z]+"
+
+    def to_python(self, value):
+        return value   # can transform the value if needed
+
+    def to_url(self, value):
+        return value.lower()
+</code></pre>
+
+    <ul>
+        <li>Register the converter:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># mysite/urls.py
+
+from django.contrib import admin
+from django.urls import path, include, register_converter
+from blog.converters import LowercaseConverter
+
+register_converter(LowercaseConverter, "lower")
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("blog/", include("blog.urls")),
+]
+</code></pre>
+
+    <ul>
+        <li>Use it in your app URLs:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/urls.py
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path("user/&lt;lower:username&gt;/", views.profile),
+]
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Order, Matching Rules, and 404 Errors</b></li>
+    <br/>
+    <ul>
+        <li><u>Order matters</u> in <code>urlpatterns</code>:
+            <ul>
+                <li>Django goes from top to bottom</li>
+                <li>The first pattern that matches wins</li>
+                <li>Remaining patterns are ignored</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example of problematic order:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">urlpatterns = [
+    path("post/&lt;int:id&gt;/", views.post_by_id),
+    path("post/latest/", views.latest_post),
+]
+</code></pre>
+
+    <ul>
+        <li>A request for <code>/post/latest/</code> will try to match <code>&lt;int:id&gt;</code> first, fail, then move on.</li>
+        <li>Better order:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">urlpatterns = [
+    path("post/latest/", views.latest_post),
+    path("post/&lt;int:id&gt;/", views.post_by_id),
+]
+</code></pre>
+
+    <ul>
+        <li>If nothing matches, Django returns a <u>404 Not Found</u> page.</li>
+        <br/>
+        <li>Trailing slash behavior is influenced by <code>APPEND_SLASH</code>: If <code>APPEND_SLASH = True</code> (default), Django may redirect <code>/hello</code> to <code>/hello/</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Named URLs and Reverse Resolution</b></li>
+    <br/>
+    <ul>
+        <li>Giving a <code>name</code> to your URL pattern lets you refer to it without hardcoding the path.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/urls.py
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path("hello/", views.hello, name="hello"),
+]
+</code></pre>
+
+    <ul>
+        <li>Use <code>reverse()</code> in Python code:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.urls import reverse
+
+url = reverse("hello")   # returns "/hello/"
+</code></pre>
+
+    <ul>
+        <li>Use <code>{% url %}</code> in templates:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;a href="{% url 'hello' %}"&gt;Say hello&lt;/a&gt;
+</code></pre>
+
+    <ul>
+        <li>Advantages:
+            <ul>
+                <li>changing the actual path does not break all links</li>
+                <li>safe refactoring</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Class-Based Views and <code>as_view()</code></b></li>
+    <br/>
+    <ul>
+        <li>Django encourages class-based views (CBVs) for reusable logic.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/views.py
+
+from django.views import View
+from django.http import HttpResponse
+
+class HelloView(View):
+    def get(self, request):
+        return HttpResponse("Hello from class-based view!")
+</code></pre>
+
+    <ul>
+        <li>URL pattern uses <code>.as_view()</code>:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/urls.py
+
+from django.urls import path
+from .views import HelloView
+
+urlpatterns = [
+    path("hello/", HelloView.as_view(), name="hello-class"),
+]
+</code></pre>
+
+    <ul>
+        <li>For generic views (like <code>ListView</code>, <code>DetailView</code>), you also use <code>as_view()</code> in the dispatcher.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Static Files, Media, and Other Helpers</b></li>
+    <br/>
+    <ul>
+        <li>During development, you can serve static and media files via URL dispatcher helpers.</li>
+        <li>Example (development only):</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># mysite/urls.py
+
+from django.contrib import admin
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("blog/", include("blog.urls")),
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+</code></pre>
+
+    <ul>
+        <li>The admin itself (<code>/admin/</code>) is just another URL pattern registered in the dispatcher.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
