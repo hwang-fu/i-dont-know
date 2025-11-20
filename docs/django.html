@@ -179,6 +179,7 @@
         <li><a href="#django-views-beginner">Views for Beginners</a></li>
         <li><a href="#django-views">Views</a></li>
         <li><a href="#django-httpresponse"><code>HttpResponse</code> in Django</a></li>
+        <li><a href="#django-writing-views">Writing Views</a></li>
     </ul>
 </nav>
 <hr/>
@@ -8363,6 +8364,250 @@ def download(request):
 
     <ul>
         <li>Streams file data instead of loading the entire file into memory.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-writing-views">Writing Views in Django</h3>
+<ol>
+
+    <li><b>What Does It Mean to “Write a View”?</b></li>
+    <br/>
+    <ul>
+        <li>Writing a view means creating Python code that decides what should happen when a user opens a certain URL.</li>
+        <br/>
+        <li>Every view:
+            <ul>
+                <li>receives a <code>request</code> object</li>
+                <li>runs some logic (optional)</li>
+                <li>returns an <code>HttpResponse</code> (or <code>render()</code> template)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Views live inside the <code>views.py</code> file of your app.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Start With a Simple View</b></li>
+    <br/>
+    <ul>
+        <li>Open <code>blog/views.py</code> and write:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.http import HttpResponse
+
+def hello(request):
+    return HttpResponse(&quot;Hello! This is my first view.&quot;)
+</code></pre>
+
+    <ul>
+        <li>Now create a URL route:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/urls.py
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path(&quot;hello/&quot;, views.hello),
+]
+</code></pre>
+
+    <ul>
+        <li>Visit <code>/blog/hello/</code> and the text will appear.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Views That Return HTML</b></li>
+    <br/>
+    <ul>
+        <li>You can write HTML inside the response:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def welcome(request):
+    return HttpResponse(&quot;&lt;h1&gt;Welcome&lt;/h1&gt;&lt;p&gt;This is a simple HTML page.&lt;/p&gt;&quot;)
+</code></pre>
+
+    <ul>
+        <li>Django will send this HTML to the browser.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Rendering Templates (Recommended)</b></li>
+    <br/>
+    <ul>
+        <li>For anything more than simple text, use templates.</li>
+        <li>Example view:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.shortcuts import render
+
+def home(request):
+    return render(request, &quot;blog/home.html&quot;)
+</code></pre>
+
+    <ul>
+        <li>Create the template:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/home.html --&gt;
+&lt;h1&gt;Blog Home&lt;/h1&gt;
+&lt;p&gt;This page was rendered using a template!&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li>This separates Python logic from HTML layout.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Passing Data to a Template</b></li>
+    <br/>
+    <ul>
+        <li>Views can send variables to templates using a dictionary (called a &quot;context&quot;).</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def about(request):
+    info = {
+        &quot;title&quot;: &quot;About This Blog&quot;,
+        &quot;author&quot;: &quot;Junzhe&quot;,
+    }
+    return render(request, &quot;blog/about.html&quot;, info)
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- blog/templates/blog/about.html --&gt;
+&lt;h1&gt;{{ title }}&lt;/h1&gt;
+&lt;p&gt;Created by {{ author }}.&lt;/p&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Views With URL Parameters</b></li>
+    <br/>
+    <ul>
+        <li>You can write views that handle dynamic URLs:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers"># blog/urls.py
+path(&quot;post/&lt;int:id&gt;/&quot;, views.show_post)
+</code></pre>
+
+<pre><code class="language-py line-numbers">def show_post(request, id):
+    return HttpResponse(f&quot;You asked for post {id}&quot;)
+</code></pre>
+
+    <ul>
+        <li>Visiting <code>/blog/post/7/</code> will return <code>You asked for post 7</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Views That Handle GET and POST</b></li>
+    <br/>
+    <ul>
+        <li>Django views can check request methods.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def contact(request):
+    if request.method == &quot;GET&quot;:
+        return HttpResponse(&quot;This is the contact page.&quot;)
+    elif request.method == &quot;POST&quot;:
+        return HttpResponse(&quot;You submitted the form!&quot;)
+</code></pre>
+
+    <ul>
+        <li>This is the basis for form handling.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Redirects in Views</b></li>
+    <br/>
+    <ul>
+        <li>You can redirect to another URL easily.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.shortcuts import redirect
+
+def go_to_home(request):
+    return redirect(&quot;/blog/home/&quot;)
+</code></pre>
+
+    <ul>
+        <li>This tells the browser to open a different page.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Writing Class-Based Views (Beginner Level)</b></li>
+    <br/>
+    <ul>
+        <li>Instead of using a function, Django allows writing views as classes.</li>
+        <li>A simple class-based view:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.views import View
+from django.http import HttpResponse
+
+class HelloView(View):
+    def get(self, request):
+        return HttpResponse(&quot;Hello from a class-based view!&quot;)
+</code></pre>
+
+<pre><code class="language-py line-numbers">path(&quot;hello-class/&quot;, HelloView.as_view())
+</code></pre>
+
+    <ul>
+        <li>For now, it’s fine if you focus only on function-based views.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Where Should You Write Views?</b></li>
+    <br/>
+    <ul>
+        <li>Each app has its own <code>views.py</code> file:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">blog/
+├── admin.py
+├── apps.py
+├── models.py
+├── views.py   &lt;-- write your views here
+├── tests.py
+└── migrations/
+</code></pre>
+
+    <ul>
+        <li>You write your project’s logic here.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>A Good Beginner Workflow for Writing Views</b></li>
+    <br/>
+    <ul>
+        <li>Whenever you need a new page in your website:</li>
+        <ul>
+            <li>step 1 → write the view in <code>views.py</code></li>
+            <li>step 2 → connect it to a URL in <code>urls.py</code></li>
+            <li>step 3 → (optional) create a template</li>
+            <li>step 4 → add logic or pass data as needed</li>
+        </ul>
+        <br/>
+        <li>This flow becomes second nature once you practice it a few times.</li>
     </ul>
     <br/><br/>
 
