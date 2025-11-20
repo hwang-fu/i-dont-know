@@ -180,6 +180,7 @@
         <li><a href="#rust-generics-impl">Generics Implemented</a></li>
         <li><a href="#rust-traits">Traits</a></li>
         <li><a href="#rust-generics-placement">&lt;T&gt; Placement Guide</a></li>
+        <li><a href="#rust-generics-bound">Generics Bound</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -9518,6 +9519,295 @@ impl Iterator for Counter {
     </table>
     <br/><br/>
 
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-generics-bounds">Generics Bounds in Rust</h3>
+<ol>
+    <li><b>What Are Generic Bounds?</b></li>
+    <br/>
+    <ul>
+        <li><u>Generics</u> let you write functions and types that work with many different concrete types.</li>
+        <br/>
+        <li><u>Bounds</u> restrict which concrete types are allowed by requiring that they implement one or more traits.</li>
+        <br/>
+        <li>In other words: <u>"T can be anything"</u> becomes <u>"T can be anything that implements these traits"</u>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li><b>Basic Trait Bound Syntax on Functions</b></li>
+    <br/>
+    <ul>
+        <li>A simple generic function without bounds looks like this:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn identity&lt;T&gt;(value: T) -&gt; T {
+    value
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>If you want to <code>println!</code> the value, you need a bound so that <code>T</code> is printable:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::fmt::Display;
+
+fn print_value&lt;T: Display&gt;(value: T) {
+    println!("value = {}", value);
+}
+
+fn main() {
+    print_value(42);                // i32 implements Display
+    print_value("hello");           // &amp;str implements Display
+    // print_value(vec![1, 2, 3]);  // &lt;-- does not compile: Vec&lt;i32&gt; does not implement Display
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Pattern: <code>fn name&lt;T: SomeTrait&gt;(arg: T) { ... }</code></li>
+        <li>The compiler enforces: any T used here must implement <code>SomeTrait</code>.</li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li><b>Multiple Trait Bounds on a Type Parameter</b></li>
+    <br/>
+    <ul>
+        <li>You can require that a single type implements several traits using <code>+</code>:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::fmt::Display;
+
+fn print_and_clone&lt;T: Display + Clone&gt;(value: T) {
+    println!("value = {}", value);
+    let another = value.clone();
+    println!("cloned = {}", another);
+}
+</code></pre>
+
+    <ul>
+        <li>Here <code>T</code> must implement both <code>Display</code> and <code>Clone</code>.</li>
+        <li>In more complex signatures, this inline syntax can get noisy. Then you can use a <code>where</code>-clause.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::fmt::Display;
+
+fn compare_and_print&lt;T, U&gt;(x: T, y: U)
+where
+    T: Display + PartialOrd,
+    U: Display + PartialOrd,
+{
+    if x &gt;= y {
+        println!("x (&quot;{}&quot;) is greater or equal to y (&quot;{}&quot;)", x, y);
+    } else {
+        println!("x (&quot;{}&quot;) is less than y (&quot;{}&quot;)", x, y);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li><code>where</code>-clauses are purely syntactic sugar, they do not change semantics, just readability.</li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li><b>Bounds on Structs and Enums</b></li>
+    <br/>
+    <ul>
+        <li>You can also put bounds on <u>types</u> (structs, enums), not only on functions.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::fmt::Display;
+
+struct Wrapper&lt;T: Display&gt; {
+    inner: T,
+}
+
+impl&lt;T: Display&gt; Wrapper&lt;T&gt; {
+    fn show(&amp;self) {
+        println!("Wrapper contains: {}", self.inner);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Here <code>Wrapper&lt;T&gt;</code> can only be instantiated for types <code>T</code> that implement <code>Display</code>.</li>
+        <br/>
+        <li>You can also push the bound from the struct onto the <code>impl</code>, depending on how you want to organize it:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Boxed&lt;T&gt; {
+    inner: T,
+}
+
+// Only the methods require Display, not the type itself:
+impl&lt;T: Display&gt; Boxed&lt;T&gt; {
+    fn print(&amp;self) {
+        println!("Boxed: {}", self.inner);
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>This distinction matters if you want:
+            <ul>
+                <li>to allow <code>Boxed&lt;T&gt;</code> to exist for any <code>T</code>, but</li>
+                <li>only certain methods to be available when <code>T</code> satisfies specific bounds.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li><b>Bounds on</b> <code>impl</code> <b>Blocks and Methods</b></li>
+    <br/>
+    <ul>
+        <li>You can place bounds directly on the <code>impl</code> header to define <u>specialized behavior</u> for certain types.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::fmt::Display;
+
+struct Pair&lt;T&gt; {
+    x: T,
+    y: T,
+}
+
+// Methods available for all T:
+impl&lt;T&gt; Pair&lt;T&gt; {
+    fn new(x: T, y: T) -&gt; Self {
+        Self { x, y }
+    }
+}
+
+// Extra methods only if T: Display + PartialOrd:
+impl&lt;T&gt; Pair&lt;T&gt;
+where
+    T: Display + PartialOrd,
+{
+    fn cmp_display(&amp;self) {
+        if self.x &gt;= self.y {
+            println!("The larger member is x = {}", self.x);
+        } else {
+            println!("The larger member is y = {}", self.y);
+        }
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Note that <code>Pair&lt;T&gt;</code> itself is always available, but <code>cmp_display</code> only exists when <code>T</code> has the proper traits.</li>
+        <li>This is a common pattern in Rust's standard library to expose <b>extra capabilities</b> for certain types.</li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li><code>impl Trait</code> <b>as an Alternative to Explicit Type Parameters</b></li>
+    <br/>
+    <ul>
+        <li>When you only care about the trait, not the concrete generic name, you can write:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::fmt::Display;
+
+// Instead of: fn show&lt;T: Display&gt;(value: T)
+fn show(value: impl Display) {
+    println!("value = {}", value);
+}
+</code></pre>
+
+    <ul>
+        <li>This is equivalent to a generic function with a single type parameter and a bound.</li>
+        <br/>
+        <li>You can use <code>impl Trait</code>:
+            <ul>
+                <li>in argument position: <code>fn f(x: impl Trait)</code></li>
+                <li>in return position: <code>fn f() -&gt; impl Trait</code> (returning some type that implements the trait)</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::fmt::Display;
+
+fn make_message() -&gt; impl Display {
+    // Compiler picks a concrete type (here, String),
+    // but callers only know &quot;it implements Display&quot;.
+    String::from("Hello from impl Trait!")
+}
+</code></pre>
+    <br/>
+    <br/>
+
+    <li><b>Trait Bounds vs. Lifetimes (Short Overview)</b></li>
+    <br/>
+    <ul>
+        <li>Type parameters and lifetimes are separate kinds of generics, but you often see them together.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::fmt::Display;
+
+fn print_ref&lt;'a, T&gt;(x: &amp;'a T)
+where
+    T: Display + 'a,
+{
+    println!("x = {}", x);
+}
+</code></pre>
+
+    <ul>
+        <li>Here:
+            <ul>
+                <li><code>'a</code> is a generic <u>lifetime parameter</u>.</li>
+                <li><code>T: Display + 'a</code> means: <code>T</code> must implement <code>Display</code>, and <code>T</code> must live at least as long as lifetime <code>'a</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This is useful when your generic types contain references and you need to express their relationships.</li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li><b>Blanket Implementations and the Power of Bounds</b></li>
+    <br/>
+    <ul>
+        <li>A <u>blanket implementation</u> is an <code>impl</code> for all types that satisfy some bound.</li>
+        <li>This is heavily used in the standard library to extend behavior to many types at once.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::fmt::Display;
+
+// Hypothetical example:
+trait PrettyPrint {
+    fn pretty_print(&amp;self);
+}
+
+impl&lt;T: Display&gt; PrettyPrint for T {
+    fn pretty_print(&amp;self) {
+        println!("[[ {} ]]", self);
+    }
+}
+
+fn main() {
+    42.pretty_print();
+    "hello".pretty_print();
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This says: &quot;Every type T that implements Display also implements PrettyPrint&quot;.</li>
+        <li>Blanket impls are a core reason why Rust's trait system is so expressive.</li>
+        <li>Important constraint: you can only write blanket impls involving traits and types that you control (the <u>orphan rule</u>), to avoid conflicts.</li>
+    </ul>
+    <br/>
+    <br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
