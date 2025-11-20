@@ -156,7 +156,8 @@
 <nav id="toc" style="margin-bottom: 2rem;">
     <h2> <img src="resources/compiler.png" alt="Logo" class="nav-icon"/></h2>
     <ul style="line-height: 1.8;">
-        <li><a href="#compiler-design-intro">Introduction</a></li>
+        <li><a href="#compiler-intro">Introduction</a></li>
+        <li><a href="#compiler-phases">Phases</a></li>
     </ul>
 </nav>
 <hr/>
@@ -164,7 +165,7 @@
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="compiler-design-intro">Introduction to Compiler Design</h3>
+<h3 id="compiler-intro">Introduction to Compiler Design</h3>
 <ol>
     <li><mark>NOTE</mark>:<br/>
         I'm not a professional computer scientist, so the whole content here is based on my poor knowledge.<br/>
@@ -417,7 +418,292 @@ add eax, 1
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="compiler-phases">Different Phases of a Compiler</h3>
+<ol>
 
+    <li><b>Prior Knowledge</b></li>
+    <br/>
+    <ul>
+        <li>A compiler transforms <b>source code</b> written in a high-level language (like C, Rust, or Haskell) into <b>machine code</b> or an <b>intermediate form</b>.</li>
+        <br/>
+        <li>This transformation happens in several well-structured phases.</li>
+        <br/>
+        <li>Each phase handles one part of the job:
+            <ul>
+                <li>understanding the program,</li>
+                <li>checking for correctness,</li>
+                <li>optimizing,</li>
+                <li>and generating low-level code.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Although implementations vary between compilers (e.g., GCC, LLVM Clang, Rustc), the overall architecture remains similar.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Lexical Analysis (Scanning)</b></li>
+    <br/>
+    <ul>
+        <li>The first phase of compilation.</li>
+        <br/>
+        <li>Converts a raw source code string into a sequence of <b>tokens</b>.</li>
+        <br/>
+        <li>A token is a meaningful atomic unit:
+            <ul>
+                <li>keywords (<code>if</code>, <code>while</code>)</li>
+                <li>identifiers (<code>x</code>, <code>count</code>)</li>
+                <li>literals (<code>10</code>, <code>"hello"</code>)</li>
+                <li>operators (<code>+</code>, <code>*</code>, <code>==</code>)</li>
+                <li>punctuation (<code>;</code>, <code>(</code>, <code>)</code>)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>A <b>lexer</b> removes:
+            <ul>
+                <li>spaces,</li>
+                <li>comments,</li>
+                <li>line breaks,</li>
+                <li>unnecessary formatting.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Source:     x = 3 + 5;
+Tokens:     IDENTIFIER("x"), EQUALS, NUMBER(3), PLUS, NUMBER(5), SEMICOLON
+
+Or in more details as
+Tokens:     IDENTIFIER("x"), OPERATOR("="), NUMBER(3), OPERATOR("+"), NUMBER(5), PUNCTUATION(";")
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Syntax Analysis (Parsing)</b></li>
+    <br/>
+    <ul>
+        <li>Given the sequence of tokens, the <b>parser</b> checks whether the code follows the grammatical structure of the language.</li>
+        <br/>
+        <li>It produces an <b>AST</b> (Abstract Syntax Tree), a hierarchical representation of the program.</li>
+        <br/>
+        <li>Example: <code>x = 3 + 5</code> becomes:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">      Assignment
+     /          \
+   Variable     Add
+    |          /   \
+   "x"        3     5
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The parser enforces:
+            <ul>
+                <li>operator precedence,</li>
+                <li>parentheses grouping,</li>
+                <li>valid statements and expressions.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Parser types:
+            <ul>
+                <li>Top-down: LL(k), recursive-descent (easy to implement)</li>
+                <li>Bottom-up: LR(k), LALR, GLR (used by many production compilers)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Semantic Analysis</b></li>
+    <br/>
+    <ul>
+        <li>The semantic analyzer checks for <b>meaningful correctness</b> of the AST.</li>
+        <br/>
+        <li>Examples of semantic checks:</li>
+        <ul>
+            <li>Type checking</li>
+            <li>Variable declarations and scopes</li>
+            <li>Function arity (argument count)</li>
+            <li>Operator/type compatibility</li>
+            <li>Control-flow correctness</li>
+        </ul>
+        <br/>
+        <li>The compiler builds:
+            <ul>
+                <li>a <b>symbol table</b> mapping names to types/locations,</li>
+                <li>a <b>type environment</b>,</li>
+                <li>a <b>scope tree</b>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example error caught here:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">x = "hello" + 5  -- type error: cannot add string and integer
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Semantic analysis transforms the AST into a <b>typed AST</b> (or annotates nodes with type info).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Intermediate Representation (IR) Generation</b></li>
+    <br/>
+    <ul>
+        <li>Once semantics are validated, the compiler transforms the AST into an <b>IR</b> (Intermediate Representation).</li>
+        <br/>
+        <li>IR is a lower-level, more regular representation than the AST.</li>
+        <br/>
+        <li>Most modern compilers use a form of SSA (Static Single Assignment) IR.</li>
+        <br/>
+        <li>Purpose:
+            <ul>
+                <li>enable optimizations,</li>
+                <li>provide target-independence,</li>
+                <li>simplify code generation.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example (LLVM IR):</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">%1 = add i32 3, 5
+store i32 %1, i32* @x
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The IR removes high-level syntax and resolves many abstractions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Optimization</b></li>
+    <br/>
+    <ul>
+        <li>This is often the largest and most complex phase.</li>
+        <br/>
+        <li>Perform optimizations on IR to:
+            <ul>
+                <li>minimize runtime,</li>
+                <li>minimize memory,</li>
+                <li>increase CPU instruction-level parallelism,</li>
+                <li>reduce branches and allocations.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Typical optimizations include:</li>
+        <ul>
+            <li>Constant folding</li>
+            <li>Dead code elimination</li>
+            <li>Loop unrolling</li>
+            <li>Function inlining</li>
+            <li>Common subexpression elimination</li>
+            <li>Escape analysis (eliminate heap allocations)</li>
+            <li>Copy propagation</li>
+        </ul>
+        <br/>
+        <li>Optimizations may occur at:
+            <ul>
+                <li>high-level AST,</li>
+                <li>mid-level IR (LLVM),</li>
+                <li>low-level machine code.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Code Generation</b></li>
+    <br/>
+    <ul>
+        <li>Transforms the optimized IR into:
+            <ul>
+                <li>target machine code,</li>
+                <li>assembly, or</li>
+                <li>bytecode (for JVM, CLR, BEAM, etc.).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This phase handles:
+            <ul>
+                <li>register allocation,</li>
+                <li>calling conventions,</li>
+                <li>instruction selection,</li>
+                <li>stack frame setup,</li>
+                <li>function prologues/epilogues.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example (x86-64 assembly):</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">mov eax, 3
+add eax, 5
+mov [x], eax
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Linking</b></li>
+    <br/>
+    <ul>
+        <li>Final phase: combining all compiled units and libraries into an executable.</li>
+        <br/>
+        <li>The linker resolves:
+            <ul>
+                <li>symbol references,</li>
+                <li>external functions (e.g., <code>printf</code>),</li>
+                <li>imported modules,</li>
+                <li>static libraries,</li>
+                <li>shared libraries.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>For languages like C/C++, linking is separate.</li>
+        <br/>
+        <li>For languages like Go, Rust, and Haskell, the compiler internally orchestrates linking.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The Big Picture Diagram</b></li>
+<pre><code class="language-plaintext line-numbers">    Source Code
+         |
+         v
+  [Lexical Analysis]
+         |
+         v
+   [Syntax Parsing]
+         |
+         v
+ [Semantic Analysis]
+         |
+         v
+ [Intermediate Representation]
+         |
+         v
+     [Optimization]
+         |
+         v
+  [Code Generation]
+         |
+         v
+      [Linking]
+         |
+         v
+    Executable
+</code></pre>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
