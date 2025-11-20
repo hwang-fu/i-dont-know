@@ -162,6 +162,7 @@
         <li><a href="#ts-decorators">Decorators</a></li>
         <li><a href="#ts-get-set">Getters and Setters in TS</a></li>
         <li><a href="#ts-record">Record</a></li>
+        <li><a href="#ts-dts">Understanding <code>.d.ts</code> Files in TypeScript</a></li>
     </ul>
 </nav>
 <hr/>
@@ -5053,6 +5054,256 @@ const labels: Partial&lt;Record&lt;Language, string&gt;&gt; = {
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="ts-dts">Understanding <code>.d.ts</code> Files in TypeScript (Beginner-Friendly, Very Detailed)</h3>
+<ol>
+
+    <li><b>What Is a</b> <code>.d.ts</code> <b>File?</b></li>
+    <br/>
+    <ul>
+        <li>A <code>.d.ts</code> (TypeScript Declaration File) is a file that contains <u>type information only</u>.</li>
+        <br/>
+        <li>It does NOT contain:
+            <ul>
+                <li>logic</li>
+                <li>functions</li>
+                <li>classes</li>
+                <li>runtime code</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The purpose of a <code>.d.ts</code> file is to tell TypeScript:
+            <ul>
+                <li>how JavaScript code is shaped</li>
+                <li>what types exist</li>
+                <li>what types are exported</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Why Do We Need It?</b></li>
+    <br/>
+    <ul>
+        <li>They allow TypeScript to understand code that has no TypeScript types:
+            <ul>
+                <li>normal JavaScript modules</li>
+                <li>third-party JS libraries</li>
+                <li>browser APIs</li>
+                <li>Node.js modules</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Without declaration files, TypeScript would not know:
+            <ul>
+                <li>function signatures</li>
+                <li>what classes exist</li>
+                <li>what properties are available</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This is why many libraries ship with <code>@types/[package]</code> packages.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Two Kinds of Declaration Files</b></li>
+    <br/>
+    <ol>
+        <li><b>Library declaration files</b></li>
+        <ul>
+            <li>Describe the API of a JS library.</li>
+            <li>Example: <code>@types/lodash</code></li>
+        </ul>
+        <br/>
+
+        <li><b>Global/project declaration files</b></li>
+        <ul>
+            <li>Describe additional types for your own project.</li>
+            <li>Example:
+<pre><code class="language-bash line-numbers">src/types/vue.d.ts</code></pre>
+            </li>
+        </ul>
+    </ol>
+    <br/><br/>
+
+
+    <li><b>What Goes Inside a <code>.d.ts</code> File?</b></li>
+    <br/>
+    <ul>
+        <li>You put <u>type definitions</u> only:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">declare function greet(name: string): void;
+
+declare const version: string;
+
+declare interface User {
+    id: number;
+    name: string;
+}
+</code></pre>
+
+    <ul>
+        <li>No logic, no real functions, no variables — only type shapes.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Declaration Files for Modules</b></li>
+    <br/>
+    <ul>
+        <li>If you want to define types for a module:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">declare module &quot;my-library&quot; {
+    export function doSomething(a: number): void;
+    export const version: string;
+}
+</code></pre>
+
+    <ul>
+        <li>Now TypeScript understands: <code>import { doSomething } from &quot;my-library&quot;</code></li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Global Declarations (No import needed)</b></li>
+    <br/>
+    <ul>
+        <li>Use <code>declare global</code> to add global types:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">declare global {
+    interface Window {
+        myGlobalVar: string;
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Now you can write:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">window.myGlobalVar = "hello!";
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Extending Existing Types (Augmentation)</b></li>
+    <br/>
+    <ul>
+        <li>You can add properties to existing modules:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">declare module &quot;vue&quot; {
+    interface ComponentCustomProperties {
+        $log: (msg: string) =&gt; void;
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>This is extremely useful when writing Vue plugins.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How TypeScript Finds</b> <code>.d.ts</code> <b>Files</b></li>
+    <br/>
+    <ul>
+        <li>TypeScript searches declaration files from:</li>
+        <ul>
+            <li>your project src directory</li>
+            <li><code>@types</code> folders</li>
+            <li>declared <code>typeRoots</code></li>
+        </ul>
+        <br/>
+        <li>The most common location for project-wide declarations is:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/types/*.d.ts
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>To make sure TS includes these files, add in <code>tsconfig.json</code>:</li>
+    </ul>
+
+<pre><code class="language-json line-numbers">&quot;include&quot;: [
+  &quot;src/**/*&quot;,
+  &quot;src/types/**/*.d.ts&quot;
+]
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Writing Declaration Files for JavaScript Code</b></li>
+    <br/>
+    <ul>
+        <li>If you wrote a JS module and want TS types:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">// utils.js
+export function sum(a, b) {
+    return a + b;
+}
+</code></pre>
+
+    <ul>
+    <li>Add a declaration file:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">// utils.d.ts
+export function sum(a: number, b: number): number;
+</code></pre>
+
+    <ul>
+        <li>Now TypeScript understands this module fully.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Example: Making a Global Vue Property Work</b></li>
+    <br/>
+    <ul>
+        <li>Plugin code:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">app.config.globalProperties.$toast = (msg: string) =&gt; alert(msg);</code></pre>
+
+    <ul>
+        <li>Then add a <code>.d.ts</code> file:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">declare module &quot;vue&quot; {
+    interface ComponentCustomProperties {
+        $toast: (msg: string) =&gt; void;
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Now TypeScript recognizes <code>this.$toast</code> inside components.</li>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
