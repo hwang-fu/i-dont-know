@@ -158,6 +158,7 @@
         <li><a href="#haskell-list-concatenation">List Concatenation</a></li>
         <li><a href="#haskell-list-comprehension">List Comprehension</a></li>
         <li><a href="#haskell-tuples">Tuples</a></li>
+        <li><a href="#haskell-types-typeclasses">Types and Typeclasses</a></li>
     </ul>
 </nav>
 <hr/>
@@ -2032,7 +2033,369 @@ addT (x, y) = x + y
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-types-typeclasses">Types and Typeclasses in Haskell</h3>
+<ol>
+    <li><b>Why Types Matter in Haskell</b></li>
+    <br/>
+    <ul>
+        <li>Haskell is a <b>statically typed</b> language:
+            <ul>
+                <li>Every expression has a type, known at <b>compile time</b>.</li>
+                <li>The compiler checks type correctness before running your program.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Haskell also has <b>type inference</b>:
+            <ul>
+                <li>you usually do not need to write types explicitly,</li>
+                <li>the compiler can infer them from the code.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Typeclasses add another layer: they describe <b>behavior</b> that types can implement.</li>
+    </ul>
+    <br/><br/>
 
+    <li><b>Basic Built-in Types</b></li>
+    <br/>
+    <ul>
+        <li>Some common primitive types:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">42        :: Int        -- fixed-size integer
+3.14      :: Double     -- double-precision floating point
+True      :: Bool       -- boolean
+'a'       :: Char       -- character
+"hello"   :: String     -- String = [Char]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>You can always ask GHCi for the type of an expression using <code>:t</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Prelude&gt; :t 42
+42 :: Num a =&gt; a
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Note: The compiler often shows <b>polymorphic</b> types (like <code>Num a =&gt; a</code>) instead of a concrete <code>Int</code>.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Type Signatures for Functions</b></li>
+    <br/>
+    <ul>
+        <li>Type signatures document what a function takes and returns.</li>
+        <li>General form:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">name :: TypeOfArg1 -&gt; TypeOfArg2 -&gt; ... -&gt; ResultType
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">add :: Int -&gt; Int -&gt; Int
+add x y = x + y
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Read as: <code>add</code> is a function that takes an <code>Int</code>, then another <code>Int</code>, and returns an <code>Int</code>.</li>
+        <li>Because functions are <u>curried</u>, <code>Int -&gt; Int -&gt; Int</code> is really <code>Int -&gt; (Int -&gt; Int)</code>.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Type Variables and Polymorphism</b></li>
+    <br/>
+    <ul>
+        <li>Haskell supports <b>parametric polymorphism</b> via <b>type variables</b>.</li>
+        <li>A type variable is a lowercase letter like <code>a</code>, <code>b</code>, <code>t</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">identity :: a -&gt; a
+identity x = x
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>identity</code> works for <u>any</u> type <code>a</code>:
+            <ul>
+                <li><code>identity 3        -&gt; 3</code></li>
+                <li><code>identity "hi"     -&gt; "hi"</code></li>
+                <li><code>identity True     -&gt; True</code></li>
+            </ul>
+        </li>
+        <li>This is true parametric polymorphism: behavior does not depend on the specific type.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Type Constructors and Parameterized Types</b></li>
+    <br/>
+    <ul>
+        <li>Types can be <b>parameterized</b> by other types, just like generic types in other languages.</li>
+        <li>Example: <code>Maybe a</code>, <code>[a]</code>, <code>Either e a</code>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Just 5       :: Maybe Int
+Nothing      :: Maybe a
+[1,2,3]      :: [Int]
+Right "ok"   :: Either e String
+Left "err"   :: Either String a
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Here, <code>Maybe</code>, <code>[]</code> (list), and <code>Either</code> are <b>type constructors</b>:
+            <ul>
+                <li>They are not full types until you give them a parameter.</li>
+                <li>E.g. <code>Maybe</code> alone is like a function at the type level: it maps <code>a</code> to <code>Maybe a</code>.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Type Synonyms (Type Aliases)</b></li>
+    <br/>
+    <ul>
+        <li>You can give a new name to an existing type using <code>type</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">type UserName = String
+type Age      = Int
+
+greet :: UserName -&gt; String
+greet name = "Hello, " ++ name
+</code></pre>
+
+    <ul>
+        <li>This does <u>not</u> create a new type, just a <u>nickname</u> for an existing one.</li>
+        <li>The compiler treats <code>UserName</code> as <code>String</code>.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Algebraic Data Types (ADTs)</b></li>
+    <br/>
+    <ul>
+        <li>Haskell allows you to define your own types using <code>data</code>.</li>
+        <li>General forms:
+            <ul>
+                <li><b>Sum types</b> (one of several constructors),</li>
+                <li><b>Product types</b> (constructors with multiple fields).</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">-- Sum type: a value is either a Circle or a Rectangle
+data Shape
+    = Circle    Double          -- radius
+    | Rectangle Double Double   -- width height
+
+-- Product type with a single constructor and multiple fields
+data Person = Person
+    { name :: String
+    , age  :: Int
+    }
+</code></pre>
+
+    <ul>
+        <li>ADTs combine:
+            <ul>
+                <li><b>Choice</b> (which constructor?)</li>
+                <li><b>Structure</b> (what fields in each constructor?)</li>
+            </ul>
+        </li>
+        <li>You use <u>pattern matching</u> to work with custom types.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>What Is a Typeclass?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>typeclass</b> is a way to define a set of operations (methods) that a type can implement.</li>
+        <li>Think of it as an interface of behavior, but:
+            <ul>
+                <li>It works at the <b>type level</b>,</li>
+                <li>It supports <b>ad-hoc polymorphism</b> (overloading by type).</li>
+            </ul>
+        </li>
+        <li>Example: the <code>Eq</code> typeclass defines equality operations:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">class Eq a where
+    (==) :: a -&gt; a -&gt; Bool
+    (/=) :: a -&gt; a -&gt; Bool
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Any type <code>a</code> that provides definitions for <code>(==)</code> and <code>(/=)</code> can be an instance of <code>Eq</code>.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Typeclass Constraints</b></li>
+    <br/>
+    <ul>
+        <li>A function can require that its type parameters belong to certain typeclasses.</li>
+        <li>General form:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">function :: (Constraint1 a, Constraint2 a, Constraint3 b) =&gt; a -&gt; b -&gt; ...
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example: a function that compares and prints something:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">showIfEqual :: (Eq a, Show a) =&gt; a -&gt; a -&gt; String
+showIfEqual x y =
+    if x == y
+        then "Equal: " ++ show x
+        else "Not equal"
+</code></pre>
+
+    <ul>
+        <li>For any type <code>a</code> that implements <code>Eq</code> and <code>Show</code>,</li>
+        <li><code>showIfEqual</code> takes two <code>a</code>s and returns a <code>String</code>.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Common Standard Typeclasses</b></li>
+    <br/>
+    <ul>
+        <li><code>Eq</code> — equality and inequality: <code>(==)</code>, <code>(/=)</code></li>
+        <li><code>Ord</code> — ordering: <code>(&lt;)</code>, <code>(&gt;)</code>, <code>(&lt;=)</code>, <code>(&gt;=)</code>, <code>compare</code></li>
+        <li><code>Show</code> — convert to human-readable <code>String</code>: <code>show :: Show a =&gt; a -&gt; String</code></li>
+        <li><code>Read</code> — parse from <code>String</code>:</li>
+        <li><code>Num</code> — numeric types (supports <code>+ - * fromInteger</code>):</li>
+        <li><code>Integral</code> — integer types (<code>Int</code>, <code>Integer</code>):</li>
+        <li><code>Fractional</code> — fractional types (<code>Float</code>, <code>Double</code>):</li>
+        <li><code>Functor</code> — types you can map over: <code>fmap :: Functor f =&gt; (a -&gt; code) -&gt; f a -&gt; f code</code></li>
+        <li><code>Applicative</code>, <code>Monad</code> — types supporting sequencing and effects.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Defining Instances: Making a Type Implement a Typeclass</b></li>
+    <br/>
+    <ul>
+        <li>To make a type implement a typeclass, you write an <code>instance</code> declaration.</li>
+        <li>Example: implement <code>Eq</code> and <code>Show</code> for a custom type.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Color = Red | Green | Blue
+
+instance Eq Color where
+    Red   == Red   = True
+    Green == Green = True
+    Blue  == Blue  = True
+    _     == _     = False
+
+instance Show Color where
+    show Red   = "Red"
+    show Green = "Green"
+    show Blue  = "Blue"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Now you can write:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">Red == Green      -- False
+show Blue         -- "Blue"
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Deriving Typeclass Instances Automatically</b></li>
+    <br/>
+    <ul>
+        <li>Writing instances by hand can be repetitive, so Haskell supports <code>deriving</code>.</li>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Color = Red | Green | Blue
+    deriving (Eq, Show, Ord)
+</code></pre>
+
+    <ul>
+        <li>The compiler automatically creates reasonable implementations of these typeclasses.</li>
+        <li>Now you get:
+            <ul>
+                <li><code>Red == Red</code> works,</li>
+                <li><code>show Green</code> yields <code>"Green"</code>,</li>
+                <li><code>Red &lt; Green</code> based on constructor order.</li>
+            </ul>
+        </li>
+        <li>Many standard typeclasses can be derived: <code>Eq</code>, <code>Ord</code>, <code>Show</code>, <code>Read</code>, <code>Enum</code>, <code>Bounded</code>, etc.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Parametric vs Ad-hoc Polymorphism</b></li>
+    <br/>
+    <ul>
+        <li><b>Parametric polymorphism</b> (via type variables):
+            <ul>
+                <li>Same implementation for all types.</li>
+                <li>Example: <code>identity :: a -&gt; a</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Ad-hoc polymorphism</b> (via typeclasses):
+            <ul>
+                <li>Different implementation depending on the type.</li>
+                <li>Example: <code>show :: Show a =&gt; a -&gt; String</code> behaves differently for <code>Int</code> vs <code>Bool</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Haskell lets you mix both:
+            <ul>
+                <li>type variables for generality,</li>
+                <li>typeclass constraints for required capabilities.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Putting It Together: A Small Example</b></li>
+    <br/>
+    <ul>
+        <li>Define a custom type, derive some typeclasses, and write a polymorphic function:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Point a = Point a a
+    deriving (Eq, Show)
+
+-- Distance squared between two points (works for any Num type)
+distSquared :: Num a =&gt; Point a -&gt; Point a -&gt; a
+distSquared (Point x1 y1) (Point x2 y2) =
+    (x2 - x1) ^ 2 + (y2 - y1) ^ 2
+
+-- Check if two points are the same and show a message
+describePoints :: (Eq a, Show a, Num a) =&gt; Point a -&gt; Point a -&gt; String
+describePoints p1 p2 =
+    if p1 == p2
+        then "Same point: " ++ show p1
+        else "Different points: " ++ show p1 ++ " and " ++ show p2
+</code></pre>
+
+    <ul>
+        <li>Key ideas:
+            <ul>
+                <li><code>Point a</code> is a parameterized type.</li>
+                <li>We derive <code>Eq</code> and <code>Show</code> automatically.</li>
+                <li><code>distSquared</code> uses <code>Num a</code> because it needs <code>(-)</code> and <code>(^)</code>.</li>
+                <li><code>describePoints</code> uses both <code>Eq</code> and <code>Show</code> for comparison and printing.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
