@@ -1,0 +1,453 @@
+<!-- * * * * * * * * * * * * * * -->
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>My Insights About Compiler Design</title>
+
+    <!-- Theme (pick any from Prism site) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.css">
+
+    <!-- Prism core + Lisp language -->
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js"
+            data-prismjs-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs/components/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.js"></script>
+
+<style>
+    html {
+        scroll-behavior: smooth;
+    }
+
+    .back-to-top {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #333;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 22px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        opacity: 0.75;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        z-index: 999;
+    }
+
+    .back-to-top:hover {
+        opacity: 1;
+        transform: translateY(-2px);
+    }
+
+    .nav-icon {
+        width: 38px;          /* adjust size here */
+        height: 38px;
+        object-fit: contain;  /* keep aspect ratio */
+        vertical-align: middle;
+        margin-left: 0.3rem;  /* small gap from text */
+    }
+
+    table {
+        border-collapse: collapse;      /* merge borders so you don't get double lines */
+        width: 100%;                    /* optional: make it full width */
+        font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
+        font-size: 14px;
+    }
+
+    th {
+        background-color: #f5f5f5;      /* light gray header background */
+        text-align: left;               /* header text alignment */
+        font-weight: 600;
+    }
+
+    th, td {
+        border: 1px solid #ddd;         /* subtle border color */
+        padding: 8px 12px;              /* breathing room */
+    }
+
+    tr:nth-child(even) {
+        background-color: #fafafa;      /* zebra striping for readability */
+    }
+
+    tr:hover {
+        background-color: #f0f8ff;      /* light hover highlight */
+    }
+
+    .comment {
+        color: grey;
+    }
+
+    .token.keyword {
+        font-weight: 500;
+    }
+    /*
+    .token.comment {
+        color: #888;
+    }
+    */
+
+    .red-underline {
+        text-decoration-line: underline;
+        text-decoration-color: red;
+        text-decoration-thickness: 2px; /* optional: make it a bit thicker */
+        text-underline-offset: 2px;     /* optional: move it slightly down */
+    }
+
+    body {
+        font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", serif;
+        font-variant-ligatures: none;
+    }
+
+    ul > li {
+        list-style-type: disc;
+    }
+
+    code {
+        color: #24292e;                     /* text */
+        background-color: #f6f8fa;          /* bg */
+        border: 1px solid #d0d7de;          /* subtle frame */
+        border-radius: .375rem;
+        padding: .15rem .35rem;
+        font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 0.875rem;                /* 14px-ish; avoid bare numbers */
+        line-height: 1.4;
+    }
+
+    /* Block code container */
+    pre {
+        margin: 1rem 0;
+        padding: .8rem 1rem;
+        background-color: #f6f8fa;       /* match inline bg */
+        border: 1px solid #d0d7de;
+        border-radius: .5rem;
+        overflow: auto;                   /* scroll if long */
+        tab-size: 4;                      /* adjust as needed */
+    }
+
+    /* Code inside pre: remove extra padding/background from inline style */
+    pre code {
+        display: block;                   /* ensure full-width */
+        padding: 0;                       /* pre handles padding */
+        background: transparent;          /* avoid double bg */
+        border: 0;                        /* avoid double border */
+        color: #24292e;
+        font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        white-space: pre;                 /* preserve spacing; use pre-wrap to wrap long lines */
+    }
+</style>
+</head>
+<!-- * * * * * * * * * * * * * * -->
+<body>
+<a href="#" class="back-to-top" aria-label="Back to top">
+    &#8593;
+</a>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<!-- * * * * * * * * * * * * * * -->
+<hr/>
+<nav id="toc" style="margin-bottom: 2rem;">
+    <h2> <img src="resources/compiler.png" alt="Logo" class="nav-icon"/></h2>
+    <ul style="line-height: 1.8;">
+        <li><a href="#compiler-design-intro">Introduction</a></li>
+    </ul>
+</nav>
+<hr/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="compiler-design-intro">Introduction to Compiler Design</h3>
+<ol>
+    <li><mark>NOTE</mark>:<br/>
+        I'm not a professional computer scientist, so the whole content here is based on my poor knowledge.<br/>
+        Therefore, it might contain inefficient thinking ways or even wrong thinking ways. I do not assume any responsibility from it.
+        <br/>That's it, thanks for your understanding.</li>
+    <br/>
+
+    <li><b>What Is a Compiler?</b></li>
+    <ul>
+        <li>A <u>compiler</u> is a program that transforms source code written in one language
+            (e.g., C, Rust, TypeScript) into another form (usually machine code, bytecode, or another high-level language).</li>
+        <li>Examples of compilers:
+            <ul>
+                <li>
+                    GCC / Clang
+                </li>
+                <li>
+                    Rustc
+                </li>
+            </ul>
+        </li>
+        </li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>The Big Picture: Stages of a Compiler</b></li>
+    <br/>
+    <ol>
+        <li><b>Lexical Analysis</b> (tokenization)</li>
+        <ul>
+            <li>Breaks raw text into tokens: keywords, identifiers, literals, symbols.</li>
+            <li>Example: <code>a = 3 + b</code> → <code>[ID("a"), '=', INT(3), '+', ID("b")]</code></li>
+        </ul>
+        <br/>
+
+        <li><b>Syntax Analysis</b> (parsing)</li>
+        <ul>
+            <li>Builds a tree structure called an <u>AST</u> (Abstract Syntax Tree).</li>
+            <li>Example: <code>3 + u</code> becomes a <u>binary operation node</u>.</li>
+        </ul>
+        <br/>
+
+        <li><b>Semantic Analysis</b></li>
+        <ul>
+            <li>Checks correctness:
+                <ul>
+                    <li>types</li>
+                    <li>scope</li>
+                    <li>variable declarations</li>
+                    <li>function signatures</li>
+                </ul>
+            </li>
+            <li>Example: <code>"abc" + 5</code> is invalid in many languages.</li>
+        </ul>
+        <br/>
+
+        <li><b>Intermediate Representation</b> (IR)</li>
+        <ul>
+            <li>The AST is transformed into a lower-level language closer to machine operations.</li>
+            <li>Common IRs:
+                <ul>
+                    <li>LLVM IR</li>
+                    <li>bytecode</li>
+                    <li>three-address code (TAC)</li>
+                </ul>
+            </li>
+        </ul>
+        <br/>
+
+        <li><b>Optimization</b></li>
+        <ul>
+            <li>The compiler improves your code:
+                <ul>
+                    <li>dead code elimination</li>
+                    <li>constant folding</li>
+                    <li>loop optimizations</li>
+                    <li>register allocation</li>
+                </ul>
+            </li>
+        </ul>
+        <br/>
+
+        <li><b>Code Generation</b></li>
+        <ul>
+            <li>Final stage: output machine code, bytecode, JS, etc.</li>
+        </ul>
+    </ol>
+
+    <br/><br/>
+
+
+    <li><b>Compiler vs Interpreter</b></li>
+    <br/>
+    <ul>
+        <li><b>Compilers</b>: translate entire program before running.</li>
+        <li><b>Interpreters</b>: execute code step-by-step.</li>
+    </ul>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Compiler</th>
+                <th>Interpreter</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Produces binary or bytecode</td>
+                <td>Runs line-by-line</td>
+            </tr>
+            <tr>
+                <td>Faster execution</td>
+                <td>More flexible debugging</td>
+            </tr>
+            <tr>
+                <td>Example: C, Rust</td>
+                <td>Example: Python, Ruby</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>The AST (Abstract Syntax Tree)</b></li>
+    <br/>
+    <ul>
+        <li>The AST is the core internal structure produced by the parser.</li>
+        <li>Example AST for <code>1 + 2 * 3</code>:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">
+Add
+ ├── Int(1)
+ └── Mul
+      ├── Int(2)
+      └── Int(3)
+</code></pre>
+
+    <ul>
+        <li>The tree respects precedence: multiplication evaluated before addition.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Intermediate Representation (IR)</b></li>
+    <br/>
+    <ul>
+        <li>An IR is a lower-level representation used for:
+            <ul>
+                <li>optimization</li>
+                <li>analysis</li>
+                <li>machine-code generation</li>
+            </ul>
+        </li>
+        <li>A simple “three-address code” example:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">
+t1 = 2 * 3
+t2 = 1 + t1
+</code></pre>
+
+    <ul>
+        <li>LLVM IR is a real-world example:</li>
+    </ul>
+
+<pre><code class="language-llvm line-numbers">
+%t1 = mul i32 2, 3
+%t2 = add i32 1, %t1
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Optimizations</b></li>
+    <br/>
+    <ul>
+        <li>Compilers apply many optimizations automatically:</li>
+        <ul>
+            <li><b>constant folding</b>: <code>2 * 3</code> → <code>6</code></li>
+            <li><b>dead code elimination</b>: remove unused variables</li>
+            <li><b>inlining</b>: replace function calls with their bodies</li>
+            <li><b>loop unrolling</b></li>
+            <li><b>common subexpression elimination</b></li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Back Ends and Code Generation</b></li>
+    <br/>
+    <ul>
+        <li>The back end turns IR into:
+            <ul>
+                <li>machine code (x86, ARM)</li>
+                <li>bytecode (Python, Java)</li>
+                <li>another language (TS → JS)</li>
+            </ul>
+        </li>
+        <li>Example: LLVM back end produces machine instructions:</li>
+    </ul>
+
+<pre><code class="language-nasm line-numbers">
+mov eax, 2
+imul eax, 3
+add eax, 1
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Front-End vs Back-End</b></li>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Front-End</th>
+                <th>Back-End</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Lexing</td>
+                <td>IR to machine code</td>
+            </tr>
+            <tr>
+                <td>Parsing</td>
+                <td>Register allocation</td>
+            </tr>
+            <tr>
+                <td>Semantic analysis</td>
+                <td>Optimization passes</td>
+            </tr>
+            <tr>
+                <td>AST generation</td>
+                <td>Instruction scheduling</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+<!-- * * * * * * * * * * * * * * -->
+
+<footer>
+    <p>&copy; 2025 Hwangfucius. All rights reserved.</p>
+</footer>
+</body>
+<!-- * * * * * * * * * * * * * * -->
+</html>
+<!-- * * * * * * * * * * * * * * -->
