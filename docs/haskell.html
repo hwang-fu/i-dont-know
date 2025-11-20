@@ -174,6 +174,7 @@
         <li><a href="#haskell-io">Input and Output</a></li>
         <li><a href="#haskell-functor-applicative-monoid">Functors, Applicative Functors, and Monoids</a></li>
         <li><a href="#haskell-type-constructors">What Exactly Does <code>f a</code> (Type Constructor) Mean?</a></li>
+        <li><a href="#haskell-monads">Monads</a></li>
     </ul>
 </nav>
 <hr/>
@@ -7377,6 +7378,327 @@ Either String Char</code></pre>
 
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-monads">Monads in Haskell</h3>
+<ol>
+
+    <li><b>What Is a Monad?</b></li>
+    <br/>
+    <ul>
+        <li>A <b>Monad</b> is a design pattern that allows you to:
+            <ul>
+                <li>sequence computations,</li>
+                <li>chain operations that depend on previous results,</li>
+                <li>model effects (state, IO, exceptions, nondeterminism) in a pure functional way.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Monads are not about &quot;side effects&quot; — they are about <u>describing computations</u> in steps.</li>
+        <br/>
+        <li>Definition (simplified):</li>
+
+<pre><code class="language-haskell line-numbers">class Applicative m =&gt; Monad m where
+    (&gt;&gt;=)  :: m a -&gt; (a -&gt; m b) -&gt; m b
+    return :: a -&gt; m a
+</code></pre>
+        <ul>
+            <li><code>return</code>: wrap a pure value into the monadic context.</li>
+            <li><b>(&gt;&gt;=)</b> (bind): chain computations where output of one step feeds the next.</li>
+            <li>Every Monad is automatically a <code>Functor</code> and <code>Applicative</code>.</li>
+        </ul>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>The Bind Operator</b> <code>(&gt;&gt;=)</code></li>
+    <br/>
+    <ul>
+        <li>The heart of a Monad is <code>(&gt;&gt;=)</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(&gt;&gt;=) :: m a -&gt; (a -&gt; m b) -&gt; m b
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Interpretation:
+            <ul>
+                <li>Take a computation of type <code>m a</code>,</li>
+                <li>extract its original value <code>a</code>,</li>
+                <li>pass it to a function that returns the next computation <code>m b</code>.</li>
+            </ul>
+        </li>
+        <li><code>(&gt;&gt;=)</code> sequences operations where the next step <b>depends on the result</b> of the previous one.</li>
+        <li>This is the key difference between <b>Monad</b> and <b>Applicative</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The</b> <code>(&gt;&gt;)</code> <b>Operator</b></li>
+    <br/>
+    <ul>
+        <li>A simplified sequencing operator:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(>>) :: m a -&gt; m b -&gt; m b
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>It ignores the result of the first action, keeping only the second.</li>
+        <li>Useful when sequencing but not depending on earlier values:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">putStrLn "A" >> putStrLn "B"
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><code>do</code><b>-notation: Syntactic Sugar for Monads</b></li>
+    <br/>
+    <ul>
+        <li>Haskell provides <code>do</code>-notation to write monadic code more naturally:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main = do
+    putStrLn "Enter a number:"
+    s  &lt;- getLine
+    let n = read s :: Int
+    print (n * 2)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is just syntactic sugar for:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main =
+    putStrLn "Enter a number:" &gt;&gt;=
+    \_ -&gt; getLine &gt;&gt;=
+    \s -&gt; let n = read s in
+          print (n * 2)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Important:
+            <ul>
+                <li><code>x &lt;- m</code> extracts the pure value inside the monad.</li>
+                <li>Last line in a <code>do</code>-block must be monadic.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Monad Laws</b> (A lawful monad must satisfy)</li>
+    <br/>
+    <ul>
+        <li><b>Left identity</b></li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">return a >>= f  ≡  f a
+</code></pre>
+
+    <ul>
+        <li><b>Right identity</b></li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">m >>= return  ≡  m
+</code></pre>
+
+    <ul>
+        <li><b>Associativity</b></li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(m >>= f) >>= g  ≡  m >>= (\x -&gt; f x >>= g)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>These guarantee predictable sequencing.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Common Monad Instances</b></li>
+    <br/>
+    <ul>
+        <li><b>Maybe</b>: computations that may fail.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">instance Monad Maybe where
+    Nothing  >>= _ = Nothing
+    Just x   >>= f = f x
+</code></pre>
+
+    <ul>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">safeDiv a b =
+    if b == 0 then Nothing else Just (a `div` b)
+
+calc = Just 10 >>= \x -&gt;
+       Just 2  >>= \y -&gt;
+       safeDiv x y
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li><b>Either e</b>: computations that can fail with an error.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">instance Monad (Either e) where
+    Left e  >>= _ = Left e
+    Right x >>= f = f x
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li><b>List</b>: nondeterministic computations.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">instance Monad [] where
+    xs >>= f = concat (map f xs)
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li><b>IO</b>: sequencing interaction with the real world.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main = do
+    name &lt;- getLine
+    putStrLn ("Hello " ++ name)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Monads vs Applicatives vs Functors</b></li>
+    <br/>
+    <table>
+        <tr>
+            <th>Concept</th>
+            <th>Capabilities</th>
+            <th>Signature</th>
+        </tr>
+        <tr>
+            <td><b>Functor</b></td>
+            <td>map a pure function over a structure</td>
+            <td><code>fmap :: (a -&gt; b) -&gt; f a -&gt; f b</code></td>
+        </tr>
+        <tr>
+            <td><b>Applicative</b></td>
+            <td>apply wrapped functions to wrapped values</td>
+            <td><code>(&lt;*&gt;) :: f (a -&gt; b) -&gt; f a -&gt; f b</code></td>
+        </tr>
+        <tr>
+            <td><b>Monad</b></td>
+            <td>perform computations where next step depends on previous results</td>
+            <td><code>(&gt;&gt;=) :: m a -&gt; (a -&gt; m b) -&gt; m b</code></td>
+        </tr>
+    </table>
+
+    <br/>
+    <ul>
+        <li>Hierarchy: <code>Functor &lt; Applicative &lt; Monad</code></li>
+        <li>Every Monad is automatically an Applicative and a Functor.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Examples of Monad Use Cases</b></li>
+    <br/>
+
+    <ul>
+        <li><b>Maybe Monad</b>: chaining computations that may fail.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">lookupUser id = ...
+lookupAddress user = ...
+lookupZip address = ...
+
+getZip id =
+    lookupUser id >>= lookupAddress >>= lookupZip
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li><b>List Monad</b>: generate combinations.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">pairs = do
+    x &lt;- [1,2]
+    y &lt;- ['a','b']
+    return (x, y)
+-- [(1,'a'),(1,'b'),(2,'a'),(2,'b')]
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li><b>Either Monad</b>: chain computations that produce errors.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">parseInt s =
+    if all isDigit s then Right (read s)
+    else Left "not a number"
+
+sumInts a b = do
+    x &lt;- parseInt a
+    y &lt;- parseInt b
+    return (x + y)
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li><b>IO Monad</b>: real-world programs.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">main = do
+    putStrLn "Enter a number:"
+    s &lt;- getLine
+    print (read s + 1)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Kleisli Composition</b></li>
+    <br/>
+    <ul>
+        <li>The operator <code>(&gt;=&gt;)</code> composes monadic functions:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(>=>) :: Monad m =&gt; (a -&gt; m b) -&gt; (b -&gt; m c) -&gt; a -&gt; m c
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">f >=> g >=> h
+</code></pre>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
