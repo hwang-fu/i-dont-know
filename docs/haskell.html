@@ -154,6 +154,7 @@
         <li><a href="#haskell-intro">Introduction</a></li>
         <li><a href="#haskell-ghci">Using GHCi: The Interactive Haskell Environment</a></li>
         <li><a href="#haskell-comparison-operations">Comparison Operations</a></li>
+        <li><a href="#haskell-lists-introduction"></a>Lists Introduction</li>
     </ul>
 </nav>
 <hr/>
@@ -1096,6 +1097,281 @@ instance Ord Person where
         </li>
     </ul>
 
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-lists-introduction">Introduction to Lists in Haskell</h3>
+<ol>
+    <li><b>What Are Lists in Haskell?</b></li>
+    <br/>
+    <ul>
+        <li>Lists are one of the most fundamental and commonly used data structures in Haskell.</li>
+        <br/>
+        <li>A list is a <b>homogeneous</b> collection of elements:
+            <ul>
+                <li>every element must have the same type,</li>
+                <li>the list itself has type <code>[T]</code> where <code>T</code> is the element type.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Lists are <b>linked structures</b>, not arrays:
+            <ul>
+                <li>fast at prepending (O(1)),</li>
+                <li>slow at indexing (O(n)).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Examples of list types:
+            <ul>
+                <li><code>[Int]</code> — list of integers</li>
+                <li><code>[Char]</code> — list of characters</li>
+                <li><code>[[Int]]</code> — list of lists</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Haskell lists are <b>immutable</b> — once built, they cannot be modified.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Creating Lists</b></li>
+    <br/>
+    <ul>
+        <li>The simplest way is using square brackets:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[1,2,3]
+['a','b','c']
+["hello", "world"]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Lists can also be constructed using the <code>:</code> operator (cons):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">1 : 2 : 3 : []      -- equals [1,2,3]
+'a' : 'b' : []      -- equals ['a','b']
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>:</code> attaches a single element to the front of a list.</li>
+        <li>The empty list is written as <code>[]</code>.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Strings Are Lists of Characters</b></li>
+    <br/>
+    <ul>
+        <li>In Haskell, <code>String</code> is just a type alias for <code>[Char]</code>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">"hello" == ['h','e','l','l','o']  -- True
+</code></pre>
+
+    <ul>
+        <li>This makes string manipulation consistent with list operations.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>List Ranges and Sequences</b></li>
+    <br/>
+    <ul>
+        <li>Haskell supports a compact syntax for sequences:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[1..5]         -- [1,2,3,4,5]
+['a'..'e']     -- ['a','b','c','d','e']
+[0,2..10]      -- [0,2,4,6,8,10] (step of 2)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>For infinite lists (lazy evaluation):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[1..]          -- infinite list of natural numbers
+take 5 [1..]   -- [1,2,3,4,5]
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Basic List Operations</b></li>
+    <br/>
+    <ul>
+        <li>Head (first element):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">head [1,2,3]    -- 1
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Tail (everything except the first element):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">tail [1,2,3]    -- [2,3]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Last element:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">last [1,2,3]    -- 3
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Length:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">length [1,2,3]  -- 3
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Indexing (0-based):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[10,20,30] !! 1  -- 20
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>List concatenation:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[1,2] ++ [3,4]   -- [1,2,3,4]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Prepending with <code>:</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">5 : [6,7]   -- [5,6,7]
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Immutable Structure and Sharing</b></li>
+    <br/>
+    <ul>
+        <li>Lists are immutable; any “modification” creates a new list.</li>
+        <li>However, Haskell shares memory efficiently via pointers:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">let xs = [1,2,3]
+let ys = 0 : xs     -- shares tail nodes of xs
+</code></pre>
+
+    <ul>
+        <li>No copying occurs — only the new head <code>0</code> is added.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Pattern Matching on Lists</b></li>
+    <br/>
+    <ul>
+        <li>Lists have a simple recursive definition:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[]       -- empty list
+x : xs   -- head :: tail
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This makes lists ideal for pattern matching:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">describe []     = "empty"
+describe (x:xs) = "head is " ++ show x
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Pattern matching on lists is the basis for most recursive algorithms in Haskell.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Higher-Order List Functions</b></li>
+    <br/>
+    <ul>
+        <li>Haskell’s standard library provides many powerful list functions.</li>
+        <li><code>map</code>: apply a function to each element</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">map (*2) [1,2,3]  -- [2,4,6]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>filter</code>: keep elements that satisfy a predicate</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">filter even [1,2,3,4]  -- [2,4]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>foldr</code>: reduce a list from the right</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">foldr (+) 0 [1,2,3]  -- 6
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>foldl</code>: reduce a list from the left</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">foldl (+) 0 [1,2,3]  -- 6
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Infinite Lists and Laziness</b></li>
+    <br/>
+    <ul>
+        <li>One of Haskell’s superpowers: lists can be infinite!</li>
+        <li>Because Haskell is lazy, values are computed only when needed.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">evens = [0,2..]     -- infinite list
+take 5 evens        -- [0,2,4,6,8]
+</code></pre>
+
+    <ul>
+        <li>This enables elegant definitions of sequences and streams.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Common Pitfalls</b></li>
+    <br/>
+    <ul>
+        <li><b>head/tail on empty lists</b> cause runtime errors:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">head []     -- Exception
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Prefer pattern matching or safe variants like <code>headMay</code> from <code>safe</code> package.</li>
+    </ul>
+
+    <ul>
+        <li>Beware of using <code>!!</code> too often (linear time access).</li>
+        <li>Heavy list concatenation <code>++</code> inside loops can be slow — prefer <code>:</code> and build from the left.</li>
+    </ul>
     <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
