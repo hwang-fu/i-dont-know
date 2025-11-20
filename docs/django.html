@@ -182,6 +182,7 @@
         <li><a href="#django-writing-views">Writing Views</a></li>
         <li><a href="#django-views-decorators">View Decorators</a></li>
         <li><a href="#django-file-uploads">File Uploads</a></li>
+        <li><a href="#django-shortcut-http-functions">Shortcut HTTP Functions</a></li>
     </ul>
 </nav>
 <hr/>
@@ -9219,6 +9220,251 @@ if settings.DEBUG:
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-shortcut-http-functions">Django Shortcut HTTP Functions (Beginner&#39;s Guide)</h3>
+<ol>
+
+    <li><b>What Are Django Shortcut HTTP Functions?</b></li>
+    <br/>
+    <ul>
+        <li>Django provides several <u>shortcut functions</u> that make writing views easier.</li>
+        <br/>
+        <li>These shortcuts help you:
+            <ul>
+                <li>render templates</li>
+                <li>redirect users</li>
+                <li>display 404 errors</li>
+                <li>handle permissions</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>render()</code> — Return an HTML Template</li>
+    <br/>
+    <ul>
+        <li>Most common shortcut.</li>
+        <li>It loads a template, fills it with data, and returns an <code>HttpResponse</code>.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.shortcuts import render
+
+def home(request):
+    context = {&quot;title&quot;: &quot;Homepage&quot;}
+    return render(request, &quot;blog/home.html&quot;, context)
+</code></pre>
+
+    <ul>
+        <li>Equivalent long version (you don&#39;t need to write this!):</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.template import loader
+from django.http import HttpResponse
+
+def home(request):
+    template = loader.get_template(&quot;blog/home.html&quot;)
+    html = template.render({&quot;title&quot;: &quot;Homepage&quot;}, request)
+    return HttpResponse(html)
+</code></pre>
+
+    <ul>
+        <li>Use <code>render()</code> for any page that returns HTML.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>redirect()</code> — Redirect the User to Another URL</li>
+    <br/>
+    <ul>
+        <li>Redirects the browser to a different page.</li>
+        <li>You can redirect to:
+            <ul>
+                <li>a URL path (&quot;/blog/&quot;)</li>
+                <li>a view name</li>
+                <li>a full external URL</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.shortcuts import redirect
+
+def go_home(request):
+    return redirect(&quot;/blog/home/&quot;)
+</code></pre>
+
+    <ul>
+        <li>Recommended way: redirect by <u>view name</u>.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">def go_home(request):
+    return redirect(&quot;home&quot;)   # the URL pattern named &quot;home&quot;
+</code></pre>
+
+    <ul>
+        <li>This avoids hardcoding URL strings.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>get_object_or_404()</b> — Retrieve an Object or Return 404</li>
+    <br/>
+    <ul>
+        <li>This is the best way to fetch a single object from the database.</li>
+        <li>If not found → Django automatically shows a 404 page.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.shortcuts import get_object_or_404
+from .models import Post
+
+def show_post(request, id):
+    post = get_object_or_404(Post, pk=id)
+    return render(request, &quot;blog/post.html&quot;, {&quot;post&quot;: post})
+</code></pre>
+
+    <ul>
+        <li>Without it, you would need:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">try:
+    post = Post.objects.get(pk=id)
+except Post.DoesNotExist:
+    raise Http404()
+</code></pre>
+
+    <ul>
+        <li>Use <code>get_object_or_404()</code> whenever you expect exactly one object.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>4. get_list_or_404()</b> — Get a List or Return 404</li>
+    <br/>
+    <ul>
+        <li>Same as <code>get_object_or_404()</code>, but for lists of objects.</li>
+        <li>If the list is empty → 404 error.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.shortcuts import get_list_or_404
+from .models import Post
+
+def posts_by_author(request, name):
+    posts = get_list_or_404(Post, author=name)
+    return render(request, &quot;blog/list.html&quot;, {&quot;posts&quot;: posts})
+</code></pre>
+
+    <ul>
+        <li>Often used when a &quot;page must show something&quot;.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>HttpResponse()</b> — Return Plain Text or Custom Content</li>
+    <br/>
+    <ul>
+        <li>Django&#39;s basic HTTP response object.</li>
+        <li>Used when you do not need a template.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.http import HttpResponse
+
+def hello(request):
+    return HttpResponse(&quot;Hello world!&quot;)
+</code></pre>
+
+    <ul>
+        <li>You can set status codes or headers:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">return HttpResponse(&quot;Not allowed&quot;, status=405)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>HttpResponseRedirect()</b> — Redirect Using a URL</li>
+    <br/>
+    <ul>
+        <li>This is the low-level version of <code>redirect()</code>.</li>
+        <li>You rarely need it directly.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.http import HttpResponseRedirect
+
+def go_somewhere(request):
+    return HttpResponseRedirect(&quot;/blog/home/&quot;)
+</code></pre>
+
+    <ul>
+        <li><code>redirect()</code> is easier, so use that instead.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>JsonResponse()</b> — Return JSON Data</b></li>
+    <br/>
+    <ul>
+        <li>Perfect for APIs or AJAX calls.</li>
+        <li>Accepts a Python dict or list and converts it to JSON automatically.</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.http import JsonResponse
+
+def api_data(request):
+    return JsonResponse({&quot;name&quot;: &quot;Junzhe&quot;, &quot;age&quot;: 22})
+</code></pre>
+
+    <ul>
+        <li>Django handles:
+            <ul>
+                <li>setting <code>Content-Type: application/json</code></li>
+                <li>serializing Python dict/list into JSON</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>HttpResponseNotFound(), HttpResponseForbidden(), etc.</b></li>
+    <br/>
+    <ul>
+        <li>Django provides shortcuts for common HTTP errors:</li>
+    </ul>
+
+<pre><code class="language-py line-numbers">from django.http import HttpResponseNotFound
+
+def missing(request):
+    return HttpResponseNotFound(&quot;This page does not exist&quot;)
+</code></pre>
+
+    <ul>
+        <li>Other shortcuts:</li>
+    </ul>
+
+<ul>
+    <li><code>HttpResponseBadRequest</code> (400)</li>
+    <li><code>HttpResponseForbidden</code> (403)</li>
+    <li><code>HttpResponseNotAllowed</code> (405)</li>
+    <li><code>HttpResponseServerError</code> (500)</li>
+</ul>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
