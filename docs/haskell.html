@@ -85,11 +85,6 @@
     .token.keyword {
         font-weight: 500;
     }
-    /*
-    .token.comment {
-        color: #888;
-    }
-    */
 
     .red-underline {
         text-decoration-line: underline;
@@ -158,6 +153,7 @@
     <ul style="line-height: 1.8;">
         <li><a href="#haskell-intro">Introduction</a></li>
         <li><a href="#haskell-ghci">Using GHCi: The Interactive Haskell Environment</a></li>
+        <li><a href="#haskell-comparison-operations">Comparison Operations</a></li>
     </ul>
 </nav>
 <hr/>
@@ -862,6 +858,245 @@ Prelude&gt; :continue
 
     <br/><br/>
 
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-comparison-operations">Comparison Operations in Haskell</h3>
+<ol>
+    <li><b>What Are Comparison Operations?</b></li>
+    <br/>
+    <ul>
+        <li>Comparison operations in Haskell determine the <u>ordering</u> and <u>equality</u> relationships between values.</li>
+        <br/>
+        <li>They are provided mainly by two important typeclasses:
+            <ul>
+                <li><code>Eq</code> — supports equality / inequality</li>
+                <li><code>Ord</code> — supports ordering (less than, greater than, etc.)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Comparison is always <u>type-safe</u>: you can only compare values whose types implement these typeclasses.</li>
+        <br/>
+        <li>Many built-in types (<code>Int</code>, <code>Float</code>, <code>Bool</code>, <code>Char</code>, <code>List</code>, <code>Tuple</code>, etc.) already derive <code>Eq</code> and <code>Ord</code>.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>The</b> <code>Eq</code> <b>Typeclass: Equality</b></li>
+    <br/>
+    <ul>
+        <li><code>Eq</code> defines two operations:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(==) :: Eq a =&gt; a -&gt; a -&gt; Bool
+(/=) :: Eq a =&gt; a -&gt; a -&gt; Bool
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">5 == 5          -- True
+5 /= 3          -- True
+'a' == 'b'      -- False
+[1,2] == [1,2]  -- True
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>If a type implements <code>Eq</code>, it must satisfy:
+            <ul>
+                <li><b>Reflexive</b>: x == x == True</li>
+                <li><b>Symmetric</b>: if x == y then y == x</li>
+                <li><b>Transitive</b>: if x == y and y == z then x == z</li>
+            </ul>
+        </li>
+        <br/>
+        <li>These mathematical guarantees make reasoning about comparisons reliable.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>The</b> <code>Ord</code> <b>Typeclass: Ordering</b></li>
+    <br/>
+    <ul>
+        <li><code>Ord</code> defines ordering functions. A type must be <code>Eq</code> before it can be <code>Ord</code>.</li>
+        <li>Important operations:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(&lt;)  :: Ord a =&gt; a -&gt; a -&gt; Bool
+(&gt;)  :: Ord a =&gt; a -&gt; a -&gt; Bool
+(&lt;=) :: Ord a =&gt; a -&gt; a -&gt; Bool
+(&gt;=) :: Ord a =&gt; a -&gt; a -&gt; Bool
+compare :: Ord a =&gt; a -&gt; a -&gt; Ordering
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Ordering</code> is a simple type:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Ordering = LT | EQ | GT
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example usage:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">3 &lt; 5        -- True
+"hi" &gt; "ha"  -- True (lexicographical)
+compare 10 7 -- GT
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>Ord</code> must satisfy total ordering rules:
+            <ul>
+                <li>No contradictions (x &lt; y and y &lt; x cannot both be true)</li>
+                <li>Transitivity</li>
+                <li>Totality: for any x, y exactly one of:
+                    <ul>
+                        <li>x &lt; y</li>
+                        <li>x == y</li>
+                        <li>x &gt; y</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Comparing Basic Types</b></li>
+    <br/>
+    <ul>
+        <li>All primitive types implement <code>Eq</code> and <code>Ord</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">True &lt; False     -- False
+'A' &lt; 'a'         -- True (ASCII/Unicode ordering)
+1.0 == 1.0        -- True
+2.3 &gt;= 2.1        -- True
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Lists</b> compare lexicographically:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">[1,2,3] &lt; [1,2,4]     -- True
+"abc" &gt; "abb"         -- True
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><b>Tuples</b> also compare lexicographically (element by element):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(3, "x") &lt; (3, "y")   -- True
+(2, 5) &gt; (1, 100)      -- True
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Using</b> <code>max</code>, <code>min</code>, <code>compare</code></li>
+    <br/>
+    <ul>
+        <li>Because <code>Ord</code> is defined, many utilities work automatically:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">max 3 10            -- 10
+min "apple" "dog"   -- "apple"
+compare 1 1         -- EQ
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Sort Using Comparison</b></li>
+    <br/>
+    <ul>
+        <li><code>sort</code> uses <code>Ord</code> to determine ordering:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Data.List (sort)
+
+sort [3,1,4,1]          -- [1,1,3,4]
+sort ["z", "b", "aa"]   -- ["aa","b","z"]
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Deriving</b> <code>Eq</code>, <code>Ord</code> <b>for Custom Types</b></li>
+    <br/>
+    <ul>
+        <li>You can automatically derive comparison operations for your own data types:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Color = Red | Green | Blue
+  deriving (Eq, Ord, Show)
+
+Red &lt; Blue   -- True (ordering = definition order)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>For more complex types:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Point = Point Int Int
+  deriving (Eq, Ord, Show)
+
+Point 1 3 &lt; Point 1 4   -- True (lexicographic)
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Custom Comparison Logic</b></li>
+    <br/>
+    <ul>
+        <li>You can manually implement <code>Eq</code> or <code>Ord</code> to override behavior:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Person = Person { name :: String, age :: Int }
+
+instance Eq Person where
+    p1 == p2 = age p1 == age p2
+
+instance Ord Person where
+    compare p1 p2 = compare (age p1) (age p2)
+</code></pre>
+
+    <ul>
+        <li>Now persons compare by <b>age only</b>, ignoring the name.</li>
+    </ul>
+
+    <br/><br/>
+
+    <li><b>Chaining Comparisons Using</b> <code>Ordering</code></li>
+    <br/>
+    <ul>
+        <li>Sometimes you want to compare multiple fields manually:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">comparePoints (x1,y1) (x2,y2) =
+    compare x1 x2 &lt;&gt; compare y1 y2
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>(&lt;&gt;)</code> is monoid append for <code>Ordering</code>:
+            <ul>
+                <li><code>EQ</code> continues comparison</li>
+                <li><code>LT</code> or <code>GT</code> stops immediately</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
