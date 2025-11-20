@@ -181,6 +181,7 @@
         <li><a href="#rust-traits">Traits</a></li>
         <li><a href="#rust-generics-placement">&lt;T&gt; Placement Guide</a></li>
         <li><a href="#rust-generics-bound">Generics Bound</a></li>
+        <li><a href="#rust-newtype-idiom">The Newtype Idiom</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -9809,6 +9810,241 @@ fn main() {
     <br/>
     <br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-newtype-idiom">The Newtype Idiom in Rust</h3>
+<ol>
+    <li><b>What Is the Newtype Idiom?</b></li>
+    <br/>
+    <ul>
+        <li>The <u>newtype idiom</u> is a Rust pattern where you wrap an existing type in a <code>struct</code> with a single field.</li>
+        <br/>
+        <li>This creates a <u>distinct type</u> at compile time while still carrying the underlying data.</li>
+        <br/>
+        <li>Purpose:
+            <ul>
+                <li>add type safety,</li>
+                <li>implement custom behavior,</li>
+                <li>restrict APIs,</li>
+                <li>name concepts more clearly.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The wrapper struct is often called a <u>newtype</u> because it creates a "new type".</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Basic Newtype Syntax</b></li>
+    <br/>
+    <ul>
+        <li>A newtype is almost always a tuple struct with one field:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct UserId(u32);
+
+fn main() {
+    let id = UserId(42);
+}
+</code></pre>
+
+    <ul>
+        <li><code>UserId</code> is now a <u>separate type</u>, distinct from <code>u32</code>.</li>
+    <br/>
+        <li>The compiler prevents you from accidentally mixing a <code>u32</code> with a <code>UserId</code>:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">fn show_user(id: UserId) {
+    println!("UserId = {}", id.0);
+}
+
+fn main() {
+    show_user(UserId(1));   // OK
+    // show_user(1);        // ERROR: expected UserId, found u32
+}
+</code></pre>
+
+<pre><code class="language-rust line-numbers">use std::fmt::Display;
+
+struct Meters(u32);
+
+impl Display for Meters {
+    fn fmt(&amp;self, f: &amp;mut std::fmt::Formatter&lt;'_&gt;) -&gt; std::fmt::Result {
+        write!(f, "{} m", self.0)
+    }
+}
+
+fn main() {
+    let distance = Meters(120);
+    println!("{}", distance);    // prints: 120 m
+}
+</code></pre>
+
+    <ul>
+        <li>You could not implement <code>Display</code> directly for <code>u32</code> since it's external and violates the <u>orphan rule</u>.</li>
+        <li>The newtype gives you a legal way to extend behavior.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Newtype for API Restriction</b></li>
+    <br/>
+    <ul>
+        <li>A newtype can expose only the operations you allow, limiting misuse.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct SafeIndex(usize);
+
+impl SafeIndex {
+    fn new(i: usize) -&gt; Option&lt;Self&gt; {
+        if i &lt; 10 {
+            Some(Self(i))
+        } else {
+            None
+        }
+    }
+
+    fn get(&amp;self) -&gt; usize {
+        self.0
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Now only legal indices (&lt; 10) can be constructed via <code>SafeIndex::new()</code>.</li>
+        <li>The newtype acts as a validation guard.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Newtype for Deref-like Behavior</b></li>
+    <br/>
+    <ul>
+        <li>You can give the newtype pointer-like or wrapper-like behavior via <code>Deref</code>:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::ops::Deref;
+
+struct MyBox&lt;T&gt;(T);
+
+impl&lt;T&gt; Deref for MyBox&lt;T&gt; {
+    type Target = T;
+
+    fn deref(&amp;self) -&gt; &amp;Self::Target {
+        &amp;self.0
+    }
+}
+
+fn main() {
+    let x = MyBox(10);
+    println!("{}", *x); // acts like &amp;T
+}
+</code></pre>
+
+    <ul>
+        <li>The standard library uses this heavily (e.g., <code>String</code> is a newtype over <code>Vec&lt;u8&gt;</code>).</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Newtype Pattern for Nominal Typing</b></li>
+    <br/>
+    <ul>
+        <li>Rust is structurally typed for generics but <u>nominally typed</u> for structs:</li>
+        <li>Two structs with identical fields are still distinct types.</li>
+        <li>Newtypes take advantage of this to make semantic types.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Celsius(f64);
+struct Fahrenheit(f64);
+
+fn main() {
+    let c = Celsius(30.0);
+    let f = Fahrenheit(86.0);
+    // They are not interchangeable even though both wrap f64.
+}
+</code></pre>
+
+    <ul>
+        <li>This prevents errors like mixing temperature units.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Tuple Newtypes vs. Braced Newtypes</b></li>
+    <br/>
+    <ul>
+        <li>Most newtypes use tuple syntax:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Age(u8);
+</code></pre>
+
+    <ul>
+        <li>But you can also use named fields — useful when you want clarity or multiple fields later:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Age {
+    value: u8,
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>For a pure newtype, tuple structs are idiomatic.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Zero-Cost Abstraction</b></li>
+    <br/>
+    <ul>
+        <li>Newtypes add <u>no</u> runtime overhead.</li>
+        <li>The compiler optimizes them away; they exist mainly at compile time.</li>
+        <li>This makes them ideal for safety and clarity without performance cost.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>The `From` / `Into` Convenience</b></li>
+    <br/>
+    <ul>
+        <li>Newtypes often implement <code>From</code> to convert from the underlying type:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Username(String);
+
+impl From&lt;String&gt; for Username {
+    fn from(s: String) -&gt; Self {
+        Username(s)
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>This gives automatic <code>into()</code> conversions:</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">let name: Username = "hwangfucius".to_string().into();
+</code></pre>
+
+    <br/><br/>
+</ol>
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
