@@ -161,6 +161,7 @@
         <li><a href="#haskell-types-typeclasses">Types and Typeclasses</a></li>
         <li><a href="#haskell-adts">ADTs</a></li>
         <li><a href="#haskell-typeclasses">Typeclasses</a></li>
+        <li><a href="#haskell-pattern-matching">Pattern Matching</a></li>
     </ul>
 </nav>
 <hr/>
@@ -2948,6 +2949,332 @@ instance Eq a =&gt; Eq (Pair a) where
 
 instance Show a =&gt; Show (Pair a) where
     show (Pair x y) = "Pair(" ++ show x ++ ", " ++ show y ++ ")"
+</code></pre>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-pattern-matching">Pattern Matching in Haskell</h3>
+<ol>
+    <li><b>What Is Pattern Matching?</b></li>
+    <br/>
+    <ul>
+        <li>It allows you to “deconstruct” values by matching them against patterns, and automatically bind variables.</li>
+        <br/>
+        <li>Patterns may describe:
+            <ul>
+                <li>literal values,</li>
+                <li>data constructors,</li>
+                <li>tuples, lists, records,</li>
+                <li>wildcards <code>_</code>,</li>
+                <li>nested structures,</li>
+                <li>guards combined with patterns.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Pattern matching is everywhere: in function definitions, <code>case</code> expressions, <code>let</code> bindings, and list comprehensions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Pattern Matching in Function Definitions</b></li>
+    <br/>
+    <ul>
+        <li>Functions can define multiple equations using different patterns.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">factorial :: Int -&gt; Int
+factorial 0 = 1
+factorial n = n * factorial (n - 1)
+</code></pre>
+
+    <ul>
+        <li>Explanation:
+            <ul>
+                <li>If input is 0, match first case.</li>
+                <li>Else <code>n</code> matches the second pattern.</li>
+            </ul>
+        </li>
+        <li>Patterns are matched from top to bottom.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The Wildcard Pattern <code>_</code></b></li>
+    <br/>
+    <ul>
+        <li><code>_</code> matches anything without binding a variable.</li>
+        <li>Useful for ignoring values you don’t care about.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">isZero :: Int -&gt; Bool
+isZero 0 = True
+isZero _ = False
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Pattern Matching and Tuples</b></li>
+    <br/>
+    <ul>
+        <li>Tuples can be decomposed directly:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">addPair :: (Int, Int) -&gt; Int
+addPair (x, y) = x + y
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Nested tuples work too:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">fstOfTriple :: (a, b, c) -&gt; a
+fstOfTriple (x, _, _) = x
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Pattern Matching Lists</b></li>
+    <br/>
+    <ul>
+        <li>Lists can be matched using:
+            <ul>
+                <li><code>[]</code> — empty list</li>
+                <li><code>(x:xs)</code> — head + tail</li>
+                <li>Specific shapes: <code>[a,b,c]</code></li>
+                <li>Nested list patterns</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">describe :: [Int] -&gt; String
+describe []        = "empty"
+describe [x]       = "one element"
+describe (x:y:_)   = "at least two elements"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Use <code>x:xs</code> to recursively process lists:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">sumList :: [Int] -&gt; Int
+sumList []     = 0
+sumList (x:xs) = x + sumList xs
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Pattern Matching with Data Constructors (ADTs)</b></li>
+    <br/>
+    <ul>
+        <li>When working with algebraic data types, pattern matching is essential.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data Shape
+    = Circle Double
+    | Rectangle Double Double
+
+area :: Shape -&gt; Double
+area (Circle r) = pi * r^2
+area (Rectangle w h) = w * h
+</code></pre>
+
+    <ul>
+        <li>You extract fields naturally as part of the pattern.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Pattern Matching with Records</b></li>
+    <br/>
+    <ul>
+        <li>Record fields can be extracted by naming them in patterns:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">data User = User
+    { name :: String
+    , age  :: Int
+    }
+
+describeUser :: User -&gt; String
+describeUser User { name = n, age = a } =
+    n ++ " is " ++ show a ++ " years old"
+</code></pre>
+
+    <ul>
+        <li>You may also mix record syntax with positional patterns.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>As-patterns</b></li>
+    <br/>
+    <ul>
+        <li>An <b>as-pattern</b> lets you refer to the entire matched value <b>and</b> its components.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">describeList :: [a] -&gt; String
+describeList xs@(x:_) = "first element: " ++ show x ++ ", full list: " ++ show xs
+describeList []       = "empty list"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>xs@(x:_)</code> means:
+            <ul>
+                <li><code>x:_</code> matches first element + rest</li>
+                <li><code>xs</code> is bound to the whole list</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Pattern Matching in <code>case</code> Expressions</b></li>
+    <br/>
+    <ul>
+        <li>Useful when you want pattern matching inside an expression instead of top-level definitions.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">describeBool :: Bool -&gt; String
+describeBool b =
+    case b of
+        True  -&gt; "yes"
+        False -&gt; "no"
+</code></pre>
+
+    <ul>
+        <li><code>case</code> expressions follow the same matching rules as functions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Guards Together with Pattern Matching</b></li>
+    <br/>
+    <ul>
+        <li>When matching is not enough, guards add conditional logic.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">classify :: Int -&gt; String
+classify n
+    | n &lt; 0     = "negative"
+    | n == 0    = "zero"
+    | otherwise = "positive"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Patterns match structure, guards match conditions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Matching Failure: Why Order Matters</b></li>
+    <br/>
+    <ul>
+        <li>Patterns are checked top to bottom.</li>
+        <li>If a pattern fails, Haskell tries the next one.</li>
+        <li>This can affect correctness:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">bad :: [a] -&gt; String
+bad (x:xs) = "nonempty"
+bad []     = "empty"
+-- The order here is fine.
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>But reversing them breaks logic:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">bad2 :: [a] -&gt; String
+bad2 []     = "empty"
+bad2 (x:xs) = "nonempty"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>If written reversed like below:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">bad3 :: [a] -&gt; String
+bad3 xs = "always matches first!"
+bad3 [] = "never reached"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The first line <code>bad3 xs = ...</code> matches <b>every</b> list, making the second unreachable.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Irrefutable Patterns</b></li>
+    <br/>
+    <ul>
+        <li>An <b>irrefutable pattern</b> never fails immediately.</li>
+        <li>Prefix a pattern with <code>~</code> to delay matching until needed:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">lazyTuple :: (a, b) -&gt; String
+lazyTuple ~(x, y) = "always matches"
+</code></pre>
+
+    <ul>
+        <li>Useful in lazy computations to avoid forcing structure prematurely.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Pattern Matching in List Comprehensions</b></li>
+    <br/>
+    <ul>
+        <li>You can pattern match inside generators:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">pairs :: [(Int, Int)]
+pairs = [ (x, y) | (x, y) &lt;- [(1,2), (3,4)] ]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>If a pattern cannot match, the element is skipped:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">firsts :: [(Int, Int)] -&gt; [Int]
+firsts xs = [ x | (x, _) &lt;- xs ]
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Pattern Matching and Exhaustiveness Checking</b></li>
+    <br/>
+    <ul>
+        <li>Haskell warns when:
+            <ul>
+                <li>patterns are missing cases (non-exhaustive),</li>
+                <li>pattern matches are redundant (never reached).</li>
+            </ul>
+        </li>
+        <li>This helps prevent runtime errors.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">describeMaybe :: Maybe Int -&gt; String
+describeMaybe (Just n) = "number"
+describeMaybe Nothing  = "none"
 </code></pre>
 
     <br/><br/>
