@@ -165,6 +165,7 @@
         <li><a href="#vue-async-components">Async Components</a></li>
         <li><a href="#vue-composables">Composables</a></li>
         <li><a href="#vue-custom-directives">Custom Directives</a></li>
+        <li><a href="#vue-plugins">Plugins</a></li>
     </ul>
 </nav>
 <hr/>
@@ -7893,6 +7894,285 @@ const directives = { color: vColor };
     console.log(binding.arg);        // "foo"
     console.log(binding.modifiers);  // { bar: true }
 }
+</code></pre>
+
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="vue-plugins">Vue Plugins (Composition API + TypeScript)</h3>
+<ol>
+
+    <li><b>What Are Plugins in Vue?</b></li>
+    <br/>
+    <ul>
+        <li>A Vue <u>plugin</u> is a way to add <u>global functionality</u> to your Vue application.</li>
+        <br/>
+        <li>A plugin can:</li>
+        <ul>
+            <li>add global methods</li>
+            <li>add global components</li>
+            <li>add global directives</li>
+            <li>inject reusable utilities</li>
+            <li>install third-party libraries into Vue</li>
+            <li>provide global configuration to all components</li>
+        </ul>
+        <br/>
+        <li>You install a plugin using:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">app.use(SomePlugin);
+</code></pre>
+
+    <ul>
+        <li>Plugins are great for reusable logic across projects (e.g., axios wrappers, analytics, toast notifications).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Plugin Structure (Composition API + TypeScript)</b></li>
+    <br/>
+    <ul>
+        <li>A Vue plugin is simply an object with an <code>install</code> method <b>or</b> a function.</li>
+        <li>TypeScript version:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import type { App } from &quot;vue&quot;;
+
+export default {
+    install(app: App, options?: unknown) {
+        // plugin logic
+    }
+};
+</code></pre>
+
+    <ul>
+        <li>You can optionally accept <u>options</u> from the user.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Create a Simple Plugin (Global Utility Function)</b></li>
+    <br/>
+    <ul>
+        <li>We will create a plugin that adds a global function <code>$log</code>:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// LoggerPlugin.ts
+import type { App } from &quot;vue&quot;;
+
+export default {
+    install(app: App) {
+        app.config.globalProperties.$log = (message: string) =&gt; {
+            console.log(&quot;[LOG]&quot;, message);
+        };
+    }
+};
+</code></pre>
+
+    <ul>
+        <li>Register in <code>main.ts</code>:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import { createApp } from &quot;vue&quot;;
+import App from &quot;./App.vue&quot;;
+import LoggerPlugin from &quot;./plugins/LoggerPlugin&quot;;
+
+const app = createApp(App);
+
+app.use(LoggerPlugin);
+
+app.mount(&quot;#app&quot;);
+</code></pre>
+
+    <ul>
+        <li>Use inside a component:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang=&quot;ts&quot;&gt;
+const app = getCurrentInstance();
+app?.proxy?.$log(&quot;Hello plugin!&quot;);
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using TypeScript Types for Global Properties</b></li>
+    <br/>
+    <ul>
+        <li>To avoid “property does not exist” TypeScript errors, extend Vue’s type definitions:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// src/types/vue.d.ts
+import &quot;vue&quot;;
+
+declare module &quot;vue&quot; {
+    interface ComponentCustomProperties {
+        $log: (msg: string) =&gt; void;
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Now TypeScript recognizes <code>$log</code> globally.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Plugin Accepting Options</b></li>
+    <br/>
+    <ul>
+        <li>Plugins often allow configuration:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import type { App } from &quot;vue&quot;;
+
+interface LoggerOptions {
+    prefix?: string;
+}
+
+export default {
+    install(app: App, options: LoggerOptions = {}) {
+        const prefix = options.prefix ?? &quot;LOG&quot;;
+
+        app.config.globalProperties.$log = (msg: string) =&gt; {
+            console.log(`[${prefix}]`, msg);
+        };
+    }
+};
+</code></pre>
+
+    <ul>
+        <li>Install with options:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">app.use(LoggerPlugin, { prefix: &quot;MyApp&quot; });
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Providing Global Values via provide/inject</b></li>
+    <br/>
+    <ul>
+        <li>Plugins often expose values via Vue’s <code>provide()</code> so all components can <code>inject()</code> them.</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import type { App } from &quot;vue&quot;;
+
+export const UserKey = Symbol(&quot;UserKey&quot;);
+
+export default {
+    install(app: App) {
+        const user = {
+            name: &quot;Junzhe&quot;,
+            role: &quot;admin&quot;
+        };
+
+        app.provide(UserKey, user);
+    }
+};
+</code></pre>
+
+    <ul>
+        <li>Using it in a component:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang=&quot;ts&quot;&gt;
+import { inject } from &quot;vue&quot;;
+import { UserKey } from &quot;@/plugins/UserPlugin&quot;;
+
+const user = inject(UserKey);
+
+console.log(user?.name);
+&lt;/script&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Plugin Adding a Global Component</b></li>
+    <br/>
+    <ul>
+        <li>You can register UI components globally:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">export default {
+    install(app: App) {
+        app.component(&quot;BaseButton&quot;, BaseButton);
+    }
+};
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;BaseButton&gt;Click&lt;/BaseButton&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Plugin Adding a Global Directive</b></li>
+
+<pre><code class="language-ts line-numbers">export default {
+    install(app: App) {
+        app.directive(&quot;focus&quot;, {
+            mounted(el: HTMLElement) {
+                el.focus();
+            }
+        });
+    }
+};
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;input v-focus /&gt;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>A Realistic Example: Toast Notification Plugin</b></li>
+
+<pre><code class="language-ts line-numbers">import type { App } from &quot;vue&quot;;
+
+interface ToastOptions {
+    duration?: number;
+}
+
+export default {
+    install(app: App, options: ToastOptions = {}) {
+        const duration = options.duration ?? 2000;
+
+        const toast = (msg: string) =&gt; {
+            const div = document.createElement(&quot;div&quot;);
+            div.textContent = msg;
+            div.className = &quot;toast&quot;;
+            document.body.appendChild(div);
+
+            setTimeout(() =&gt; {
+                document.body.removeChild(div);
+            }, duration);
+        };
+
+        app.config.globalProperties.$toast = toast;
+        app.provide(&quot;toast&quot;, toast);
+    }
+};
+</code></pre>
+
+    <ul>
+        <li>Use globally:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script setup lang=&quot;ts&quot;&gt;
+const app = getCurrentInstance();
+app?.proxy?.$toast(&quot;Hello!&quot;);
+&lt;/script&gt;
 </code></pre>
 
     <br/><br/>
