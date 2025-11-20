@@ -164,7 +164,274 @@
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-introduction">Introduction to Symfony</h3>
+<ol>
+    <li><b>What Is Symfony?</b></li>
+    <br/>
+    <ul>
+        <li><u>Symfony</u> is a powerful, full-stack, enterprise-grade PHP framework used for building modern web applications.</li>
+        <br/>
+        <li>Symfony is widely used in industry, notably by:
+            <ul>
+                <li>Drupal</li>
+                <li>Magento</li>
+                <li>OroCRM</li>
+                <li>Laravel (uses Symfony components)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>It is ideal for:
+            <ul>
+                <li>Enterprise apps</li>
+                <li>Long-term maintainable systems</li>
+                <li>Modular and scalable architectures</li>
+                <li>APIs and web services</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 
+    <li><b>Installing Symfony</b></li>
+    <br/>
+    <ul>
+        <li>First install the <b>Symfony CLI</b> tool:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">curl -sS https://get.symfony.com/cli/installer | bash
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Verify installation:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">symfony -V
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Create a new Symfony project:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">symfony new my_project --webapp</code></pre>
+
+    <br/>
+    <ul>
+        <li>This generates a full MVC skeleton with:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">my_project/
+├── assets/
+├── bin/
+├── config/
+├── migrations/
+├── public/
+├── src/
+├── templates/
+├── tests/
+└── var/
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Symfony Directory Structure (Overview)</b></li>
+    <br/>
+    <ul>
+        <li><code>src/</code> — PHP code (controllers, services, entities).</li>
+        <li><code>templates/</code> — Twig template files.</li>
+        <li><code>config/</code> — application configuration.</li>
+        <li><code>public/</code> — web root (index.php lives here).</li>
+        <li><code>var/</code> — cache and logs.</li>
+        <li><code>vendor/</code> — installed dependencies.</li>
+    </ul>
+
+    <br/><br/>
+
+    <li><b>Your First Symfony Route</b></li>
+    <br/>
+    <ul>
+        <li>Symfony uses attributes (preferred), annotations, or YAML/XML for routing.</li>
+        <li>Create a simple controller:</li>
+    </ul>
+
+<pre><code class="language-php line-numbers">&lt;?php
+// src/Controller/HomeController.php
+
+namespace App\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+
+class HomeController extends AbstractController
+{
+    #[Route('/', name: 'home')]
+    public function index(): Response
+    {
+        return new Response('Hello from Symfony!');
+    }
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Run the server:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">symfony serve</code></pre>
+
+    <br/>
+    <ul>
+        <li>Visit: <code>http://127.0.0.1:8000</code></li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Templates with Twig</b></li>
+    <br/>
+    <ul>
+        <li>Symfony uses the <u>Twig</u> template engine for HTML.</li>
+        <li>Create a template:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- templates/home.html.twig --&gt;
+&lt;h1&gt;Hello {{ name }}!&lt;/h1&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Render from controller:</li>
+    </ul>
+
+<pre><code class="language-php line-numbers">#[Route('/hello/{name}', name: 'hello')]
+public function hello(string $name): Response
+{
+    return $this-&gt;render('home.html.twig', [
+        'name' =&gt; $name,
+    ]);
+}
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Symfony and MVC</b></li>
+    <br/>
+    <ul>
+        <li><code>Model</code>: Entities + Doctrine ORM</li>
+        <li><code>View</code>: Twig templates</li>
+        <li><code>Controller</code>: Classes inside <code>src/Controller</code></li>
+    </ul>
+
+<pre><code class="language-text line-numbers">Request → Controller → Service/Model → Response → Browser
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Database Support with Doctrine ORM</b></li>
+    <br/>
+    <ul>
+        <li>Symfony integrates tightly with Doctrine (ORM).</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">symfony console make:entity
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Basic entity example:</li>
+    </ul>
+
+<pre><code class="language-php line-numbers">&lt;?php
+// src/Entity/Product.php
+
+namespace App\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity]
+class Product
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
+
+    #[ORM\Column(length: 100)]
+    private string $name;
+
+    #[ORM\Column]
+    private float $price;
+
+    // getters and setters...
+}
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Database migration:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">symfony console make:migration
+symfony console doctrine:migrations:migrate
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Dependency Injection Container</b></li>
+    <br/>
+    <ul>
+        <li>Symfony is built around a powerful <u>Service Container</u>.</li>
+        <li>Almost everything (mailer, logger, custom services) is registered as a service.</li>
+        <li>Services are autowired automatically based on type hints.</li>
+    </ul>
+
+<pre><code class="language-php line-numbers">&lt;?php
+class SluggerService
+{
+    public function slugify(string $s): string
+    {
+        return strtolower(str_replace(' ', '-', $s));
+    }
+}
+</code></pre>
+
+<pre><code class="language-php line-numbers">#[Route('/slug/{text}')]
+public function slug(SluggerService $slugger, string $text): Response
+{
+    return new Response($slugger-&gt;slugify($text));
+}
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Symfony Flex and Bundles</b></li>
+    <br/>
+    <ul>
+        <li>Bundles are reusable modules, similar to Django apps or Laravel packages.</li>
+        <li>Symfony Flex automates installation and configuration.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">composer require annotations
+composer require twig
+composer require symfony/orm-pack
+</code></pre>
+
+    <br/><br/>
+
+    <li><b>Debugging Tools</b></li>
+    <br/>
+    <ul>
+        <li><b>Debug Toolbar</b>: shows log, memory, performance, routing info.</li>
+        <li><b>Profiler</b>: detailed debugging UI at <code>/_profiler</code>.</li>
+        <li>Useful commands:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">symfony console debug:router
+symfony console debug:config
+symfony console debug:container
+</code></pre>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
