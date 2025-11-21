@@ -8021,14 +8021,12 @@ resultTree    = getTree (tree2, ctx2)
 <!-- * * * * * * * * * * * * * * -->
 <h3 id="haskell-let-in">Haskell <code>let ... in</code> Expressions</h3>
 <ol>
-    <li><b>Intuition: What is <code>let ... in</code>?</b>
+    <li><b>Intuition: What is</b> <code>let ... in</code>?</li>
+    <br/>
+    <ul>
+        <li><code>let ... in ...</code> is a way to introduce <b>local names</b> inside an expression.</li>
         <br/>
-        <ul>
-            <li><code>let ... in ...</code> is a way to introduce <b>local names</b> inside an expression.</li>
-            <li>You can think of it as: “Give names to these sub-expressions, then use them in the body.”</li>
-            <li>It is an <b>expression</b> (not a statement) and always has a value.</li>
-        </ul>
-        <br/>
+        <li>It is an <b>expression</b> (not a statement) and always has a value.</li>
 <pre><code class="language-haskell line-numbers">answer :: Int
 answer =
     let x = 20
@@ -8040,26 +8038,28 @@ answer =
             <li><code>in x + y</code> is the body that uses those names.</li>
             <li>The whole <code>let ... in ...</code> is just another expression that evaluates to an <code>Int</code>.</li>
         </ul>
-    </li>
+    </ul>
+
 
     <br/>
+    <br/>
 
-    <li><b>General Form and Scope</b>
-        <br/>
-        <ul>
-            <li>General syntax (with layout/indentation):</li>
-        </ul>
+
+    <li><b>General Form and Scope</b></li>
+    <br/>
+    <ul>
+        <li>General syntax (with layout/indentation):</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">let
     name1 = expr1
     name2 = expr2
     ...
 in bodyExpr
 </code></pre>
-        <ul>
-            <li>All bindings after <code>let</code> are visible only in the <code>in bodyExpr</code> part.</li>
-            <li>They are <b>not</b> visible before the <code>let</code> or outside of the expression.</li>
-        </ul>
-        <br/>
+    <ul>
+        <li>All bindings after <code>let</code> are visible only in the <code>in bodyExpr</code> part.</li>
+        <li>They are <u>not</u> visible before the <code>let</code> or outside of the expression.</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">outside :: Int
 outside =
     let a = 5
@@ -8069,36 +8069,40 @@ outside =
 -- Here, a and b are NOT visible anymore.
 -- outside == 35
 </code></pre>
-    </li>
+
 
     <br/>
+    <br/>
 
-    <li><b>Multiple Bindings and Layout (Indentation)</b>
-        <br/>
-        <ul>
-            <li>You can define multiple names after one <code>let</code>.</li>
-            <li>They must be aligned (same indentation) according to Haskell&rsquo;s Layout Rule.</li>
-        </ul>
+
+    <li><b>Multiple Bindings and Layout (Indentation)</b></li>
+    <br/>
+    <ul>
+        <li>You can define multiple names after one <code>let</code>.</li>
+        <li>They must be aligned (same indentation) according to Haskell&rsquo;s Layout Rule.</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">area :: Double
 area =
     let radius   = 10
         piApprox = 3.14159
     in piApprox * radius * radius
 </code></pre>
-        <ul>
-            <li><code>radius</code> and <code>piApprox</code> start in the same column → they belong to the same <code>let</code> block.</li>
-            <li>The <code>in</code> is aligned with <code>let</code> (typical style, but not strictly required as long as layout is consistent).</li>
-        </ul>
-    </li>
+    <ul>
+        <li><code>radius</code> and <code>piApprox</code> start in the same column → they belong to the same <code>let</code> block.</li>
+        <li>The <code>in</code> is aligned with <code>let</code> (typical style, but not strictly required as long as layout is consistent).</li>
+    </ul>
+
 
     <br/>
+    <br/>
 
-    <li><b>Order of Bindings and Laziness</b>
-        <br/>
-        <ul>
-            <li>Bindings inside <code>let</code> are essentially like simultaneous equations; order does not matter conceptually.</li>
-            <li>Because of Haskell&rsquo;s laziness, you can refer to names defined <b>later</b>.</li>
-        </ul>
+
+    <li><b>Order of Bindings and Laziness</b></li>
+    <br/>
+    <ul>
+        <li>Bindings inside <code>let</code> are essentially like simultaneous equations, order does not matter conceptually.</li>
+        <li>Because of Haskell&rsquo;s laziness, you can refer to names defined <u>later</u>.</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">weird :: (Int, Int)
 weird =
     let x = y + 1    -- &quot;forward&quot; reference
@@ -8106,109 +8110,89 @@ weird =
     in (x, y)
 -- weird == (11, 10)
 </code></pre>
-        <ul>
-            <li>This works because values are not evaluated until needed.</li>
-            <li>This also enables <b>recursive</b> definitions (a name referring to itself).</li>
-        </ul>
-        <br/>
+    <ul>
+        <li>This works because values are not evaluated until needed.</li>
+        <li>This also enables <u>recursive</u> definitions (a name referring to itself).</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">ones :: [Int]
 ones =
     let xs = 1 : xs   -- infinite list of 1s
     in xs
 </code></pre>
-    </li>
+
 
     <br/>
+    <br/>
 
-    <li><b><code>let ... in</code> vs. <code>where</code></b>
-        <br/>
-        <ul>
-            <li>Both <code>let</code> and <code>where</code> introduce local bindings, but they differ in:
-                <ul>
-                    <li><b>position</b> (expression vs. declaration)</li>
-                    <li><b>scope direction</b></li>
-                </ul>
-            </li>
-        </ul>
-        <br/>
-        <ul>
-            <li><b><code>let ... in</code></b>:
-                <ul>
-                    <li>Used <b>inside expressions</b>.</li>
-                    <li>Bindings come <b>before</b> the expression that uses them.</li>
-                </ul>
-            </li>
-        </ul>
+
+    <li><code>let ... in</code> vs. <code>where</code></li>
+    <br/>
+    <ul>
+        <li>Both <code>let</code> and <code>where</code> introduce local bindings, but they differ in <u>position</u> (expression vs. declaration) and <u>scope direction</u>.</li>
+    </ul>
+    <br/>
+    <ul>
+        <li><code>let ... in</code> is used <u>inside expressions</u> and bindings come <u>before</u> the expression that uses them.</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">hypotenuse :: Double -&gt; Double -&gt; Double
 hypotenuse a b =
     let a2 = a * a
         b2 = b * b
     in sqrt (a2 + b2)
 </code></pre>
-        <br/>
-        <ul>
-            <li><b><code>where</code></b>:
-                <ul>
-                    <li>Attached to a definition (usually at top-level or in guards).</li>
-                    <li>Bindings come <b>after</b> the main equation.</li>
-                </ul>
-            </li>
-        </ul>
+    <ul>
+        <li><code>where</code> is attached to a definition (usually at top-level or in guards) and bindings come <u>after</u> the main equation.</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">hypotenuse' :: Double -&gt; Double -&gt; Double
 hypotenuse' a b = sqrt (a2 + b2)
   where
     a2 = a * a
     b2 = b * b
 </code></pre>
-        <ul>
-            <li>Semantically similar, but:
-                <ul>
-                    <li>Use <code>let ... in</code> when you need a local block <b>inside an expression</b>.</li>
-                    <li>Use <code>where</code> when defining helpers &ldquo;under&rdquo; a function clause.</li>
-                </ul>
-            </li>
-        </ul>
-    </li>
+
 
     <br/>
+    <br/>
 
-    <li><b><code>let</code> Inside <code>do</code>-notation (No <code>in</code>)</b>
-        <br/>
-        <ul>
-            <li>Inside a <code>do</code>-block, <code>let</code> is slightly different:
-                <ul>
-                    <li>It still introduces local names.</li>
-                    <li>But you <b>do not</b> write <code>in</code>.</li>
-                    <li>The scope is the rest of the <code>do</code>-block below that <code>let</code>.</li>
-                </ul>
-            </li>
-        </ul>
+
+    <li><code>let</code> Inside <code>do</code>-notation (No <code>in</code>)</li>
+    <br/>
+    <ul>
+        <li>Inside a <code>do</code>-block, <code>let</code> is slightly different:
+            <ul>
+                <li>It still introduces local names.</li>
+                <li>But you do <u>not</u> write <code>in</code>.</li>
+                <li>The scope is the rest of the <code>do</code>-block below that <code>let</code>.</li>
+            </ul>
+        </li>
+    </ul>
 <pre><code class="language-haskell line-numbers">greet :: IO ()
 greet = do
     let name = "Haskell"
         msg  = "Hello, " ++ name
     putStrLn msg
 </code></pre>
-        <ul>
-            <li><code>let</code> here has type <b>pure bindings</b>, no effect by itself.</li>
-            <li>It only introduces names for later lines in the <code>do</code>-block.</li>
-        </ul>
-        <br/>
+    <ul>
+        <li><code>let</code> here has type <u>pure bindings</u>, no effect by itself.</li>
+        <li>It only introduces names for later lines in the <code>do</code>-block.</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">example :: IO ()
 example = do
     line &lt;- getLine
     let trimmed = reverse (dropWhile (== ' ') (reverse line))
     putStrLn trimmed
 </code></pre>
-        <ul>
-            <li><code>line &lt;- getLine</code> is a monadic binding (runs an <code>IO</code> action).</li>
-            <li><code>let trimmed = ...</code> is a pure local definition using <code>line</code>.</li>
-        </ul>
-    </li>
+    <ul>
+        <li><code>line &lt;- getLine</code> is a monadic binding (runs an <code>IO</code> action).</li>
+        <li><code>let trimmed = ...</code> is a pure local definition using <code>line</code>.</li>
+    </ul>
+
 
     <br/>
+    <br/>
 
-    <li><b>Pattern Bindings in <code>let</code></b>
+
+    <li><b>Pattern Bindings in</b> <code>let</code></li>
         <br/>
         <ul>
             <li>You can use patterns on the left side of <code>=</code> in a <code>let</code>.</li>
@@ -8232,35 +8216,13 @@ printPair = do
         (n, s) = pair
     putStrLn (show n ++ " - " ++ s)
 </code></pre>
-    </li>
+
 
     <br/>
-
-    <li><b>Using <code>let</code> in List Comprehensions and Guards</b>
-        <br/>
-        <ul>
-            <li><code>let</code> can appear inside list comprehensions to define helper names.</li>
-        </ul>
-<pre><code class="language-haskell line-numbers">pairs :: [(Int, Int)]
-pairs =
-    [ (x, y)
-    | x &lt;- [1..5]
-    , let y = x * x
-    ]
--- pairs == [(1,1),(2,4),(3,9),(4,16),(5,25)]
-</code></pre>
-        <ul>
-            <li><code>let y = x * x</code> defines <code>y</code> for each <code>x</code>, without filtering anything.</li>
-        </ul>
-        <br/>
-        <ul>
-            <li><code>let</code> can also be used in guards (with <code>MultiWayIf</code> or pattern guards), but that is more advanced.</li>
-        </ul>
-    </li>
-
     <br/>
 
-    <li><b>Shadowing and Common Pitfalls</b>
+
+    <li><b>Shadowing and Common Pitfalls</b></li>
         <br/>
         <ul>
             <li><b>Shadowing</b>: a <code>let</code>-binding can reuse an existing name and hide the outer one.</li>
@@ -8271,51 +8233,12 @@ shadow x =
     in x
 </code></pre>
         <ul>
-            <li>This can be confusing: the right-hand-side <code>x</code> refers to the <b>outer</b> function argument, the <code>x</code> on the left introduces a new inner binding.</li>
-            <li>Many style guides recommend <b>avoiding</b> this kind of shadowing for clarity.</li>
+            <li>This can be confusing: the right-hand-side <code>x</code> refers to the <u>outer</u> function argument, the <code>x</code> on the left introduces a new inner binding.</li>
+            <li>Many style guides recommend <u>avoiding</u> this kind of shadowing for clarity.</li>
         </ul>
         <br/>
-        <ul>
-            <li><b>Do not confuse</b>:
-                <ul>
-                    <li><code>let</code> vs. monadic <code>&lt;-</code></li>
-                    <li><code>let</code> introduces pure bindings; <code>&lt;-</code> runs an action in a monad (like <code>IO</code>).</li>
-                </ul>
-            </li>
-        </ul>
-    </li>
-
-    <br/>
-
-    <li><b>Summary</b>
-        <br/>
-        <ul>
-            <li><code>let ... in ...</code>:
-                <ul>
-                    <li>is an <b>expression</b> that introduces local names.</li>
-                    <li>is useful to break down complex expressions into readable parts.</li>
-                    <li>works nicely with Haskell&rsquo;s laziness (order of bindings is flexible, recursion is possible).</li>
-                </ul>
-            </li>
-            <li>Inside <code>do</code>-notation:
-                <ul>
-                    <li>you write just <code>let</code> (no <code>in</code>),</li>
-                    <li>and it introduces pure names for the rest of the block.</li>
-                </ul>
-            </li>
-            <li>Compared to <code>where</code>:
-                <ul>
-                    <li>Use <code>let ... in</code> when you need a local expression-level block.</li>
-                    <li>Use <code>where</code> when attaching helpers to a function equation.</li>
-                </ul>
-            </li>
-        </ul>
-        <br/>
-        <ul>
-            <li>If you keep in mind &ldquo;<b>give names to intermediate results inside an expression</b>&rdquo;, you’ll almost always use <code>let ... in</code> correctly.</li>
-        </ul>
-    </li>
 </ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
@@ -8325,61 +8248,63 @@ shadow x =
 <!-- * * * * * * * * * * * * * * -->
 <h3 id="haskell-do-notation">Haskell <code>do</code>-Notation</h3>
 <ol>
-    <li><b>Intuition: What is <code>do</code>-notation?</b>
+    <li><b>Intuition: What is</b> <code>do</code><b>-notation?</b></li>
+    <br/>
+    <ul>
+        <li><code>do</code>-notation is Haskell&rsquo;s readable syntax for sequencing <u>monadic actions</u>.</li>
         <br/>
-        <ul>
-            <li><code>do</code>-notation is Haskell&rsquo;s readable syntax for sequencing <b>monadic actions</b>.</li>
-            <li>It does <b>not</b> introduce new semantics; it is only syntactic sugar.</li>
-            <li>Every <code>do</code>-block desugars into combinations of:
-                <ul>
-                    <li><code>&gt;&gt;=</code> (bind)</li>
-                    <li><code>&gt;&gt;</code>  (then)</li>
-                    <li><code>return</code> (pure)</li>
-                </ul>
-            </li>
-            <li>This makes monadic code look imperative while still being purely functional.</li>
-        </ul>
+        <li>It does <u>not</u> introduce new semantics, it is only syntactic sugar.</li>
         <br/>
+        <li>Every <code>do</code>-block desugars into combinations of:
+            <ul>
+                <li><code>&gt;&gt;=</code> (bind)</li>
+                <li><code>&gt;&gt;</code>  (then)</li>
+                <li><code>return</code> (pure)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This makes monadic code look imperative while still being purely functional.</li>
 <pre><code class="language-haskell line-numbers">main :: IO ()
 main = do
     line &lt;- getLine
     putStrLn ("You entered: " ++ line)
 </code></pre>
-        <ul>
-            <li><code>line &lt;- getLine</code> runs the effect <code>getLine :: IO String</code> and extracts its result.</li>
-            <li><code>putStrLn ...</code> runs after that.</li>
-        </ul>
-    </li>
+    <ul>
+        <li><code>line &lt;- getLine</code> runs the effect <code>getLine :: IO String</code> and extracts its result.</li>
+        <li><code>putStrLn ...</code> runs after that.</li>
+    </ul>
+    </ul>
+
 
     <br/>
+    <br/>
 
-    <li><b>What is a Monadic Bind (<code>&gt;&gt;=</code>)?</b>
+
+    <li><b>What is a Monadic Bind</b> (<code>&gt;&gt;=</code>)?</li>
         <br/>
         <ul>
-            <li>The operator <code>&gt;&gt;=</code> means:
-                <ul>
-                    <li>&ldquo;Run the effect on the left, then pass its result to the function on the right.&rdquo;</li>
-                </ul>
-            </li>
+            <li>The operator <code>&gt;&gt;=</code> means: &ldquo;Run the effect on the left, then pass its result to the function on the right.&rdquo;</li>
         </ul>
 <pre><code class="language-haskell line-numbers">(m &gt;&gt;= \x -&gt; f x)
 </code></pre>
         <ul>
             <li>In a <code>do</code> block, this is exactly what happens when you write <code>x &lt;- m</code>.</li>
         </ul>
-    </li>
+
 
     <br/>
+    <br/>
 
-    <li><b>Desugaring: How <code>do</code>-notation Expands</b>
-        <br/>
-        <ul>
-            <li>Every <code>do</code>-block can be translated into pure monadic operations.</li>
-        </ul>
-        <br/>
-        <ul>
-            <li><b>Example 1:</b></li>
-        </ul>
+
+    <li><b>Desugaring: How</b> <code>do</code><b>-notation Expands</b></li>
+    <br/>
+    <ul>
+        <li>Every <code>do</code>-block can be translated into pure monadic operations.</li>
+    </ul>
+    <br/>
+    <ul>
+        <li><b>Example 1:</b></li>
+    </ul>
 <pre><code class="language-haskell line-numbers">foo :: Maybe Int
 foo = do
     x &lt;- Just 3
@@ -8387,19 +8312,21 @@ foo = do
     return (x + y)
 </code></pre>
 
-        <ul>
-            <li>Desugared version:</li>
-        </ul>
+    <ul>
+        <li>Desugared version:</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">foo :: Maybe Int
 foo =
     Just 3 &gt;&gt;= \x -&gt;
     Just 4 &gt;&gt;= \y -&gt;
-    return (x + y)
+    return (x + y)              -- Just (7)
 </code></pre>
 
-        <ul>
-            <li><b>Example 2: No binding</b></li>
-        </ul>
+    <br/>
+
+    <ul>
+        <li><b>Example 2: No binding</b></li>
+    </ul>
 <pre><code class="language-haskell line-numbers">main = do
     putStrLn "Hello"
     putStrLn "World"
@@ -8409,88 +8336,93 @@ foo =
     putStrLn "Hello" &gt;&gt;
     putStrLn "World"
 </code></pre>
-    </li>
+
 
     <br/>
+    <br/>
 
-    <li><b><code>&lt;-</code> Inside <code>do</code>-notation</b>
-        <br/>
-        <ul>
-            <li>A line with <code>&lt;-</code> has the structure:</li>
-        </ul>
+
+    <li><code>&lt;-</code> Inside <code>do</code>-notation</li>
+    <br/>
+    <ul>
+        <li>A line with <code>&lt;-</code> has the structure:</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">name &lt;- action
 </code></pre>
-        <ul>
-            <li>Meaning:
-                <ul>
-                    <li><code>action :: m a</code> is a monadic computation.</li>
-                    <li>It runs, and its result is bound to <code>name</code>.</li>
-                </ul>
-            </li>
-            <li>It corresponds directly to:
-                <ul>
-                    <li><code>action &gt;&gt;= \name -&gt; ...</code></li>
-                </ul>
-            </li>
-        </ul>
-        <br/>
-        <ul>
-            <li><b>Important rule:</b> the right-hand side of <code>&lt;-</code> must be a monadic value (e.g. <code>IO a</code>, <code>Maybe a</code>, etc.), not a pure expression.</li>
-        </ul>
+    <ul>
+        <li>Meaning:
+            <ul>
+                <li><code>action :: m a</code> is a monadic computation.</li>
+                <li>It runs, and its result is bound to <code>name</code>.</li>
+            </ul>
+        </li>
+        <li>It corresponds directly to:
+            <ul>
+                <li><code>action &gt;&gt;= \name -&gt; ...</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <ul>
+        <li><b>Important rule:</b> the right-hand side of <code>&lt;-</code> MUST be a monadic value (e.g. <code>IO a</code>, <code>Maybe a</code>, etc.), not a pure expression.</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">x &lt;- 3       -- ❌ wrong: 3 is not a monadic action
 </code></pre>
-    </li>
+
 
     <br/>
+    <br/>
 
-    <li><b>Pure Bindings in <code>do</code>: <code>let</code></b>
-        <br/>
-        <ul>
-            <li>Pure local definitions are introduced with <code>let</code> (without <code>in</code>!).</li>
-            <li>These are not monadic; they are just pure values.</li>
-        </ul>
 
+    <li><b>Pure Bindings in</b> <code>do</code>: <code>let</code></li>
+    <br/>
+    <ul>
+        <li>Pure local definitions are introduced with <code>let</code> (without <code>in</code>).</li>
+        <li>These are not monadic, they are just pure values.</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">main = do
     let x = 10
         y = 20
     print (x + y)
 </code></pre>
+    <ul>
+        <li>You use <code>let</code> when you want to define pure helpers inside a <code>do</code>-block.</li>
+        <li>You cannot use <code>&lt;-</code> for pure bindings.</li>
+    </ul>
 
-        <ul>
-            <li>You use <code>let</code> when you want to define pure helpers inside a <code>do</code>-block.</li>
-            <li>You cannot use <code>&lt;-</code> for pure bindings.</li>
-        </ul>
-    </li>
 
     <br/>
+    <br/>
 
-    <li><b>Pattern Matching Inside <code>do</code></b>
-        <br/>
-        <ul>
-            <li>You can pattern-match on monadic results:</li>
-        </ul>
+
+    <li><b>Pattern Matching Inside</b> <code>do</code></li>
+    <br/>
+    <ul>
+        <li>You can pattern-match on monadic results:</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">printPair :: IO ()
 printPair = do
     (x, y) &lt;- return (1, "one")
     putStrLn (show x ++ ": " ++ y)
 </code></pre>
+    <ul>
+        <li>If the pattern fails, it triggers the monad&rsquo;s fail behavior.</li>
+    </ul>
 
-        <ul>
-            <li>If the pattern fails, it triggers the monad&rsquo;s fail behavior.</li>
-        </ul>
-    </li>
 
     <br/>
+    <br/>
 
-    <li><b>Using <code>do</code>-notation with Other Monads (Not Just IO)</b>
+
+    <li><b>Using <code>do</code>-notation with Other Monads (Not Just IO)</b></li>
+    <br/>
+    <ul>
+        <li><code>do</code>-notation works for <u>any monad</u>, not only <code>IO</code>.</li>
         <br/>
-        <ul>
-            <li><code>do</code>-notation works for <b>any monad</b>, not only <code>IO</code>.</li>
-            <li>Example: <code>Maybe</code> monad for computations that can fail.</li>
-        </ul>
+        <li>Example: <code>Maybe</code> monad for computations that can fail.</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">half :: Int -&gt; Maybe Int
-half x =
-    if even x then Just (x `div` 2) else Nothing
+half x = if even x then Just (x `div` 2) else Nothing
 
 example :: Maybe Int
 example = do
@@ -8499,103 +8431,82 @@ example = do
     return b
 -- example == Just 5
 </code></pre>
-        <ul>
-            <li>If any <code>half</code> call returns <code>Nothing</code>, the whole block is <code>Nothing</code>.</li>
-        </ul>
-        <br/>
-        <ul>
-            <li>Works similarly for:
-                <ul>
-                    <li><code>Either e</code></li>
-                    <li><code>[]</code> (list monad)</li>
-                    <li>custom monads</li>
-                    <li>transformer stacks like <code>ReaderT</code>, <code>StateT</code>, etc.</li>
-                </ul>
-            </li>
-        </ul>
-    </li>
+    <ul>
+        <li>If any <code>half</code> call returns <code>Nothing</code>, the whole block is <code>Nothing</code>.</li>
+        <li>Works similarly for:
+            <ul>
+                <li><code>Either e</code></li>
+                <li><code>[]</code> (list monad)</li>
+                <li>custom monads</li>
+                <li>transformer stacks like <code>ReaderT</code>, <code>StateT</code>, etc.</li>
+            </ul>
+        </li>
+    </ul>
+
 
     <br/>
+    <br/>
 
-    <li><b>Empty <code>do</code> Blocks and <code>return</code></b>
+
+    <li>Empty <code>do</code> Blocks and <code>return</code></li>
+    <ul>
         <br/>
-        <ul>
-            <li>Every <code>do</code>-block must evaluate to a monadic value.</li>
-            <li><code>return</code> injects a pure value into the monad.</li>
-        </ul>
-
+        <li>Every <code>do</code>-block must evaluate to a monadic value.</li>
+        <br/>
+        <li><code>return</code> injects a pure value into the monad.</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">example = do
     return 42    -- :: Maybe Int, IO Int, etc.
 </code></pre>
+    <ul>
+        <li><code>return</code> does <u>not</u> end the block (unlike other languages).</li>
+        <li>It simply wraps a pure value inside the monad.</li>
+    </ul>
 
-        <ul>
-            <li><code>return</code> does <b>not</b> end the block (unlike other languages).</li>
-            <li>It simply wraps a pure value inside the monad.</li>
-        </ul>
-    </li>
 
     <br/>
+    <br/>
 
-    <li><b>Sequencing Without Bind: <code>action1 &gt;&gt; action2</code></b>
-        <br/>
-        <ul>
-            <li>If you don&rsquo;t care about the result of an action, you drop the <code>&lt;-</code>:</li>
-        </ul>
 
+    <li><b>Sequencing Without Bind:</b> <code>action1 &gt;&gt; action2</code></li>
+    <br/>
+    <ul>
+        <li>If you don&rsquo;t care about the result of an action, you drop the <code>&lt;-</code>:</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">main = do
     putStrLn "Hello"
     putStrLn "World"
 </code></pre>
-
-        <ul>
-            <li>Desugars to:</li>
-        </ul>
+    <ul>
+        <li>Desugars to:</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">main =
     putStrLn "Hello" &gt;&gt;
     putStrLn "World"
 </code></pre>
-    </li>
+
 
     <br/>
+    <br/>
 
-    <li><b>Common Pitfalls</b>
-        <br/>
-        <ul>
-            <li><b>1. Forgetting that <code>let</code> does not use <code>in</code> inside <code>do</code> blocks.</b></li>
-        </ul>
+
+    <li><b>Common Pitfalls</b></li>
+    <br/>
+    <ol>
+        <li>Forgetting that <code>let</code> does not use <code>in</code> inside <code>do</code> blocks.</li>
 <pre><code class="language-haskell line-numbers">let x = 10 in print x    -- ❌ not allowed inside do
 </code></pre>
 
-        <ul>
-            <li><b>2. Using <code>&lt;-</code> on pure values.</b></li>
-        </ul>
+        <li>Using <code>&lt;-</code> on pure values.</li>
 <pre><code class="language-haskell line-numbers">x &lt;- 5    -- ❌ Wrong: 5 is not monadic
 let x = 5 -- ✔ Correct
 </code></pre>
 
-        <ul>
-            <li><b>3. Mixing up <code>do</code> with imperative semantics.</b></li>
-            <li>Under the hood, <code>do</code> is still purely functional.</li>
-        </ul>
-    </li>
-
-    <br/>
-
-    <li><b>Summary</b>
-        <br/>
-        <ul>
-            <li><code>do</code>-notation is syntactic sugar for monadic operations.</li>
-            <li><code>x &lt;- m</code> extracts the result of a monadic computation.</li>
-            <li><code>let</code> defines pure local variables inside a <code>do</code>-block (no <code>in</code>).</li>
-            <li><code>do</code> works with <b>all monads</b>, not just <code>IO</code>.</li>
-            <li>Every <code>do</code>-block becomes a chain of <code>&gt;&gt;</code> and <code>&gt;&gt;=</code>.</li>
-        </ul>
-        <br/>
-        <ul>
-            <li>If you remember: <b>&ldquo;<code>do</code> = nicer syntax for monadic chains&rdquo;</b>, you understand exactly what it is.</li>
-        </ul>
-    </li>
+        <li>Mixing up <code>do</code> with imperative semantics.</li>
+        <li>Under the hood, <code>do</code> is still purely functional.</li>
+    </ol>
 </ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
@@ -8606,31 +8517,30 @@ let x = 5 -- ✔ Correct
 <h3 id="haskell-functor-applicative-monad-real-code">Practical Real-World Code Examples of Functor, Applicative, and Monad</h3>
 <ol>
 
-    <li><b>Introduction: Why These Concepts Matter in Practice</b>
+    <li><b>Introduction:</b></li>
+    <ul>
         <br/>
-        <ul>
-            <li><b>Functor</b>: lets you apply a pure function inside a context (like <code>Maybe</code>, <code>[]</code>, <code>IO</code>).</li>
-            <li><b>Applicative</b>: lets you apply a function <b>inside</b> a context to arguments also inside contexts. Useful for combining independent effects.</li>
-            <li><b>Monad</b>: lets you run computations where each step <b>depends on the result</b> of the previous step.</li>
-        </ul>
+        <li><code>Functor</code>: lets you apply a pure function inside a context (like <code>Maybe</code>, <code>[]</code>, <code>IO</code>).</li>
         <br/>
-        <ul>
-            <li>This chapter focuses entirely on <b>practical</b> examples with <b>real outputs</b>, to show how they behave intuitively.</li>
-        </ul>
-    </li>
+        <li><code>Applicative</code>: lets you apply a function <u>inside</u> a context to arguments also inside contexts. Useful for combining independent effects.</li>
+        <br/>
+        <li><code>Monad</code>: lets you run computations where each step <u>depends on the result</u> of the previous step.</li>
+    </ul>
+
 
     <br/>
+    <br/>
+
 
     <!-- ===================== FUNCTOR ===================== -->
-    <li><b>Functor: Apply a Pure Function Inside a Context</b>
-        <br/>
-        <ul>
-            <li>The key method is <code>fmap :: (a -&gt; b) -&gt; f a -&gt; f b</code>.</li>
-            <li>It lifts a pure function into a container / effect.</li>
-        </ul>
+    <li><b>Functor: Apply a Pure Function Inside a Context</b></li>
+    <br/>
+    <ul>
+        <li>The key method is <code>fmap :: (a -&gt; b) -&gt; f a -&gt; f b</code>.</li>
+    </ul>
 
-        <br/>
-        <b>1. Maybe as Functor</b>
+    <br/>
+    <b>1.</b> <code>Maybe a</code> <b>as Functor</b>
 <pre><code class="language-haskell line-numbers">-- Double a number inside Maybe
 example1 :: Maybe Int
 example1 = fmap (*2) (Just 10)
@@ -8640,53 +8550,57 @@ example2 :: Maybe Int
 example2 = fmap (*2) Nothing
 </code></pre>
 
-        <ul>
-            <li><b>Results:</b></li>
-        </ul>
+    <ul>
+        <li>Results:</li>
+    </ul>
 <pre><code class="language-plaintext line-numbers">example1 == Just 20
 example2 == Nothing
 </code></pre>
 
-        <br/>
+    <br/>
 
-        <b>2. List as Functor</b>
+    <b>2.</b> List <code>[] a</code> / <code>[a]</code> <b>as Functor</b>
 <pre><code class="language-haskell line-numbers">example3 :: [Int]
 example3 = fmap (+1) [10, 20, 30]
 </code></pre>
 <pre><code class="language-plaintext line-numbers">example3 == [11, 21, 31]
 </code></pre>
 
-        <br/>
+    <br/>
 
-        <b>3. IO as Functor</b>
+    <b>3.</b> <code>IO a</code> <b>as Functor</b>
 <pre><code class="language-haskell line-numbers">main1 :: IO ()
 main1 = do
     msg &lt;- fmap (map toUpper) getLine
     putStrLn msg
 </code></pre>
 
-        <ul>
-            <li><b>Behavior:</b> If user types <code>"hello"</code>, output is <code>"HELLO"</code>.</li>
-        </ul>
-    </li>
+    <ul>
+        <li>If user types <code>"hello"</code>, output is <code>"HELLO"</code>.</li>
+    </ul>
+
 
     <br/>
+    <br/>
+
 
     <!-- ===================== APPLICATIVE ===================== -->
-    <li><b>Applicative: Combine Independent Effects</b>
+    <li><b>Applicative: Combine Independent Effects</b></li>
+    <ul>
         <br/>
-        <ul>
-            <li>Applicative allows applying functions inside a context using <code>&lt;*&gt;</code>.</li>
-            <li>Key method:
-                <ul>
-                    <li><code>pure :: a -&gt; f a</code></li>
-                    <li><code>(&lt;*&gt;) :: f (a -&gt; b) -&gt; f a -&gt; f b</code></li>
-                </ul>
-            </li>
-            <li>Main use case: running independent computations simultaneously.</li>
-        </ul>
+        <li>Applicative allows applying functions inside a context using <code>&lt;*&gt;</code>.</li>
+        <br/>
+        <li>Key method:
+            <ul>
+                <li><code>pure :: a -&gt; f a</code></li>
+                <li><code>(&lt;*&gt;) :: f (a -&gt; b) -&gt; f a -&gt; f b</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Main use case: running independent computations simultaneously.</li>
+    </ul>
 
-        <br/><b>1. Combining Maybe values</b>
+    <br/><b>1. Combining</b> <code>Maybe a</code> <b>values</b>
 <pre><code class="language-haskell line-numbers">-- Add two Maybe numbers
 example4 :: Maybe Int
 example4 = pure (+) &lt;*&gt; Just 3 &lt;*&gt; Just 5
@@ -8695,9 +8609,9 @@ example4 = pure (+) &lt;*&gt; Just 3 &lt;*&gt; Just 5
 <pre><code class="language-plaintext line-numbers">example4 == Just 8
 </code></pre>
 
-        <ul>
-            <li>If any part fails, whole computation is <code>Nothing</code>:</li>
-        </ul>
+    <ul>
+        <li>If any part fails, whole computation is <code>Nothing</code>:</li>
+    </ul>
 
 <pre><code class="language-haskell line-numbers">example5 :: Maybe Int
 example5 = pure (+) &lt;*&gt; Just 3 &lt;*&gt; Nothing
@@ -8706,65 +8620,67 @@ example5 = pure (+) &lt;*&gt; Just 3 &lt;*&gt; Nothing
 <pre><code class="language-plaintext line-numbers">example5 == Nothing
 </code></pre>
 
-        <br/>
+    <br/>
 
-        <b>2. Applicative IO — independent input</b>
+    <b>2. Applicative</b> <code>IO a</code> <b>— independent input</b>
 <pre><code class="language-haskell line-numbers">main2 :: IO ()
 main2 = do
     pair &lt;- (,) &lt;$&gt; getLine &lt;*&gt; getLine
     print pair
 </code></pre>
 
-        <ul>
-            <li><b>Behavior:</b> Prompts user twice and prints a tuple.</li>
-            <li>If user enters:
-                <ul>
-                    <li><code>"a"</code></li>
-                    <li><code>"b"</code></li>
-                </ul>
-                Output is <code>("a","b")</code>.
-            </li>
-        </ul>
+    <ul>
+        <li>Behavior: Prompts user twice and prints a tuple.</li>
+        <li>If user enters:
+            <ul>
+                <li><code>"a"</code></li>
+                <li><code>"b"</code></li>
+            </ul>
+            Output is <code>("a","b")</code>.
+        </li>
+    </ul>
 
-        <br/>
+    <br/>
 
-        <b>3. Applicative Lists (Cartesian product)</b>
+    <b>3. Applicative Lists</b> <code>[] a</code> / <code>[a]</code> <b>(Cartesian product)</b>
 <pre><code class="language-haskell line-numbers">example6 :: [Int]
 example6 = pure (+1) &lt;*&gt; [10,20,30]
+-- example6 = [(+1)] &lt;*&gt; [10,20,30]
 </code></pre>
 
 <pre><code class="language-plaintext line-numbers">example6 == [11,21,31]
 </code></pre>
 
-        <ul>
-            <li>You can build pairings:</li>
-        </ul>
+    <ul>
+        <li>You can build pairings:</li>
+    </ul>
 <pre><code class="language-haskell line-numbers">example7 = (,) &lt;$&gt; [1,2] &lt;*&gt; ['a','b']
 </code></pre>
 
 <pre><code class="language-plaintext line-numbers">example7 == [(1,'a'),(1,'b'),(2,'a'),(2,'b')]
 </code></pre>
-    </li>
+
+
+    <br/>
+    <br/>
+
+
+    <!-- ===================== MONAD ===================== -->
+    <li><b>Monad: Dependent Sequencing</b></li>
+    <br/>
+    <ul>
+        <li>Monad lets you run sequential computations where later steps <u>depend on earlier results</u>.</li>
+        <li>Uses:
+            <ul>
+                <li><code>&gt;&gt;=</code> (bind)</li>
+                <li><code>return</code></li>
+            </ul>
+        </li>
+    </ul>
 
     <br/>
 
-    <!-- ===================== MONAD ===================== -->
-    <li><b>Monad: Dependent Sequencing</b>
-        <br/>
-        <ul>
-            <li>Monad lets you run sequential computations where later steps <b>depend on earlier results</b>.</li>
-            <li>Uses:
-                <ul>
-                    <li><code>&gt;&gt;=</code> (bind)</li>
-                    <li><code>return</code></li>
-                </ul>
-            </li>
-            <li>Unlike Applicative, Monads allow dependent logic.</li>
-        </ul>
-
-        <br/>
-
-        <b>1. Maybe as Monad — sequential failure</b>
+    <b>1.</b> <code>Maybe a</code> <b>as Monad — sequential failure</b>
 <pre><code class="language-haskell line-numbers">safeDiv :: Int -&gt; Int -&gt; Maybe Int
 safeDiv _ 0 = Nothing
 safeDiv x y = Just (x `div` y)
@@ -8779,13 +8695,13 @@ example8 = do
 <pre><code class="language-plaintext line-numbers">example8 == Just 10
 </code></pre>
 
-        <ul>
-            <li>If any step divides by zero → whole chain becomes <code>Nothing</code>.</li>
-        </ul>
+    <ul>
+        <li>If any step divides by zero → whole chain becomes <code>Nothing</code>.</li>
+    </ul>
 
-        <br/>
+    <br/>
 
-        <b>2. List Monad — branching / nondeterminism</b>
+    <b>2.</b> <code>[] a</code> / <code>[a]</code> <b>List Monad — branching / nondeterminism</b>
 <pre><code class="language-haskell line-numbers">example9 :: [(Int, Int)]
 example9 = do
     x &lt;- [1,2]
@@ -8796,13 +8712,13 @@ example9 = do
 <pre><code class="language-plaintext line-numbers">example9 == [(1,10),(1,20),(2,10),(2,20)]
 </code></pre>
 
-        <ul>
-            <li>Each choice branches → list monad acts like nondeterministic computation.</li>
-        </ul>
+    <ul>
+        <li>Each choice branches → list monad acts like nondeterministic computation.</li>
+    </ul>
 
-        <br/>
+    <br/>
 
-        <b>3. IO Monad — dependent input/output</b>
+    <b>3.</b> <code>IO a</code> <b>Monad — dependent input/output</b>
 <pre><code class="language-haskell line-numbers">main3 :: IO ()
 main3 = do
     putStrLn "What is your name?"
@@ -8810,16 +8726,17 @@ main3 = do
     putStrLn ("Hello, " ++ name ++ "!")
 </code></pre>
 
-        <ul>
-            <li>The output of <code>getLine</code> determines the next step.</li>
-        </ul>
+    <ul>
+        <li>The output of <code>getLine</code> determines the next step.</li>
+    </ul>
 
+    <br/>
+
+    <b>4. State Monad — threading state</b>
+    <ul>
         <br/>
-
-        <b>4. State Monad — threading state</b>
-        <ul>
-            <li>Very practical for simulations, counters, parsers, etc.</li>
-        </ul>
+        <li>Very practical for simulations, counters, parsers, etc.</li>
+    </ul>
 
 <pre><code class="language-haskell line-numbers">import Control.Monad.State
 
@@ -8839,16 +8756,18 @@ example10 = runState (tick &gt;&gt; tick &gt;&gt; tick) 0
 -- tick 2: returns 1, state becomes 2
 -- tick 3: returns 2, state becomes 3
 </code></pre>
-    </li>
+
 
     <br/>
+    <br/>
+
 
     <!-- ===================== PUTTING IT ALL TOGETHER ===================== -->
-    <li><b>Putting It All Together: A Practical Example</b>
-        <br/>
-        <ul>
-            <li>Task: read two numbers, validate them, and add them.</li>
-        </ul>
+    <li><b>Putting It All Together: A Practical Example</b></li></li>
+    <br/>
+    <ul>
+        <li>Task: read two numbers, validate them, and add them.</li>
+    </ul>
 
 <pre><code class="language-haskell line-numbers">readInt :: String -&gt; Maybe Int
 readInt s =
@@ -8868,48 +8787,8 @@ example11 = do
         Nothing   -&gt; putStrLn "Invalid input"
         Just sum  -&gt; putStrLn ("Sum: " ++ show sum)
 </code></pre>
-
-        <ul>
-            <li><b>Functor:</b> use <code>readInt</code> <em>inside</em> <code>IO</code>.</li>
-            <li><b>Applicative:</b> combine two <code>Maybe</code> computations.</li>
-            <li><b>Monad:</b> the <code>IO</code> block uses <code>do</code> for sequential steps.</li>
-        </ul>
-    </li>
-
-    <br/>
-
-    <li><b>Summary</b>
-        <br/>
-        <ul>
-            <li><b>Functor:</b> transform inside a context.</li>
-            <li><b>Applicative:</b> combine independent contexts.</li>
-            <li><b>Monad:</b> sequence dependent contexts.</li>
-        </ul>
-
-        <br/>
-        <ul>
-            <li>Real usage:
-                <ul>
-                    <li><code>Maybe</code> for failure</li>
-                    <li><code>[]</code> for nondeterminism</li>
-                    <li><code>IO</code> for side effects</li>
-                    <li><code>State</code> for stateful computations</li>
-                </ul>
-            </li>
-        </ul>
-
-        <ul>
-            <li>If you remember:
-                <ul>
-                    <li><b>Functor = apply</b></li>
-                    <li><b>Applicative = combine</b></li>
-                    <li><b>Monad = sequence</b></li>
-                </ul>
-                you already have the correct intuition.</li>
-        </ul>
-    </li>
-
 </ol>
+<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
