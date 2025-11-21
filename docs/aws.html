@@ -163,6 +163,7 @@
         <li><a href="#aws-dynamodb-intro">Introduction to AWS DynamoDB</a></li>
         <li><a href="#aws-cli-intro">Introduction to AWS CLI</a></li>
         <li><a href="#aws-lambda-intro">Introduction to AWS Lambda</a></li>
+        <li><a href="#aws-app-hosting-collaboration">How EC2, S3, RDS, and CLI Work Together?</a></li>
     </ul>
 </nav>
 <hr/>
@@ -247,73 +248,73 @@
     AWS groups its services into several categories:
     <ul>
         <br/>
-        <li><b>1. Compute</b> — running applications
+        <li>1. Compute — running applications
             <ul>
-                <li><code>EC2</code> — virtual machines</li>
-                <li><code>Lambda</code> — serverless functions</li>
-                <li><code>ECS / EKS</code> — container orchestration</li>
+                <li><code>EC2</code>: virtual machines</li>
+                <li><code>Lambda</code>: serverless functions</li>
+                <li><code>ECS / EKS</code>: container orchestration</li>
             </ul>
         </li>
 
         <br/>
-        <li><b>2. Storage</b>
+        <li>2. Storage
             <ul>
-                <li><code>S3</code> — object storage</li>
-                <li><code>EBS</code> — block storage for EC2</li>
-                <li><code>Glacier</code> — long-term archival storage</li>
+                <li><code>S3</code>: object storage</li>
+                <li><code>EBS</code>: block storage for EC2</li>
+                <li><code>Glacier</code>: long-term archival storage</li>
             </ul>
         </li>
 
         <br/>
-        <li><b>3. Databases</b>
+        <li>3. Databases
             <ul>
-                <li><code>RDS</code> — managed SQL databases (MySQL, PostgreSQL, etc.)</li>
-                <li><code>DynamoDB</code> — fully managed NoSQL</li>
-                <li><code>ElastiCache</code> — Redis / Memcached</li>
+                <li><code>RDS</code>: managed SQL databases (MySQL, PostgreSQL, etc.)</li>
+                <li><code>DynamoDB</code>: fully managed NoSQL</li>
+                <li><code>ElastiCache</code>: Redis / Memcached</li>
             </ul>
         </li>
 
         <br/>
-        <li><b>4. Networking</b>
+        <li>4. Networking
             <ul>
-                <li><code>VPC</code> — virtual private network</li>
-                <li><code>Route 53</code> — DNS</li>
-                <li><code>CloudFront</code> — CDN for global distribution</li>
+                <li><code>VPC</code>: virtual private network</li>
+                <li><code>Route 53</code>: DNS</li>
+                <li><code>CloudFront</code>: CDN for global distribution</li>
             </ul>
         </li>
 
         <br/>
-        <li><b>5. Security & Identity</b>
+        <li>5. Security &amp; Identity
             <ul>
-                <li><code>IAM</code> — identity &amp; permissions</li>
-                <li><code>KMS</code> — encryption keys</li>
-                <li><code>WAF</code> — web firewall</li>
+                <li><code>IAM</code>: identity &amp; permissions</li>
+                <li><code>KMS</code>: encryption keys</li>
+                <li><code>WAF</code>: web firewall</li>
             </ul>
         </li>
 
         <br/>
-        <li><b>6. DevOps & Monitoring</b>
+        <li>6. DevOps &amp; Monitoring
             <ul>
-                <li><code>CloudWatch</code> — metrics &amp; logs</li>
-                <li><code>CloudTrail</code> — account audit logs</li>
-                <li><code>CodePipeline / CodeBuild</code> — CI/CD</li>
+                <li><code>CloudWatch</code>: metrics &amp; logs</li>
+                <li><code>CloudTrail</code>: account audit logs</li>
+                <li><code>CodePipeline / CodeBuild</code>: CI/CD</li>
             </ul>
         </li>
 
         <br/>
-        <li><b>7. AI & Machine Learning</b>
+        <li>7. AI &amp; Machine Learning
             <ul>
-                <li><code>SageMaker</code> — train &amp; deploy ML models</li>
-                <li><code>Rekognition</code> — image/video recognition</li>
+                <li><code>SageMaker</code>: train &amp; deploy ML models</li>
+                <li><code>Rekognition</code>: image/video recognition</li>
             </ul>
         </li>
 
         <br/>
-        <li><b>8. Serverless (Key Modern Trend)</b>
+        <li>8. Serverless (Key Modern Trend)
             <ul>
-                <li><code>Lambda</code> — run functions without servers</li>
-                <li><code>API Gateway</code> — HTTP APIs for Lambda</li>
-                <li><code>DynamoDB</code> — serverless database</li>
+                <li><code>Lambda</code>: run functions without servers</li>
+                <li><code>API Gateway</code>: HTTP APIs for Lambda</li>
+                <li><code>DynamoDB</code>: serverless database</li>
             </ul>
         </li>
     </ul>
@@ -2100,6 +2101,300 @@ Push logs → needs logs:CreateLogStream + logs:PutLogEvents
 
 <pre><code class="language-bash line-numbers">aws logs tail /aws/lambda/myFunction --follow</code></pre>
 
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="aws-app-hosting-collaboration">How EC2, S3, RDS, and AWS CLI Work Together to Host an Application</h3>
+<ol>
+
+    <li><b>Overview: Hosting an Application on AWS</b></li>
+    <ul>
+        <br/>
+        <li>AWS provides many services that can collaborate to host and operate a complete application stack.</li>
+        <br/>
+        <li>The most common trio for a web application is:
+            <ul>
+                <li><b>Amazon EC2</b> → compute (runs your backend/server)</li>
+                <li><b>Amazon S3</b> → static storage (files, images, static websites)</li>
+                <li><b>Amazon RDS</b> → managed database (MySQL, PostgreSQL, MariaDB, etc.)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>These three services, combined with the <b>AWS CLI</b>, form a complete deployment and management toolkit.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Role of Each AWS Service in an Application</b></li>
+    <ul>
+        <br/>
+        <li><b>Amazon EC2</b> – Runs your application code, such as:
+            <ul>
+                <li>Node.js backend</li>
+                <li>Python Flask/Django</li>
+                <li>Java Spring Boot</li>
+                <li>Go or Rust API</li>
+                <li>React/Vue SSR servers</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Amazon S3</b> – Stores:
+            <ul>
+                <li>images</li>
+                <li>videos</li>
+                <li>user uploads</li>
+                <li>static frontend (React / Vue SPA)</li>
+                <li>backups</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Amazon RDS</b> – Provides a fully managed relational database:
+            <ul>
+                <li>PostgreSQL</li>
+                <li>MySQL</li>
+                <li>MariaDB</li>
+                <li>Oracle / SQL Server (enterprise)</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>AWS CLI</b> – Automates everything from your terminal:
+            <ul>
+                <li>uploading website files</li>
+                <li>starting EC2 instances</li>
+                <li>managing RDS snapshots</li>
+                <li>deployments and maintenance</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Typical Full-Stack Architecture</b></li>
+    <br/>
+    <ul>
+        <li>A very common AWS architecture for hosting an app looks like this:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">
+                  ┌─────────────────────┐
+                  │      S3 Bucket      │ ← stores static files, frontend, uploads
+                  └─────────┬───────────┘
+                            │
+                            ▼
+                     CloudFront CDN (optional)
+                            │
+                            ▼
+          ┌────────────────────────────────┐
+          │            EC2 Server          │ ← backend/API server
+          │   (Node.js, Python, Java, ...) │
+          └─────────────────┬──────────────┘
+                            │
+                            ▼
+                 RDS Managed Database
+                (PostgreSQL, MySQL, ...)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Each component serves a different concern:
+            <ul>
+                <li>S3: static assets + frontend</li>
+                <li>EC2: app logic and API</li>
+                <li>RDS: persistent relational data</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Step-by-Step Workflow: Hosting an App Using EC2, S3, and RDS</b></li>
+    <br/>
+    <ul>
+        <li>This is a typical procedure you follow when hosting an application on AWS.</li>
+    </ul>
+
+    <ol>
+    <br/>
+    <li>Create and Configure an RDS Database</li>
+    <ul>
+        <li>Select DB engine (e.g., PostgreSQL).</li>
+        <li>Choose instance type (t3.micro, t3.small, etc.).</li>
+        <li>Set master username/password.</li>
+        <li>Create a security group that allows EC2 to access RDS.</li>
+        <li>Get your database endpoint, e.g.:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">mydb.abcd1234xyz.eu-central-1.rds.amazonaws.com</code></pre>
+
+    <br/>
+    <li>Upload Your Website or Assets to S3</li>
+
+<pre><code class="language-bash line-numbers">aws s3 mb s3://my-frontend-site
+aws s3 sync ./dist s3://my-frontend-site
+</code></pre>
+
+    <ul>
+        <li>Enable static hosting if it’s a frontend app:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws s3 website s3://my-frontend-site --index-document index.html
+</code></pre>
+
+    <br/>
+    <li>Launch an EC2 Instance</li>
+    <ul>
+        <li>Choose an AMI (Amazon Linux, Ubuntu, etc.).</li>
+        <li>Choose instance type (t2.micro free-tier eligible).</li>
+        <li>Attach a security group that allows:
+            <ul>
+                <li>HTTP (port 80)</li>
+                <li>HTTPS (port 443)</li>
+                <li>SSH (port 22)</li>
+            </ul>
+        </li>
+        <li>SSH into your EC2 instance:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">ssh -i mykey.pem ec2-user@ec2-1-2-3-4.compute.amazonaws.com</code></pre>
+
+    <br/>
+    <li>Deploy Application Code to EC2</li>
+
+<pre><code class="language-bash line-numbers">sudo yum install git -y
+git clone https://github.com/my/app.git
+cd app
+npm install
+npm start
+</code></pre>
+
+    <ul>
+        <li>Configure environment variables on EC2 so your backend can use RDS:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">export DB_HOST="mydb.abcd1234.rds.amazonaws.com"
+export DB_USER="admin"
+export DB_PASS="mypassword"
+</code></pre>
+
+    <br/>
+    <li>Integrate EC2 with S3</li>
+    <ul>
+        <li>If your app needs to upload or read files from S3, give EC2 an IAM role with S3 permissions.</li>
+        <li>Your application may use AWS SDK:</li>
+    </ul>
+
+<pre><code class="language-javascript line-numbers">const s3 = new AWS.S3();
+await s3.upload({ Bucket: "my-frontend-site", Key: "upload.png", Body: file });
+</code></pre>
+
+    <br/>
+    <li>Use AWS CLI for Automation and Deployment</li>
+
+<pre><code class="language-bash line-numbers">aws ec2 describe-instances
+aws rds describe-db-instances
+aws s3 sync ./public s3://my-frontend-site
+</code></pre>
+
+    <ul>
+        <li>Common automated tasks:</li>
+        <ul>
+            <li>Backup database</li>
+            <li>Roll out new S3 versions</li>
+            <li>Check EC2 server health</li>
+            <li>Restart backend services</li>
+        </ul>
+        <li>You can also script deployments:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">#!/bin/bash
+aws s3 sync ./dist s3://my-frontend-site
+ssh ec2-user@server "cd app &amp;&amp; git pull &amp;&amp; systemctl restart app"
+</code></pre>
+    </ol>
+
+    <br/><br/>
+
+
+    <li><b>How EC2, S3, and RDS Collaborate Inside the App</b></li>
+    <br/>
+    <ul>
+        <li>They form a standard three-layer architecture:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Browser
+   ▲
+   │    GET static HTML/CSS/JS
+   │
+   ▼
+S3 Static Website Hosting
+   ▲
+   │    AJAX / REST API calls
+   ▼
+EC2 Backend Server
+   ▲
+   │    SQL queries
+   ▼
+RDS Database
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li><b>Where each AWS service fits:</b></li>
+        <ul>
+            <li>S3: Hosts the frontend + assets</li>
+            <li>EC2: Processes business logic and API requests</li>
+            <li>RDS: Stores persistent relational data</li>
+        </ul>
+        <br/>
+        <li><b>AWS CLI automates the entire lifecycle:</b></li>
+        <ul>
+            <li>Upload new S3 static build</li>
+            <li>Restart EC2 backend safely</li>
+            <li>Create RDS snapshots before deployment</li>
+            <li>Scale infrastructure</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Security and IAM Considerations</b></li>
+    <br/>
+    <ul>
+        <li>To let EC2 talk to S3 and RDS securely, you typically configure:</li>
+        <ul>
+            <li><b>IAM Role for EC2</b>:
+                <ul>
+                    <li>Allows S3 read/write</li>
+                    <li>Allows reading secrets or using Parameter Store</li>
+                </ul>
+            </li>
+            <li><b>Security Groups</b>:
+                <ul>
+                    <li>EC2 → RDS: only allow port 5432/3306</li>
+                    <li>S3: IAM-based, not security-group-based</li>
+                </ul>
+            </li>
+            <li><b>HTTPS everywhere</b> using:
+                <ul>
+                    <li>ACM certificates</li>
+                    <li>Load Balancer (ALB)</li>
+                </ul>
+            </li>
+        </ul>
+        <li>Never store passwords in your EC2 instance directly; use:
+            <ul>
+                <li>AWS Systems Manager Parameter Store</li>
+                <li>AWS Secrets Manager</li>
+            </ul>
+        </li>
+    </ul>
     <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
