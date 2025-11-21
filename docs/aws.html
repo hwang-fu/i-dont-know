@@ -159,6 +159,7 @@
         <li><a href="#aws-intro">Introduction</a></li>
         <li><a href="#aws-ec2-intro">Introduction to AWS EC2</a></li>
         <li><a href="#aws-s3-intro">Introduction to AWS S3</a></li>
+        <li><a href="#aws-rds-intro">Introduction to AWS RDS</a></li>
     </ul>
 </nav>
 <hr/>
@@ -1003,6 +1004,298 @@ error document: error.html
     </ul>
     <br/><br/>
 
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="aws-rds-intro">Introduction to AWS RDS (Relational Database Service)</h3>
+<ol>
+
+    <li><b>What Is Amazon RDS?</b></li>
+    <ul>
+        <br/>
+        <li><b>Amazon RDS (Relational Database Service)</b> is AWS’s fully managed service for running relational databases in the cloud.</li>
+        <br/>
+        <li>It allows you to run popular SQL databases without managing:
+            <ul>
+                <li>server setup,</li>
+                <li>backups,</li>
+                <li>patching,</li>
+                <li>OS updates,</li>
+                <li>scaling infrastructure.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Supported database engines:</li>
+        <ul>
+            <li><b>Amazon Aurora</b> (MySQL-compatible or PostgreSQL-compatible)</li>
+            <li><b>MySQL</b></li>
+            <li><b>PostgreSQL</b></li>
+            <li><b>MariaDB</b></li>
+            <li><b>Oracle</b></li>
+            <li><b>Microsoft SQL Server</b></li>
+        </ul>
+        <br/>
+        <li>RDS handles database administration so you can focus on your application.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>RDS vs. Running Databases on EC2</b></li>
+    <br/>
+    <ul>
+        <li>You <i>could</i> install MySQL or PostgreSQL on an EC2 instance, but:</li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>RDS</th>
+            <th>Database on EC2</th>
+        </tr>
+        <tr>
+            <td>Fully managed backups, updates, failover</td>
+            <td>You maintain OS, database engine, patches</td>
+        </tr>
+        <tr>
+            <td>Automatic scaling</td>
+            <td>Manual hardware changes</td>
+        </tr>
+        <tr>
+            <td>High availability options built in</td>
+            <td>You must configure replication/failover</td>
+        </tr>
+        <tr>
+            <td>Monitoring through CloudWatch</td>
+            <td>You install/manage your own monitoring stack</td>
+        </tr>
+        <tr>
+            <td>No direct OS access (more secure)</td>
+            <td>Full OS access (more flexibility)</td>
+        </tr>
+    </table>
+
+    <br/>
+    <ul>
+        <li>Choose RDS when you want reliability and low operational burden.</li>
+        <li>Choose EC2-hosted DB only if you need advanced OS-level customization.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Key RDS Components</b></li>
+    <br/>
+    <ul>
+        <li><b>DB Instance</b></li>
+        <ul>
+            <li>The actual running database server.</li>
+            <li>You choose instance size (CPU/RAM), database engine, and version.</li>
+        </ul>
+
+        <br/>
+
+        <li><b>DB Subnet Group</b></li>
+        <ul>
+            <li>Defines which subnets in your VPC the database can run in.</li>
+        </ul>
+
+        <br/>
+
+        <li><b>Parameter Groups</b></li>
+        <ul>
+            <li>Configuration settings for the DB engine (e.g., MySQL timeouts, PostgreSQL settings).</li>
+        </ul>
+
+        <br/>
+
+        <li><b>Security Groups</b></li>
+        <ul>
+            <li>Firewall rules controlling who can access the database.</li>
+            <li>Only allow trusted EC2 instances or IPs.</li>
+        </ul>
+
+        <br/>
+
+        <li><b>Option Groups</b></li>
+        <ul>
+            <li>Enable optional features (e.g., Oracle components, SQL Server extensions).</li>
+        </ul>
+
+        <br/>
+
+        <li><b>Storage (EBS-backed)</b></li>
+        <ul>
+            <li>RDS stores database data on EBS volumes.</li>
+            <li>You choose:
+                <ul>
+                    <li>General Purpose SSD</li>
+                    <li>Provisioned IOPS SSD</li>
+                    <li>Magnetic (legacy)</li>
+                </ul>
+            </li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>High Availability with Multi-AZ</b></li>
+    <br/>
+    <ul>
+        <li>Multi-AZ deploys two database instances in different Availability Zones.</li>
+        <li>Benefits:
+            <ul>
+                <li>Automatic failover if primary instance fails</li>
+                <li>No manual intervention required</li>
+                <li>Highly durable and stable setup</li>
+            </ul>
+        </li>
+        <li>Primary instance = writes + reads</li>
+        <li>Standby instance = hot standby for failover</li>
+        <li>Not designed for read scaling — for that, use Read Replicas.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Read Replicas (Scaling Read Traffic)</b></li>
+    <br/>
+    <ul>
+        <li>Read replicas are separate DB instances used for scaling read operations.</li>
+        <li>They support:
+            <ul>
+                <li>MySQL</li>
+                <li>PostgreSQL</li>
+                <li>MariaDB</li>
+                <li>Aurora</li>
+            </ul>
+        </li>
+        <li>Use cases:
+            <ul>
+                <li>Analytics queries</li>
+                <li>Reporting</li>
+                <li>Low-latency read distribution</li>
+            </ul>
+        </li>
+        <li>Read Replicas can also be promoted into standalone instances.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Backups and Snapshots</b></li>
+    <br/>
+    <ul>
+        <li>RDS provides:
+            <ul>
+                <li><b>Automated Backups</b>: daily snapshots + transaction logs</li>
+                <li><b>Manual Snapshots</b>: user-triggered backups</li>
+            </ul>
+        </li>
+        <li>Point-in-time recovery:</li>
+        <ul>
+            <li>You can restore the database to any second within the retention period.</li>
+            <li>Extremely useful for recovering from accidental deletions or corruptions.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>RDS Monitoring &amp; Metrics</b></li>
+    <br/>
+    <ul>
+        <li>RDS integrates with Amazon CloudWatch.</li>
+        <li>Monitored metrics include:
+            <ul>
+                <li>CPU usage</li>
+                <li>Memory</li>
+                <li>Storage</li>
+                <li>DB connections</li>
+                <li>I/O throughput</li>
+                <li>Replication lag</li>
+            </ul>
+        </li>
+        <li>You can enable <b>Enhanced Monitoring</b> for OS-level metrics.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Connecting to an RDS Database</b></li>
+    <br/>
+    <ul>
+        <li>When you create an RDS instance, AWS gives you an endpoint:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">
+mydb.abcd1234xyz.eu-central-1.rds.amazonaws.com
+</code></pre>
+
+    <ul>
+        <li>Usage example (PostgreSQL):</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">psql -h mydb.abcd1234xyz.eu-central-1.rds.amazonaws.com \
+     -U myuser -d mydatabase</code></pre>
+
+    <br/>
+    <ul>
+        <li>You must ensure:
+            <ul>
+                <li>VPC security group allows your IP or EC2 instance</li>
+                <li>You are connecting to the correct port:
+                    <ul>
+                        <li>MySQL: 3306</li>
+                        <li>PostgreSQL: 5432</li>
+                        <li>MariaDB: 3306</li>
+                        <li>Oracle: 1521</li>
+                        <li>SQL Server: 1433</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Aurora: The Special RDS Engine</b></li>
+    <br/>
+    <ul>
+        <li>Aurora is a high-performance, cloud-native database compatible with MySQL and PostgreSQL.</li>
+        <li>Benefits:
+            <ul>
+                <li>Up to 5x performance of MySQL</li>
+                <li>Up to 3x performance of PostgreSQL</li>
+                <li>Replication latency &lt; 10ms</li>
+                <li>Distributed, fault-tolerant storage</li>
+                <li>Serverless mode available</li>
+            </ul>
+        </li>
+        <li>Aurora is ideal for large-scale, high-performance systems.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Pricing Summary</b></li>
+    <br/>
+    <ul>
+        <li>RDS pricing includes:</li>
+        <ul>
+            <li>Instance hours (CPU/RAM)</li>
+            <li>Storage (GB-month)</li>
+            <li>Backups (beyond free tier)</li>
+            <li>I/O operations (for some storage types)</li>
+            <li>Data transfer</li>
+            <li>Multi-AZ costs (secondary instance)</li>
+        </ul>
+        <li>Aurora pricing includes:
+            <ul>
+                <li>Instance hours</li>
+                <li>Storage &amp; I/O per request</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
