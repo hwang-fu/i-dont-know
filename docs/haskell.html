@@ -180,6 +180,7 @@
         <li><a href="#haskell-do-notation"><code>do</code> Notation</a></li>
         <li><a href="#haskell-functor-applicative-monad-real-code">Practical Real-World Code Examples of Functor, Applicative, and Monad</a></li>
         <li><a href="#haskell-control-flow">Control Flow</a></li>
+        <li><a href="#haskell-cabal-intro">Introduction to Cabal</a></li>
     </ul>
 </nav>
 <hr/>
@@ -9190,6 +9191,273 @@ printLines xs = forM_ xs $ \line -&gt; do
     <br/>
     <ul>
         <li><code>forM_</code> is like a monadic <code>for-each</code> loop that discards the result list (<code>_</code> means &quot;ignore result&quot;).</li>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-cabal-intro">Introduction to Cabal (Haskell’s Build & Package Tool)</h3>
+<ol>
+
+    <li><b>What Is Cabal?</b></li>
+    <ul>
+        <br/>
+        <li><b>Cabal</b> is the standard build and packaging system for Haskell projects.</li>
+        <br/>
+        <li>It provides:
+            <ul>
+                <li>a declarative project configuration format (<code>.cabal</code> files),</li>
+                <li>automatic dependency resolution,</li>
+                <li>build, test, and install operations,</li>
+                <li>package publishing via Hackage.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Cabal is similar to tools like:
+            <ul>
+                <li><code>npm</code> for JavaScript,</li>
+                <li><code>pip</code> for Python,</li>
+                <li><code>cargo</code> for Rust.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Haskell developers often use:
+            <ul>
+                <li><code>cabal</code> directly, or</li>
+                <li><code>stack</code> (built on top of the Cabal library).</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Key Concepts</b></li>
+    <br/>
+    <ul>
+        <li><b>The Cabal Library</b>
+            <ul>
+                <li>A Haskell library that defines the format and logic for package descriptions.</li>
+                <li>Used by both <code>cabal</code> and <code>stack</code>.</li>
+            </ul>
+        </li>
+
+        <br/>
+
+        <li><b>Hackage</b>
+            <ul>
+                <li>The official community package repository for Haskell.</li>
+                <li>Cabal downloads dependencies from here by default.</li>
+            </ul>
+        </li>
+
+        <br/>
+
+        <li><b>Sandboxes / Nix-style local builds</b>
+            <ul>
+                <li>Modern Cabal uses <b>per-project isolation</b> via <code>cabal.project</code> files.</li>
+                <li>This avoids global dependency pollution.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Creating a New Cabal Project</b></li>
+    <br/>
+    <ul>
+        <li>Create a new project skeleton:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">cabal init
+</code></pre>
+
+    <ul>
+        <li>This asks you several questions:
+            <ul>
+                <li>library / executable / both</li>
+                <li>project name</li>
+                <li>language version</li>
+                <li>dependencies</li>
+                <li>license</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Then it generates:
+            <ul>
+                <li><code>myproject.cabal</code></li>
+                <li><code>cabal.project</code></li>
+                <li><code>app/Main.hs</code> or <code>src/</code> directory</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Understanding the</b> <code>.cabal</code> <b>File</b></li>
+    <br/>
+    <ul>
+        <li>The <code>.cabal</code> file is the heart of your project, it describes:</li>
+        <ul>
+            <li>package name and version</li>
+            <li>exposed modules / source directories</li>
+            <li>dependencies</li>
+            <li>build options</li>
+            <li>executables / libraries / tests</li>
+        </ul>
+        <br/>
+        <li>A minimal example:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">cabal-version:       3.8
+name:                myproject
+version:             0.1.0.0
+
+library
+    exposed-modules:     MyLib
+    hs-source-dirs:      src
+    build-depends:       base &gt;= 4.14 &amp;&amp; < 5
+    default-language:    Haskell2010
+
+executable myproject-exe
+    main-is:             Main.hs
+    hs-source-dirs:      app
+    build-depends:       base, myproject
+    default-language:    Haskell2010
+</code></pre>
+
+    <ul>
+        <li>This is Cabal’s declarative configuration style — no scripting, only specification.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Building, Running, and Testing</b></li>
+    <br/>
+    <ul>
+        <li><b>Build the project:</b></li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">cabal build
+</code></pre>
+
+    <ul>
+        <li>Cabal automatically:
+            <ul>
+                <li>resolves dependencies,</li>
+                <li>compiles Haskell modules,</li>
+                <li>caches build outputs for incremental builds.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/>
+    <br/>
+
+    <ul><li><b>Run an executable:</b></li></ul>
+
+<pre><code class="language-plaintext line-numbers">cabal run myproject-exe
+</code></pre>
+
+    <br/>
+
+    <ul><li><b>Run tests:</b></li></ul>
+
+<pre><code class="language-plaintext line-numbers">cabal test
+</code></pre>
+
+    <ul>
+        <li>Test suites must be defined inside the <code>.cabal</code> file.</li>
+    </ul>
+
+    <br/>
+    <br/>
+
+    <ul><li><b>Repl with project modules:</b></li></ul>
+
+<pre><code class="language-plaintext line-numbers">cabal repl
+</code></pre>
+
+    <ul>
+        <li>Starts a GHCi session with all your project modules loaded.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Working with Dependencies</b></li>
+    <br/>
+    <ul>
+        <li>Cabal resolves dependencies from Hackage.</li>
+        <li>To add a dependency (e.g., <code>text</code>):</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">build-depends: base, text &gt;= 1.2
+</code></pre>
+
+    <ul>
+        <li>Cabal ensures:
+            <ul>
+                <li>version compatibility,</li>
+                <li>no conflicting constraints,</li>
+                <li>consistent builds across modules.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/>
+
+    <ul>
+        <li>To upgrade dependencies:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">cabal update
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Installing and Publishing</b></li>
+    <br/>
+    <ul>
+        <li><b>Install a package locally</b> (into the user environment):</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">cabal install
+</code></pre>
+
+    <br/>
+
+    <ul>
+        <li><b>Publish to Hackage</b> by uploading a source tarball:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">cabal sdist
+</code></pre>
+
+    <ul>
+        <li>This creates a package archive suitable for upload on <b>Hackage</b>.</li>
+    </ul>
+
+    <br/>
+    <ul>
+        <li><b>Check package linting:</b></li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">cabal check
+</code></pre>
+
+    <ul>
+        <li>Ensures your package follows community conventions.</li>
     </ul>
     <br/><br/>
 </ol>
