@@ -176,6 +176,7 @@
         <li><a href="#haskell-type-constructors">What Exactly Does <code>f a</code> (Type Constructor) Mean?</a></li>
         <li><a href="#haskell-monads">Monads</a></li>
         <li><a href="#haskell-zippers">Zippers</a></li>
+        <li><a href="#haskell-let-in"><code>let ... in</code> Expressions</a></li>
     </ul>
 </nav>
 <hr/>
@@ -8009,6 +8010,326 @@ resultTree    = getTree (tree2, ctx2)
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-let-in">Haskell <code>let ... in</code> Expressions</h3>
+<ol>
+    <li><b>Intuition: What is <code>let ... in</code>?</b>
+        <br/>
+        <ul>
+            <li><code>let ... in ...</code> is a way to introduce <b>local names</b> inside an expression.</li>
+            <li>You can think of it as: “Give names to these sub-expressions, then use them in the body.”</li>
+            <li>It is an <b>expression</b> (not a statement) and always has a value.</li>
+        </ul>
+        <br/>
+<pre><code class="language-haskell line-numbers">answer :: Int
+answer =
+    let x = 20
+        y = 22
+    in x + y        -- answer == 42
+</code></pre>
+        <ul>
+            <li><code>let x = 20; y = 22</code> introduces local bindings.</li>
+            <li><code>in x + y</code> is the body that uses those names.</li>
+            <li>The whole <code>let ... in ...</code> is just another expression that evaluates to an <code>Int</code>.</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>General Form and Scope</b>
+        <br/>
+        <ul>
+            <li>General syntax (with layout/indentation):</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">let
+    name1 = expr1
+    name2 = expr2
+    ...
+in bodyExpr
+</code></pre>
+        <ul>
+            <li>All bindings after <code>let</code> are visible only in the <code>in bodyExpr</code> part.</li>
+            <li>They are <b>not</b> visible before the <code>let</code> or outside of the expression.</li>
+        </ul>
+        <br/>
+<pre><code class="language-haskell line-numbers">outside :: Int
+outside =
+    let a = 5
+        b = 7
+    in a * b
+
+-- Here, a and b are NOT visible anymore.
+-- outside == 35
+</code></pre>
+    </li>
+
+    <br/>
+
+    <li><b>Multiple Bindings and Layout (Indentation)</b>
+        <br/>
+        <ul>
+            <li>You can define multiple names after one <code>let</code>.</li>
+            <li>They must be aligned (same indentation) according to Haskell&rsquo;s Layout Rule.</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">area :: Double
+area =
+    let radius   = 10
+        piApprox = 3.14159
+    in piApprox * radius * radius
+</code></pre>
+        <ul>
+            <li><code>radius</code> and <code>piApprox</code> start in the same column → they belong to the same <code>let</code> block.</li>
+            <li>The <code>in</code> is aligned with <code>let</code> (typical style, but not strictly required as long as layout is consistent).</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>Order of Bindings and Laziness</b>
+        <br/>
+        <ul>
+            <li>Bindings inside <code>let</code> are essentially like simultaneous equations; order does not matter conceptually.</li>
+            <li>Because of Haskell&rsquo;s laziness, you can refer to names defined <b>later</b>.</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">weird :: (Int, Int)
+weird =
+    let x = y + 1    -- &quot;forward&quot; reference
+        y = 10
+    in (x, y)
+-- weird == (11, 10)
+</code></pre>
+        <ul>
+            <li>This works because values are not evaluated until needed.</li>
+            <li>This also enables <b>recursive</b> definitions (a name referring to itself).</li>
+        </ul>
+        <br/>
+<pre><code class="language-haskell line-numbers">ones :: [Int]
+ones =
+    let xs = 1 : xs   -- infinite list of 1s
+    in xs
+</code></pre>
+    </li>
+
+    <br/>
+
+    <li><b><code>let ... in</code> vs. <code>where</code></b>
+        <br/>
+        <ul>
+            <li>Both <code>let</code> and <code>where</code> introduce local bindings, but they differ in:
+                <ul>
+                    <li><b>position</b> (expression vs. declaration)</li>
+                    <li><b>scope direction</b></li>
+                </ul>
+            </li>
+        </ul>
+        <br/>
+        <ul>
+            <li><b><code>let ... in</code></b>:
+                <ul>
+                    <li>Used <b>inside expressions</b>.</li>
+                    <li>Bindings come <b>before</b> the expression that uses them.</li>
+                </ul>
+            </li>
+        </ul>
+<pre><code class="language-haskell line-numbers">hypotenuse :: Double -&gt; Double -&gt; Double
+hypotenuse a b =
+    let a2 = a * a
+        b2 = b * b
+    in sqrt (a2 + b2)
+</code></pre>
+        <br/>
+        <ul>
+            <li><b><code>where</code></b>:
+                <ul>
+                    <li>Attached to a definition (usually at top-level or in guards).</li>
+                    <li>Bindings come <b>after</b> the main equation.</li>
+                </ul>
+            </li>
+        </ul>
+<pre><code class="language-haskell line-numbers">hypotenuse' :: Double -&gt; Double -&gt; Double
+hypotenuse' a b = sqrt (a2 + b2)
+  where
+    a2 = a * a
+    b2 = b * b
+</code></pre>
+        <ul>
+            <li>Semantically similar, but:
+                <ul>
+                    <li>Use <code>let ... in</code> when you need a local block <b>inside an expression</b>.</li>
+                    <li>Use <code>where</code> when defining helpers &ldquo;under&rdquo; a function clause.</li>
+                </ul>
+            </li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b><code>let</code> Inside <code>do</code>-notation (No <code>in</code>)</b>
+        <br/>
+        <ul>
+            <li>Inside a <code>do</code>-block, <code>let</code> is slightly different:
+                <ul>
+                    <li>It still introduces local names.</li>
+                    <li>But you <b>do not</b> write <code>in</code>.</li>
+                    <li>The scope is the rest of the <code>do</code>-block below that <code>let</code>.</li>
+                </ul>
+            </li>
+        </ul>
+<pre><code class="language-haskell line-numbers">greet :: IO ()
+greet = do
+    let name = "Haskell"
+        msg  = "Hello, " ++ name
+    putStrLn msg
+</code></pre>
+        <ul>
+            <li><code>let</code> here has type <b>pure bindings</b>, no effect by itself.</li>
+            <li>It only introduces names for later lines in the <code>do</code>-block.</li>
+        </ul>
+        <br/>
+<pre><code class="language-haskell line-numbers">example :: IO ()
+example = do
+    line &lt;- getLine
+    let trimmed = reverse (dropWhile (== ' ') (reverse line))
+    putStrLn trimmed
+</code></pre>
+        <ul>
+            <li><code>line &lt;- getLine</code> is a monadic binding (runs an <code>IO</code> action).</li>
+            <li><code>let trimmed = ...</code> is a pure local definition using <code>line</code>.</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>Pattern Bindings in <code>let</code></b>
+        <br/>
+        <ul>
+            <li>You can use patterns on the left side of <code>=</code> in a <code>let</code>.</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">norm2 :: (Double, Double) -&gt; Double
+norm2 v =
+    let (x, y) = v
+    in sqrt (x * x + y * y)
+</code></pre>
+        <ul>
+            <li><code>(x, y)</code> is a pattern that matches the input tuple.</li>
+            <li>This saves you from writing something like <code>fst v</code> and <code>snd v</code>.</li>
+        </ul>
+        <br/>
+        <ul>
+            <li>Inside <code>do</code>, pattern-bindings work too:</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">printPair :: IO ()
+printPair = do
+    let pair = (1, "one")
+        (n, s) = pair
+    putStrLn (show n ++ " - " ++ s)
+</code></pre>
+    </li>
+
+    <br/>
+
+    <li><b>Using <code>let</code> in List Comprehensions and Guards</b>
+        <br/>
+        <ul>
+            <li><code>let</code> can appear inside list comprehensions to define helper names.</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">pairs :: [(Int, Int)]
+pairs =
+    [ (x, y)
+    | x &lt;- [1..5]
+    , let y = x * x
+    ]
+-- pairs == [(1,1),(2,4),(3,9),(4,16),(5,25)]
+</code></pre>
+        <ul>
+            <li><code>let y = x * x</code> defines <code>y</code> for each <code>x</code>, without filtering anything.</li>
+        </ul>
+        <br/>
+        <ul>
+            <li><code>let</code> can also be used in guards (with <code>MultiWayIf</code> or pattern guards), but that is more advanced.</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>Shadowing and Common Pitfalls</b>
+        <br/>
+        <ul>
+            <li><b>Shadowing</b>: a <code>let</code>-binding can reuse an existing name and hide the outer one.</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">shadow :: Int -&gt; Int
+shadow x =
+    let x = x + 1
+    in x
+</code></pre>
+        <ul>
+            <li>This can be confusing: the right-hand-side <code>x</code> refers to the <b>outer</b> function argument, the <code>x</code> on the left introduces a new inner binding.</li>
+            <li>Many style guides recommend <b>avoiding</b> this kind of shadowing for clarity.</li>
+        </ul>
+        <br/>
+        <ul>
+            <li><b>Do not confuse</b>:
+                <ul>
+                    <li><code>let</code> vs. monadic <code>&lt;-</code></li>
+                    <li><code>let</code> introduces pure bindings; <code>&lt;-</code> runs an action in a monad (like <code>IO</code>).</li>
+                </ul>
+            </li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>Summary</b>
+        <br/>
+        <ul>
+            <li><code>let ... in ...</code>:
+                <ul>
+                    <li>is an <b>expression</b> that introduces local names.</li>
+                    <li>is useful to break down complex expressions into readable parts.</li>
+                    <li>works nicely with Haskell&rsquo;s laziness (order of bindings is flexible, recursion is possible).</li>
+                </ul>
+            </li>
+            <li>Inside <code>do</code>-notation:
+                <ul>
+                    <li>you write just <code>let</code> (no <code>in</code>),</li>
+                    <li>and it introduces pure names for the rest of the block.</li>
+                </ul>
+            </li>
+            <li>Compared to <code>where</code>:
+                <ul>
+                    <li>Use <code>let ... in</code> when you need a local expression-level block.</li>
+                    <li>Use <code>where</code> when attaching helpers to a function equation.</li>
+                </ul>
+            </li>
+        </ul>
+        <br/>
+        <ul>
+            <li>If you keep in mind &ldquo;<b>give names to intermediate results inside an expression</b>&rdquo;, you’ll almost always use <code>let ... in</code> correctly.</li>
+        </ul>
+    </li>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
