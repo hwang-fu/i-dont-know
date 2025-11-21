@@ -182,6 +182,7 @@
         <li><a href="#haskell-control-flow">Control Flow</a></li>
         <li><a href="#haskell-cabal-intro">Introduction to Cabal</a></li>
         <li><a href="#haskell-data-class-grammar">Grammar of <code>data</code> and <code>class</code> Declarations</a></li>
+        <li><a href="#haskell-irrefutable-patterns">Irrefutable Patterns</a></li>
     </ul>
 </nav>
 <hr/>
@@ -9698,6 +9699,252 @@ instance Ord Maybe where ...
         <li>Instances require all type parameters to be applied.</li>
     </ul>
 
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-irrefutable-patterns">Irrefutable Patterns in Haskell</h3>
+<ol>
+
+    <li><b>What Is an Irrefutable Pattern?</b></li>
+    <ul>
+        <br/>
+        <li>A pattern is <b>irrefutable</b> if it <u>never fails to match</u> when evaluated in its usual binding context.</li>
+        <br/>
+        <li>By contrast, a <b>refutable</b> pattern can fail and cause:
+            <ul>
+                <li>a pattern match failure at runtime, or</li>
+                <li>another pattern (like in <code>case</code>) to be tried instead.</li>
+            </ul>
+        </li>
+        <br/>
+        <br/>
+        <li>Common examples:
+            <ul>
+                <li><b>Irrefutable</b>:
+                    <ul>
+                        <li><code>x</code> (simple variable)</li>
+                        <li><code>~pat</code> (lazy pattern)</li>
+                        <li>top-level and <code>let</code> pattern bindings behave <i>as if</i> they had <code>~</code></li>
+                    </ul>
+                </li>
+                <li><b>Refutable</b>:
+                    <ul>
+                        <li><code>(x:xs)</code></li>
+                        <li><code>Just x</code></li>
+                        <li><code>(a,b)</code> in <code>case</code> / function arguments</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Simple Irrefutable Patterns</b></li>
+    <br/>
+    <ul>
+        <li>These patterns never fail:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">x :: Int
+x = 10          -- &quot;x&quot; is an irrefutable pattern
+
+y :: (Int, Int)
+y = (1, 2)      -- at top level, &quot;y&quot; is a variable pattern, always matches
+</code></pre>
+
+    <ul>
+        <li>Even if the right-hand side diverges (<code>undefined</code>, infinite recursion), the <b>pattern itself</b> does not fail, it fails only when you <b>force</b> the value.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Pattern Bindings Are Lazy (Irrefutable) by Default</b></li>
+    <br/>
+    <ul>
+        <li>A subtle (but very important) point: In a <code>let</code> or top-level binding, patterns are <b>lazy</b> → effectively irrefutable.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">example1 :: Int
+example1 =
+    let (x, y) = undefined
+    in 1
+</code></pre>
+
+    <ul>
+        <li>This does <b>not</b> crash, because:
+            <ul>
+                <li>The pattern <code>(x, y)</code> is not forced when the <code>let</code> is entered.</li>
+                <li>It is only forced when <code>x</code> or <code>y</code> is used.</li>
+                <li>Here we return <code>1</code> without ever needing <code>x</code> or <code>y</code>.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">example2 :: Int
+example2 =
+    let (x, y) = undefined
+    in x      -- &quot;x&quot; is demanded, pattern is forced, crash at runtime
+</code></pre>
+
+    <ul>
+        <li>So for <code>let (x, y) = ...</code>, the pattern behaves like a lazy pattern (<code>~(x,y)</code>).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Explicit Lazy Patterns with</b> <code>~</code></li>
+    <br/>
+    <ul>
+        <li>The <b>tilde</b> introduces an explicit <b>lazy (irrefutable) pattern</b>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">f :: (Int, Int) -&gt; Int
+f ~(x, y) = 1
+</code></pre>
+
+    <ul>
+        <li>Here:
+            <ul>
+                <li><code>f undefined</code> returns <code>1</code> without crashing.</li>
+                <li>Because <code>~(x, y)</code> does not force evaluation of the argument unless <code>x</code> or <code>y</code> is used.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">g :: (Int, Int) -&gt; Int
+g (x, y) = 1
+</code></pre>
+
+    <ul>
+        <li>In contrast: <code>g undefined</code> crashes immediately, because the <b>strict</b> pattern <code>(x,y)</code> is forced.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Lazy Patterns in</b> <code>do</code><b>-Notation</b></li>
+    <br/>
+    <ul>
+        <li>In monadic <code>do</code>-blocks, a pattern to the left of <code>&lt;-</code> is normally <b>refutable</b>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">exampleMaybe :: Maybe Int
+exampleMaybe = do
+    Just x &lt;- Just 3  -- OK
+    return x
+
+exampleFail :: Maybe Int
+exampleFail = do
+    Just x &lt;- Nothing -- pattern match failure =&gt; Nothing
+    return x
+</code></pre>
+
+    <ul>
+        <li>We can make the pattern <b>irrefutable</b> using <code>~</code>:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">exampleLazy :: Maybe (Maybe Int)
+exampleLazy = do
+    ~(Just x) &lt;- Nothing
+    return (Just x)
+</code></pre>
+
+    <ul>
+        <li>Here the match with <code>Nothing</code> does <b>not</b> cause an immediate failure.</li>
+        <li>But if <code>x</code> is later forced, evaluation will fail.</li>
+        <li>In practice, lazy patterns in <code>do</code> are used carefully to avoid unwanted failures or to break certain dependency cycles.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Irrefutable Patterns in <code>where</code> / <code>let</code> Blocks</b></li>
+    <br/>
+    <ul>
+        <li>Patterns in <code>where</code> and <code>let</code> behave like lazy bindings by default.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">h :: Int
+h =
+    let pair@(x, y) = undefined
+    in 1       -- OK, pattern not forced
+
+k :: Int
+k =
+    let pair@(x, y) = undefined
+    in x       -- crash: forcing &quot;x&quot; forces the pattern
+</code></pre>
+
+    <ul>
+        <li><code>pair@(x, y)</code> is a pattern binding and is lazily matched.</li>
+        <li>This is effectively an <b>irrefutable</b> pattern at binding time.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Irrefutable vs Refutable in <code>case</code> and Function Arguments</b></li>
+    <br/>
+    <ul>
+        <li>In <code>case</code> and function argument patterns, the default is <b>strict</b> (refutable).</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">strictPair :: (Int, Int) -&gt; Int
+strictPair (x, y) = x + y
+
+lazyPair :: (Int, Int) -&gt; Int
+lazyPair ~(x, y) = 1
+</code></pre>
+
+    <ul>
+        <li><code>strictPair undefined</code> &rarr; crash.</li>
+        <li><code>lazyPair undefined</code> &rarr; <code>1</code>.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">caseExample :: Maybe Int -&gt; Int
+caseExample m =
+    case m of
+        Just x -&gt; x       -- refutable
+        Nothing -&gt; 0
+</code></pre>
+
+    <ul>
+        <li><code>Just x</code> here is refutable:
+            <ul>
+                <li>if <code>m</code> is <code>Nothing</code>, the pattern fails and the next branch is tried.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>When Irrefutable Patterns Are Useful</b></li>
+    <br/>
+    <ul>
+        <li>Irrefutable (lazy) patterns can be useful when:
+            <ul>
+                <li>you want to define something in terms of itself (cyclic structures),</li>
+                <li>you want to bind names to parts of a structure but may not need them,</li>
+                <li>you want to avoid premature pattern match failures in lazy code.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example: tying a knot with an infinite structure:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">ones :: [Int]
+ones = xs
+  where
+    ~(x:xs) = 1 : xs   -- lazy pattern allows &quot;xs&quot; to refer to itself
+</code></pre>
+
+    <ul>
+        <li>Without <code>~</code>, this kind of &quot;knot tying&quot; would crash immediately.</li>
+    </ul>
     <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
