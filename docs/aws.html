@@ -161,6 +161,7 @@
         <li><a href="#aws-s3-intro">Introduction to AWS S3</a></li>
         <li><a href="#aws-rds-intro">Introduction to AWS RDS</a></li>
         <li><a href="#aws-dynamodb-intro">Introduction to AWS DynamoDB</a></li>
+        <li><a href="#aws-cli-intro">Introduction to AWS CLI</a></li>
     </ul>
 </nav>
 <hr/>
@@ -1620,7 +1621,242 @@ LSI: lookup by status within same customer_id partition
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="aws-cli-intro">Introduction to the AWS CLI (Command Line Interface)</h3>
+<ol>
 
+    <li><b>What Is the AWS CLI?</b></li>
+    <ul>
+        <br/>
+        <li>The <b>AWS CLI (Command Line Interface)</b> is a unified tool that lets you manage AWS services directly from your terminal.</li>
+        <br/>
+        <li>It allows you to:
+            <ul>
+                <li>automate cloud workflows,</li>
+                <li>control AWS services via scripts,</li>
+                <li>query resources,</li>
+                <li>deploy applications,</li>
+                <li>manage infrastructure.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Installing the AWS CLI</b></li>
+    <br/>
+    <ul>
+        <li>The recommended version is <b>AWS CLI v2</b>.</li>
+        <li>Basic installation examples:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers"># Linux
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# macOS (pkg installer)
+curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+sudo installer -pkg AWSCLIV2.pkg -target /
+
+# Windows
+Download the installer from AWS website and run it.
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Verify installation:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws --version</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Configuring the AWS CLI</b></li>
+    <br/>
+    <ul>
+        <li>Before using the AWS CLI, configure your credentials:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws configure</code></pre>
+
+    <ul>
+        <li>You will be asked for:</li>
+        <ul>
+            <li><b>AWS Access Key ID</b></li>
+            <li><b>AWS Secret Access Key</b></li>
+            <li><b>Default region</b> (e.g., <code>eu-central-1</code>)</li>
+            <li><b>Output format</b> (json, text, yaml)</li>
+        </ul>
+        <li>Configuration files are stored in <code>~/.aws/</code>:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">
+~/.aws/
+    credentials      ← stores keys
+    config           ← stores region/output profile settings
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>AWS CLI Structure</b></li>
+    <br/>
+    <ul>
+        <li>The AWS CLI uses a consistent structure:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">aws &lt;service&gt; &lt;command&gt; [parameters]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws s3 ls
+aws ec2 describe-instances
+aws dynamodb put-item
+aws iam list-users</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using AWS CLI Profiles</b></li>
+    <br/>
+    <ul>
+        <li>You can create multiple profiles (e.g., dev, staging, production):</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws configure --profile dev</code></pre>
+
+    <ul>
+        <li>Use a profile:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws s3 ls --profile dev</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Common AWS CLI Examples</b></li>
+    <br/>
+
+    <ul><li><b>S3 Commands</b></li></ul>
+
+<pre><code class="language-bash line-numbers">aws s3 ls
+aws s3 cp file.txt s3://my-bucket/
+aws s3 sync ./site s3://my-bucket/site/</code></pre>
+
+    <br/>
+
+    <ul><li><b>EC2 Commands</b></li></ul>
+
+<pre><code class="language-bash line-numbers">aws ec2 describe-instances
+aws ec2 start-instances --instance-ids i-1234567890
+aws ec2 stop-instances --instance-ids i-1234567890</code></pre>
+
+    <br/>
+
+    <ul><li><b>DynamoDB Commands</b></li></ul>
+
+<pre><code class="language-bash line-numbers">aws dynamodb list-tables
+aws dynamodb get-item --table-name Users --key '{"id": {"S": "1"}}'</code></pre>
+
+    <br/>
+
+    <ul><li><b>IAM Commands</b></li></ul>
+
+<pre><code class="language-bash line-numbers">aws iam list-users
+aws iam create-user --user-name alice</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using the AWS CLI with JSON</b></li>
+    <br/>
+    <ul>
+        <li>Most AWS CLI commands return <b>JSON</b> by default.</li>
+        <li>You can format or extract values using <b>--query</b> (JMESPath syntax):</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws ec2 describe-instances --query "Reservations[*].Instances[*].InstanceId"</code></pre>
+
+    <ul>
+        <li>Pretty-print JSON:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws ec2 describe-instances | jq</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>AWS CLI Pagination</b></li>
+    <br/>
+    <ul>
+        <li>Some commands return multiple pages of results.</li>
+        <li>Use <code>--no-paginate</code> to show all at once:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws ec2 describe-instances --no-paginate</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>AWS CLI with Environment Variables</b></li>
+    <br/>
+    <ul>
+        <li>You can also set credentials using environment variables:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">export AWS_ACCESS_KEY_ID="ABC..."
+export AWS_SECRET_ACCESS_KEY="XYZ..."
+export AWS_DEFAULT_REGION="eu-central-1"</code></pre>
+
+    <br/>
+    <ul>
+        <li>This is common in CI/CD pipelines.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>AWS CLI Automation &amp; Scripting</b></li>
+    <br/>
+    <ul>
+        <li>The CLI is perfect for automation:</li>
+        <ul>
+            <li>Bash scripts</li>
+            <li>CI/CD pipelines (GitHub Actions, GitLab CI, Jenkins)</li>
+            <li>Infrastructure automation</li>
+            <li>Deployment scripts</li>
+        </ul>
+        <li>Example script launching an EC2 instance:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">#!/bin/bash
+aws ec2 run-instances \
+  --image-id ami-0abcd1234 \
+  --instance-type t2.micro \
+  --count 1
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Command Completion</b></li>
+    <br/>
+    <ul>
+        <li>The AWS CLI supports command auto-completion:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">complete -C '/usr/local/bin/aws_completer' aws</code></pre>
+
+    <br/>
+    <ul>
+        <li>Then you can press <b>TAB</b> to auto-suggest services and parameters.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
