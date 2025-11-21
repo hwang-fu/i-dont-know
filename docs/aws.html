@@ -160,6 +160,7 @@
         <li><a href="#aws-ec2-intro">Introduction to AWS EC2</a></li>
         <li><a href="#aws-s3-intro">Introduction to AWS S3</a></li>
         <li><a href="#aws-rds-intro">Introduction to AWS RDS</a></li>
+        <li><a href="#aws-dynamodb-intro">Introduction to AWS DynamoDB</a></li>
     </ul>
 </nav>
 <hr/>
@@ -1294,6 +1295,321 @@ mydb.abcd1234xyz.eu-central-1.rds.amazonaws.com
                 <li>Storage &amp; I/O per request</li>
             </ul>
         </li>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="aws-dynamodb-intro">Introduction to AWS DynamoDB</h3>
+<ol>
+
+    <li><b>What Is Amazon DynamoDB?</b></li>
+    <ul>
+        <br/>
+        <li><b>Amazon DynamoDB</b> is a fully managed, serverless, NoSQL key–value and document database offered by AWS.</li>
+        <br/>
+        <li>It provides:
+            <ul>
+                <li><b>Single-digit millisecond performance</b></li>
+                <li><b>Automatic scaling</b> for workloads of any size</li>
+                <li><b>Integrated high availability</b> across multiple AZs</li>
+                <li><b>Zero administration</b>: no servers, no patching, no provisioning</li>
+            </ul>
+        </li>
+        <br/>
+        <li>DynamoDB is massively scalable and commonly used in:
+            <ul>
+                <li>High-traffic web apps</li>
+                <li>Gaming backends</li>
+                <li>IoT systems</li>
+                <li>Real-time bidding platforms</li>
+                <li>Shopping carts and user sessions</li>
+            </ul>
+        </li>
+        <br/>
+        <li>It is one of AWS’s most important NoSQL database services.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>DynamoDB vs. Relational Databases</b></li>
+    <br/>
+    <ul>
+        <li>DynamoDB is <b>NoSQL</b>, meaning:
+            <ul>
+                <li>It does not use tables with fixed columns.</li>
+                <li>Rows (items) may have different attributes.</li>
+                <li>No joins, no complex SQL.</li>
+                <li>The schema is flexible.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Compared to RDS:</li>
+        <br/>
+    </ul>
+
+    <table>
+        <tr>
+            <th>DynamoDB</th>
+            <th>RDS (SQL Databases)</th>
+        </tr>
+        <tr>
+            <td>Schema-less (flexible attributes)</td>
+            <td>Fixed schemas (columns, constraints)</td>
+        </tr>
+        <tr>
+            <td>Horizontal scaling built-in</td>
+            <td>Vertical scaling mostly (larger DB instance)</td>
+        </tr>
+        <tr>
+            <td>Serverless</td>
+            <td>You manage DB instances</td>
+        </tr>
+        <tr>
+            <td>No joins</td>
+            <td>Joins and complex SQL supported</td>
+        </tr>
+        <tr>
+            <td>Key-value + document model</td>
+            <td>Relational model</td>
+        </tr>
+    </table>
+    <br/><br/>
+
+
+    <li><b>Core DynamoDB Concepts</b></li>
+    <br/>
+    <ul>
+        <li><b>Table</b>: The top-level container of items.</li>
+
+        <li><b>Item</b>:
+            <ul>
+                <li>A single record in the table.</li>
+                <li>Equivalent to a “row” in SQL but flexible.</li>
+            </ul>
+        </li>
+
+        <li><b>Attributes</b>:
+            <ul>
+                <li>Key–value pairs inside an item.</li>
+                <li>You can store strings, numbers, lists, maps, boolean, null, etc.</li>
+            </ul>
+        </li>
+
+        <li><b>Primary Key</b>: Determines how data is accessed.
+            <ul>
+                <li><b>Partition Key</b> only (simple key)</li>
+                <li><b>Partition Key + Sort Key</b> (composite key)</li>
+            </ul>
+        </li>
+
+        <li><b>Partition Key</b>:
+            <ul>
+                <li>Determines physical storage location.</li>
+                <li>Items with the same partition key go into the same partition.</li>
+            </ul>
+        </li>
+
+        <li><b>Sort Key</b>:
+            <ul>
+                <li>Allows ordering and range queries within a partition.</li>
+                <li>Useful for time-series data, logs, user activity.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">
+Table: Users
+Partition Key: user_id
+
+Table: Orders
+Partition Key: customer_id
+Sort Key: order_timestamp
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Reading and Writing Data</b></li>
+    <br/>
+    <ul>
+        <li>The most common operations:</li>
+        <ul>
+            <li><b>PutItem</b> — create/replace an item</li>
+            <li><b>GetItem</b> — fetch by primary key</li>
+            <li><b>UpdateItem</b> — update specific attributes</li>
+            <li><b>DeleteItem</b> — delete an item</li>
+            <li><b>Query</b> — get items by partition key, optional sort key conditions</li>
+            <li><b>Scan</b> — read entire table (expensive)</li>
+        </ul>
+        <li>Example using AWS CLI:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers"># Put an item
+aws dynamodb put-item \
+  --table-name Users \
+  --item '{"user_id": {"S": "123"}, "name": {"S": "Alice"}}'
+
+# Get an item
+aws dynamodb get-item \
+  --table-name Users \
+  --key '{"user_id": {"S": "123"}}'
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Query vs. Scan</b></li>
+    <br/>
+    <ul>
+        <li><b>Query</b>:
+            <ul>
+                <li>Fast, efficient</li>
+                <li>Requires partition key</li>
+                <li>Can use sort key filters</li>
+            </ul>
+        </li>
+        <li><b>Scan</b>:
+            <ul>
+                <li>Reads entire table</li>
+                <li>Slow for large datasets</li>
+                <li>Expensive (consumes capacity)</li>
+            </ul>
+        </li>
+        <li>Best practice: <b>avoid Scan whenever possible</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>DynamoDB Scaling Model</b></li>
+    <br/>
+    <ul>
+        <li>DynamoDB scales automatically across multiple servers.</li>
+        <li>Two capacity modes:</li>
+    </ul>
+
+    <ul>
+        <li><b>Provisioned Capacity</b>:
+            <ul>
+                <li>You specify read/write capacity units (RCU/WCU).</li>
+                <li>Auto Scaling can adjust capacity based on traffic.</li>
+            </ul>
+        </li>
+
+        <li><b>On-Demand Capacity</b>:
+            <ul>
+                <li>Pay per request.</li>
+                <li>No planning needed.</li>
+                <li>Great for unpredictable workloads.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/>
+    <ul>
+        <li>Partitions scale automatically:
+            <ul>
+                <li>More traffic → more partitions</li>
+                <li>Even distribution of partition keys is important</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Indexes: GSI and LSI</b></li>
+    <br/>
+    <ul>
+        <li>DynamoDB provides two types of secondary indexes:</li>
+    </ul>
+
+    <ul>
+        <li><b>LSI (Local Secondary Index)</b>:
+            <ul>
+                <li>Shares the same partition key</li>
+                <li>Different sort key</li>
+                <li>Created when the table is created (cannot be added later)</li>
+            </ul>
+        </li>
+
+        <li><b>GSI (Global Secondary Index)</b>:
+            <ul>
+                <li>Completely separate partition and sort keys</li>
+                <li>Can be added at any time</li>
+                <li>Useful for alternate access patterns</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">
+Table: Orders
+Partition Key: customer_id
+Sort Key: order_timestamp
+
+GSI: lookup by product_id
+LSI: lookup by status within same customer_id partition
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>DynamoDB Streams</b></li>
+    <br/>
+    <ul>
+        <li>DynamoDB can stream real-time changes to other AWS services.</li>
+        <li><b>DynamoDB Streams</b> captures:
+            <ul>
+                <li>new items</li>
+                <li>updates</li>
+                <li>deletes</li>
+            </ul>
+        </li>
+        <li>Common use cases:
+            <ul>
+                <li>Trigger AWS Lambda whenever an item changes</li>
+                <li>Replication across regions</li>
+                <li>Event-driven architectures</li>
+            </ul>
+        </li>
+        <li>Streams are strongly integrated with Lambda.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>DynamoDB Security</b></li>
+    <br/>
+    <ul>
+        <li>Security is managed through:</li>
+        <ul>
+            <li><b>AWS IAM</b> — who can read/write tables</li>
+            <li><b>Encryption at rest</b> — KMS-managed</li>
+            <li><b>Encryption in transit</b> — HTTPS</li>
+            <li><b>VPC Endpoints</b> — private network access</li>
+        </ul>
+        <li>DynamoDB is secure by default and designed for multi-tenant AWS architecture.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Typical Use Cases</b></li>
+    <br/>
+    <ul>
+        <li>DynamoDB is widely used in:</li>
+        <ul>
+            <li>Shopping cart systems</li>
+            <li>User profiles and sessions</li>
+            <li>Real-time bidding/ad tech</li>
+            <li>Leaderboards and gaming</li>
+            <li>IoT telemetry</li>
+            <li>Chat/messaging apps</li>
+            <li>Serverless backends (Lambda + API Gateway)</li>
+        </ul>
+        <li>Its key–value and high-performance nature makes it ideal for high-scale workloads.</li>
     </ul>
     <br/><br/>
 </ol>
