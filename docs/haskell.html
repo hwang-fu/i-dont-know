@@ -178,6 +178,7 @@
         <li><a href="#haskell-zippers">Zippers</a></li>
         <li><a href="#haskell-let-in"><code>let ... in</code> Expressions</a></li>
         <li><a href="#haskell-do-notation"><code>do</code> Notation</a></li>
+        <li><a href="#haskell-functor-applicative-monad-real-code">Practical Real-World Code Examples of Functor, Applicative, and Monad</a></li>
     </ul>
 </nav>
 <hr/>
@@ -8602,7 +8603,313 @@ let x = 5 -- ✔ Correct
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-functor-applicative-monad-real-code">Practical Real-World Code Examples of Functor, Applicative, and Monad</h3>
+<ol>
 
+    <li><b>Introduction: Why These Concepts Matter in Practice</b>
+        <br/>
+        <ul>
+            <li><b>Functor</b>: lets you apply a pure function inside a context (like <code>Maybe</code>, <code>[]</code>, <code>IO</code>).</li>
+            <li><b>Applicative</b>: lets you apply a function <b>inside</b> a context to arguments also inside contexts. Useful for combining independent effects.</li>
+            <li><b>Monad</b>: lets you run computations where each step <b>depends on the result</b> of the previous step.</li>
+        </ul>
+        <br/>
+        <ul>
+            <li>This chapter focuses entirely on <b>practical</b> examples with <b>real outputs</b>, to show how they behave intuitively.</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <!-- ===================== FUNCTOR ===================== -->
+    <li><b>Functor: Apply a Pure Function Inside a Context</b>
+        <br/>
+        <ul>
+            <li>The key method is <code>fmap :: (a -&gt; b) -&gt; f a -&gt; f b</code>.</li>
+            <li>It lifts a pure function into a container / effect.</li>
+        </ul>
+
+        <br/>
+        <b>1. Maybe as Functor</b>
+<pre><code class="language-haskell line-numbers">-- Double a number inside Maybe
+example1 :: Maybe Int
+example1 = fmap (*2) (Just 10)
+
+-- Nothing stays Nothing
+example2 :: Maybe Int
+example2 = fmap (*2) Nothing
+</code></pre>
+
+        <ul>
+            <li><b>Results:</b></li>
+        </ul>
+<pre><code class="language-plaintext line-numbers">example1 == Just 20
+example2 == Nothing
+</code></pre>
+
+        <br/>
+
+        <b>2. List as Functor</b>
+<pre><code class="language-haskell line-numbers">example3 :: [Int]
+example3 = fmap (+1) [10, 20, 30]
+</code></pre>
+<pre><code class="language-plaintext line-numbers">example3 == [11, 21, 31]
+</code></pre>
+
+        <br/>
+
+        <b>3. IO as Functor</b>
+<pre><code class="language-haskell line-numbers">main1 :: IO ()
+main1 = do
+    msg &lt;- fmap (map toUpper) getLine
+    putStrLn msg
+</code></pre>
+
+        <ul>
+            <li><b>Behavior:</b> If user types <code>"hello"</code>, output is <code>"HELLO"</code>.</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <!-- ===================== APPLICATIVE ===================== -->
+    <li><b>Applicative: Combine Independent Effects</b>
+        <br/>
+        <ul>
+            <li>Applicative allows applying functions inside a context using <code>&lt;*&gt;</code>.</li>
+            <li>Key method:
+                <ul>
+                    <li><code>pure :: a -&gt; f a</code></li>
+                    <li><code>(&lt;*&gt;) :: f (a -&gt; b) -&gt; f a -&gt; f b</code></li>
+                </ul>
+            </li>
+            <li>Main use case: running independent computations simultaneously.</li>
+        </ul>
+
+        <br/><b>1. Combining Maybe values</b>
+<pre><code class="language-haskell line-numbers">-- Add two Maybe numbers
+example4 :: Maybe Int
+example4 = pure (+) &lt;*&gt; Just 3 &lt;*&gt; Just 5
+</code></pre>
+
+<pre><code class="language-plaintext line-numbers">example4 == Just 8
+</code></pre>
+
+        <ul>
+            <li>If any part fails, whole computation is <code>Nothing</code>:</li>
+        </ul>
+
+<pre><code class="language-haskell line-numbers">example5 :: Maybe Int
+example5 = pure (+) &lt;*&gt; Just 3 &lt;*&gt; Nothing
+</code></pre>
+
+<pre><code class="language-plaintext line-numbers">example5 == Nothing
+</code></pre>
+
+        <br/>
+
+        <b>2. Applicative IO — independent input</b>
+<pre><code class="language-haskell line-numbers">main2 :: IO ()
+main2 = do
+    pair &lt;- (,) &lt;$&gt; getLine &lt;*&gt; getLine
+    print pair
+</code></pre>
+
+        <ul>
+            <li><b>Behavior:</b> Prompts user twice and prints a tuple.</li>
+            <li>If user enters:
+                <ul>
+                    <li><code>"a"</code></li>
+                    <li><code>"b"</code></li>
+                </ul>
+                Output is <code>("a","b")</code>.
+            </li>
+        </ul>
+
+        <br/>
+
+        <b>3. Applicative Lists (Cartesian product)</b>
+<pre><code class="language-haskell line-numbers">example6 :: [Int]
+example6 = pure (+1) &lt;*&gt; [10,20,30]
+</code></pre>
+
+<pre><code class="language-plaintext line-numbers">example6 == [11,21,31]
+</code></pre>
+
+        <ul>
+            <li>You can build pairings:</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">example7 = (,) &lt;$&gt; [1,2] &lt;*&gt; ['a','b']
+</code></pre>
+
+<pre><code class="language-plaintext line-numbers">example7 == [(1,'a'),(1,'b'),(2,'a'),(2,'b')]
+</code></pre>
+    </li>
+
+    <br/>
+
+    <!-- ===================== MONAD ===================== -->
+    <li><b>Monad: Dependent Sequencing</b>
+        <br/>
+        <ul>
+            <li>Monad lets you run sequential computations where later steps <b>depend on earlier results</b>.</li>
+            <li>Uses:
+                <ul>
+                    <li><code>&gt;&gt;=</code> (bind)</li>
+                    <li><code>return</code></li>
+                </ul>
+            </li>
+            <li>Unlike Applicative, Monads allow dependent logic.</li>
+        </ul>
+
+        <br/>
+
+        <b>1. Maybe as Monad — sequential failure</b>
+<pre><code class="language-haskell line-numbers">safeDiv :: Int -&gt; Int -&gt; Maybe Int
+safeDiv _ 0 = Nothing
+safeDiv x y = Just (x `div` y)
+
+example8 :: Maybe Int
+example8 = do
+    a &lt;- safeDiv 100 2   -- Just 50
+    b &lt;- safeDiv a 5     -- Just 10
+    return b
+</code></pre>
+
+<pre><code class="language-plaintext line-numbers">example8 == Just 10
+</code></pre>
+
+        <ul>
+            <li>If any step divides by zero → whole chain becomes <code>Nothing</code>.</li>
+        </ul>
+
+        <br/>
+
+        <b>2. List Monad — branching / nondeterminism</b>
+<pre><code class="language-haskell line-numbers">example9 :: [(Int, Int)]
+example9 = do
+    x &lt;- [1,2]
+    y &lt;- [10,20]
+    return (x,y)
+</code></pre>
+
+<pre><code class="language-plaintext line-numbers">example9 == [(1,10),(1,20),(2,10),(2,20)]
+</code></pre>
+
+        <ul>
+            <li>Each choice branches → list monad acts like nondeterministic computation.</li>
+        </ul>
+
+        <br/>
+
+        <b>3. IO Monad — dependent input/output</b>
+<pre><code class="language-haskell line-numbers">main3 :: IO ()
+main3 = do
+    putStrLn "What is your name?"
+    name &lt;- getLine
+    putStrLn ("Hello, " ++ name ++ "!")
+</code></pre>
+
+        <ul>
+            <li>The output of <code>getLine</code> determines the next step.</li>
+        </ul>
+
+        <br/>
+
+        <b>4. State Monad — threading state</b>
+        <ul>
+            <li>Very practical for simulations, counters, parsers, etc.</li>
+        </ul>
+
+<pre><code class="language-haskell line-numbers">import Control.Monad.State
+
+tick :: State Int Int
+tick = do
+    n &lt;- get
+    put (n + 1)
+    return n
+
+example10 :: (Int, Int)
+example10 = runState (tick &gt;&gt; tick &gt;&gt; tick) 0
+</code></pre>
+
+<pre><code class="language-plaintext line-numbers">example10 == (2,3)
+-- Explanation:
+-- tick 1: returns 0, state becomes 1
+-- tick 2: returns 1, state becomes 2
+-- tick 3: returns 2, state becomes 3
+</code></pre>
+    </li>
+
+    <br/>
+
+    <!-- ===================== PUTTING IT ALL TOGETHER ===================== -->
+    <li><b>Putting It All Together: A Practical Example</b>
+        <br/>
+        <ul>
+            <li>Task: read two numbers, validate them, and add them.</li>
+        </ul>
+
+<pre><code class="language-haskell line-numbers">readInt :: String -&gt; Maybe Int
+readInt s =
+    case reads s of
+        [(n, "")] -&gt; Just n
+        _         -&gt; Nothing
+
+example11 :: IO ()
+example11 = do
+    putStrLn "Enter a number:"
+    x &lt;- readInt &lt;$&gt; getLine       -- Functor: apply inside IO
+    putStrLn "Enter another:"
+    y &lt;- readInt &lt;$&gt; getLine       -- Functor again
+
+    let result = pure (+) &lt;*&gt; x &lt;*&gt; y   -- Applicative: combine Maybe
+    case result of
+        Nothing   -&gt; putStrLn "Invalid input"
+        Just sum  -&gt; putStrLn ("Sum: " ++ show sum)
+</code></pre>
+
+        <ul>
+            <li><b>Functor:</b> use <code>readInt</code> <em>inside</em> <code>IO</code>.</li>
+            <li><b>Applicative:</b> combine two <code>Maybe</code> computations.</li>
+            <li><b>Monad:</b> the <code>IO</code> block uses <code>do</code> for sequential steps.</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>Summary</b>
+        <br/>
+        <ul>
+            <li><b>Functor:</b> transform inside a context.</li>
+            <li><b>Applicative:</b> combine independent contexts.</li>
+            <li><b>Monad:</b> sequence dependent contexts.</li>
+        </ul>
+
+        <br/>
+        <ul>
+            <li>Real usage:
+                <ul>
+                    <li><code>Maybe</code> for failure</li>
+                    <li><code>[]</code> for nondeterminism</li>
+                    <li><code>IO</code> for side effects</li>
+                    <li><code>State</code> for stateful computations</li>
+                </ul>
+            </li>
+        </ul>
+
+        <ul>
+            <li>If you remember:
+                <ul>
+                    <li><b>Functor = apply</b></li>
+                    <li><b>Applicative = combine</b></li>
+                    <li><b>Monad = sequence</b></li>
+                </ul>
+                you already have the correct intuition.</li>
+        </ul>
+    </li>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
