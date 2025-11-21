@@ -158,6 +158,7 @@
     <ul style="line-height: 1.8;">
         <li><a href="#aws-intro">Introduction</a></li>
         <li><a href="#aws-ec2-intro">Introduction to AWS EC2</a></li>
+        <li><a href="#aws-s3-intro">Introduction to AWS S3</a></li>
     </ul>
 </nav>
 <hr/>
@@ -708,6 +709,298 @@
         </tr>
     </table>
 
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="aws-s3-intro">Introduction to AWS S3 (Simple Storage Service)</h3>
+<ol>
+
+    <li><b>What Is Amazon S3?</b></li>
+    <ul>
+        <br/>
+        <li><b>Amazon S3 (Simple Storage Service)</b> is AWS’s globally scalable, durable, fully managed object storage service.</li>
+        <br/>
+        <li>It allows you to store and retrieve any amount of data at any time, from anywhere on the Internet.</li>
+        <br/>
+        <li>S3 is commonly used for:
+            <ul>
+                <li>Static website hosting</li>
+                <li>Backups and disaster recovery</li>
+                <li>Storing files, images, logs, documents, videos</li>
+                <li>Data lakes and big data analytics</li>
+                <li>CDN distribution with CloudFront</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How S3 Stores Data: Buckets and Objects</b></li>
+    <ul>
+        <br/>
+        <li><b>Bucket</b>:
+            <ul>
+                <li>A top-level container that holds your data.</li>
+                <li>Bucket names must be globally unique (shared across all AWS customers).</li>
+                <li>Each bucket lives in exactly one AWS region.</li>
+            </ul>
+        </li>
+
+        <br/>
+        <li><b>Object</b>:
+            <ul>
+                <li>The file you store in S3.</li>
+                <li>Can be any type: image, PDF, video, log file, JSON, zipped backup, etc.</li>
+                <li>Each object has:
+                    <ul>
+                        <li>a key (the “full path” or file name)</li>
+                        <li>data (up to 5 TB per object)</li>
+                        <li>metadata</li>
+                        <li>optional ACLs (access control lists)</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+
+        <br/>
+        <li><b>Key</b> (Object Key):
+            <ul>
+                <li>A unique identifier for an object inside a bucket.</li>
+                <li>Behaves like a file path: <code>photos/2023/trip/image.png</code></li>
+                <li>S3 looks like a folder structure but internally is flat storage.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Accessing S3</b></li>
+    <ul>
+        <br/>
+        <li>You can access S3 using:
+            <ul>
+                <li>The AWS Web Console (GUI)</li>
+                <li>The AWS CLI</li>
+                <li>SDKs (Python, Java, Node.js, Go, Rust, C#)</li>
+                <li>The REST API</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Basic AWS CLI examples:</li>
+
+<pre><code class="language-bash line-numbers"># List buckets
+aws s3 ls
+
+# List objects inside a bucket
+aws s3 ls s3://my-bucket/
+
+# Upload a file
+aws s3 cp localfile.txt s3://my-bucket/
+
+# Download a file
+aws s3 cp s3://my-bucket/file.txt localfile.txt
+
+# Sync a whole folder
+aws s3 sync ./localfolder s3://my-bucket/</code></pre>
+
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Object Storage vs. Filesystem Storage</b></li>
+    <br/>
+    <ul>
+        <li>S3 is <b>object storage</b>, not a filesystem.</li>
+        <br/>
+        <li>That means:
+            <ul>
+                <li>No “rename” (actually a copy + delete)</li>
+                <li>No traditional folders (just prefixes in object keys)</li>
+                <li>Objects are immutable (overwrites replace the whole object)</li>
+                <li>No partial file edits (you upload again)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This design makes S3 extremely scalable and durable.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>S3 Storage Classes</b></li>
+    <br/>
+    <table>
+        <tr>
+            <th>Storage Class</th>
+            <th>Description</th>
+            <th>Use Case</th>
+        </tr>
+        <tr>
+            <td><b>S3 Standard</b></td>
+            <td>Highest availability and performance</td>
+            <td>General-purpose, frequently accessed data</td>
+        </tr>
+        <tr>
+            <td><b>S3 Standard-IA</b> (Infrequent Access)</td>
+            <td>Lower cost, slightly lower availability</td>
+            <td>Backup, disaster recovery, long-term assets</td>
+        </tr>
+        <tr>
+            <td><b>S3 One Zone-IA</b></td>
+            <td>Data stored in only one AZ</td>
+            <td>Cost saving for easily reproducible data</td>
+        </tr>
+        <tr>
+            <td><b>S3 Glacier</b></td>
+            <td>Very low-cost archival storage</td>
+            <td>Long-term backups, regulatory data</td>
+        </tr>
+        <tr>
+            <td><b>S3 Glacier Deep Archive</b></td>
+            <td>Lowest cost storage class</td>
+            <td>Cold archives; retrieval may take hours</td>
+        </tr>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>S3 Bucket Policies &amp; Access Control</b></li>
+    <br/>
+    <ul>
+        <li><b>Bucket Policies</b>:
+            <ul>
+                <li>JSON-based IAM policy documents applied to a bucket.</li>
+                <li>Used to control read/write permissions.</li>
+                <li>Can allow public access or restrict by IP address or AWS account.</li>
+            </ul>
+        </li>
+
+        <li><b>IAM Policies</b>:
+            <ul>
+                <li>Attached to users, roles, or groups.</li>
+                <li>Control what actions the entity can perform on buckets/objects.</li>
+            </ul>
+        </li>
+
+        <li><b>ACLs (Access Control Lists)</b>:
+            <ul>
+                <li>Legacy feature; usually recommended to avoid unless needed.</li>
+            </ul>
+        </li>
+
+        <li><b>Block Public Access</b>:
+            <ul>
+                <li>A global &quot;safety switch&quot; preventing accidental public exposure.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Static Website Hosting with S3</b></li>
+    <br/>
+    <ul>
+        <li>You can host websites directly from S3 buckets.</li>
+        <li>Examples:</li>
+<pre><code class="language-plaintext line-numbers">index document: index.html
+error document: error.html
+</code></pre>
+    </ul>
+
+    <br/>
+    <ul>
+        <li>To enable website hosting:
+            <ul>
+                <li>Enable “Static Website Hosting” for the bucket</li>
+                <li>Upload <code>index.html</code></li>
+                <li>Make files public via bucket policy</li>
+                <li>Optional: use CloudFront (CDN) for caching and HTTPS</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>S3 Versioning</b></li>
+    <br/>
+    <ul>
+        <li>Versioning lets you preserve multiple versions of the same object.</li>
+        <li>Once enabled:
+            <ul>
+                <li>Objects get unique version IDs</li>
+                <li>Deleting creates a delete marker (you can restore)</li>
+                <li>Accidental overwrites can be fixed</li>
+            </ul>
+        </li>
+        <li>Useful for:
+            <ul>
+                <li>Backups</li>
+                <li>Protection against accidental deletion</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>S3 Lifecycle Rules</b></li>
+    <br/>
+    <ul>
+        <li>Rules that automatically transition objects to cheaper storage classes or delete them.</li>
+        <li>Examples:
+            <ul>
+                <li>Move objects to Standard-IA after 30 days</li>
+                <li>Move to Glacier after 90 days</li>
+                <li>Delete after 1 year</li>
+            </ul>
+        </li>
+        <li>Ideal for long-term storage cost optimization.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Event Notifications</b></li>
+    <br/>
+    <ul>
+        <li>S3 can trigger events when objects are created, deleted, or modified.</li>
+        <li>Events can notify:
+            <ul>
+                <li>Lambda functions</li>
+                <li>SQS queues</li>
+                <li>SNS topics</li>
+            </ul>
+        </li>
+        <li>Common uses:
+            <ul>
+                <li>Image processing workflows</li>
+                <li>Document processing pipelines</li>
+                <li>Serverless audio/video processing</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Use Cases</b></li>
+    <br/>
+    <ul>
+        <li>S3 is used by companies of all sizes for:</li>
+        <ul>
+            <li>Cloud-native data storage</li>
+            <li>Application asset storage</li>
+            <li>Big data lake storage (with Athena, Glue, EMR)</li>
+            <li>Backup + DR</li>
+            <li>Image and video storage</li>
+            <li>Hosting static sites</li>
+            <li>Content distribution (via CloudFront)</li>
+        </ul>
+    </ul>
     <br/><br/>
 
 </ol>
