@@ -157,6 +157,7 @@
     <h2> <img src="resources/aws.png" alt="AWS Logo" class="nav-icon"/> Documentation Index</h2>
     <ul style="line-height: 1.8;">
         <li><a href="#aws-intro">Introduction</a></li>
+        <li><a href="#aws-ec2-intro">Introduction to AWS EC2</a></li>
     </ul>
 </nav>
 <hr/>
@@ -454,7 +455,262 @@
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="aws-ec2-intro">Introduction to AWS EC2</h3>
+<ol>
 
+    <li><b>What Is Amazon EC2?</b></li>
+    <ul>
+        <br/>
+        <li><b>Amazon EC2 (Elastic Compute Cloud)</b> is one of the core services of AWS.</li>
+        <br/>
+        <li>It provides <b>virtual servers</b> in the cloud, called <b>EC2 instances</b>.</li>
+        <br/>
+        <li>With EC2 you can:
+            <ul>
+                <li>launch Linux or Windows servers on demand,</li>
+                <li>choose instance size and hardware power,</li>
+                <li>pay only for the compute time you use,</li>
+                <li>scale up/down anytime,</li>
+                <li>host web servers, databases, apps, microservices, and more.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>EC2 is the foundation of many AWS architectures.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Core Concepts</b></li>
+    <ul>
+        <br/>
+        <li><b>EC2 Instance</b>: A virtual machine you run in the cloud.</li>
+        <br/>
+        <li><b>AMI (Amazon Machine Image)</b>: A template for your instance (OS + software).</li>
+        <br/>
+        <li><b>Instance Types</b>: Hardware configuration (CPU, RAM, network).
+            <ul>
+                <li><code>t2.micro</code> – small, general-purpose</li>
+                <li><code>m5.large</code> – balanced compute/memory</li>
+                <li><code>c6g</code> – compute-optimized</li>
+                <li><code>p3</code> – GPU-accelerated</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Key Pair</b>: SSH private key used to securely connect to your instance.</li>
+        <br/>
+        <li><b>Security Group</b>: A firewall controlling allowed inbound/outbound traffic.</li>
+        <br/>
+        <li><b>EBS Volume (Elastic Block Store)</b>: Persistent disk attached to an instance.</li>
+        <br/>
+        <li><b>Elastic IP</b>: A static public IP you can attach to an instance.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>EC2 Workflow: How It All Fits Together</b></li>
+    <br/>
+    <ul>
+        <li>A typical EC2 setup goes like this:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Choose AMI → Choose Instance Type → Configure Networking → Add Storage → Add Key Pair → Launch</code></pre>
+
+    <br/>
+    <ul>
+        <li>After launching:
+            <ul>
+                <li>EC2 gives you a public IPv4 address (if enabled),</li>
+                <li>you SSH into Linux or RDP into Windows,</li>
+                <li>you install applications, web servers, databases, etc.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Key Concepts Explained in Detail</b></li>
+    <br/>
+    <ul>
+        <li><b>AMI (Amazon Machine Image)</b></li>
+        <ul>
+            <li>An AMI contains:
+                <ul>
+                    <li>Operating System (Ubuntu, Amazon Linux, Windows)</li>
+                    <li>Optional pre-installed software</li>
+                </ul>
+            </li>
+            <li>You can create your own AMI to clone servers.</li>
+        </ul>
+
+        <br/>
+
+        <li><b>Instance Types</b></li>
+        <ul>
+            <li>Groups of instance types:</li>
+            <ul>
+                <li><b>General Purpose:</b> t2, t3, m5</li>
+                <li><b>Compute Optimized:</b> c5, c6g</li>
+                <li><b>Memory Optimized:</b> r5, x1e</li>
+                <li><b>GPU Instances:</b> p3, g4dn</li>
+            </ul>
+            <li>Every instance type varies in:
+                <ul>
+                    <li>CPU (vCPUs)</li>
+                    <li>RAM</li>
+                    <li>Network bandwidth</li>
+                </ul>
+            </li>
+        </ul>
+
+        <br/>
+
+        <li><b>Security Groups</b></li>
+        <ul>
+            <li>Act like a firewall around your instance.</li>
+            <li>Example rules:
+                <ul>
+                    <li>Allow SSH at port 22 (Linux)</li>
+                    <li>Allow RDP at port 3389 (Windows)</li>
+                    <li>Allow HTTP/HTTPS (ports 80/443) for web servers</li>
+                </ul>
+            </li>
+            <li>Security groups are stateful:
+                <ul>
+                    <li>If incoming traffic is allowed, outgoing response is automatically allowed.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <br/>
+
+        <li><b>EBS Volumes</b></li>
+        <ul>
+            <li>Persistent block storage disks.</li>
+            <li>Your OS and data can live on one or multiple EBS volumes.</li>
+            <li>They survive instance termination if you choose so.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How EC2 Pricing Works</b></li>
+    <br/>
+    <ul>
+        <li>EC2 uses pay-as-you-go pricing with multiple models:</li>
+    </ul>
+
+    <ul>
+        <li><b>On-Demand Instances</b>: pay hourly/secondly, no commitment.</li>
+        <li><b>Reserved Instances</b>: 1-year or 3-year commitment → big discounts.</li>
+        <li><b>Spot Instances</b>: unused EC2 capacity at up to 90% discount (can be interrupted).</li>
+        <li><b>Savings Plans</b>: flexible, commitment-based discounts.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Connecting to an EC2 Instance</b></li>
+    <br/>
+    <ul>
+        <li><b>Linux EC2 instance via SSH</b>:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">ssh -i mykey.pem ec2-user@&lt;public-ip&gt;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Common usernames:
+            <ul>
+                <li><code>ec2-user</code> → Amazon Linux</li>
+                <li><code>ubuntu</code> → Ubuntu</li>
+                <li><code>centos</code> → CentOS</li>
+                <li><code>admin</code> → Debian</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/>
+    <ul>
+        <li><b>Windows EC2 instance</b> uses RDP:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Use your RDP client → enter public IP → use decrypted administrator password
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Elastic IPs</b></li>
+    <br/>
+    <ul>
+        <li>An Elastic IP is a <b>static public IPv4 address</b> that:
+            <ul>
+                <li>you can move between instances,</li>
+                <li>persists even if instance is stopped/restarted,</li>
+                <li>helps keep stable DNS when server changes.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You pay for an Elastic IP only when it’s allocated but <b>not in use</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>EC2 Ideal Use Cases</b></li>
+    <ul>
+        <br/>
+        <li>Deploying web applications (Node.js, Django, Flask, Rails, etc.)</li>
+        <br/>
+        <li>Running backend APIs</li>
+        <br/>
+        <li>Hosting game servers</li>
+        <br/>
+        <li>Batch processing</li>
+        <br/>
+        <li>Machine learning training</li>
+        <br/>
+        <li>GPU workloads</li>
+        <br/>
+        <li>Hosting company internal apps</li>
+        <br/>
+        <li>Creating development/testing environments</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>EC2 vs. Other Compute Services</b></li>
+    <br/>
+    <ul>
+        <li>EC2 is powerful, but AWS has alternative compute services:</li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Service</th>
+            <th>Purpose</th>
+        </tr>
+        <tr>
+            <td><b>EC2</b></td>
+            <td>Full control of a virtual machine; flexible but requires management</td>
+        </tr>
+        <tr>
+            <td><b>Lambda</b></td>
+            <td>Serverless compute, run functions without managing servers</td>
+        </tr>
+        <tr>
+            <td><b>ECS</b> / <b>EKS</b></td>
+            <td>Container orchestration (Docker, Kubernetes)</td>
+        </tr>
+        <tr>
+            <td><b>Lightsail</b></td>
+            <td>Simplified VPS hosting, easier than EC2</td>
+        </tr>
+    </table>
+
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
