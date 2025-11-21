@@ -179,6 +179,7 @@
         <li><a href="#haskell-let-in"><code>let ... in</code> Expressions</a></li>
         <li><a href="#haskell-do-notation"><code>do</code> Notation</a></li>
         <li><a href="#haskell-functor-applicative-monad-real-code">Practical Real-World Code Examples of Functor, Applicative, and Monad</a></li>
+        <li><a href="#haskell-control-flow">Control Flow</a></li>
     </ul>
 </nav>
 <hr/>
@@ -8795,6 +8796,403 @@ example11 = do
 </code></pre>
 </ol>
 <br/>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-control-flow">Control Flow in Haskell</h3>
+<ol>
+
+    <li><b>Overview: Expressions, Not Statements</b></li>
+    <br/>
+    <ul>
+        <li>In Haskell, control flow is <b>expression-based</b>:
+            <ul>
+                <li>There are no traditional &quot;statements&quot; like in C or Java.</li>
+                <li>Everything (even an <code>if</code>) is an <b>expression</b> that produces a value.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This chapter will cover:
+            <ul>
+                <li><code>if / then / else</code></li>
+                <li>guards</li>
+                <li>pattern matching and <code>case</code></li>
+                <li><code>let</code> / <code>where</code></li>
+                <li>recursion as looping</li>
+                <li>higher-order functions</li>
+                <li>monadic control (<code>do</code>, <code>when</code>, etc.)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>if / then / else</code></li>
+    <br/>
+    <ul>
+        <li>Haskell’s <code>if</code> is an expression and <u>must</u> have an <code>else</code> branch.</li>
+        <li>General shape:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">absVal :: Int -&gt; Int
+absVal n =
+    if n &lt; 0
+    then -n
+    else n
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Important points:</li>
+        <ul>
+            <li>The condition must be <code>Bool</code>.</li>
+            <li><code>then</code> and <code>else</code> branches must have the <u>same type</u>.</li>
+            <li>Because it is an expression, you can nest it anywhere:</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">description :: Int -&gt; String
+description n = "The number is " ++
+    if n &gt; 0 then "positive"
+    else if n == 0 then "zero"
+    else "negative"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>In practice, nested <code>if</code>s quickly become hard to read; Haskell offers nicer tools: <b>guards</b> and <b>pattern matching</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Guards: Multi-Way Branching for Functions</b></li>
+    <br/>
+    <ul>
+        <li>Guards give a clean, readable way to encode multi-branch logic.</li>
+        <li>Syntax (on a function definition):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">sign :: Int -&gt; Int
+sign n
+    | n &lt; 0     = -1
+    | n == 0    = 0
+    | otherwise = 1
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Read it as: &quot;sign of n is -1 if n &lt; 0, 0 if n == 0, otherwise 1&quot;.</li>
+        <li><code>otherwise</code> is just a synonym for <code>True</code>, used as a final catch-all guard.</li>
+        <li>Guards are evaluated top to bottom; the first <code>True</code> guard wins.</li>
+        <li>You can also use guards in <code>where</code> blocks or <code>case</code> expressions (indirectly via helper functions).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Pattern Matching and <code>case</code> Expressions</li>
+    <br/>
+    <ul>
+        <li>You can pattern match in:
+            <ul>
+                <li>function arguments,</li>
+                <li><code>let</code> / <code>where</code> bindings,</li>
+                <li><code>case ... of</code> expressions.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/>
+    <ul>
+        <li>Pattern matching in function arguments:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">head' :: [a] -&gt; a
+head' (x:_) = x
+head' []    = error "empty list"
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The compiler chooses the <u>first</u> pattern that matches the argument value.</li>
+    </ul>
+
+    <br/>
+    <ul>
+        <li><code>case</code> expression (expression-form pattern matching):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">describeMaybe :: Maybe Int -&gt; String
+describeMaybe m =
+    case m of
+        Nothing  -&gt; "No value"
+        Just n   -&gt; "Value: " ++ show n
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>General form:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">case expression of
+    pattern1 -&gt; result1
+    pattern2 -&gt; result2
+    ...
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Boolean Operators and Short-Circuiting</b></li>
+    <br/>
+    <ul>
+        <li>Haskell provides the usual Boolean operators:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">(&amp;&amp;) :: Bool -&gt; Bool -&gt; Bool
+(||) :: Bool -&gt; Bool -&gt; Bool
+not  :: Bool -&gt; Bool
+</code></pre>
+    <ul>
+        <li>They behave as in other languages, but are still pure and lazy:</li>
+        <ul>
+            <li><code>a &amp;&amp; b</code> evaluates <code>b</code> only if <code>a</code> is <code>True</code>.</li>
+            <li><code>a || b</code> evaluates <code>b</code> only if <code>a</code> is <code>False</code>.</li>
+        </ul>
+        <br/>
+        <li>This gives familiar &quot;short-circuit&quot; control flow.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">safeDiv :: Int -&gt; Int -&gt; Maybe Int
+safeDiv _ 0 = Nothing
+safeDiv x y
+    | y /= 0 &amp;&amp; x `mod` y == 0 = Just (x `div` y)
+    | otherwise               = Nothing
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><code>let</code> / <code>where</code>: Local Bindings for Structured Branches</li>
+    <br/>
+    <ul>
+        <li>Local bindings help keep control-flow expressions clean.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">areaMessage :: Double -&gt; Double -&gt; String
+areaMessage w h =
+    let area = w * h
+    in  if area &gt; 100
+        then "Large area: " ++ show area
+        else "Small area: " ++ show area
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>let ... in ...</code> is an expression.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">greeting :: String -&gt; String
+greeting name
+    | long    = "Hello, distinguished " ++ name
+    | short   = "Hi, " ++ name
+    | otherwise = "Hey " ++ name
+  where
+    len   = length name
+    long  = len &gt; 10
+    short = len &lt; 4
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>where</code> attaches local definitions to a function equation or pattern, often making guards more readable.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Recursion as &quot;Loops&quot;</li>
+    <br/>
+    <ul>
+        <li>Haskell has no <code>for</code>, <code>while</code>, or <code>do ... while</code> loops.</li>
+        <li>Instead, you use:
+            <ul>
+                <li><b>recursion</b>, or</li>
+                <li><b>higher-order functions</b> that encapsulate common recursion patterns.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">sumList :: [Int] -&gt; Int
+sumList []     = 0
+sumList (x:xs) = x + sumList xs
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This recursive function plays the role of a loop summing all elements.</li>
+        <li>Tail-recursive style (often optimized by GHC):</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">sumList' :: [Int] -&gt; Int
+sumList' xs = go 0 xs
+  where
+    go acc []     = acc
+    go acc (y:ys) = go (acc + y) ys
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Here, <code>go</code> mimics a loop with an accumulator.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Higher-Order Control: <code>map</code>, <code>filter</code>, <code>fold</code>, <code>any</code>, <code>all</code></li>
+    <br/>
+    <ul>
+        <li>Common &quot;loops&quot; are abstracted into reusable higher-order functions:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">map     :: (a -&gt; b) -&gt; [a] -&gt; [b]
+filter  :: (a -&gt; Bool) -&gt; [a] -&gt; [a]
+foldr   :: (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b
+any     :: (a -&gt; Bool) -&gt; [a] -&gt; Bool
+all     :: (a -&gt; Bool) -&gt; [a] -&gt; Bool
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">increaseAll :: [Int] -&gt; [Int]
+increaseAll = map (+1)
+
+positives :: [Int] -&gt; [Int]
+positives = filter (&gt; 0)
+
+sumWithFold :: [Int] -&gt; Int
+sumWithFold = foldr (+) 0
+
+hasNegative :: [Int] -&gt; Bool
+hasNegative = any (&lt; 0)
+
+allEven :: [Int] -&gt; Bool
+allEven = all even
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Instead of writing explicit loops, you describe &quot;what&quot; you want to do:
+            <ul>
+                <li>transform every element → <code>map</code></li>
+                <li>keep only some → <code>filter</code></li>
+                <li>combine all into one value → <code>fold</code></li>
+            </ul>
+        </li>
+        <li>This style is extremely idiomatic in Haskell and controls the flow of data through your program.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Monadic Control Flow and <code>do</code>-Notation</li>
+    <br/>
+    <ul>
+        <li>When dealing with effects (IO, Maybe, Either, State, etc.), we use <b>monads</b>.</li>
+        <li>Control flow in monadic code is written with <code>do</code>-notation:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">askName :: IO ()
+askName = do
+    putStrLn "What is your name?"
+    name &lt;- getLine
+    if null name
+        then putStrLn "You didn't enter a name!"
+        else putStrLn ("Hello, " ++ name ++ "!")
+</code></pre>
+
+    <ul>
+        <li>Here, control flow is:
+            <ul>
+                <li>sequential (first print, then read, then branch),</li>
+                <li>with branching done via normal expressions (<code>if</code>, <code>case</code>, guards).</li>
+        </ul>
+        <br/>
+        </li>
+        <li>In other monads (like <code>Maybe</code>), <code>do</code>-notation gives a &quot;short-circuiting&quot; style control flow:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">safeRoot :: Double -&gt; Maybe Double
+safeRoot x
+    | x &lt; 0     = Nothing
+    | otherwise = Just (sqrt x)
+
+safeExpr :: Double -&gt; Double -&gt; Maybe Double
+safeExpr x y = do
+    r1 &lt;- safeRoot x
+    r2 &lt;- safeRoot y
+    return (r1 + r2)
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>If either <code>safeRoot</code> returns <code>Nothing</code>, the whole <code>do</code>-block evaluates to <code>Nothing</code>.</li>
+        <li>This gives you a &quot;fail fast&quot; control flow without explicit <code>if</code>s.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Monadic Control Helpers:</b> <code>when</code>, <code>unless</code>, <code>forM</code>, <code>mapM</code></li>
+    <br/>
+    <ul>
+        <li>The <code>Control.Monad</code> module provides utilities for common control-flow patterns inside monads.</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">when   :: Monad m =&gt; Bool -&gt; m () -&gt; m ()
+unless :: Monad m =&gt; Bool -&gt; m () -&gt; m ()
+
+forM   :: Monad m =&gt; [a] -&gt; (a -&gt; m b) -&gt; m [b]
+mapM   :: Monad m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>when</code> / <code>unless</code> as monadic <code>if</code> helpers:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Control.Monad (when, unless)
+
+askSecret :: IO ()
+askSecret = do
+    putStrLn "Are you sure? (yes/no)"
+    ans &lt;- getLine
+    when (ans == "yes") $
+        putStrLn "The secret is: Haskell is cool!"
+
+    unless (ans == "yes") $
+        putStrLn "No secret for you."
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>forM</code> / <code>mapM</code> for &quot;looping&quot; with effects:</li>
+    </ul>
+
+<pre><code class="language-haskell line-numbers">import Control.Monad (forM_)
+
+printLines :: [String] -&gt; IO ()
+printLines xs = forM_ xs $ \line -&gt; do
+    putStrLn line
+</code></pre>
+
+    <br/>
+    <ul>
+        <li><code>forM_</code> is like a monadic <code>for-each</code> loop that discards the result list (<code>_</code> means &quot;ignore result&quot;).</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
