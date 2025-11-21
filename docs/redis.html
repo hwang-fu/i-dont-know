@@ -152,6 +152,7 @@
     <h2> <img src="resources/redis.png" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ul style="line-height: 1.8;">
         <li><a href="#redis-intro">Introduction</a></li>
+        <li><a href="#redis-commands">Commands</a></li>
     </ul>
 </nav>
 <hr/>
@@ -460,7 +461,650 @@ SUBSCRIBE news
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="redis-commands">Redis Commands Overview</h3>
+<ol>
 
+    <li><b>How Do Redis Commands Work?</b></li>
+    <ul>
+        <br/>
+        <li>Redis commands are:
+            <ul>
+                <li>sent as plain text over TCP (default port 6379),</li>
+                <li>case-insensitive <b>for names</b> (<code>SET</code> == <code>set</code>),</li>
+                <li>usually space-separated: <code>COMMAND key [arg1] [arg2]</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You can execute commands using:
+            <ul>
+                <li><code>redis-cli</code> (interactive shell)</li>
+                <li>Redis client libraries (Python, Node, Java, Go, ...)</li>
+                <li>scripts / automation tools</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Key Management Commands</b></li>
+    <br/>
+    <ul>
+        <li>These commands operate on keys regardless of their value type.</li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Command</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+
+        <tr>
+            <td><code>SET key value</code></td>
+            <td>Set key to hold the string value (overwrites any existing value).</td>
+            <td><code>SET mykey "hello"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>GET key</code></td>
+            <td>Get the value of key (or <code>(nil)</code> if not exists).</td>
+            <td><code>GET mykey</code></td>
+        </tr>
+
+        <tr>
+            <td><code>DEL key [key ...]</code></td>
+            <td>Delete one or more keys; returns number of keys removed.</td>
+            <td><code>DEL mykey otherkey</code></td>
+        </tr>
+
+        <tr>
+            <td><code>EXISTS key [key ...]</code></td>
+            <td>Return the number of keys that exist out of the given list.</td>
+            <td><code>EXISTS mykey</code></td>
+        </tr>
+
+        <tr>
+            <td><code>KEYS pattern</code></td>
+            <td>Return all keys matching the pattern (use carefully in production).</td>
+            <td><code>KEYS user:* </code></td>
+        </tr>
+
+        <tr>
+            <td><code>SCAN cursor [MATCH pattern] [COUNT n]</code></td>
+            <td>Incrementally iterate over keys (safer alternative to <code>KEYS</code>).</td>
+            <td><code>SCAN 0 MATCH "user:*" COUNT 100</code></td>
+        </tr>
+
+        <tr>
+            <td><code>EXPIRE key seconds</code></td>
+            <td>Set a time-to-live (TTL) in seconds.</td>
+            <td><code>EXPIRE session:123 3600</code></td>
+        </tr>
+
+        <tr>
+            <td><code>TTL key</code></td>
+            <td>Return remaining TTL in seconds (-1 = no TTL, -2 = key does not exist).</td>
+            <td><code>TTL session:123</code></td>
+        </tr>
+
+        <tr>
+            <td><code>RENAME key newkey</code></td>
+            <td>Rename key to newkey (overwrites newkey if exists).</td>
+            <td><code>RENAME user:1 user:001</code></td>
+        </tr>
+
+        <tr>
+            <td><code>TYPE key</code></td>
+            <td>Return the type of value stored at key (string, hash, list, set, zset, ...).</td>
+            <td><code>TYPE user:1</code></td>
+        </tr>
+    </table>
+
+<pre><code class="language-bash line-numbers"># Example: simple lifecycle of a key
+SET temp "value"
+EXPIRE temp 10
+TTL temp     # see remaining life
+GET temp     # value until it expires
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>String Commands</b></li>
+    <br/>
+    <ul>
+        <li><b>Strings</b> are the most basic Redis data type. They can store:
+            <ul>
+                <li>text (JSON, HTML, tokens, ...)</li>
+                <li>numbers (for counters)</li>
+                <li>binary blobs</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Command</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+
+        <tr>
+            <td><code>SET key value</code></td>
+            <td>Set the string value of a key.</td>
+            <td><code>SET page:home "&lt;html&gt;...&lt;/html&gt;"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>GET key</code></td>
+            <td>Get the value of a key.</td>
+            <td><code>GET page:home</code></td>
+        </tr>
+
+        <tr>
+            <td><code>SETNX key value</code></td>
+            <td>Set key only if it does not already exist (NX = not exists).</td>
+            <td><code>SETNX lock:job1 1</code></td>
+        </tr>
+
+        <tr>
+            <td><code>INCR key</code></td>
+            <td>Increment numeric value stored at key by 1 (creates key with value 0 if missing).</td>
+            <td><code>INCR page:views</code></td>
+        </tr>
+
+        <tr>
+            <td><code>INCRBY key increment</code></td>
+            <td>Increment by a specified integer.</td>
+            <td><code>INCRBY page:views 10</code></td>
+        </tr>
+
+        <tr>
+            <td><code>DECR key</code>, <code>DECRBY</code></td>
+            <td>Decrement integer value (symmetrical to <code>INCR</code>).</td>
+            <td><code>DECR stock:widgets</code></td>
+        </tr>
+
+        <tr>
+            <td><code>APPEND key value</code></td>
+            <td>Append the string value to the existing value.</td>
+            <td><code>APPEND log "error: something happened\n"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>MSET key value [key value ...]</code></td>
+            <td>Set multiple keys at once.</td>
+            <td><code>MSET user:1:name "Alice" user:1:age "30"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>MGET key [key ...]</code></td>
+            <td>Get multiple keys at once.</td>
+            <td><code>MGET user:1:name user:1:age</code></td>
+        </tr>
+    </table>
+
+<pre><code class="language-bash line-numbers"># Example: a simple page view counter
+INCR page:/home
+INCR page:/home
+GET page:/home      # "2"</code></pre>
+    <br/><br/>
+
+
+    <li><b>Hash Commands</b></li>
+    <br/>
+    <ul>
+        <li><b>Hashes</b> store field–value pairs under one key. They are good for:
+            <ul>
+                <li>user profiles (name, email, age)</li>
+                <li>configuration objects</li>
+                <li>small structured records</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Command</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+
+        <tr>
+            <td><code>HSET key field value</code></td>
+            <td>Set field in hash to value (creates hash if missing).</td>
+            <td><code>HSET user:1 name "Alice"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>HGET key field</code></td>
+            <td>Get value of field in hash.</td>
+            <td><code>HGET user:1 name</code></td>
+        </tr>
+
+        <tr>
+            <td><code>HMSET key field value [field value ...]</code></td>
+            <td>Set multiple fields in hash (deprecated, but still widely used; new: <code>HSET</code> with multiple field/value pairs).</td>
+            <td><code>HSET user:1 name "Alice" age "30"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>HGETALL key</code></td>
+            <td>Get all fields and values in the hash.</td>
+            <td><code>HGETALL user:1</code></td>
+        </tr>
+
+        <tr>
+            <td><code>HDEL key field [field ...]</code></td>
+            <td>Delete one or more fields.</td>
+            <td><code>HDEL user:1 age</code></td>
+        </tr>
+
+        <tr>
+            <td><code>HLEN key</code></td>
+            <td>Get number of fields in hash.</td>
+            <td><code>HLEN user:1</code></td>
+        </tr>
+
+        <tr>
+            <td><code>HEXISTS key field</code></td>
+            <td>Check if field exists in hash.</td>
+            <td><code>HEXISTS user:1 email</code></td>
+        </tr>
+    </table>
+
+<pre><code class="language-bash line-numbers"># Example: storing a user as a hash
+HSET user:42 name "Alice" email "alice@example.com" age "30"
+HGET user:42 email
+HGETALL user:42</code></pre>
+    <br/><br/>
+
+
+    <li><b>List Commands</b></li>
+    <br/>
+    <ul>
+        <li><b>Lists</b> are ordered collections of strings. Efficient for:
+            <ul>
+                <li>queues</li>
+                <li>log-like data</li>
+                <li>message buffers</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Command</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+
+        <tr>
+            <td><code>LPUSH key value [value ...]</code></td>
+            <td>Push value(s) to the left (head) of the list.</td>
+            <td><code>LPUSH queue "job1"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>RPUSH key value [value ...]</code></td>
+            <td>Push value(s) to the right (tail) of the list.</td>
+            <td><code>RPUSH queue "job2"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>LPOP key</code>, <code>RPOP key</code></td>
+            <td>Remove and return first/last element.</td>
+            <td><code>LPOP queue</code></td>
+        </tr>
+
+        <tr>
+            <td><code>LRANGE key start stop</code></td>
+            <td>Get sub-list by index range (0-based, inclusive; -1 = last).</td>
+            <td><code>LRANGE queue 0 -1</code></td>
+        </tr>
+
+        <tr>
+            <td><code>LLEN key</code></td>
+            <td>Get list length.</td>
+            <td><code>LLEN queue</code></td>
+        </tr>
+
+        <tr>
+            <td><code>BLPOP key [key ...] timeout</code></td>
+            <td>Blocking pop from left; waits if list is empty.</td>
+            <td><code>BLPOP queue 0</code></td>
+        </tr>
+    </table>
+
+<pre><code class="language-bash line-numbers"># Example: simple FIFO queue
+RPUSH jobs "job1"
+RPUSH jobs "job2"
+LPOP jobs   # "job1"
+LPOP jobs   # "job2"</code></pre>
+    <br/><br/>
+
+
+    <li><b>Set Commands</b></li>
+    <br/>
+    <ul>
+        <li><b>Sets</b> are unordered collections of unique strings. Good for:
+            <ul>
+                <li>tags</li>
+                <li>unique elements (no duplicates)</li>
+                <li>simple membership queries</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Command</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+
+        <tr>
+            <td><code>SADD key member [member ...]</code></td>
+            <td>Add one or more members to the set.</td>
+            <td><code>SADD tags "redis" "database"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>SMEMBERS key</code></td>
+            <td>Get all set members.</td>
+            <td><code>SMEMBERS tags</code></td>
+        </tr>
+
+        <tr>
+            <td><code>SISMEMBER key member</code></td>
+            <td>Check if member is in the set (returns 1 or 0).</td>
+            <td><code>SISMEMBER tags "redis"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>SREM key member [member ...]</code></td>
+            <td>Remove one or more members.</td>
+            <td><code>SREM tags "database"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>SCARD key</code></td>
+            <td>Count members of set.</td>
+            <td><code>SCARD tags</code></td>
+        </tr>
+
+        <tr>
+            <td><code>SINTER key [key ...]</code></td>
+            <td>Set intersection of multiple sets.</td>
+            <td><code>SINTER tags:post1 tags:post2</code></td>
+        </tr>
+
+        <tr>
+            <td><code>SUNION key [key ...]</code></td>
+            <td>Set union of multiple sets.</td>
+            <td><code>SUNION tags:post1 tags:post3</code></td>
+        </tr>
+
+        <tr>
+            <td><code>SDIFF key [key ...]</code></td>
+            <td>Set difference.</td>
+            <td><code>SDIFF tags:all tags:archived</code></td>
+        </tr>
+    </table>
+
+<pre><code class="language-bash line-numbers"># Example: tracking unique visitors by day
+SADD visitors:2025-01-01 "user1"
+SADD visitors:2025-01-01 "user2"
+SCARD visitors:2025-01-01    # 2 unique visitors</code></pre>
+    <br/><br/>
+
+
+    <li><b>Sorted Set Commands (ZSET)</b></li>
+    <br/>
+    <ul>
+        <li><b>Sorted sets</b> are sets where each member has an associated numeric <b>score</b>.</li>
+        <li>They are ideal for:
+            <ul>
+                <li>leaderboards</li>
+                <li>ranking by score (points, timestamps)</li>
+                <li>time-series-ish use cases</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Command</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+
+        <tr>
+            <td><code>ZADD key score member [score member ...]</code></td>
+            <td>Add member(s) with scores to sorted set.</td>
+            <td><code>ZADD leaderboard 100 "alice" 200 "bob"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>ZRANGE key start stop [WITHSCORES]</code></td>
+            <td>Get elements by rank (ascending, 0 = lowest score).</td>
+            <td><code>ZRANGE leaderboard 0 -1 WITHSCORES</code></td>
+        </tr>
+
+        <tr>
+            <td><code>ZREVRANGE key start stop [WITHSCORES]</code></td>
+            <td>Get elements by rank (descending, highest score first).</td>
+            <td><code>ZREVRANGE leaderboard 0 9 WITHSCORES</code></td>
+        </tr>
+
+        <tr>
+            <td><code>ZINCRBY key increment member</code></td>
+            <td>Increment score of member by given amount.</td>
+            <td><code>ZINCRBY leaderboard 50 "alice"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>ZREM key member [member ...]</code></td>
+            <td>Remove member(s) from sorted set.</td>
+            <td><code>ZREM leaderboard "alice"</code></td>
+        </tr>
+
+        <tr>
+            <td><code>ZRANK key member</code>, <code>ZREVRANK</code></td>
+            <td>Get rank of member (0-based).</td>
+            <td><code>ZRANK leaderboard "alice"</code></td>
+        </tr>
+    </table>
+
+<pre><code class="language-bash line-numbers"># Example: game leaderboard
+ZADD leaderboard 100 "alice"
+ZADD leaderboard 200 "bob"
+ZINCRBY leaderboard 50 "alice"   # alice now 150
+ZREVRANGE leaderboard 0 -1 WITHSCORES  # bob then alice</code></pre>
+    <br/><br/>
+
+
+    <li><b>Transactions and Pipelining</b></li>
+    <ul>
+        <br/>
+        <li>Redis supports a simple transaction mechanism using:
+            <ul>
+                <li><code>MULTI</code> – start transaction</li>
+                <li><code>EXEC</code> – execute queued commands</li>
+                <li><code>DISCARD</code> – cancel transaction</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Pipelining is a client-side optimization where multiple commands are sent at once without waiting for individual replies.</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers"># Example: a transaction
+MULTI
+  INCR counter
+  INCR counter
+  GET counter
+EXEC</code></pre>
+
+    <br/>
+    <ul>
+        <li>For optimistic locking, you can use:
+            <ul>
+                <li><code>WATCH key</code> – watch keys for modifications</li>
+                <li>if key changes before <code>EXEC</code>, transaction aborts</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-bash line-numbers"># Pseudocode for WATCH usage
+WATCH balance:user:1
+current = GET balance:user:1
+if current &gt;= 10:
+    MULTI
+      DECRBY balance:user:1 10
+      INCRBY balance:store 10
+    EXEC
+else:
+    UNWATCH
+</code></pre>
+    <br/><br/>
+
+
+    <li><b>Publish/Subscribe Commands (Pub/Sub)</b></li>
+    <br/>
+    <ul>
+        <li>Redis includes a basic <b>publish/subscribe</b> messaging system.</li>
+        <li>It is suitable for:
+            <ul>
+                <li>lightweight notifications</li>
+                <li>real-time updates broadcast</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Command</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+
+        <tr>
+            <td><code>SUBSCRIBE channel [channel ...]</code></td>
+            <td>Subscribe to one or more channels.</td>
+            <td><code>SUBSCRIBE news sports</code></td>
+        </tr>
+
+        <tr>
+            <td><code>PUBLISH channel message</code></td>
+            <td>Publish a message to a channel.</td>
+            <td><code>PUBLISH news "breaking: ..."</code></td>
+        </tr>
+
+        <tr>
+            <td><code>PSUBSCRIBE pattern [pattern ...]</code></td>
+            <td>Subscribe to channels matching pattern.</td>
+            <td><code>PSUBSCRIBE news.*</code></td>
+        </tr>
+    </table>
+
+<pre><code class="language-bash line-numbers"># Terminal 1
+SUBSCRIBE chat
+
+# Terminal 2
+PUBLISH chat "hello world"</code></pre>
+    <br/><br/>
+
+
+    <li><b>Server &amp; Introspection Commands</b></li>
+    <br/>
+    <ul>
+        <li>These help monitor and manage the Redis server.</li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Command</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+
+        <tr>
+            <td><code>INFO</code></td>
+            <td>Show server statistics (memory, clients, keys, CPU, etc.).</td>
+            <td><code>INFO</code></td>
+        </tr>
+
+        <tr>
+            <td><code>DBSIZE</code></td>
+            <td>Return number of keys in the current database.</td>
+            <td><code>DBSIZE</code></td>
+        </tr>
+
+        <tr>
+            <td><code>FLUSHDB</code></td>
+            <td>Delete all keys in the current database.</td>
+            <td><code>FLUSHDB</code></td>
+        </tr>
+
+        <tr>
+            <td><code>FLUSHALL</code></td>
+            <td>Delete all keys in all databases.</td>
+            <td><code>FLUSHALL</code></td>
+        </tr>
+
+        <tr>
+            <td><code>CONFIG GET pattern</code></td>
+            <td>Get configuration parameters.</td>
+            <td><code>CONFIG GET maxmemory</code></td>
+        </tr>
+
+        <tr>
+            <td><code>CONFIG SET parameter value</code></td>
+            <td>Change configuration at runtime.</td>
+            <td><code>CONFIG SET maxmemory 512mb</code></td>
+        </tr>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Putting It All Together: Small Example Application</b></li>
+    <br/>
+    <ul>
+        <li>Imagine a mini application that needs:</li>
+        <ul>
+            <li>a <b>user profile</b> (hash)</li>
+            <li>a <b>login counter</b> (string counter)</li>
+            <li>a list of <b>recent actions</b> (list)</li>
+            <li>a <b>global leaderboard</b> (sorted set)</li>
+        </ul>
+    </ul>
+
+<pre><code class="language-bash line-numbers"># 1) Create user profile
+HSET user:100 name "Alice" email "alice@example.com"
+
+# 2) Increase login counter
+INCR user:100:logins
+
+# 3) Add an action to the activity list (keep last 50)
+LPUSH user:100:actions "logged_in"
+LTRIM user:100:actions 0 49
+
+# 4) Update score in leaderboard
+ZINCRBY leaderboard 10 "user:100"
+
+# 5) Show top 3 users
+ZREVRANGE leaderboard 0 2 WITHSCORES</code></pre>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
