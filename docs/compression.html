@@ -153,6 +153,7 @@
     <ul style="line-height: 1.8;">
         <li><a href="#compression-intro">Introduction</a></li>
         <li><a href="#compression-lz77">LZ77</a></li>
+        <li><a href="#compression-lz78">LZ78</a></li>
     </ul>
 </nav>
 <hr/>
@@ -367,7 +368,7 @@ Brotli → best ratio for web
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="compression-lz77">Introduction to LZ77 Compression</h3>
+<h3 id="compression-lz77">LZ77 Compression Algorithm</h3>
 <ol>
 
     <li><b>What Is LZ77?</b></li>
@@ -513,7 +514,221 @@ Brotli → best ratio for web
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="compression-lz78">LZ78 Compression Algorithm</h3>
+<ol>
 
+    <li><b>What Is LZ78?</b></li>
+    <ul>
+        <br/>
+        <li><b>LZ78</b> is a dictionary-based compression algorithm invented by <a href="https://en.wikipedia.org/wiki/Abraham_Lempel">Abraham Lempel</a> and <a href="https://en.wikipedia.org/wiki/Jacob_Ziv">Jacob Ziv</a> in 1978.</li>
+        <br/>
+        <li>It works by building a dictionary of previously seen substrings and replacing repeated substrings with:
+            <ul>
+                <li>an <code>index</code> (a reference to a dictionary entry), and</li>
+                <li>a <code>next character</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Each compressed token has the form:</li>
+<pre><code class="language-plaintext line-numbers">(index, nextSymbol)
+</code></pre>
+        <ul>
+            <li><code>index</code> is 0 if no previous substring is matched.</li>
+            <li><code>nextSymbol</code> is the character following the matched substring.</li>
+        </ul>
+        <br/>
+        <li>Unlike LZ77, which looks backward into a sliding window, <b>LZ78 grows an explicit dictionary</b> of phrases.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>How the Algorithm Works (Intuition)</b></li>
+    <br/>
+    <ul>
+        <li>Start with an empty dictionary.</li>
+        <li>Read the input character-by-character, building the <b>longest substring</b> that already exists in the dictionary.</li>
+        <li>When the next character causes the substring to <b>not exist</b> in the dictionary:
+            <ul>
+                <li>emit a token <code>(index, nextSymbol)</code>,</li>
+                <li>add the new substring to the dictionary.</li>
+            </ul>
+        </li>
+        <li>Repeat until the input is consumed.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>A Step-by-Step Example</b></li>
+    <br/>
+    <ul>
+        <li>Input:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">A B C A B C A
+</code></pre>
+
+    <ul>
+        <li>Dictionary starts empty and will grow like:</li>
+    </ul>
+<pre><code class="language-plaintext line-numbers">1: "A"
+2: "B"
+3: "C"
+4: "AB"
+5: "BC"
+6: "CA"
+</code></pre>
+
+    <br/>
+    <ul><li><b>Compression process:</b></li></ul>
+    <br/>
+
+    <table>
+        <tr><th>Step</th><th>Matched Substring</th><th>Next Symbol</th><th>Output</th><th>New Dictionary Entry</th></tr>
+
+        <tr>
+            <td>1</td>
+            <td>"" (none)</td>
+            <td>A</td>
+            <td>(0, A)</td>
+            <td>1: "A"</td>
+        </tr>
+
+        <tr>
+            <td>2</td>
+            <td>""</td>
+            <td>B</td>
+            <td>(0, B)</td>
+            <td>2: "B"</td>
+        </tr>
+
+        <tr>
+            <td>3</td>
+            <td>""</td>
+            <td>C</td>
+            <td>(0, C)</td>
+            <td>3: "C"</td>
+        </tr>
+
+        <tr>
+            <td>4</td>
+            <td>"A"</td>
+            <td>B</td>
+            <td>(1, B)</td>
+            <td>4: "AB"</td>
+        </tr>
+
+        <tr>
+            <td>5</td>
+            <td>"B"</td>
+            <td>C</td>
+            <td>(2, C)</td>
+            <td>5: "BC"</td>
+        </tr>
+
+        <tr>
+            <td>6</td>
+            <td>"C"</td>
+            <td>A</td>
+            <td>(3, A)</td>
+            <td>6: "CA"</td>
+        </tr>
+    </table>
+
+    <br/>
+    <ul>
+        <li><b>Final encoded output:</b></li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">(0, A)
+(0, B)
+(0, C)
+(1, B)
+(2, C)
+(3, A)
+</code></pre>
+    <ul><li>And the final dictionary consists of 6 entries.</li></ul>
+
+    <br/><br/>
+
+
+
+    <li><b>Decoding LZ78</b></li>
+    <br/>
+    <ul>
+        <li>Decoding is straightforward:
+            <ul>
+                <li>Start with an empty dictionary.</li>
+                <li>For each <code>(index, symbol)</code>:
+                    <ul>
+                        <li>If <code>index = 0</code>, output <code>symbol</code>.</li>
+                        <li>Else:
+                            <ul>
+                                <li>Fetch the dictionary entry at <code>index</code>,</li>
+                                <li>output that string + <code>symbol</code>.</li>
+                            </ul>
+                        </li>
+                        <li>Add the output string as a new dictionary entry.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Token (1, B)
+→ dictionary[1] = "A"
+→ output "AB"
+→ add "AB" as new dictionary entry
+</code></pre>
+
+    <br/><br/>
+
+
+
+    <li><b>Key Differences: LZ78 vs LZ77</b></li>
+    <br/>
+    <ul>
+        <li><b>LZ77</b>:
+            <ul>
+                <li>Uses a <b>sliding window</b> of past characters.</li>
+                <li>Matches substrings by <b>offset</b> and <b>length</b>.</li>
+                <li>Dictionary is implicit (part of the data window).</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>LZ78</b>:
+            <ul>
+                <li>Builds an <b>explicit dictionary</b> of substrings.</li>
+                <li>Dictionary persists and grows as the input is read.</li>
+                <li>Each token is an <b>index</b> + <b>next character</b>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>LZ77 tends to handle long repeated patterns better without huge dictionaries.</li>
+        <br/>
+        <li>LZ78 provides simpler decoding and is foundational for LZW (used in GIF).</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><b>Performance Notes</b></li>
+    <br/>
+    <ul>
+        <li>Compresses well when the input has many repeated substrings.</li>
+        <li>Dictionary growth can be memory-intensive.</li>
+        <li>Many real-world compressors (like LZW) refined LZ78 by:
+            <ul>
+                <li>using variable-width codes,</li>
+                <li>limiting dictionary size,</li>
+                <li>handling dictionary resets.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
