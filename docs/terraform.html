@@ -154,6 +154,7 @@
         <li><a href="#terraform-lifecycle">Life Cycle</a></li>
         <li><a href="#terraform-cli">CLI</a></li>
         <li><a href="#terraform-write-config">Writing Terraform Configuration</a></li>
+        <li><a href="#terraform-aws-intro">Introduction Using Terraform with AWS</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -1296,6 +1297,369 @@ output "public_ip" {
 terraform plan
 terraform apply
 </code></pre>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-aws-intro">Using Terraform with AWS: An Introduction</h3>
+<ol>
+
+    <li><b>What Is AWS Terraform?</b></li>
+    <br/>
+    <ul>
+        <li>Terraform can manage nearly all AWS resources using the <b>AWS Provider</b>.</li>
+        <br/>
+        <li>You write <code>.tf</code> files that describe what AWS infrastructure you want:
+            <ul>
+                <li>EC2 instances</li>
+                <li>VPCs and subnets</li>
+                <li>IAM users and roles</li>
+                <li>S3 buckets</li>
+                <li>RDS databases</li>
+                <li>Lambda functions</li>
+                <li>CloudWatch alarms</li>
+                <li>Load balancers</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Terraform then:
+            <ul>
+                <li>calls AWS APIs via the provider,</li>
+                <li>creates/updates/destroys resources,</li>
+                <li>tracks them in its state file.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Prerequisites for AWS Terraform</b></li>
+    <br/>
+    <ul>
+        <li>Before using Terraform with AWS, you must have:</li>
+        <ul>
+            <li>an AWS account,</li>
+            <li>an IAM user with enough permissions,</li>
+            <li>AWS credentials saved locally.</li>
+        </ul>
+        <br/>
+        <li><b>Store credentials safely</b> using the AWS CLI:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws configure
+</code></pre>
+
+    <ul>
+        <li>Typical files where credentials go:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">~/.aws/credentials
+~/.aws/config
+</code></pre>
+
+    <ul>
+        <li><b>Never store AWS secret keys directly in Terraform files.</b></li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>AWS Provider Block</b></li>
+    <br/>
+    <ul>
+        <li>The AWS provider connects Terraform to AWS.</li>
+        <li>Basic configuration:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">terraform {
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+            version = "~&gt; 5.0"
+        }
+    }
+}
+
+provider "aws" {
+    region = "eu-central-1"
+}
+</code></pre>
+
+    <ul>
+        <li>Terraform loads credentials automatically from environment variables, the AWS config file, or IAM roles (if on EC2).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Deploying Your First AWS Resource: S3 Bucket</b></li>
+    <br/>
+    <ul>
+        <li>S3 buckets are one of the simplest AWS resources to create:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">resource "aws_s3_bucket" "example" {
+    bucket = "junzhe-demo-bucket-12345"
+
+    tags = {
+        Purpose = "TerraformIntro"
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Apply it:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">terraform init
+terraform apply
+</code></pre>
+
+    <ul>
+        <li>You now created your first AWS resource using Terraform.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Creating an EC2 Instance with Terraform</b></li>
+    <br/>
+    <ul>
+        <li>EC2 deployment includes:
+            <ul>
+                <li>an AMI (machine image)</li>
+                <li>instance type</li>
+                <li>optional key pair</li>
+                <li>security group</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">resource "aws_instance" "web" {
+    ami           = "ami-05f7491af5eef733a"
+    instance_type = "t2.micro"
+
+    tags = {
+        Name = "TerraformWebServer"
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Show the server’s public IP:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">output "public_ip" {
+    value = aws_instance.web.public_ip
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using Data Sources (AWS Example)</b></li>
+    <br/>
+    <ul>
+        <li>AWS has many dynamic values (latest AMIs, VPC IDs, etc.).</li>
+        <li>Data sources allow Terraform to <b>look up existing AWS infrastructure</b>.</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">data "aws_ami" "amazon_linux" {
+    owners      = ["amazon"]
+    most_recent = true
+
+    filter {
+        name   = "name"
+        values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+    }
+}
+
+resource "aws_instance" "server" {
+    ami           = data.aws_ami.amazon_linux.id
+    instance_type = "t2.micro"
+}
+</code></pre>
+
+    <ul>
+        <li>Using a data source ensures your AMI is always up to date.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Managing AWS Networking (VPC, Subnets, SG)</b></li>
+    <br/>
+    <ul>
+        <li>A typical AWS Terraform setup includes:
+            <ul>
+                <li>VPC</li>
+                <li>subnets</li>
+                <li>route tables</li>
+                <li>security groups</li>
+            </ul>
+        </li>
+        <br/>
+        <li>A minimal example:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">resource "aws_vpc" "main" {
+    cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_subnet" "public" {
+    vpc_id                  = aws_vpc.main.id
+    cidr_block              = "10.0.1.0/24"
+    map_public_ip_on_launch = true
+}
+
+resource "aws_security_group" "web_sg" {
+    name        = "web-sg"
+    description = "Allow HTTP"
+    vpc_id      = aws_vpc.main.id
+
+    ingress {
+        from_port   = 80
+        to_port     = 80
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>This is the foundation for most AWS architectures.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>IAM with Terraform (Users, Roles, Policies)</b></li>
+    <br/>
+    <ul>
+        <li>IAM is fully manageable through Terraform.</li>
+        <li>Create a new user:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">resource "aws_iam_user" "developer" {
+    name = "junzhe-dev"
+}
+
+resource "aws_iam_access_key" "developer_key" {
+    user = aws_iam_user.developer.name
+}
+
+output "dev_access_key" {
+    value = aws_iam_access_key.developer_key.id
+}
+</code></pre>
+
+    <ul>
+        <li><b>Never output IAM secrets in production environments.</b></li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>S3 + IAM Example (Realistic Use Case)</b></li>
+    <br/>
+    <ul>
+        <li>This example creates a bucket and a policy that grants read/write access.</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">resource "aws_s3_bucket" "app_bucket" {
+    bucket = "terraform-app-bucket-2025"
+}
+
+data "aws_iam_policy_document" "rw_access" {
+    statement {
+        actions   = ["s3:*"]
+        resources = [
+            aws_s3_bucket.app_bucket.arn,
+            "${aws_s3_bucket.app_bucket.arn}/*"
+        ]
+    }
+}
+
+resource "aws_iam_policy" "app_bucket_policy" {
+    name   = "AppBucketRW"
+    policy = data.aws_iam_policy_document.rw_access.json
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Using AWS Modules</b></li>
+    <br/>
+    <ul>
+        <li>The easiest way to build AWS infrastructure is by using well-maintained Terraform Registry modules.</li>
+        <li>Example: AWS VPC module</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">module "vpc" {
+    source  = "terraform-aws-modules/vpc/aws"
+    version = "5.1.0"
+
+    name = "production-vpc"
+    cidr = "10.1.0.0/16"
+
+    azs             = ["eu-central-1a", "eu-central-1b"]
+    public_subnets  = ["10.1.1.0/24", "10.1.2.0/24"]
+    private_subnets = ["10.1.3.0/24", "10.1.4.0/24"]
+}
+</code></pre>
+
+    <ul>
+        <li>Modules drastically reduce effort and errors.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Remote State Backend for AWS Projects (Recommended)</b></li>
+    <br/>
+    <ul>
+        <li>For team projects, store Terraform state in S3 and lock with DynamoDB:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">terraform {
+    backend "s3" {
+        bucket         = "my-terraform-state-prod"
+        key            = "global/state.tfstate"
+        region         = "eu-central-1"
+        dynamodb_table = "terraform-locks"
+        encrypt        = true
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>This prevents:
+            <ul>
+                <li>conflicting changes,</li>
+                <li>lost state files,</li>
+                <li>corrupted environments.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Common AWS Terraform Patterns</b></li>
+    <br/>
+    <ul>
+        <li>Almost every AWS Terraform project involves:</li>
+        <ul>
+            <li>using data sources to fetch AMIs</li>
+            <li>creating VPC + subnets</li>
+            <li>security groups for inbound/outbound rules</li>
+            <li>EC2 instances or ECS/Lambda</li>
+            <li>IAM roles for services</li>
+            <li>S3 buckets for artifacts</li>
+            <li>CloudWatch for monitoring</li>
+            <li>Route53 for DNS</li>
+        </ul>
+        <br/>
+        <li>These patterns can scale from tiny personal projects to large enterprise deployments.</li>
+    </ul>
     <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
