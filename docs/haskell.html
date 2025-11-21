@@ -181,6 +181,7 @@
         <li><a href="#haskell-functor-applicative-monad-real-code">Practical Real-World Code Examples of Functor, Applicative, and Monad</a></li>
         <li><a href="#haskell-control-flow">Control Flow</a></li>
         <li><a href="#haskell-cabal-intro">Introduction to Cabal</a></li>
+        <li><a href="#haskell-data-class-grammar">Grammar of <code>data</code> and <code>class</code> Declarations</a></li>
     </ul>
 </nav>
 <hr/>
@@ -2704,25 +2705,15 @@ handle (Error msg) = "Error: " ++ msg
     <ul>
         <li>A <b>typeclass</b> in Haskell defines a set of behaviors (operations) that a type can implement.</li>
         <br/>
-        <li>You can think of a typeclass as:
-            <ul>
-                <li>an interface (like in Java or TypeScript), but more general and more powerful,</li>
-                <li>a way to describe <b>overloaded functions</b> that behave differently based on type,</li>
-                <li>a mechanism for <b>ad-hoc polymorphism</b>.</li>
-            </ul>
-        </li>
-        <br/>
         <li>A typeclass does <u>not</u> define data, it defines functions that types must provide.</li>
-    </ul>
 
 <pre><code class="language-haskell line-numbers">class Eq a where
     (==) :: a -&gt; a -&gt; Bool
     (/=) :: a -&gt; a -&gt; Bool
 </code></pre>
-
-    <br/>
     <ul>
         <li>This means: any type <code>a</code> that implements <code>Eq</code> must define <code>(==)</code> and <code>(/=)</code>.</li>
+    </ul>
     </ul>
     <br/><br/>
 
@@ -9459,6 +9450,254 @@ executable myproject-exe
     <ul>
         <li>Ensures your package follows community conventions.</li>
     </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-data-class-grammar">Grammar of <code>data</code> and <code>class</code> Declarations in Haskell</h3>
+<ol>
+
+    <li>Overview</li>
+    <br/>
+    <ul>
+        <li>This chapter focuses on the <u>grammar</u> and <u>syntactic structure</u> of Haskell’s <code>data</code> and <code>class</code> declarations.</li>
+        <li>It explains:
+            <ul>
+                <li>the “slots” each declaration may contain,</li>
+                <li>where type variables appear,</li>
+                <li>how constraints are placed,</li>
+                <li>how alternatives / constructors / methods are structured.</li>
+            </ul>
+        </li>
+        <li>This is <u>not</u> about semantics or usage, only the formal shape of these declarations.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <!-- ========================================================== -->
+    <li>The Grammar of <code>data</code> Declarations</li>
+    <br/>
+
+    <ul><li>Full grammar skeleton:</li></ul>
+
+<pre><code class="language-haskell line-numbers">data TypeName typeVars
+    = Constructor1 fields
+    | Constructor2 fields
+    | ...
+    deriving (Class1, Class2, ...)
+</code></pre>
+
+    <ul>
+        <li><code>data</code> keyword introducing a new algebraic datatype.</li>
+        <li><code>TypeName</code> must begin with a capital letter.</li>
+        <li><code>typeVars</code> zero or more lowercase identifiers:
+<pre><code class="language-haskell line-numbers">data Maybe a = ...
+data Either a b = ...
+data MyType = ...
+</code></pre>
+        </li>
+        <li><code>=</code> introduces constructor alternatives (sum type).</li>
+        <li><code>Constructor</code> must start with uppercase letter.</li>
+        <li><code>fields</code> zero or more types as parameters.</li>
+    </ul>
+
+    <br/>
+
+    <ul><li>Constructors: positional vs record form</li></ul>
+
+<pre><code class="language-haskell line-numbers">-- Positional
+Constructor t1 t2 t3
+
+-- Record syntax
+Constructor
+    { field1 :: Type1
+    , field2 :: Type2
+    }
+</code></pre>
+
+    <ul>
+        <li>Record fields must be <b>lowercase identifiers</b>.</li>
+        <li>Positional arguments are simply listed after the constructor.</li>
+    </ul>
+
+    <br/>
+
+    <ul><li>Multiple constructors</li></ul>
+
+<pre><code class="language-haskell line-numbers">data Shape
+    = Circle Float
+    | Rectangle Float Float
+    | Triangle
+</code></pre>
+
+    <ul>
+        <li><code>|</code> separates constructors.</li>
+        <li>Each constructor may have different arity.</li>
+    </ul>
+
+    <br/>
+
+    <ul><li>Type constraints in <code>data</code> grammar (rare)</li></ul>
+
+<pre><code class="language-haskell line-numbers">data Eq a =&gt; Weird a = W a
+</code></pre>
+
+    <ul>
+        <li>Although syntactically allowed, this form is <b>discouraged</b> and almost never used.</li>
+    </ul>
+
+    <br/>
+
+    <ul><li>The <code>deriving</code> clause</li></ul>
+
+<pre><code class="language-haskell line-numbers">deriving (Eq, Ord, Show)
+</code></pre>
+
+    <ul>
+        <li>Always appears at the <b>end</b> of the <code>data</code> declaration.</li>
+        <li>Contains a comma-separated list of typeclasses the compiler should automatically implement.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <!-- ========================================================== -->
+    <li>The Grammar of <code>class</code> Declarations</li>
+    <br/>
+
+    <ul><li>Full grammar skeleton:</li></ul>
+
+<pre><code class="language-haskell line-numbers">class (Constraints) =&gt; ClassName typeVar where
+    method1 :: type
+    method2 :: type
+    ...
+</code></pre>
+
+    <ul>
+        <li><code>class</code> keyword introducing a typeclass.</li>
+        <li><code>(Constraints) =&gt;</code> are optional, parentheses required if there are multiple constraints.</li>
+        <li><code>ClassName</code> must be capitalized.</li>
+        <li><code>typeVar</code> is usually a single lowercase variable (often <code>a</code>), may have more.</li>
+        <li><code>where</code> introduces method signatures.</li>
+        <li><code>method declarations</code> must each have a type signature.</li>
+    </ul>
+
+    <br/>
+
+    <ul><li>Simple example of minimal grammar:</li></ul>
+
+<pre><code class="language-haskell line-numbers">-- In the future, you can use (==) on any two values of the same type a,
+-- as long as that type a has an Eq instance.
+class Eq a where
+    (==) :: a -&gt; a -&gt; Bool
+</code></pre>
+
+    <ul>
+        <li>Operator methods are allowed and treated the same as named functions.</li>
+    </ul>
+
+    <br/>
+
+    <ul><li>Class with multiple methods</li></ul>
+
+<pre><code class="language-haskell line-numbers">class Ord a where
+    (&lt;)  :: a -&gt; a -&gt; Bool
+    (&lt;=) :: a -&gt; a -&gt; Bool
+    (&gt;)  :: a -&gt; a -&gt; Bool
+</code></pre>
+
+    <br/>
+
+    <ul><li>Class with superclasses (constraints)</li></ul>
+
+<pre><code class="language-haskell line-numbers">class (Eq a, Show a) =&gt; MyClass a where
+    method :: a -&gt; String
+</code></pre>
+
+    <ul>
+        <li>Constraints appear <b>before</b> the <code>=&gt;</code>.</li>
+        <li>If there is only one constraint, parentheses may still be required depending on style:
+<pre><code class="language-haskell line-numbers">class Eq a =&gt; MyClass a where ...
+</code></pre>
+        </li>
+    </ul>
+
+    <br/>
+
+    <ul><li>Multi-parameter typeclasses (valid grammar)</li></ul>
+
+<pre><code class="language-haskell line-numbers">class Convert a b where
+    convert :: a -&gt; b
+</code></pre>
+
+    <br/>
+
+    <ul><li>Associated defaults in grammar</b> (still just syntax):</li></ul>
+
+<pre><code class="language-haskell line-numbers">class Eq a where
+    (==) :: a -&gt; a -&gt; Bool
+    (/=) :: a -&gt; a -&gt; Bool
+    x /= y = not (x == y)     -- default implementation
+</code></pre>
+
+    <ul>
+        <li>Grammar allows <b>method implementations</b> inside a class.</li>
+        <li>These are optional, missing ones must be implemented by instances.</li>
+    </ul>
+
+    <br/><br/>
+
+
+
+    <!-- ========================================================== -->
+    <li>The Grammar of <code>instance</code> Declarations</li>
+    <br/>
+
+    <ul><li>Instance declaration skeleton:</li></ul>
+
+<pre><code class="language-haskell line-numbers">instance (Constraints) =&gt; ClassName typeArgs where
+    method1 = ...
+    method2 = ...
+</code></pre>
+
+    <ul>
+        <li><code>instance</code> keyword introducing an instance declaration.</li>
+        <li><code>Constraints</code> are same structure as class constraints.</li>
+        <li><code>ClassName</code> is capitalized.</li>
+        <li><code>typeArgs</code> must fully apply the class’ type variables.</li>
+    </ul>
+
+    <br/>
+
+    <ul><li>Example:</li></ul>
+
+<pre><code class="language-haskell line-numbers">instance Eq Person where
+    (Person n1 a1) == (Person n2 a2) =
+        n1 == n2 &amp;&amp; a1 == a2
+</code></pre>
+
+    <br/>
+
+    <ul><li>Grammar rule: type variables must be "fully saturated"</li></ul>
+
+<pre><code class="language-haskell line-numbers">-- Valid
+instance Ord (Maybe a) where ...
+
+-- INVALID (partial application)
+instance Ord Maybe where ...
+</code></pre>
+
+    <ul>
+        <li>Instances require all type parameters to be applied.</li>
+    </ul>
+
     <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
