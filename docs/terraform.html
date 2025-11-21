@@ -153,6 +153,7 @@
         <li><a href="#tf-what-is-terraform">What Is Terraform?</a></li>
         <li><a href="#terraform-lifecycle">Life Cycle</a></li>
         <li><a href="#terraform-cli">CLI</a></li>
+        <li><a href="#terraform-write-config">Writing Terraform Configuration</a></li>
     </ul>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -885,7 +886,418 @@ resource "aws_instance" "example" {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-write-config">Writing Terraform Configuration</h3>
+<ol>
 
+    <li><b>What Does Terraform Configuration Mean?</b></li>
+    <br/>
+    <ul>
+        <li>A Terraform <b>configuration</b> is a collection of <code>.tf</code> files that describe your desired infrastructure.</li>
+        <br/>
+        <li>Terraform uses a <b>declarative syntax</b> called HCL (HashiCorp Configuration Language).</li>
+        <br/>
+        <li>Configurations describe:
+            <ul>
+                <li>providers (AWS, Azure, GCP, Kubernetes, …),</li>
+                <li>resources (servers, networks, buckets, etc.),</li>
+                <li>variables and outputs,</li>
+                <li>modules,</li>
+                <li>data sources,</li>
+                <li>state backend settings.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Terraform reads your <code>.tf</code> files, builds a desired-state graph, and then applies it to real cloud infrastructure.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Terraform Files and Directory Structure</b></li>
+    <br/>
+    <ul>
+        <li>A typical Terraform directory might look like:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">.
+├── main.tf
+├── variables.tf
+├── outputs.tf
+└── terraform.tfvars
+</code></pre>
+
+    <ul>
+        <li>Terraform automatically loads <b>every</b> <code>*.tf</code> files in the working directory.</li>
+        <li>You don’t need to import them manually, Terraform merges them internally.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>The</b> <code>terraform</code> <b>Block</b></li>
+    <br/>
+    <ul>
+        <li>This block configures Terraform itself, especially:
+            <ul>
+                <li>required providers,</li>
+                <li>backend (where state is stored),</li>
+                <li>required terraform version.</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">terraform {
+    required_version = "&gt;= 1.5"
+
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+            version = "~&gt; 5.0"
+        }
+    }
+
+    backend "s3" {
+        bucket = "my-tf-state"
+        key    = "prod/terraform.tfstate"
+        region = "eu-central-1"
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>The <code>backend</code> configuration (S3 example) is optional unless you're working in teams.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Provider Configuration</b></li>
+    <br/>
+    <ul>
+        <li>A provider tells Terraform which cloud platform or service to interact with.</li>
+        <li>Example for AWS:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">provider "aws" {
+    region = "eu-central-1"
+}
+</code></pre>
+
+    <ul>
+        <li>Credentials can be set via:
+            <ul>
+                <li>environment variables (<code>AWS_ACCESS_KEY_ID</code>)</li>
+                <li>AWS CLI config</li>
+                <li>shared credentials files</li>
+                <li>instance roles</li>
+            </ul>
+        </li>
+        <li><b>Do not hardcode secrets</b> inside <code>.tf</code> files.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Resources: The Core of Terraform</b></li>
+    <br/>
+    <ul>
+        <li>A <b>resource</b> is an infrastructure object Terraform manages.</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">resource "aws_instance" "my_server" {
+    ami           = "ami-05f7491af5eef733a"
+    instance_type = "t2.micro"
+
+    tags = {
+        Name = "DemoServer"
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>The identifier <code>aws_instance.my_server</code> becomes a referenceable object inside your configuration.</li>
+        <br/>
+        <li>You can reference attributes using interpolation:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">resource "aws_eip" "my_ip" {
+    instance = aws_instance.my_server.id
+}
+</code></pre>
+
+    <ul>
+        <li>Terraform automatically builds dependency graphs based on references.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Variables</b></li>
+    <br/>
+    <ul>
+        <li>Variables make your configuration reusable and configurable.</li>
+        <li>Defined using:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">variable "instance_type" {
+    description = "EC2 instance type"
+    type        = string
+    default     = "t2.micro"
+}
+</code></pre>
+
+    <ul>
+        <li>Used like:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">instance_type = var.instance_type
+</code></pre>
+
+    <ul>
+        <li>Values can be passed via:
+            <ul>
+                <li><code>terraform.tfvars</code></li>
+                <li><code>-var</code> command flag</li>
+                <li>environment variables (<code>TF_VAR_...</code>)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Variable Files</b> (<code>.tfvars</code>)</li>
+    <br/>
+    <ul>
+        <li>Used to provide external input values:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">instance_type = "t3.small"
+bucket_name   = "prod-assets-2025"
+</code></pre>
+
+    <ul>
+        <li>Terraform automatically loads:</li>
+        <ul>
+            <li><code>terraform.tfvars</code></li>
+            <li><code>*.auto.tfvars</code></li>
+        </ul>
+        <br/>
+        <li>Other files require manual loading:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">terraform apply -var-file=prod.tfvars
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Outputs</b></li>
+    <br/>
+    <ul>
+        <li>Outputs allow Terraform to display useful information after apply:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">output "public_ip" {
+    description = "Public IP of the instance"
+    value       = aws_instance.my_server.public_ip
+}
+</code></pre>
+
+    <ul>
+        <li>View outputs:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">terraform output
+terraform output public_ip
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Locals</b></li>
+    <br/>
+    <ul>
+        <li>Local values are internal configuration shortcuts.</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">locals {
+    tags = {
+        Environment = "production"
+        Owner       = "Junzhe"
+    }
+}
+
+resource "aws_s3_bucket" "bucket" {
+    bucket = "my-demo-bucket-2025"
+    tags   = local.tags
+}
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Data Sources</b></li>
+    <br/>
+    <ul>
+        <li>Data sources let Terraform <b>query existing resources</b>.</li>
+        <li>Example: fetch the latest AMI ID:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">data "aws_ami" "latest_amazon_linux" {
+    owners      = ["amazon"]
+    most_recent = true
+
+    filter {
+        name   = "name"
+        values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+    }
+}
+
+resource "aws_instance" "server" {
+    ami           = data.aws_ami.latest_amazon_linux.id
+    instance_type = "t2.micro"
+}
+</code></pre>
+
+    <ul>
+        <li>Data sources are <b>read-only</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Modules</b></li>
+    <br/>
+    <ul>
+        <li>Modules allow you to group and reuse resources.</li>
+        <li>Example using a public module:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">module "vpc" {
+    source = "terraform-aws-modules/vpc/aws"
+    version = "~&gt; 5.1"
+
+    name = "prod-vpc"
+    cidr = "10.0.0.0/16"
+}
+</code></pre>
+
+    <ul>
+        <li>You can also write your own module:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">
+modules/
+└── ec2/
+    ├── main.tf
+    ├── variables.tf
+    └── outputs.tf
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Expressions and Interpolation Syntax</b></li>
+    <br/>
+    <ul>
+        <li>Terraform uses <code>${ ... }</code> for interpolation, but modern style allows direct reference:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">ami           = data.aws_ami.latest.id
+instance_type = var.instance_type
+tags          = local.tags
+</code></pre>
+
+    <ul>
+        <li>Useful functions exist:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">timestamp()
+upper("hello")
+join("-", ["prod", "eu", "vpc"])
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Lifecycle Rules</b></li>
+    <br/>
+    <ul>
+        <li>Used for fine control over create/update/destroy behavior.</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">resource "aws_instance" "server" {
+    ami           = var.ami
+    instance_type = "t2.micro"
+
+    lifecycle {
+        prevent_destroy = true
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Other lifecycle options:
+            <ul>
+                <li><code>create_before_destroy</code></li>
+                <li><code>ignore_changes</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Putting Everything Together: A Complete Example</b></li>
+    <br/>
+    <ul>
+        <li>This small configuration provisions:
+            <ul>
+                <li>An EC2 instance</li>
+                <li>An elastic IP</li>
+                <li>Outputs its public IP</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">terraform {
+    required_providers {
+        aws = {
+            source = "hashicorp/aws"
+            version = "~&gt; 5.0"
+        }
+    }
+}
+
+provider "aws" {
+    region = "eu-central-1"
+}
+
+variable "instance_type" {
+    default = "t2.micro"
+}
+
+resource "aws_instance" "vm" {
+    ami           = "ami-05f7491af5eef733a"
+    instance_type = var.instance_type
+
+    tags = {
+        Name = "ExampleVM"
+    }
+}
+
+resource "aws_eip" "ip" {
+    instance = aws_instance.vm.id
+}
+
+output "public_ip" {
+    value = aws_eip.ip.public_ip
+}
+</code></pre>
+
+    <ul>
+        <li>Run it:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">terraform init
+terraform plan
+terraform apply
+</code></pre>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
