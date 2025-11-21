@@ -177,6 +177,7 @@
         <li><a href="#haskell-monads">Monads</a></li>
         <li><a href="#haskell-zippers">Zippers</a></li>
         <li><a href="#haskell-let-in"><code>let ... in</code> Expressions</a></li>
+        <li><a href="#haskell-do-notation"><code>do</code> Notation</a></li>
     </ul>
 </nav>
 <hr/>
@@ -8321,7 +8322,279 @@ shadow x =
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-do-notation">Haskell <code>do</code>-Notation</h3>
+<ol>
+    <li><b>Intuition: What is <code>do</code>-notation?</b>
+        <br/>
+        <ul>
+            <li><code>do</code>-notation is Haskell&rsquo;s readable syntax for sequencing <b>monadic actions</b>.</li>
+            <li>It does <b>not</b> introduce new semantics; it is only syntactic sugar.</li>
+            <li>Every <code>do</code>-block desugars into combinations of:
+                <ul>
+                    <li><code>&gt;&gt;=</code> (bind)</li>
+                    <li><code>&gt;&gt;</code>  (then)</li>
+                    <li><code>return</code> (pure)</li>
+                </ul>
+            </li>
+            <li>This makes monadic code look imperative while still being purely functional.</li>
+        </ul>
+        <br/>
+<pre><code class="language-haskell line-numbers">main :: IO ()
+main = do
+    line &lt;- getLine
+    putStrLn ("You entered: " ++ line)
+</code></pre>
+        <ul>
+            <li><code>line &lt;- getLine</code> runs the effect <code>getLine :: IO String</code> and extracts its result.</li>
+            <li><code>putStrLn ...</code> runs after that.</li>
+        </ul>
+    </li>
 
+    <br/>
+
+    <li><b>What is a Monadic Bind (<code>&gt;&gt;=</code>)?</b>
+        <br/>
+        <ul>
+            <li>The operator <code>&gt;&gt;=</code> means:
+                <ul>
+                    <li>&ldquo;Run the effect on the left, then pass its result to the function on the right.&rdquo;</li>
+                </ul>
+            </li>
+        </ul>
+<pre><code class="language-haskell line-numbers">(m &gt;&gt;= \x -&gt; f x)
+</code></pre>
+        <ul>
+            <li>In a <code>do</code> block, this is exactly what happens when you write <code>x &lt;- m</code>.</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>Desugaring: How <code>do</code>-notation Expands</b>
+        <br/>
+        <ul>
+            <li>Every <code>do</code>-block can be translated into pure monadic operations.</li>
+        </ul>
+        <br/>
+        <ul>
+            <li><b>Example 1:</b></li>
+        </ul>
+<pre><code class="language-haskell line-numbers">foo :: Maybe Int
+foo = do
+    x &lt;- Just 3
+    y &lt;- Just 4
+    return (x + y)
+</code></pre>
+
+        <ul>
+            <li>Desugared version:</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">foo :: Maybe Int
+foo =
+    Just 3 &gt;&gt;= \x -&gt;
+    Just 4 &gt;&gt;= \y -&gt;
+    return (x + y)
+</code></pre>
+
+        <ul>
+            <li><b>Example 2: No binding</b></li>
+        </ul>
+<pre><code class="language-haskell line-numbers">main = do
+    putStrLn "Hello"
+    putStrLn "World"
+</code></pre>
+
+<pre><code class="language-haskell line-numbers">main =
+    putStrLn "Hello" &gt;&gt;
+    putStrLn "World"
+</code></pre>
+    </li>
+
+    <br/>
+
+    <li><b><code>&lt;-</code> Inside <code>do</code>-notation</b>
+        <br/>
+        <ul>
+            <li>A line with <code>&lt;-</code> has the structure:</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">name &lt;- action
+</code></pre>
+        <ul>
+            <li>Meaning:
+                <ul>
+                    <li><code>action :: m a</code> is a monadic computation.</li>
+                    <li>It runs, and its result is bound to <code>name</code>.</li>
+                </ul>
+            </li>
+            <li>It corresponds directly to:
+                <ul>
+                    <li><code>action &gt;&gt;= \name -&gt; ...</code></li>
+                </ul>
+            </li>
+        </ul>
+        <br/>
+        <ul>
+            <li><b>Important rule:</b> the right-hand side of <code>&lt;-</code> must be a monadic value (e.g. <code>IO a</code>, <code>Maybe a</code>, etc.), not a pure expression.</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">x &lt;- 3       -- ❌ wrong: 3 is not a monadic action
+</code></pre>
+    </li>
+
+    <br/>
+
+    <li><b>Pure Bindings in <code>do</code>: <code>let</code></b>
+        <br/>
+        <ul>
+            <li>Pure local definitions are introduced with <code>let</code> (without <code>in</code>!).</li>
+            <li>These are not monadic; they are just pure values.</li>
+        </ul>
+
+<pre><code class="language-haskell line-numbers">main = do
+    let x = 10
+        y = 20
+    print (x + y)
+</code></pre>
+
+        <ul>
+            <li>You use <code>let</code> when you want to define pure helpers inside a <code>do</code>-block.</li>
+            <li>You cannot use <code>&lt;-</code> for pure bindings.</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>Pattern Matching Inside <code>do</code></b>
+        <br/>
+        <ul>
+            <li>You can pattern-match on monadic results:</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">printPair :: IO ()
+printPair = do
+    (x, y) &lt;- return (1, "one")
+    putStrLn (show x ++ ": " ++ y)
+</code></pre>
+
+        <ul>
+            <li>If the pattern fails, it triggers the monad&rsquo;s fail behavior.</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>Using <code>do</code>-notation with Other Monads (Not Just IO)</b>
+        <br/>
+        <ul>
+            <li><code>do</code>-notation works for <b>any monad</b>, not only <code>IO</code>.</li>
+            <li>Example: <code>Maybe</code> monad for computations that can fail.</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">half :: Int -&gt; Maybe Int
+half x =
+    if even x then Just (x `div` 2) else Nothing
+
+example :: Maybe Int
+example = do
+    a &lt;- half 20
+    b &lt;- half a
+    return b
+-- example == Just 5
+</code></pre>
+        <ul>
+            <li>If any <code>half</code> call returns <code>Nothing</code>, the whole block is <code>Nothing</code>.</li>
+        </ul>
+        <br/>
+        <ul>
+            <li>Works similarly for:
+                <ul>
+                    <li><code>Either e</code></li>
+                    <li><code>[]</code> (list monad)</li>
+                    <li>custom monads</li>
+                    <li>transformer stacks like <code>ReaderT</code>, <code>StateT</code>, etc.</li>
+                </ul>
+            </li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>Empty <code>do</code> Blocks and <code>return</code></b>
+        <br/>
+        <ul>
+            <li>Every <code>do</code>-block must evaluate to a monadic value.</li>
+            <li><code>return</code> injects a pure value into the monad.</li>
+        </ul>
+
+<pre><code class="language-haskell line-numbers">example = do
+    return 42    -- :: Maybe Int, IO Int, etc.
+</code></pre>
+
+        <ul>
+            <li><code>return</code> does <b>not</b> end the block (unlike other languages).</li>
+            <li>It simply wraps a pure value inside the monad.</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>Sequencing Without Bind: <code>action1 &gt;&gt; action2</code></b>
+        <br/>
+        <ul>
+            <li>If you don&rsquo;t care about the result of an action, you drop the <code>&lt;-</code>:</li>
+        </ul>
+
+<pre><code class="language-haskell line-numbers">main = do
+    putStrLn "Hello"
+    putStrLn "World"
+</code></pre>
+
+        <ul>
+            <li>Desugars to:</li>
+        </ul>
+<pre><code class="language-haskell line-numbers">main =
+    putStrLn "Hello" &gt;&gt;
+    putStrLn "World"
+</code></pre>
+    </li>
+
+    <br/>
+
+    <li><b>Common Pitfalls</b>
+        <br/>
+        <ul>
+            <li><b>1. Forgetting that <code>let</code> does not use <code>in</code> inside <code>do</code> blocks.</b></li>
+        </ul>
+<pre><code class="language-haskell line-numbers">let x = 10 in print x    -- ❌ not allowed inside do
+</code></pre>
+
+        <ul>
+            <li><b>2. Using <code>&lt;-</code> on pure values.</b></li>
+        </ul>
+<pre><code class="language-haskell line-numbers">x &lt;- 5    -- ❌ Wrong: 5 is not monadic
+let x = 5 -- ✔ Correct
+</code></pre>
+
+        <ul>
+            <li><b>3. Mixing up <code>do</code> with imperative semantics.</b></li>
+            <li>Under the hood, <code>do</code> is still purely functional.</li>
+        </ul>
+    </li>
+
+    <br/>
+
+    <li><b>Summary</b>
+        <br/>
+        <ul>
+            <li><code>do</code>-notation is syntactic sugar for monadic operations.</li>
+            <li><code>x &lt;- m</code> extracts the result of a monadic computation.</li>
+            <li><code>let</code> defines pure local variables inside a <code>do</code>-block (no <code>in</code>).</li>
+            <li><code>do</code> works with <b>all monads</b>, not just <code>IO</code>.</li>
+            <li>Every <code>do</code>-block becomes a chain of <code>&gt;&gt;</code> and <code>&gt;&gt;=</code>.</li>
+        </ul>
+        <br/>
+        <ul>
+            <li>If you remember: <b>&ldquo;<code>do</code> = nicer syntax for monadic chains&rdquo;</b>, you understand exactly what it is.</li>
+        </ul>
+    </li>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
