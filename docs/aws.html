@@ -162,6 +162,7 @@
         <li><a href="#aws-rds-intro">Introduction to AWS RDS</a></li>
         <li><a href="#aws-dynamodb-intro">Introduction to AWS DynamoDB</a></li>
         <li><a href="#aws-cli-intro">Introduction to AWS CLI</a></li>
+        <li><a href="#aws-lambda-intro">Introduction to AWS Lambda</a></li>
     </ul>
 </nav>
 <hr/>
@@ -1855,6 +1856,253 @@ aws ec2 run-instances \
     <ul>
         <li>Then you can press <b>TAB</b> to auto-suggest services and parameters.</li>
     </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="aws-lambda-intro">Introduction to AWS Lambda</h3>
+<ol>
+
+    <li><b>What Is AWS Lambda?</b></li>
+    <ul>
+        <br/>
+        <li><b>AWS Lambda</b> is a fully managed, serverless computing service that lets you run code without provisioning or managing servers.</li>
+        <br/>
+        <li>With Lambda:
+            <ul>
+                <li>You upload your function code.</li>
+                <li>AWS runs it only when needed.</li>
+                <li>You pay only for the compute time your code uses (per millisecond).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Lambda is a core part of AWS’s serverless architecture and is heavily used with:
+            <ul>
+                <li>API Gateway</li>
+                <li>DynamoDB</li>
+                <li>S3 event triggers</li>
+                <li>CloudWatch events</li>
+                <li>Step Functions</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Common use cases include microservices, background tasks, ETL jobs, scheduled jobs, and event-driven applications.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>How Lambda Works</b></li>
+    <br/>
+    <ul>
+        <li>Lambda follows an <b>event-driven execution model</b>:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Event  →  Lambda Function  →  Response / Side Effect
+</code></pre>
+
+    <ul>
+        <br/>
+        <li>Examples of events:</li>
+        <ul>
+            <li>S3 file upload</li>
+            <li>HTTP request via API Gateway</li>
+            <li>DynamoDB table update</li>
+            <li>Cron schedule via CloudWatch</li>
+            <li>IoT sensor message</li>
+        </ul>
+        <br/>
+        <li>AWS automatically handles:
+            <ul>
+                <li>Server creation</li>
+                <li>Scaling</li>
+                <li>Load balancing</li>
+                <li>Monitoring</li>
+                <li>Logging</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Supported Languages</b></li>
+    <br/>
+    <ul>
+        <li>Lambda supports many runtimes:</li>
+        <ul>
+            <li><b>Python</b></li>
+            <li><b>Node.js</b></li>
+            <li><b>Java</b></li>
+            <li><b>Go</b></li>
+            <li><b>.NET</b> (C#)</li>
+            <li><b>Ruby</b></li>
+            <li><b>Custom Runtime (provided.al2)</b></li>
+        </ul>
+        <br/>
+        <li>Custom runtime lets you run Rust, PHP, C++, Zig, Haskell, etc. with a bootstrap script.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Basic Lambda Function Structure</b></li>
+    <br/>
+    <ul>
+        <li>A Lambda function is simply a handler that receives:
+            <ul>
+                <li>an <b>event</b> (input)</li>
+                <li>a <b>context</b> object (runtime metadata)</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def handler(event, context):
+    name = event.get("name", "World")
+    return {"message": f"Hello, {name}!"}
+</code></pre>
+
+<br/>
+
+<pre><code class="language-javascript line-numbers">exports.handler = async (event) =&gt; {
+    return { message: "Hello from Lambda!" };
+};
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Triggers: What Can Invoke a Lambda?</b></li>
+    <br/>
+    <ul>
+        <li>Lambda can be triggered by over 200 AWS services. Most common ones:</li>
+        <br/>
+    </ul>
+
+    <table>
+        <tr><th>Service</th><th>Trigger Example</th></tr>
+        <tr><td><b>S3</b></td><td>Run code when a file is uploaded</td></tr>
+        <tr><td><b>API Gateway</b></td><td>Handle HTTP requests (serverless API)</td></tr>
+        <tr><td><b>DynamoDB Streams</b></td><td>Process table insert/update/delete events</td></tr>
+        <tr><td><b>CloudWatch Events</b></td><td>Scheduled cron jobs</td></tr>
+        <tr><td><b>SQS</b></td><td>Process messages from a queue</td></tr>
+        <tr><td><b>SNS</b></td><td>Handle push notifications/topics</td></tr>
+        <tr><td><b>EventBridge</b></td><td>React to system-wide events</td></tr>
+        <tr><td><b>Kinesis</b></td><td>Stream processing</td></tr>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Lambda Pricing (Pay Only for Usage)</b></li>
+    <br/>
+    <ul>
+        <li>Lambda pricing is based on:</li>
+        <ul>
+            <li><b>Number of invocations</b></li>
+            <li><b>Execution time</b> (measured per millisecond)</li>
+            <li><b>Allocated memory</b></li>
+        </ul>
+        <li>There is no charge when your function is idle.</li>
+        <li>Free tier:
+            <ul>
+                <li>1 million requests per month</li>
+                <li>400,000 GB-seconds compute</li>
+            </ul>
+        </li>
+        <li>Lambda is extremely cost-efficient for event-driven workloads.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Execution Environment</b></li>
+    <br/>
+    <ul>
+        <li>Each invocation runs inside an isolated execution environment.</li>
+        <li>Cold starts occur when AWS needs to create a new environment.</li>
+        <li>Warm starts reuse an existing environment → much faster execution.</li>
+        <li>Key characteristics:</li>
+        <ul>
+            <li>Linux-based environment</li>
+            <li>/tmp directory with 512MB storage</li>
+            <li>Execution timeout: max 15 minutes</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Permissions &amp; IAM Roles</b></li>
+    <br/>
+    <ul>
+        <li>Each Lambda function uses an <b>execution role</b> (IAM role).</li>
+        <li>This determines what AWS resources the function can access.</li>
+        <li>Examples:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">
+Read from S3 → needs s3:GetObject
+Write to DynamoDB → needs dynamodb:PutItem
+Push logs → needs logs:CreateLogStream + logs:PutLogEvents
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Security best practice:
+            <ul>
+                <li>Follow least privilege.</li>
+                <li>Give only the permissions the function needs.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><b>Deploying Lambda Functions</b></li>
+    <br/>
+    <ul>
+        <li>You can deploy Lambda using:</li>
+        <ul>
+            <li><b>AWS Console</b></li>
+            <li><b>AWS CLI</b></li>
+            <li><b>ZIP Upload</b></li>
+            <li><b>Container Images</b> (up to 10GB)</li>
+            <li><b>Infrastructure-as-Code</b>:
+                <ul>
+                    <li>CloudFormation</li>
+                    <li>Serverless Framework</li>
+                    <li>Terraform</li>
+                    <li>AWS SAM (Serverless Application Model)</li>
+                    <li>CDK (Cloud Development Kit)</li>
+                </ul>
+            </li>
+        </ul>
+        <li>CLI example:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws lambda update-function-code \
+  --function-name myFunction \
+  --zip-file fileb://function.zip
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Logging &amp; Monitoring</b></li>
+    <br/>
+    <ul>
+        <li>Lambda integrates with:</li>
+        <ul>
+            <li><b>CloudWatch Logs</b> (stdout/stderr logs)</li>
+            <li><b>CloudWatch Metrics</b> (invocations, errors, duration)</li>
+            <li><b>X-Ray</b> for distributed tracing</li>
+        </ul>
+        <li>You can view logs via:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">aws logs tail /aws/lambda/myFunction --follow</code></pre>
+
     <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
