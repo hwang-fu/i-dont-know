@@ -166,6 +166,7 @@
         <li><a href="#docker-push-command">Understanding the <code>docker push</code> Command</a></li>
         <li><a href="#docker-volume-command">Understanding the <code>docker volume</code> Command</a></li>
         <li><a href="#docker-network-command">Understanding the <code>docker network</code> Command</a></li>
+        <li><a href="#docker-daemon-overview">Understanding the Docker Daemon</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3408,7 +3409,156 @@ docker run -d --name app2 --network appnet --ip 172.20.0.11 alpine
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-daemon-overview">Understanding the Docker Daemon (dockerd)</h3>
+<ol>
 
+    <li>What Is the Docker Daemon?</li>
+    <br/>
+    <ul>
+        <li>The <b>Docker daemon</b> (the process named <code>dockerd</code>) is the <b>system-level background service</b> responsible for managing every Docker operation.</li>
+        <br/>
+        <li>It runs continuously in the background and handles:
+            <ul>
+                <li>container lifecycle (start, stop, restart)</li>
+                <li>building and running images</li>
+                <li>networking between containers</li>
+                <li>storage (volumes, layers)</li>
+                <li>pulling/pushing images from registries</li>
+                <li>API communication with Docker CLI</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The daemon exposes a REST API that the <code>docker</code> CLI communicates with.</li>
+        <br/>
+        <li>Process name on Linux:</li>
+<pre><code class="language-plaintext line-numbers">/usr/bin/dockerd</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Architecture: How Docker CLI Talks to the Daemon</li>
+    <br/>
+    <ul>
+        <li>Docker uses a client–server architecture:</li>
+
+<pre><code class="language-plaintext line-numbers">
++----------------------+           +-----------------+
+|  Docker CLI (client) |  -----&gt;   |  Docker Daemon  |
+|  "docker run ..."    |   API     |  dockerd        |
++----------------------+           +-----------------+
+                                         |
+                                         v
+                                Containers, Images,
+                                Volumes, Networks
+</code></pre>
+        <br/>
+        <li>You never interact with containers directly — everything goes through the daemon’s API.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Why the Docker Daemon Requires Root Privileges</li>
+    <br/>
+    <ul>
+        <li>Historically, <code>dockerd</code> runs as <code>root</code> because it manages:
+            <ul>
+                <li>network namespaces</li>
+                <li>cgroups (CPU/memory control)</li>
+                <li>iptables firewall rules</li>
+                <li>mounting filesystems</li>
+                <li>kernel features for containers</li>
+            </ul>
+        </li>
+        <br/>
+        <li>These are privileged operations → only root can perform them.</li>
+        <br/>
+        <li>Therefore:
+            <ul>
+                <li>Docker daemon runs as <code>root</code></li>
+                <li>the <code>docker</code> CLI communicates with it over a privileged Unix socket at <code>/var/run/docker.sock</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>This root-level nature is the source of many security concerns.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Famous Security Problem: Access to <code>/var/run/docker.sock</code></li>
+    <br/>
+    <ul>
+        <li>If a user can access this socket, they effectively have <b>root permissions on the host machine</b>.</li>
+        <br/>
+        <li>This means:
+            <ul>
+                <li>They can mount root filesystem</li>
+                <li>Launch privileged containers</li>
+                <li>Run commands as root</li>
+                <li>Modify system files</li>
+            </ul>
+        </li>
+        <br/>
+        <li>For example:</li>
+<pre><code class="language-bash line-numbers">docker run -v /:/host -it ubuntu chroot /host
+</code></pre>
+        <li>This gives full root access to the host.</li>
+        <br/>
+        <li><b>This is why giving users Docker access is equivalent to giving them sudo.</b></li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Rootless Docker: Attempt to Solve the Problem</li>
+    <br/>
+    <ul>
+        <li>Docker now supports <b>rootless mode</b>, where <code>dockerd</code> runs as a normal user.</li>
+        <br/>
+        <li>Benefits:</li>
+        <ul>
+            <li>No root privileges required</li>
+            <li>Safer in multi-user environments</li>
+            <li>User cannot modify critical system structures</li>
+        </ul>
+        <br/>
+        <li>Limitations:</li>
+        <ul>
+            <li>Cannot use privileged ports (&lt;1024)</li>
+            <li>Weaker performance in some operations</li>
+            <li>Networking is more limited</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Why Kubernetes Stopped Using Docker as Runtime</li>
+    <br/>
+    <ul>
+        <li>Kubernetes deprecated Docker as a container runtime because:</li>
+        <ul>
+            <li>It depends on the system-level daemon</li>
+            <li>Not compliant with Kubernetes CRI (Container Runtime Interface)</li>
+            <li>Kubernetes prefers <b>containerd</b> and <b>CRI-O</b></li>
+        </ul>
+        <br/>
+        <li><b>Important:</b> Kubernetes still uses Docker images, but NOT the Docker daemon.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Alternatives to Docker That Avoid the Daemon</li>
+    <br/>
+    <ul>
+        <li>Tools like <b>Podman</b> avoid the daemon entirely.</li>
+        <br/>
+        <li>Podman features:</li>
+        <ul>
+            <li>Daemonless</li>
+            <li>Rootless by default</li>
+            <li>Docker CLI compatible (<code>alias docker=podman</code>)</li>
+        </ul>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
