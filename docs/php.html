@@ -163,6 +163,7 @@
         <li><a href="#php-functions">Functions</a></li>
         <li><a href="#php-advanced-functions">Advanced Functions</a></li>
         <li><a href="#php-arrays">Arrays</a></li>
+        <li><a href="#php-advanced-array-operations">Advanced Array Operations</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4018,6 +4019,347 @@ list($a, $b) = [10, 20];
     </ul>
     <br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="php-advanced-array-operations">PHP Advanced Array Operations</h3>
+<ol>
+    <li>Array Mapping (<code>array_map</code>)</li>
+    <br/>
+    <ul>
+        <li>Apply a function to every element of an array.</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$nums = [1, 2, 3];
+$doubled = array_map(fn($n) =&gt; $n * 2, $nums);
+// [2, 4, 6]
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Multiple arrays:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$a = [1,2,3];
+$b = [4,5,6];
+$sum = array_map(fn($x,$y) =&gt; $x + $y, $a, $b);
+// [5, 7, 9]
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Preserves keys only if <code>array_keys</code> unchanged.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Filtering Arrays (<code>array_filter</code>)</li>
+    <br/>
+    <ul>
+        <li>Filter elements based on a predicate.</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$nums = [1,2,3,4,5,6];
+$evens = array_filter($nums, fn($n) =&gt; $n % 2 == 0);
+// [2, 4, 6]
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Filter using values and keys:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$result = array_filter(
+    $user,
+    fn($v, $k) =&gt; $k === "age",
+    ARRAY_FILTER_USE_BOTH
+);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>To reindex array: <code>array_values()</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reducing Arrays (<code>array_reduce</code>)</li>
+    <br/>
+    <ul>
+        <li>Reduces array to a single value (sum, product, join).</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$nums = [1,2,3,4];
+$sum = array_reduce($nums, fn($c,$n) =&gt; $c + $n, 0);
+// 10
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Build complex structures:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$result = array_reduce($words, fn($acc,$w) =&gt; $acc . strtoupper($w), "");
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Array Merging and Combining</li>
+    <br/>
+    <ul>
+        <li><b>Simple merge:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$result = array_merge($a, $b);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Spread/unpack operator (PHP 7.4+):</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$merged = [...$a, ...$b, 100];
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Combine two arrays into associative form:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$keys = ["name","age"];
+$values = ["Alice",25];
+$assoc = array_combine($keys, $values);
+// ["name" =&gt; "Alice", "age" =&gt; 25]
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Merge recursively:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+array_merge_recursive($a, $b);
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Array Slicing (<code>array_slice</code>)</li>
+    <br/>
+    <ul>
+        <li>Extracts part of an array.</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$part = array_slice($nums, 2, 3);
+// from index 2, take 3 values
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Preserve keys:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+array_slice($nums, 2, 3, true);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Negative indexes allowed.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Array Splicing (<code>array_splice</code>)</li>
+    <br/>
+    <ul>
+        <li>Remove and optionally replace part of an array.</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$nums = [1,2,3,4,5];
+array_splice($nums, 1, 2, ["a","b"]);
+// result: [1, "a", "b", 4, 5]
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Can be used to insert anywhere.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Advanced Searching</li>
+    <br/>
+    <ul>
+        <li><b>Search value:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$key = array_search("blue", $colors);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Strict search:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$key = array_search(0, ["0", 0, false], true);
+// finds second element only
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Find all keys matching a condition:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$keys = array_keys($nums, 10);
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Set Operations</li>
+    <br/>
+    <ul>
+        <li><b>Unique values:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$unique = array_unique([1,2,2,3]);
+// [1,2,3]
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+
+        <li><b>Difference:</b> values in A not in B</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$diff = array_diff([1,2,3],[2]);
+// [1,3]
+?&gt;
+</code></pre>
+
+        <br/>
+        <li><b>Intersection:</b> common values</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$inter = array_intersect([1,2,3],[2,3,4]);
+// [2,3]
+?&gt;
+</code></pre>
+        </li>
+
+        <br/>
+        <li><b>Difference by keys:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+array_diff_key($a, $b);
+?&gt;
+</code></pre>
+
+        <br/>
+        <li><b>User-defined comparison:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+array_udiff($a, $b, fn($x,$y) =&gt; $x &lt;=&gt; $y);
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Chunking and Splitting Arrays</li>
+    <br/>
+    <ul>
+        <li><b>Create chunks:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$chunks = array_chunk([1,2,3,4,5,6], 2);
+// [[1,2],[3,4],[5,6]]
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Split into keys and values:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$keys = array_keys($user);
+$values = array_values($user);
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Array Destructuring (Advanced)</li>
+    <br/>
+    <ul>
+        <li>Unpack only needed keys:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+["name" =&gt; $n, "age" =&gt; $a] = $user;
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Skip elements:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+[$first,, $third] = [10,20,30];
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Array Pointers</li>
+    <br/>
+    <ul>
+        <li>PHP maintains an internal pointer for arrays.</li>
+        <br/>
+        <li>Useful pointer functions:
+            <ul>
+                <li><code>current()</code></li>
+                <li><code>next()</code></li>
+                <li><code>prev()</code></li>
+                <li><code>reset()</code></li>
+                <li><code>end()</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$colors = ["red","green","blue"];
+echo current($colors); // red
+next($colors);
+echo current($colors); // green
+end($colors);          // blue
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Functional Programming with Arrays</li>
+    <br/>
+    <ul>
+        <li>Combining map → filter → reduce:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$sumOfSquares =
+    array_reduce(
+        array_map(fn($n) =&gt; $n * $n,
+            array_filter($nums, fn($n) =&gt; $n % 2 == 0)
+        ),
+        fn($c,$v) =&gt; $c + $v,
+        0
+    );
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>This creates expressive pipelines similar to Python or JavaScript.</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
