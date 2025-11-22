@@ -3462,6 +3462,339 @@ product:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-view-engine">Symfony View Engine (Twig Templating)</h3>
+<ol>
+
+    <li>What Is the Symfony View Engine?</li>
+    <br/>
+    <ul>
+        <li>Symfony uses <b>Twig</b> as its default templating (view) engine.</li>
+        <br/>
+        <li>Twig is a flexible, secure, and fast templating language designed to:
+            <ul>
+                <li>render HTML pages,</li>
+                <li>embed variables,</li>
+                <li>create loops/conditionals,</li>
+                <li>extend layouts,</li>
+                <li>escape outputs safely,</li>
+                <li>integrate with Symfony (routing, assets, forms).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Twig files have the extension <code>.twig</code> and live in the <code>templates/</code> directory.</li>
+        <br/>
+        <li>The View Engine is responsible for converting <b>template files</b> into actual HTML sent to the browser.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Serving a Twig Template from a Controller</li>
+    <br/>
+    <ul>
+        <li>Use the controller’s <code>render()</code> method:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+return $this-&gt;render('home/index.html.twig', [
+    'name' =&gt; 'Junzhe'
+]);
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>The template contains placeholders for variables:</li>
+<pre><code class="language-twig line-numbers">&lt;h1&gt;Hello {{ name }}!&lt;/h1&gt;</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Twig Template Syntax Basics</li>
+    <br/>
+    <ul>
+        <li>Twig uses three types of delimiters:</li>
+        <ul>
+            <li><code>{{ ... }}</code> → print a variable</li>
+            <li><code>{% ... %}</code> → logic (loops, conditions, imports)</li>
+            <li><code>{# ... #}</code> → comments</li>
+        </ul>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-twig line-numbers">
+{# Comment #}
+{% if user %}
+    Hello {{ user.name }}
+{% else %}
+    Hello Guest
+{% endif %}
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Template Inheritance (Layouts)</li>
+    <br/>
+    <ul>
+        <li>Twig supports layout inheritance via <code>{% extends %}</code>.</li>
+        <br/>
+        <li>Base layout:</li>
+<pre><code class="language-twig line-numbers">{# templates/base.html.twig #}
+&lt;html&gt;
+&lt;body&gt;
+    {% block body %}{% endblock %}
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Child template:</li>
+<pre><code class="language-twig line-numbers">{% extends 'base.html.twig' %}
+
+{% block body %}
+    &lt;h1&gt;Welcome!&lt;/h1&gt;
+{% endblock %}
+</code></pre>
+        </li>
+        <br/>
+        <li>This allows consistent headers/footers across your site.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Including Templates</li>
+    <br/>
+    <ul>
+        <li>You can reuse pieces of templates:</li>
+<pre><code class="language-twig line-numbers">{% include 'partials/menu.html.twig' %}</code></pre>
+        </li>
+        <br/>
+        <li>Good for:
+            <ul>
+                <li>navigation menus</li>
+                <li>footers</li>
+                <li>forms</li>
+                <li>shared UI blocks</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Variables in Twig</li>
+    <br/>
+    <ul>
+        <li>Variables are passed from controllers:</li>
+<pre><code class="language-php line-numbers">return $this-&gt;render('page.html.twig', ['age' =&gt; 22]);</code></pre>
+        </li>
+        <br/>
+        <li>Access in Twig:</li>
+<pre><code class="language-twig line-numbers">{{ age }}</code></pre>
+        </li>
+        <br/>
+        <li>Objects support attribute access automatically:</li>
+<pre><code class="language-twig line-numbers">{{ user.name }}
+{{ user.getEmail() }}</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Loops and Conditionals</li>
+    <br/>
+    <ul>
+<pre><code class="language-twig line-numbers">{% for product in products %}
+    &lt;li&gt;{{ product.name }} — {{ product.price }}€&lt;/li&gt;
+{% endfor %}
+
+{% if products is empty %}
+    No products found.
+{% endif %}
+</code></pre>
+        </li>
+        <br/>
+        <li>Twig supports powerful loop variables:</li>
+        <ul>
+            <li><code>loop.index</code></li>
+            <li><code>loop.first</code></li>
+            <li><code>loop.last</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Filters</li>
+    <br/>
+    <ul>
+        <li>Filters transform output:</li>
+<pre><code class="language-twig line-numbers">{{ name|upper }}
+{{ content|striptags }}
+{{ list|length }}</code></pre>
+        </li>
+        <br/>
+        <li>Common filters:
+            <ul>
+                <li><code>upper</code></li>
+                <li><code>lower</code></li>
+                <li><code>date</code></li>
+                <li><code>json_encode</code></li>
+                <li><code>escape</code></li>
+                <li><code>merge</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Functions</li>
+    <br/>
+    <ul>
+        <li>Twig provides built-in functions:</li>
+        <ul>
+            <li><code>path()</code> → generate URLs</li>
+            <li><code>url()</code> → absolute URLs</li>
+            <li><code>asset()</code> → link static assets (CSS, JS)</li>
+            <li><code>dump()</code> → debug data</li>
+        </ul>
+        <br/>
+<pre><code class="language-twig line-numbers">&lt;a href="{{ path('home') }}"&gt;Home&lt;/a&gt;</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Twig and Symfony Forms</li>
+    <br/>
+    <ul>
+        <li>Twig integrates tightly with Symfony Forms:</li>
+<pre><code class="language-twig line-numbers">{{ form_start(form) }}
+{{ form_row(form.name) }}
+{{ form_row(form.email) }}
+{{ form_end(form) }}
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony provides themes (Bootstrap, Foundation) to style forms.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Twig Extensions</li>
+    <br/>
+    <ul>
+        <li>You can add:
+            <ul>
+                <li>custom filters</li>
+                <li>custom functions</li>
+                <li>custom global variables</li>
+            </ul>
+        </li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+class AppExtension extends AbstractExtension {
+    public function getFilters() {
+        return [new TwigFilter('reverse', fn($s) =&gt; strrev($s))];
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Usage:</li>
+<pre><code class="language-twig line-numbers">{{ 'hello'|reverse }}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Assets (CSS, JS, Images)</li>
+    <br/>
+    <ul>
+        <li>In Twig:</li>
+<pre><code class="language-twig line-numbers">&lt;link rel="stylesheet" href="{{ asset('style.css') }}"&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Assets live in <code>public/</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Pages via Twig</li>
+    <br/>
+    <ul>
+        <li>Symfony loads templates from:</li>
+<pre><code class="language-plaintext line-numbers">templates/bundles/TwigBundle/Exception/</code></pre>
+        </li>
+        <br/>
+        <li>Common editable templates:
+            <ul>
+                <li><code>error.html.twig</code></li>
+                <li><code>error404.html.twig</code></li>
+                <li><code>error500.html.twig</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Debugging Twig Templates</li>
+    <br/>
+    <ul>
+        <li>Use <code>{{ dump() }}</code> inside Twig to inspect variables.</li>
+        <br/>
+        <li>Enable Symfony Profiler for rich debugging of:
+            <ul>
+                <li>rendered templates</li>
+                <li>variables</li>
+                <li>performance</li>
+            </ul>
+        </li>
+        <br/>
+        <li>CLI debug command:</li>
+<pre><code class="language-bash line-numbers">symfony console debug:twig</code></pre>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
