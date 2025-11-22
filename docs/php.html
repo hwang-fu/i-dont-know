@@ -987,18 +987,53 @@ echo nextId(); // 3
             </ul>
         </li>
         <br/>
-        <li>Common superglobals:
-            <ul>
-                <li><code>$_GET</code>: HTTP query parameters (URL).</li>
-                <li><code>$_POST</code>: HTTP POST form data.</li>
-                <li><code>$_REQUEST</code>: combination of GET/POST/COOKIE (depends on config).</li>
-                <li><code>$_SERVER</code>: server and request information.</li>
-                <li><code>$_COOKIE</code>: cookies sent by the browser.</li>
-                <li><code>$_SESSION</code>: session data.</li>
-                <li><code>$_FILES</code>: uploaded files.</li>
-                <li><code>$_ENV</code>: environment variables.</li>
-                <li><code>$GLOBALS</code>: all global variables.</li>
-            </ul>
+        <li>Common superglobals:<br/><br/>
+<table>
+    <thead>
+        <tr>
+            <th>Superglobal</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>$_GET</code></td>
+            <td>HTTP query parameters (from the URL).</td>
+        </tr>
+        <tr>
+            <td><code>$_POST</code></td>
+            <td>HTTP POST form data.</td>
+        </tr>
+        <tr>
+            <td><code>$_REQUEST</code></td>
+            <td>Combination of GET, POST, and COOKIE variables (depends on PHP configuration).</td>
+        </tr>
+        <tr>
+            <td><code>$_SERVER</code></td>
+            <td>Server and request metadata.</td>
+        </tr>
+        <tr>
+            <td><code>$_COOKIE</code></td>
+            <td>Cookies sent by the browser.</td>
+        </tr>
+        <tr>
+            <td><code>$_SESSION</code></td>
+            <td>Session data.</td>
+        </tr>
+        <tr>
+            <td><code>$_FILES</code></td>
+            <td>Information about uploaded files.</td>
+        </tr>
+        <tr>
+            <td><code>$_ENV</code></td>
+            <td>Environment variables.</td>
+        </tr>
+        <tr>
+            <td><code>$GLOBALS</code></td>
+            <td>All global variables.</td>
+        </tr>
+    </tbody>
+</table>
         </li>
         <br/>
         <li>Example: reading a query parameter <code>?name=Alice</code>:
@@ -1088,7 +1123,368 @@ print_r($array);
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="php-constants">PHP Constants</h3>
+<ol>
 
+    <li>What Is a Constant in PHP?</li>
+    <br/>
+    <ul>
+        <li>A <b>constant</b> in PHP is a named value that <b>cannot change</b> once it is defined.</li>
+        <br/>
+        <li>Constants are often used for:
+            <ul>
+                <li>configuration values (database host, API keys),</li>
+                <li>fixed numbers (PI, statuses),</li>
+                <li>paths and environment flags.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Unlike variables:
+            <ul>
+                <li>constants do <u>not</u> start with <code>$</code>,</li>
+                <li>are automatically <code>global</code> in scope,</li>
+                <li>cannot be reassigned.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Defining Constants with <code>define()</code></li>
+    <br/>
+    <ul>
+        <li>Traditional way to define constants is the <code>define()</code> function:</li>
+        <br/>
+        <li>Syntax:
+<pre><code class="language-php line-numbers">&lt;?php
+define("PI", 3.14159);
+define("APP_NAME", "MyApp");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Usage (no <code>$</code> sign):
+<pre><code class="language-php line-numbers">&lt;?php
+echo PI;        // 3.14159
+echo APP_NAME;  // MyApp
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>By default, constant names are <b>case-sensitive</b>:
+<pre><code class="language-php line-numbers">&lt;?php
+define("FOO", 10);
+echo FOO;       // 10
+// echo foo;    // undefined constant (notice/error)
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>In older PHP versions, <code>define()</code> allowed a case-insensitive option, but this is deprecated and should be avoided.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Defining Constants with <code>const</code></li>
+    <br/>
+    <ul>
+        <li><code>const</code> is a language construct used to define constants at:
+            <ul>
+                <li>global (top-level) scope,</li>
+                <li>inside classes (class constants).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Global constant with <code>const</code>:
+<pre><code class="language-php line-numbers">&lt;?php
+const VERSION = "1.0.0";
+
+echo VERSION; // 1.0.0
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Differences between <code>define()</code> and <code>const</code>:
+            <ul>
+                <li><code>const</code>:
+                    <ul>
+                        <li>must be used in the <u>top-level scope</u> (not inside functions),</li>
+                        <li>is resolved at compile-time,</li>
+                        <li>cannot be used with dynamic names.</li>
+                    </ul>
+                </li>
+                <br/>
+                <li><code>define()</code>:
+                    <ul>
+                        <li>is a function (run at runtime),</li>
+                        <li>can be called inside functions or conditionals,</li>
+                        <li>accepts dynamic names.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <br/>
+        <li>Modern code often prefers <code>const</code> for clarity and compile-time checking.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Allowed Values for Constants</li>
+    <br/>
+    <ul>
+        <li>Constants can store:
+            <ul>
+                <li>scalar values: <code>int</code>, <code>float</code>, <code>string</code>, <code>bool</code>,</li>
+                <li><b>arrays</b> (from PHP 5.6+ with <code>const</code>/<code>define</code>),</li>
+                <li>from PHP 7.0+, also expressions composed of constants.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Examples:
+<pre><code class="language-php line-numbers">&lt;?php
+const MAX_ITEMS = 100;
+const DEBUG_MODE = true;
+const PI = 3.14159;
+
+const COLORS = ["red", "green", "blue"];
+
+define("HOST", "localhost");
+define("FLAGS", ["DEBUG" =&gt; true, "CACHE" =&gt; false]);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Constant values must be known at declaration time (no runtime function calls inside <code>const</code> in older versions).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Constant Naming Conventions</li>
+    <br/>
+    <ul>
+        <li>Common conventions:
+            <ul>
+                <br/>
+                <li>Use <b>UPPERCASE_WITH_UNDERSCORES</b>:
+<pre><code class="language-php line-numbers">&lt;?php
+const DB_HOST = "localhost";
+const DB_USER = "root";
+const DB_PASS = "";
+?&gt;
+</code></pre>
+                </li>
+                <br/>
+                <li>Group related constants with a common prefix:
+                    <ul>
+                        <li><code>STATUS_ACTIVE</code>, <code>STATUS_INACTIVE</code>, <code>STATUS_PENDING</code></li>
+                        <li><code>ROLE_ADMIN</code>, <code>ROLE_USER</code></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <br/>
+        <li>Avoid naming collisions by using prefixes (e.g., <code>APP_*</code>, <code>MYPROJECT_*</code>) in shared environments.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Global Scope of Constants</li>
+    <br/>
+    <ul>
+        <li>Constants defined at the top level are <code>global</code>:
+            <ul>
+                <li>available in all files once included,</li>
+                <li>available inside functions without using <code>global</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+const APP_NAME = "Shop";
+
+function greet() {
+    echo "Welcome to " . APP_NAME;
+}
+
+greet(); // Welcome to Shop
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>No <code>$</code> and no <code>global</code> keyword are needed.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Checking Constants: <code>defined()</code> and <code>constant()</code></li>
+    <br/>
+    <ul>
+        <li>You can check whether a constant exists using <code>defined()</code>:</li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+if (!defined("APP_ENV")) {
+    define("APP_ENV", "production");
+}
+
+echo APP_ENV; // production
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>You can retrieve a constant by name (string) using <code>constant()</code>:
+<pre><code class="language-php line-numbers">&lt;?php
+define("SITE_NAME", "MySite");
+
+$name = "SITE_NAME";
+echo constant($name); // MySite
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><code>constant()</code> is useful when the constant name is dynamic (decided at runtime).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Magic Constants</li>
+    <br/>
+    <ul>
+        <li>PHP provides several built-in <b>magic constants</b> whose values depend on where they are used.</li>
+        <br/>
+        <li>Common magic constants:
+            <br/>
+            <br/>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Magic Constant</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>__FILE__</code></td>
+                        <td>Full path and filename of the current file.</td>
+                    </tr>
+                    <tr>
+                        <td><code>__DIR__</code></td>
+                        <td>Directory of the current file.</td>
+                    </tr>
+                    <tr>
+                        <td><code>__LINE__</code></td>
+                        <td>Current line number in the file.</td>
+                    </tr>
+                    <tr>
+                        <td><code>__FUNCTION__</code></td>
+                        <td>Current function name.</td>
+                    </tr>
+                    <tr>
+                        <td><code>__CLASS__</code></td>
+                        <td>Current class name.</td>
+                    </tr>
+                    <tr>
+                        <td><code>__METHOD__</code></td>
+                        <td>Current method name.</td>
+                    </tr>
+                    <tr>
+                        <td><code>__NAMESPACE__</code></td>
+                        <td>Current namespace name.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+echo __FILE__;
+// e.g. /var/www/html/index.php
+
+echo __DIR__;
+// e.g. /var/www/html
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>These are not defined with <code>define()</code> or <code>const</code>; they are built-in.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Class Constants</li>
+    <br/>
+    <ul>
+        <li>Constants can also be declared inside classes using <code>const</code>:</li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+class Status {
+    public const ACTIVE = 1;
+    public const INACTIVE = 0;
+}
+
+echo Status::ACTIVE; // 1
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Notes:
+            <ul>
+                <li>Accessed with <code>ClassName::CONSTANT_NAME</code>.</li>
+                <li>They do not use <code>$</code>.</li>
+                <li>They are shared by all instances of the class (no per-object variation).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Visibility (from PHP 7.1+): You can use <code>public</code>, <code>protected</code>, or <code>private</code> for class constants.</li>
+        <br/>
+        <li>Example with visibility:
+<pre><code class="language-php line-numbers">&lt;?php
+class Config {
+    public const NAME = "MyApp";
+    private const SECRET_KEY = "123456";
+}
+
+echo Config::NAME; // OK
+// echo Config::SECRET_KEY; // error: cannot access private constant
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Constants and Namespaces</li>
+    <br/>
+    <ul>
+        <li>Constants can live inside namespaces as well.</li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+namespace App;
+
+const VERSION = "2.0";
+
+echo VERSION;       // 2.0 (inside same namespace)
+echo \App\VERSION;  // 2.0 (from outside)
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Using namespaces helps you avoid name collisions with constants from other libraries.</li>
+    </ul>
+    <br/>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
