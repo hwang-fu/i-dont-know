@@ -157,6 +157,7 @@
         <li><a href="#symfony-installation-setup">Installing &amp; Setting UP the Symfony</a></li>
         <li><a href="#symfony-composer-intro">What Is Composer?</a></li>
         <li><a href="#symfony-architecture">Architecture</a></li>
+        <li><a href="#symfony-components">Components</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1372,7 +1373,340 @@ class Product {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-components">Symfony Components</h3>
+<ol>
 
+    <li>Overview of Symfony Components</li>
+    <br/>
+    <ul>
+        <li>Symfony Components are a collection of <b>decoupled, reusable PHP libraries</b> that solve common web development problems.</li>
+        <br/>
+        <li>You can use Symfony Components:
+            <ul>
+                <li>inside the Symfony Framework</li>
+                <li>inside other frameworks (Laravel, Drupal, Magento)</li>
+                <li>in plain PHP projects</li>
+                <li>in microservices or CLI scripts</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Benefits of using components:</li>
+        <ul>
+            <li>well-tested and stable</li>
+            <li>PSR-compliant</li>
+            <li>independent (use only what you need)</li>
+            <li>robust documentation</li>
+        </ul>
+        <br/>
+        <li>Examples of popular components:
+            <ul>
+                <li>Routing</li>
+                <li>EventDispatcher</li>
+                <li>HttpFoundation</li>
+                <li>Console</li>
+                <li>Yaml</li>
+                <li>DomCrawler</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The <code>HttpFoundation</code> Component</li>
+    <br/>
+    <ul>
+        <li>Replaces raw PHP superglobals (<code>$_GET</code>, <code>$_POST</code>, <code>$_COOKIE</code>, etc.) with object-oriented Request & Response classes.</li>
+        <br/>
+        <li>Example — creating a response:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\HttpFoundation\Response;
+
+$response = new Response("Hello World", 200);
+$response-&gt;send();
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>This component is the foundation of Symfony’s HTTP layer.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The <code>Routing</code> Component</li>
+    <br/>
+    <ul>
+        <li>Maps URLs to specific controllers or callbacks.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Routing\Route;
+use Symfony\Component\Routing\RouteCollection;
+
+$routes = new RouteCollection();
+$routes-&gt;add('hello', new Route('/hello/{name}'));
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Used widely in APIs, microservices, and framework-less apps.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The <code>EventDispatcher</code> Component</li>
+    <br/>
+    <ul>
+        <li>Implements the Observer pattern.</li>
+        <br/>
+        <li>Allows different parts of an app to react to events without tight coupling.</li>
+        <br/>
+        <li>Example — dispatching an event:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$dispatcher-&gt;dispatch(new UserRegisteredEvent($user));
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Used internally by Symfony’s HttpKernel, Security, and Messenger systems.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The <code>DependencyInjection</code> Component</li>
+    <br/>
+    <ul>
+        <li>Powers the <b>Service Container</b>.</li>
+        <br/>
+        <li>Handles automatic dependency resolution and object creation.</li>
+        <br/>
+        <li>Example service definition (YAML):</li>
+<pre><code class="language-yaml line-numbers">services:
+    App\Service\Mailer:
+        arguments:
+            $host: "smtp.example.com"
+</code></pre>
+        </li>
+        <br/>
+        <li>Provides strong decoupling and testability.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The <code>Console</code> Component</li>
+    <br/>
+    <ul>
+        <li>Used to build command-line tools.</li>
+        <br/>
+        <li>Symfony Console is one of the most popular CLI libraries in PHP.</li>
+        <br/>
+        <li>Example command class:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Console\Command\Command;
+
+class HelloCommand extends Command {
+    protected function execute($input, $output) {
+        $output-&gt;writeln("Hello!");
+        return Command::SUCCESS;
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Symfony’s <code>bin/console</code> is powered by this component.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The <code>Finder</code> Component</li>
+    <br/>
+    <ul>
+        <li>Searches for files and directories.</li>
+        <br/>
+        <li>Example — find all .php files:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Finder\Finder;
+
+$finder = new Finder();
+$finder-&gt;files()-&gt;in('src')-&gt;name('*.php');
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Useful for CLI tools, build scripts, and automated tasks.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The <code>Yaml</code> Component</li>
+    <br/>
+    <ul>
+        <li>Loads and dumps YAML configuration files.</li>
+        <br/>
+        <li>Sample usage:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Yaml\Yaml;
+
+$data = Yaml::parseFile('config.yaml');
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Used heavily in Symfony’s configuration system.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The <code>Serializer</code> Component</li>
+    <br/>
+    <ul>
+        <li>Converts PHP objects to JSON, XML, YAML, or arrays.</li>
+        <br/>
+        <li>Used in APIs and message processing.</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$serializer-&gt;serialize($user, 'json');
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Highly customizable with normalizers and encoders.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The <code>Validator</code> Component</li>
+    <br/>
+    <ul>
+        <li>Provides object validation using constraints.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Validator\Constraints as Assert;
+
+class User {
+    #[Assert\NotBlank]
+    public $name;
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Used in form handling, API validation, and data processing.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The <code>Form</code> Component</li>
+    <br/>
+    <ul>
+        <li>Handles form creation, rendering, submission, and validation.</li>
+        <br/>
+        <li>Example form type:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class ContactType extends AbstractType {
+    public function buildForm($builder, $options) {
+        $builder
+            -&gt;add('name')
+            -&gt;add('email')
+            -&gt;add('message');
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Useful in CRUD apps or admin panels.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Other Useful Symfony Components</li>
+    <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Symfony Component</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>Translation</code></td>
+            <td>Internationalization (i18n) and localization support.</td>
+        </tr>
+        <tr>
+            <td><code>Cache</code></td>
+            <td>Cache adapters for Redis, Memcached, and filesystem caching.</td>
+        </tr>
+        <tr>
+            <td><code>Process</code></td>
+            <td>Execute and manage shell commands from PHP.</td>
+        </tr>
+        <tr>
+            <td><code>Security</code></td>
+            <td>Authentication and access control system.</td>
+        </tr>
+        <tr>
+            <td><code>Messenger</code></td>
+            <td>Message bus for CQRS, queues, and async processing.</td>
+        </tr>
+        <tr>
+            <td><code>HttpClient</code></td>
+            <td>Fast, modern HTTP client alternative to Guzzle.</td>
+        </tr>
+        <tr>
+            <td><code>Mime</code></td>
+            <td>Email handling and MIME type utilities.</td>
+        </tr>
+        <tr>
+            <td><code>DomCrawler</code></td>
+            <td>HTML and DOM parsing API.</td>
+        </tr>
+        <tr>
+            <td><code>CssSelector</code></td>
+            <td>CSS selector engine for querying DOM elements.</td>
+        </tr>
+        <tr>
+            <td><code>Filesystem</code></td>
+            <td>Convenient file and directory management tools.</td>
+        </tr>
+    </tbody>
+</table>
+    <br/><br/>
+
+
+    <li>How Symfony Uses Components Internally</li>
+    <br/>
+    <ul>
+        <li>Symfony Framework = collection of components + glue code.</li>
+        <br/>
+        <li>Example internal usage:
+            <ul>
+                <li>Routing resolves URLs</li>
+                <li>HttpKernel orchestrates the request lifecycle</li>
+                <li>EventDispatcher triggers events</li>
+                <li>HttpFoundation standardizes requests/responses</li>
+                <li>DependencyInjection builds the service container</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Each component is tested separately and follows semantic versioning.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Components Without the Framework</li>
+    <br/>
+    <ul>
+        <li>You can install any component with Composer:</li>
+<pre><code class="language-bash line-numbers">composer require symfony/http-foundation</code></pre>
+        </li>
+        <br/>
+        <li>Use case examples:
+            <ul>
+                <li>custom microframework</li>
+                <li>CLI utilities</li>
+                <li>API microservices</li>
+                <li>legacy PHP modernization</li>
+                <li>email processing tools</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Symfony Components are framework-agnostic.</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
