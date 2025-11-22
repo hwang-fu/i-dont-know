@@ -167,6 +167,7 @@
         <li><a href="#flask-extensions">Extensions</a></li>
         <li><a href="#flask-mail">Mail</a></li>
         <li><a href="#flask-sqlite">SQLite</a></li>
+        <li><a href="#flask-deployment">Deployment</a></li>
     </ol>
 </nav>
 <hr/>
@@ -5362,15 +5363,291 @@ flask db upgrade
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-deployment">Flask Deployment</h3>
+<ol>
 
-<!-- * * * * * * * * * * * * * * -->
+    <li>Introduction to Deploying Flask Applications</li>
+    <br/>
+    <ul>
+        <li>Deployment is the process of running your Flask application on a production-ready server so users can access it online.</li>
+        <br/>
+        <li>Flask’s built-in development server (<code>flask run</code>) is <b>not for production</b> because it:</li>
+        <ul>
+            <li>is single-threaded</li>
+            <li>cannot handle real traffic</li>
+            <li>lacks security features</li>
+        </ul>
+        <br/>
+        <li>Production deployments require:</li>
+        <ul>
+            <li>a WSGI server (Gunicorn, uWSGI, Waitress)</li>
+            <li>a reverse proxy (NGINX, Apache)</li>
+            <li>a Linux server (common), virtual environment, and proper configuration</li>
+        </ul>
+        <br/>
+        <li>This chapter walks through the most common production setups.</li>
+    </ul>
+    <br/><br/>
 
 
-<hr/>
+    <li>Preparing Your Flask App for Deployment</li>
+    <br/>
+    <ul>
+        <li>Typical project structure:</li>
+<pre><code class="language-plaintext line-numbers">myapp/
+    app.py
+    requirements.txt
+    venv/
+    static/
+    templates/
+</code></pre>
+        <br/>
+        <li>Create <code>requirements.txt</code>:</li>
+<pre><code class="language-bash line-numbers">pip freeze &gt; requirements.txt</code></pre>
+        <br/>
+        <li>Ensure the application exposes a WSGI entry point:</li>
+<pre><code class="language-python line-numbers">from app import app  # "app" must be your Flask instance
+</code></pre>
+    </ul>
+    <br/><br/>
 
 
-<!-- * * * * * * * * * * * * * * -->
+    <li>Deploying with Gunicorn (Linux/Unix)</li>
+    <br/>
+    <ul>
+        <li>Install Gunicorn:</li>
+<pre><code class="language-bash line-numbers">pip install gunicorn</code></pre>
+        <br/>
+        <li>Run your Flask app:</li>
+<pre><code class="language-bash line-numbers">gunicorn app:app
+</code></pre>
+        <br/>
+        <li>Use multiple workers:</li>
+<pre><code class="language-bash line-numbers">gunicorn -w 4 -b 0.0.0.0:8000 app:app
+</code></pre>
+        <br/>
+        <li>Gunicorn is not exposed directly—you usually put NGINX in front of it.</li>
+    </ul>
+    <br/><br/>
 
+
+    <li>Deploying with uWSGI (Alternative)</li>
+    <br/>
+    <ul>
+        <li>Install uWSGI:</li>
+<pre><code class="language-bash line-numbers">pip install uwsgi</code></pre>
+        <br/>
+        <li>Create a config file <code>uwsgi.ini</code>:</li>
+<pre><code class="language-ini line-numbers">[uwsgi]
+module = app:app
+master = true
+processes = 4
+socket = 127.0.0.1:8000
+vacuum = true
+die-on-term = true
+</code></pre>
+        <br/>
+        <li>Run:</li>
+<pre><code class="language-bash line-numbers">uwsgi --ini uwsgi.ini
+</code></pre>
+        <br/>
+        <li>Recommended for servers using NGINX + uWSGI.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Setting Up NGINX as a Reverse Proxy</li>
+    <br/>
+    <ul>
+        <li>Install NGINX:</li>
+<pre><code class="language-bash line-numbers">sudo apt install nginx</code></pre>
+        <br/>
+        <li>Create config:</li>
+<pre><code class="language-nginx line-numbers">server {
+    listen 80;
+    server_name example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+</code></pre>
+        <br/>
+        <li>Reload NGINX:</li>
+<pre><code class="language-bash line-numbers">sudo systemctl restart nginx</code></pre>
+        <br/>
+        <li>NGINX provides security, SSL/TLS support, compression, caching, and request buffering.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Running Flask as a Systemd Service</li>
+    <br/>
+    <ul>
+        <li>Create a service file <code>/etc/systemd/system/flask.service</code>:</li>
+<pre><code class="language-ini line-numbers">[Unit]
+Description=Gunicorn instance to serve Flask app
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/home/youruser/myapp
+ExecStart=/home/youruser/myapp/venv/bin/gunicorn -w 3 -b 127.0.0.1:8000 app:app
+
+[Install]
+WantedBy=multi-user.target
+</code></pre>
+        <br/>
+        <li>Start and enable:</li>
+<pre><code class="language-bash line-numbers">sudo systemctl start flask
+sudo systemctl enable flask
+</code></pre>
+        <br/>
+        <li>This keeps your app running after reboots.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deploying on Heroku</li>
+    <br/>
+    <ul>
+        <li>Create <code>Procfile</code>:</li>
+<pre><code class="language-plaintext line-numbers">web: gunicorn app:app
+</code></pre>
+        <br/>
+        <li>Deploy:</li>
+<pre><code class="language-bash line-numbers">heroku login
+heroku create
+git push heroku main
+</code></pre>
+        <br/>
+        <li>Heroku automatically handles scaling, security, and networking.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deploying on PythonAnywhere</li>
+    <br/>
+    <ul>
+        <li>Upload your project or clone via GitHub.</li>
+        <br/>
+        <li>Configure:</li>
+        <ul>
+            <li>WSGI file path</li>
+            <li>virtual environment</li>
+            <li>static files</li>
+        </ul>
+        <br/>
+        <li>Simple option for beginners; requires minimal configuration.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deploying on AWS EC2</li>
+    <br/>
+    <ul>
+        <li>Steps:</li>
+        <ul>
+            <li>Launch an EC2 instance</li>
+            <li>SSH into the server</li>
+            <li>Install Python, Flask, Gunicorn</li>
+            <li>Install and configure NGINX</li>
+            <li>Set up domain & SSL (Certbot)</li>
+        </ul>
+        <br/>
+        <li>Example run command:</li>
+<pre><code class="language-bash line-numbers">gunicorn -w 4 -b 127.0.0.1:8000 app:app
+</code></pre>
+        <br/>
+        <li>EC2 gives full control but requires more setup.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Serving Static Files in Production</li>
+    <br/>
+    <ul>
+        <li>In production, static files should not be served by Flask.</li>
+        <br/>
+        <li>NGINX example:</li>
+<pre><code class="language-nginx line-numbers">location /static/ {
+    alias /home/youruser/myapp/static/;
+}
+</code></pre>
+        <br/>
+        <li>This is much faster and more secure than Flask-based static serving.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using a Virtual Environment</li>
+    <br/>
+    <ul>
+        <li>Create the environment:</li>
+<pre><code class="language-bash line-numbers">python3 -m venv venv
+source venv/bin/activate
+</code></pre>
+        <br/>
+        <li>Install dependencies:</li>
+<pre><code class="language-bash line-numbers">pip install -r requirements.txt</code></pre>
+        <br/>
+        <li>Virtual environments ensure your deployments are stable and reproducible.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Enabling HTTPS with Certbot (Let's Encrypt)</li>
+    <br/>
+    <ul>
+        <li>Install Certbot:</li>
+<pre><code class="language-bash line-numbers">sudo apt install certbot python3-certbot-nginx
+</code></pre>
+        <br/>
+        <li>Enable HTTPS:</li>
+<pre><code class="language-bash line-numbers">sudo certbot --nginx -d example.com -d www.example.com
+</code></pre>
+        <br/>
+        <li>Automatic renewal runs by default.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Environment Variables (Production Settings)</li>
+    <br/>
+    <ul>
+        <li>Store secrets in environment variables:</li>
+<pre><code class="language-bash line-numbers">export SECRET_KEY="super-secret"
+export DATABASE_URL="sqlite:///prod.db"
+</code></pre>
+        <br/>
+        <li>Never hardcode credentials in your code.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices for Flask Deployment</li>
+    <br/>
+    <ul>
+        <li>Use Gunicorn or uWSGI as your WSGI server.</li>
+        <br/>
+        <li>Put NGINX or Apache in front of your app.</li>
+        <br/>
+        <li>Serve static files through NGINX.</li>
+        <br/>
+        <li>Run your app as a systemd service for reliability.</li>
+        <br/>
+        <li>Use HTTPS with Let's Encrypt.</li>
+        <br/>
+        <li>Keep secrets in environment variables.</li>
+        <br/>
+        <li>Use a virtual environment and <code>requirements.txt</code>.</li>
+        <br/>
+        <li>Monitor logs with <code>journalctl</code> or NGINX logs.</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
