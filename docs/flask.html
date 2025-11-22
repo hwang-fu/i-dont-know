@@ -155,6 +155,12 @@
         <li><a href="#flask-variable-rules">variable Rules</a></li>
         <li><a href="#flask-url-building">URL Building</a></li>
         <li><a href="#flask-http-methods">HTTP Methods</a></li>
+        <li><a href="#flask-templates">Templates</a></li>
+        <li><a href="#flask-static-files">Static Files</a></li>
+        <li><a href="#flask-request-object">Request Object</a></li>
+        <li><a href="#flask-"></a></li>
+        <li><a href="#flask-"></a></li>
+        <li><a href="#flask-"></a></li>
     </ol>
 </nav>
 <hr/>
@@ -1955,6 +1961,658 @@ def delete_user(id):
     <br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-templates">Flask Templates</h3>
+<ol>
+
+    <li>What Are Templates in Flask?</li>
+    <br/>
+    <ul>
+        <li>Templates in Flask allow you to generate dynamic HTML by mixing static markup with dynamic Python data.</li>
+        <br/>
+        <li>Flask uses the <b>Jinja2</b> templating engine, which supports:</li>
+        <ul>
+            <li>variables</li>
+            <li>control structures (if, for)</li>
+            <li>template inheritance</li>
+            <li>filters</li>
+            <li>macros and blocks</li>
+        </ul>
+        <br/>
+        <li>Templates help separate:
+            <ul>
+                <li><b>application logic</b> (Python)</li>
+                <li><b>presentation logic</b> (HTML)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>By default, Flask looks for template files inside the <code>templates/</code> folder.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Setting Up the Templates Folder</li>
+    <br/>
+    <ul>
+        <li>Project structure:</li>
+<pre><code class="language-plaintext line-numbers">project/
+    app.py
+    templates/
+        index.html
+        about.html
+</code></pre>
+        <br/>
+        <li>Flask will automatically search <code>templates/</code> for rendering files.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Rendering Templates with <code>render_template()</code></li>
+    <br/>
+    <ul>
+        <li>Import and use <code>render_template</code>:</li>
+<pre><code class="language-python line-numbers">from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+</code></pre>
+        <br/>
+        <li>Flask finds <code>templates/index.html</code> automatically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Passing Data to Templates</li>
+    <br/>
+    <ul>
+        <li>Pass variables as keyword arguments:</li>
+<pre><code class="language-python line-numbers">@app.route('/user/&lt;name&gt;')
+def user_profile(name):
+    return render_template('profile.html', username=name)
+</code></pre>
+        <br/>
+        <li>Inside <code>profile.html</code>:</li>
+<pre><code class="language-html line-numbers">&lt;h1&gt;Hello, {{ username }}!&lt;/h1&gt;
+</code></pre>
+        <br/>
+        <li>Flask automatically injects variables into the Jinja2 context.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Jinja2 Template Syntax: Variables</li>
+    <br/>
+    <ul>
+        <li>Variables are written using double curly braces:</li>
+<pre><code class="language-html line-numbers">&lt;p&gt;Welcome, {{ user }}!&lt;/p&gt;
+</code></pre>
+        <br/>
+        <li>Objects and attributes:</li>
+<pre><code class="language-html line-numbers">&lt;p&gt;Your score: {{ stats.score }}&lt;/p&gt;
+</code></pre>
+        <br/>
+        <li>Filter usage:</li>
+<pre><code class="language-html line-numbers">&lt;p&gt;Uppercased: {{ username|upper }}&lt;/p&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Jinja2 Control Structures</li>
+    <br/>
+    <ul>
+        <li>Use <code>{% ... %}</code> for logic blocks.</li>
+        <br/>
+        <li><b>If</b> statement:</li>
+<pre><code class="language-html line-numbers">{% if is_admin %}
+    &lt;p&gt;Welcome, admin!&lt;/p&gt;
+{% else %}
+    &lt;p&gt;Welcome, user!&lt;/p&gt;
+{% endif %}
+</code></pre>
+        <br/>
+        <li><b>For</b> loop:</li>
+<pre><code class="language-html line-numbers">&lt;ul&gt;
+{% for item in items %}
+    &lt;li&gt;{{ item }}&lt;/li&gt;
+{% endfor %}
+&lt;/ul&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Template Inheritance</li>
+    <br/>
+    <ul>
+        <li>Create a base template to avoid repeating common layout:</li>
+<pre><code class="language-html line-numbers">&lt;!-- templates/base.html --&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;{% block title %}My Site{% endblock %}&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;header&gt;Header content&lt;/header&gt;
+
+    {% block content %}{% endblock %}
+
+    &lt;footer&gt;Footer&lt;/footer&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+        <br/>
+        <li>Extend it in other templates:</li>
+<pre><code class="language-html line-numbers">{% extends 'base.html' %}
+
+{% block title %}Homepage{% endblock %}
+
+{% block content %}
+    &lt;h1&gt;Welcome to the homepage&lt;/h1&gt;
+{% endblock %}
+</code></pre>
+        <br/>
+        <li>Template inheritance keeps your project DRY and organized.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Layout Blocks</li>
+    <br/>
+    <ul>
+        <li>Common blocks include:</li>
+        <ul>
+            <li><code>block title</code></li>
+            <li><code>block content</code></li>
+            <li><code>block scripts</code></li>
+        </ul>
+        <br/>
+        <li>Block example:</li>
+<pre><code class="language-html line-numbers">{% block scripts %}
+&lt;script src="{{ url_for('static', filename='js/app.js') }}"&gt;&lt;/script&gt;
+{% endblock %}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Static Files Inside Templates</li>
+    <br/>
+    <ul>
+        <li>Static files live in the <code>static/</code> folder:</li>
+<pre><code class="language-plaintext line-numbers">project/
+    static/
+        css/
+        js/
+        images/
+</code></pre>
+        <br/>
+        <li>Use <code>url_for()</code> to link them:</li>
+<pre><code class="language-html line-numbers">&lt;link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" /&gt;
+&lt;img src="{{ url_for('static', filename='images/logo.png') }}" /&gt;
+</code></pre>
+        <br/>
+        <li>Never hardcode <code>/static/...</code> manually.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Template Filters</li>
+    <br/>
+    <ul>
+        <li>Filters modify values inside templates.</li>
+        <br/>
+        <li>Common filters:</li>
+        <ul>
+            <li><code>upper</code> – uppercase text</li>
+            <li><code>lower</code> – lowercase</li>
+            <li><code>length</code> – length of iterable</li>
+            <li><code>safe</code> – mark HTML as safe</li>
+            <li><code>join</code> – join lists</li>
+        </ul>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-html line-numbers">{{ ['A', 'B', 'C']|join(', ') }}
+</code></pre>
+        <br/>
+        <li>You can also create custom filters.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Including Templates</li>
+    <br/>
+    <ul>
+        <li>You can include reusable HTML fragments:</li>
+<pre><code class="language-html line-numbers">{% include 'sidebar.html' %}
+</code></pre>
+        <br/>
+        <li>Useful for:
+            <ul>
+                <li>navigation menus</li>
+                <li>headers/footers when not using inheritance</li>
+                <li>modular UI components</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Escaping and Safe Rendering</li>
+    <br/>
+    <ul>
+        <li>Jinja2 autoescapes HTML to prevent XSS attacks.</li>
+        <br/>
+        <li>HTML rendered from variables is escaped:</li>
+<pre><code class="language-html line-numbers">{{ user_input }}
+</code></pre>
+        <br/>
+        <li>To render raw HTML, use <code>|safe</code>:</li>
+<pre><code class="language-html line-numbers">{{ html_content|safe }}
+</code></pre>
+        <br/>
+        <li>Use <code>safe</code> with caution.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Macros in Templates</li>
+    <br/>
+    <ul>
+        <li>Macros let you create reusable template functions:</li>
+<pre><code class="language-html line-numbers">{% macro button(text) %}
+&lt;button&gt;{{ text }}&lt;/button&gt;
+{% endmacro %}
+</code></pre>
+        <br/>
+        <li>Call the macro:</li>
+<pre><code class="language-html line-numbers">{{ button('Click me') }}
+</code></pre>
+        <br/>
+        <li>Macros improve reusability inside templates.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Template Comments</li>
+    <br/>
+    <ul>
+        <li>Comment inside Jinja2 with:</li>
+<pre><code class="language-html line-numbers">{# This is a comment #}
+</code></pre>
+        <br/>
+        <li>Comments do not appear in the output HTML.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using <code>url_for()</code> in Templates</li>
+    <br/>
+    <ul>
+        <li><code>url_for</code> is available directly in every template.</li>
+        <br/>
+        <li>Example with arguments:</li>
+<pre><code class="language-html line-numbers">&lt;a href="{{ url_for('profile', username='Junzhe') }}"&gt;
+    View Profile
+&lt;/a&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Template Folders</li>
+    <br/>
+    <ul>
+        <li>You can override the default folder:</li>
+<pre><code class="language-python line-numbers">app = Flask(__name__, template_folder='views')
+</code></pre>
+        <br/>
+        <li>This allows project-specific organization.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Rendering Non-HTML Templates</li>
+    <br/>
+    <ul>
+        <li>Templates can render any text-based output:</li>
+        <ul>
+            <li>XML</li>
+            <li>JSON</li>
+            <li>Emails</li>
+            <li>Markdown</li>
+        </ul>
+        <br/>
+        <li>Example rendering XML:</li>
+<pre><code class="language-python line-numbers">@app.route('/sitemap')
+def sitemap():
+    return render_template('sitemap.xml')
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Mistakes and Best Practices</li>
+    <br/>
+    <ul>
+        <li><b>Always</b> use <code>url_for()</code> for links to avoid broken URLs.</li>
+        <br/>
+        <li>Use <b>template inheritance</b> for consistent layouts.</li>
+        <br/>
+        <li>Keep templates clean and move logic to Python whenever possible.</li>
+        <br/>
+        <li>Store reusable HTML in partials and include them.</li>
+        <br/>
+        <li>Use custom filters/macros for repeated formatting patterns.</li>
+    </ul>
+    <br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-static-files">Flask Static Files</h3>
+<ol>
+
+    <li>What Are Static Files in Flask?</li>
+    <br/>
+    <ul>
+        <li><b>Static files</b> are files that do not change dynamically and are served directly to the client.</li>
+        <br/>
+        <li>These include:
+            <ul>
+                <li>CSS files</li>
+                <li>JavaScript files</li>
+                <li>Images (PNG, JPG, SVG)</li>
+                <li>Fonts (TTF, WOFF)</li>
+                <li>Static HTML assets</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Flask automatically serves static files located inside the <code>static/</code> directory.</li>
+        <br/>
+        <li>The static folder is essential for building complete web applications with styles and scripts.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Default Static Folder Structure</li>
+    <br/>
+    <ul>
+        <li>This is the recommended project layout:</li>
+<pre><code class="language-plaintext line-numbers">project/
+    app.py
+    static/
+        css/
+            style.css
+        js/
+            app.js
+        images/
+            logo.png
+    templates/
+        index.html
+</code></pre>
+        <br/>
+        <li>Flask automatically maps <code>/static/... </code> to the <code>static/</code> directory.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using <code>url_for()</code> to Link Static Files</li>
+    <br/>
+    <ul>
+        <li>Never hardcode <code>/static/</code> paths manually — always use <code>url_for</code>.</li>
+        <br/>
+<pre><code class="language-html line-numbers">&lt;link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" /&gt;
+
+&lt;script src="{{ url_for('static', filename='js/app.js') }}"&gt;&lt;/script&gt;
+
+&lt;img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" /&gt;
+</code></pre>
+        <br/>
+        <li><code>url_for('static', filename=...)</code> ensures URLs stay correct even if the static folder or configuration changes.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Serving Static Files Automatically</li>
+    <br/>
+    <ul>
+        <li>Flask automatically registers a route:</li>
+<pre><code class="language-plaintext line-numbers">/static/&lt;path:filename&gt;
+</code></pre>
+        <br/>
+        <li>This handles requests like:</li>
+        <ul>
+            <li><code>/static/css/style.css</code></li>
+            <li><code>/static/js/app.js</code></li>
+            <li><code>/static/images/logo.png</code></li>
+        </ul>
+        <br/>
+        <li>No extra code is needed to serve static files.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Static Files in Templates</li>
+    <br/>
+    <ul>
+        <li>Typical HTML template including CSS and JS:</li>
+<pre><code class="language-html line-numbers">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" /&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+    &lt;h1&gt;Welcome&lt;/h1&gt;
+    &lt;script src="{{ url_for('static', filename='js/app.js') }}"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+        <br/>
+        <li>Static files help define the styling and behavior of web pages.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Customizing the Static Folder Location</li>
+    <br/>
+    <ul>
+        <li>You can change the default <code>static/</code> folder:</li>
+<pre><code class="language-python line-numbers">app = Flask(__name__, static_folder='public_static')
+</code></pre>
+        <br/>
+        <li>Custom static URL path:</li>
+<pre><code class="language-python line-numbers">app = Flask(__name__, static_url_path='/assets')
+</code></pre>
+        <br/>
+        <li>Now static files live at:</li>
+<pre><code class="language-plaintext line-numbers">/assets/...
+</code></pre>
+        <br/>
+        <li>Example combining both:</li>
+<pre><code class="language-python line-numbers">app = Flask(
+    __name__,
+    static_folder='public',
+    static_url_path='/static-files'
+)
+</code></pre>
+        <br/>
+        <li>This provides full control over deployment structure.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Serving Static Files Manually (Advanced)</li>
+    <br/>
+    <ul>
+        <li>Flask provides <code>send_from_directory()</code> for custom static folders.</li>
+<pre><code class="language-python line-numbers">from flask import send_from_directory
+
+@app.route('/media/&lt;path:filename&gt;')
+def media(filename):
+    return send_from_directory('uploads', filename)
+</code></pre>
+        <br/>
+        <li>Use cases:</li>
+        <ul>
+            <li>uploaded user files</li>
+            <li>exported reports</li>
+            <li>protected/static-like content</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Static Files Versioning (Cache-Busting)</li>
+    <br/>
+    <ul>
+        <li>Browsers cache static files aggressively.</li>
+        <br/>
+        <li>To avoid stale caches, use <code>url_for()</code> with a timestamp or version:</li>
+<pre><code class="language-html line-numbers">&lt;script src="{{ url_for('static', filename='js/app.js', v=1) }}"&gt;&lt;/script&gt;
+</code></pre>
+        <br/>
+        <li>Resulting URL:</li>
+<pre><code class="language-plaintext line-numbers">/static/js/app.js?v=1
+</code></pre>
+        <br/>
+        <li>You can automate this with hashed filenames during deployment.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Static Files in Blueprints</li>
+    <br/>
+    <ul>
+        <li>Blueprints can have their own static folders:</li>
+<pre><code class="language-python line-numbers">admin_bp = Blueprint(
+    'admin',
+    __name__,
+    static_folder='static',
+    static_url_path='/admin-static'
+)
+</code></pre>
+        <br/>
+        <li>Blueprint static file example:</li>
+<pre><code class="language-html line-numbers">&lt;img src="{{ url_for('admin.static', filename='images/icon.png') }}" /&gt;
+</code></pre>
+        <br/>
+        <li>This allows module-based static asset organization.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Static vs Template Files (Important Distinction)</li>
+    <br/>
+    <ul>
+        <li><b>templates/</b>:
+            <ul>
+                <li>Dynamic content</li>
+                <li>Processed by Jinja2</li>
+                <li>Rendered with variables</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>static/</b>:
+            <ul>
+                <li>Unprocessed raw files</li>
+                <li>Delivered directly to the browser</li>
+                <li>Cannot contain Jinja2 code</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You should place:
+            <ul>
+                <li>HTML → <code>templates/</code></li>
+                <li>CSS/JS/Images → <code>static/</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Favicon Handling</li>
+    <br/>
+    <ul>
+        <li>Place your favicon inside <code>static/</code>:</li>
+<pre><code class="language-plaintext line-numbers">static/favicon.ico
+</code></pre>
+        <br/>
+        <li>Link in <code>base.html</code>:</li>
+<pre><code class="language-html line-numbers">&lt;link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" /&gt;
+</code></pre>
+        <br/>
+        <li>Browsers automatically request <code>/favicon.ico</code>, so some apps map it directly:</li>
+<pre><code class="language-python line-numbers">@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory('static', 'favicon.ico')
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices for Static Files</li>
+    <br/>
+    <ul>
+        <li>Always use <code>url_for</code> when referencing static files.</li>
+        <br/>
+        <li>Organize static assets into folders:
+            <ul>
+                <li><code>css/</code></li>
+                <li><code>js/</code></li>
+                <li><code>images/</code></li>
+                <li><code>fonts/</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Use blueprint static folders for modular apps.</li>
+        <br/>
+        <li>Enable caching but use versioning for updates.</li>
+        <br/>
+        <li>Serve large media/downloads using <code>send_from_directory</code>.</li>
+        <br/>
+        <li>Do not expose sensitive files inside the static directory.</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
