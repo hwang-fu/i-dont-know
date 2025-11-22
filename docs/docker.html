@@ -168,6 +168,7 @@
         <li><a href="#docker-network-command">Understanding the <code>docker network</code> Command</a></li>
         <li><a href="#docker-daemon-overview">Understanding the Docker Daemon</a></li>
         <li><a href="#docker-compose-command">Understanding the <code>docker compose</code> Command</a></li>
+        <li><a href="#docker-compose-yml">How to Write a <code>docker-compose.yml</code> File?</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3805,7 +3806,358 @@ DEBUG=true
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-compose-yml">How to Write a <code>docker-compose.yml</code> File</h3>
+<ol>
 
+    <li>What Is <code>docker-compose.yml</code>?</li>
+    <br/>
+    <ul>
+        <li><code>docker-compose.yml</code> is a YAML configuration file that describes a <b>multi-container application</b>.</li>
+        <br/>
+        <li>In this file you define:
+            <ul>
+                <li>which services (containers) exist</li>
+                <li>which images they use or how they are built</li>
+                <li>ports to expose</li>
+                <li>volumes to persist data</li>
+                <li>environment variables</li>
+                <li>networks and dependencies</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Once defined, you can start everything with a single command:</li>
+<pre><code class="language-bash line-numbers">docker compose up</code></pre>
+        <br/>
+        <li>YAML is whitespace-sensitive, so indentation (2 spaces) is extremely important.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Structure of a Compose File</li>
+    <br/>
+    <ul>
+        <li>A minimal structure looks like this:</li>
+<pre><code class="language-yaml line-numbers">services:
+  servicename:
+    image: some-image
+</code></pre>
+        <br/>
+        <li>Common top-level keys:
+            <ul>
+                <li><code>version</code> (optional in newer Compose specs)</li>
+                <li><code>services</code> → your containers</li>
+                <li><code>volumes</code> &nbsp; → named volumes (optional)</li>
+                <li><code>networks</code> → named networks (optional)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>We will build up a realistic example step by step: a simple web app + database.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 1: Start with <code>services</code></li>
+    <br/>
+    <ul>
+        <li>Every Compose file starts by defining your services:</li>
+<pre><code class="language-yaml line-numbers">services:
+  web:
+    # web service config will go here
+  db:
+    # database service config will go here
+</code></pre>
+        <br/>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>services:</code> → top-level key</li>
+            <li><code>web:</code> → name of first service (later becomes container name prefix)</li>
+            <li><code>db:</code> &nbsp; → name of second service</li>
+        </ul>
+        <br/>
+        <li>Service names are how containers talk to each other via DNS (e.g. <code>web</code> can reach <code>db</code> using hostname <code>db</code>).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 2: Choose <code>image</code> or <code>build</code> for Each Service</li>
+    <br/>
+    <ul>
+        <li>You can either:
+            <ul>
+                <li>use an existing image from Docker Hub → <code>image:</code></li>
+                <li>build your own image from a Dockerfile → <code>build:</code></li>
+            </ul>
+        </li>
+        <br/>
+
+        <li>Example: <code>web</code> uses a local Dockerfile, <code>db</code> uses official Postgres image</li>
+<pre><code class="language-yaml line-numbers">services:
+  web:
+    build: ./web
+  db:
+    image: postgres:15
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>build: ./web</code> → Docker will look for a <code>Dockerfile</code> in the <code>./web</code> directory.</li>
+            <li><code>image: postgres:15</code> → pulls and runs the official <code>postgres</code> image tag <code>15</code>.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 3: Expose Ports with <code>ports</code></li>
+    <br/>
+    <ul>
+        <li>To access your service from the host machine, map host port → container port:</li>
+<pre><code class="language-yaml line-numbers">services:
+  web:
+    build: ./web
+    ports:
+      - "8080:80"
+</code></pre>
+        <li>Explanation of <code>"8080:80"</code>:</li>
+        <ul>
+            <li><code>8080</code> is the host port (browser will connect to <code>localhost:8080</code>)</li>
+            <li><code>80</code> is the port inside container (your app listens on <code>80</code>)</li>
+        </ul>
+        <br/>
+        <li>You can define multiple ports as a YAML list:</li>
+<pre><code class="language-yaml line-numbers">ports:
+  - "8080:80"
+  - "8443:443"
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 4: Add Environment Variables with <code>environment</code></li>
+    <br/>
+    <ul>
+        <li>Environment variables configure things like passwords, modes, etc.</li>
+        <br/>
+        <li>Example for Postgres:</li>
+<pre><code class="language-yaml line-numbers">services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: secret123
+      POSTGRES_DB: appdb
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>environment:</code> is a map of key/value pairs</li>
+            <li><code>POSTGRES_USER</code>, <code>POSTGRES_PASSWORD</code>, <code>POSTGRES_DB</code> are variables understood by the Postgres image</li>
+        </ul>
+        <br/>
+        <li>You can also load from a <code>.env</code> file using <code>env_file</code>, but for learning, inline variables are clearer.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 5: Persist Data with <code>volumes</code></li>
+    <br/>
+    <ul>
+        <li>Database data must survive container restarts → use a named volume.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-yaml line-numbers">services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: secret123
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+
+volumes:
+  dbdata:
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li>Service-level <code>volumes:</code>: <code>dbdata:/var/lib/postgresql/data</code> mounts named volume <code>dbdata</code> into container data directory.</li>
+            <li>Top-level <code>volumes:</code>: <code>dbdata:</code> declares the named volume so Docker knows it exists.</li>
+        </ul>
+        <br/>
+        <li>Now deleting the <code>db</code> container will not delete your database data.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 6: Define Networks (Optional but Helpful)</li>
+    <br/>
+    <ul>
+        <li>By default, Compose creates one network for your project and puts all services inside it.</li>
+        <br/>
+        <li>You can explicitly define networks to be more clear:</li>
+<pre><code class="language-yaml line-numbers">services:
+  web:
+    build: ./web
+    networks:
+      - appnet
+
+  db:
+    image: postgres:15
+    networks:
+      - appnet
+
+networks:
+  appnet:
+</code></pre>
+        <br/>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>networks:</code> under each service, attaches the service to the <code>appnet</code> network.</li>
+            <li>Top-level <code>networks:</code> defines the named network.</li>
+        </ul>
+        <br/>
+        <li>Within the same network: <code>web</code> can reach database using <code>db:5432</code></li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 7: Control Start Order with <code>depends_on</code></li>
+    <br/>
+    <ul>
+        <li>Web service should wait for DB to at least start its container.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-yaml line-numbers">services:
+  web:
+    build: ./web
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+</code></pre>
+        <br/>
+        <li>Explanation: <code>depends_on:</code> list → tells Compose to start <code>db</code> before <code>web</code>.</li>
+        <br/>
+        <li>Note: this checks container start order, not full DB readiness. For production, you’d often add retry logic in your app or use healthchecks.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 8: Override Commands with <code>command</code> and <code>restart</code> Policy</li>
+    <br/>
+    <ul>
+        <li>You can replace the default command of the image using <code>command</code>:</li>
+<pre><code class="language-yaml line-numbers">services:
+  web:
+    build: ./web
+    command: ["python", "app.py"]
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>command:</code> accepts either a string or YAML list.</li>
+            <li>Here it runs <code>python app.py</code> inside the container.</li>
+        </ul>
+        <br/>
+        <li>Add a restart policy, e.g. auto-restart on failure:</li>
+<pre><code class="language-yaml line-numbers">services:
+  web:
+    build: ./web
+    restart: on-failure
+</code></pre>
+        <li>Common values for <code>restart</code>:
+            <ul>
+                <li><code>no</code> (default)</li>
+                <li><code>on-failure</code></li>
+                <li><code>always</code></li>
+                <li><code>unless-stopped</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 9: Full Example – Simple Web + Postgres Stack</li>
+    <br/>
+    <ul>
+        <li>Here is a complete, consistent <code>docker-compose.yml</code> that uses everything we discussed:</li>
+<pre><code class="language-yaml line-numbers">services:
+  web:
+    build: ./web
+    ports:
+      - "8080:80"
+    environment:
+      DATABASE_HOST: db
+      DATABASE_NAME: appdb
+      DATABASE_USER: appuser
+      DATABASE_PASSWORD: secret123
+    depends_on:
+      - db
+    networks:
+      - appnet
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: secret123
+      POSTGRES_DB: appdb
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    networks:
+      - appnet
+    restart: unless-stopped
+
+volumes:
+  dbdata:
+
+networks:
+  appnet:
+</code></pre>
+        <br/>
+        <li>How the pieces connect:</li>
+        <ul>
+            <li><code>web</code>:
+                <ul>
+                    <li>built from <code>./web</code> directory</li>
+                    <li>accessible on <code>localhost:8080</code></li>
+                    <li>knows DB connection details via environment variables</li>
+                    <li>shares network <code>appnet</code> with <code>db</code></li>
+                </ul>
+            </li>
+            <li><code>db</code>:
+                <ul>
+                    <li>uses official <code>postgres:15</code> image</li>
+                    <li>stores data in named volume <code>dbdata</code></li>
+                    <li>exposed internally as host <code>db</code> on port <code>5432</code> to <code>web</code></li>
+                </ul>
+            </li>
+            <li><code>volumes</code> / <code>networks</code> declared at bottom:
+                <ul>
+                    <li><code>dbdata</code> persists data</li>
+                    <li><code>appnet</code> connects the two services</li>
+                </ul>
+            </li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 10: Using the Compose File</li>
+    <br/>
+    <ul>
+        <li>Save the YAML content into <code>docker-compose.yml</code> at your project root.</li>
+        <br/>
+        <li>Then run:</li>
+<pre><code class="language-bash line-numbers">docker compose up</code></pre>
+        <br/>
+        <li>Run in background:</li>
+<pre><code class="language-bash line-numbers">docker compose up -d</code></pre>
+        <br/>
+        <li>Stop and clean up containers and network:</li>
+<pre><code class="language-bash line-numbers">docker compose down</code></pre>
+        <br/>
+        <li>Stop and also remove volumes:</li>
+<pre><code class="language-bash line-numbers">docker compose down -v</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
