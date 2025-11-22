@@ -158,6 +158,8 @@
         <li><a href="#php-constants">Constants</a></li>
         <li><a href="#php-comments">Comments</a></li>
         <li><a href="#php-var-dump">var_dump</a></li>
+        <li><a href="#php-data-types>Data Types</a></li>
+        <li><a href="#php-control-flow>Control Flow</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2014,7 +2016,455 @@ var_dump($stmt-&gt;fetchAll());
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="php-data-types">PHP Data Types</h3>
+<ol>
 
+    <li>Overview of PHP Data Types</li>
+    <br/>
+    <ul>
+        <li>PHP is a <b>dynamically typed</b> language:
+            <ul>
+                <li>the type of a variable is determined by its value,</li>
+                <li>types may change automatically through type juggling,</li>
+                <li>explicit type casting is optional but possible.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>PHP has eight primary data types, grouped into:
+            <ul>
+                <li><code>Scalar types</code>: boolean, integer, float, string</li>
+                <li><code>Compound types</code>: array, object, callable</li>
+                <li><code>Special types</code>: resource, null</li>
+            </ul>
+        </li>
+        <br/>
+        <li>All types can be inspected with <code>var_dump</code>:
+<pre><code class="language-php line-numbers">&lt;?php
+var_dump($value);
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Boolean Type (<code>bool</code>)</li>
+    <br/>
+    <ul>
+        <li>Represents truth values: <code>true</code> or <code>false</code>.</li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+$isLogged = true;
+$hasAccess = false;
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Common falsy values:
+            <ul>
+                <li><code>false</code></li>
+                <li><code>0</code></li>
+                <li><code>0.0</code></li>
+                <li><code>""</code> (empty string)</li>
+                <li><code>"0"</code></li>
+                <li><code>[]</code> (empty array)</li>
+                <li><code>null</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Everything else is truthy.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Integer Type (<code>int</code>)</li>
+    <br/>
+    <ul>
+        <li>Represents whole numbers (positive, negative, zero).</li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+$age = 25;
+$year = 2025;
+$temperature = -4;
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Integer limits:
+            <ul>
+                <li>depends on platform, typically 64-bit: <code>-2^63</code> to <code>2^63 - 1</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Numeric literals:
+            <ul>
+                <li>decimal: <code>42</code></li>
+                <li>hexadecimal: <code>0xFF</code></li>
+                <li>octal: <code>0123</code></li>
+                <li>binary: <code>0b10101</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Float Type (<code>float</code> or <code>double</code>)</li>
+    <br/>
+    <ul>
+        <li>Represents decimal numbers.</li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+$price = 19.99;
+$ratio = 0.123;
+$scientific = 1.2e3; // 1200
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Floating-point arithmetic is imprecise due to IEEE-754 rules.</li>
+        <br/>
+        <li>Example of floating-point pitfalls:
+<pre><code class="language-php line-numbers">&lt;?php
+var_dump(0.1 + 0.2); // float(0.30000000000000004)
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Use <code>bcMath</code> or <code>gmp</code> for high precision.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>String Type (<code>string</code>)</li>
+    <br/>
+    <ul>
+        <li>Represents sequences of characters.</li>
+        <br/>
+        <li>Strings can be created using:
+            <ul>
+                <li>single quotes: <code>'Hello'</code></li>
+                <li>double quotes: <code>"Hello"</code> (supports interpolation)</li>
+                <li>heredoc syntax</li>
+                <li>nowdoc syntax</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Examples:
+<pre><code class="language-php line-numbers">&lt;?php
+$name = "Alice";
+$message = "Hello, $name"; // interpolation
+$raw = 'Hello, $name';     // literal
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Heredoc:
+<pre><code class="language-php line-numbers">&lt;?php
+$text = &lt;&lt;&lt;MSG
+Line 1
+Line 2
+MSG;
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Nowdoc (no interpolation):
+<pre><code class="language-php line-numbers">&lt;?php
+$text = &lt;&lt;&lt;'MSG'
+Literal $content
+MSG;
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>String length is shown in <code>var_dump</code>:
+<pre><code class="language-plaintext line-numbers">string(5) "Hello"
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Array Type (<code>array</code>)</li>
+    <br/>
+    <ul>
+        <li>PHP arrays are ordered maps (key–value pairs):</li>
+        <br/>
+        <ul>
+            <li>keys may be integers or strings,</li>
+            <li>arrays may nest arbitrarily.</li>
+        </ul>
+        <br/>
+        <li>Examples:
+<pre><code class="language-php line-numbers">&lt;?php
+$numbers = [1, 2, 3];
+$user = [
+    "name" =&gt; "Alice",
+    "age" =&gt; 25,
+];
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Nested array:
+<pre><code class="language-php line-numbers">&lt;?php
+$matrix = [
+    [1, 2],
+    [3, 4],
+];
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><code>var_dump</code> shows depth, count, and structure.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Object Type (<code>object</code>)</li>
+    <br/>
+    <ul>
+        <li>Objects are instances of classes.</li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+class Person {
+    public string $name;
+}
+
+$p = new Person();
+$p-&gt;name = "Bob";
+var_dump($p);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><code>var_dump</code> shows:
+            <ul>
+                <li>class name,</li>
+                <li>property names and visibility,</li>
+                <li>object ID.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Callable Type (<code>callable</code>)</li>
+    <br/>
+    <ul>
+        <li>A value is callable if it can be invoked like a function.</li>
+        <br/>
+        <li>Examples:
+            <ul>
+                <li>string containing a function name</li>
+                <li>array with <code>[object, method]</code></li>
+                <li>anonymous functions (closures)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Examples:
+<pre><code class="language-php line-numbers">&lt;?php
+function greet() { echo "Hi"; }
+
+$fn = "greet"; // callable
+$closure = function ($x) { return $x * 2; };
+
+call_user_func($fn);      // Hi
+echo call_user_func($closure, 5); // 10
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Resource Type (<code>resource</code>)</li>
+    <br/>
+    <ul>
+        <li>Represents an external resource managed by PHP.</li>
+        <br/>
+        <li>Examples:
+            <ul>
+                <li>database connection handles</li>
+                <li>file pointers</li>
+                <li>cURL handles</li>
+                <li>image resources (GD library)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Creating a resource:
+<pre><code class="language-php line-numbers">&lt;?php
+$f = fopen("data.txt", "r");
+var_dump($f);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Output:
+<pre><code class="language-plaintext line-numbers">resource(5) of type (stream)
+</code></pre>
+        </li>
+        <br/>
+        <li>You must manually close resources using <code>fclose()</code>, <code>curl_close()</code>, etc.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>NULL Type (<code>null</code>)</li>
+    <br/>
+    <ul>
+        <li>Represents a variable with no value.</li>
+        <br/>
+        <li>A variable is <code>null</code> when:
+            <ul>
+                <li>assigned <code>null</code>,</li>
+                <li>never assigned before use,</li>
+                <li>unset with <code>unset()</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+$x = null;
+unset($x);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><code>var_dump(null)</code> prints:
+<pre><code class="language-plaintext line-numbers">NULL
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Type Juggling (Automatic Type Conversion)</li>
+    <br/>
+    <ul>
+        <li>PHP automatically converts types depending on context.</li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+echo "10" + 5; // 15
+echo 10 . " apples"; // "10 apples"
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Loose comparisons (<code>==</code>) perform type juggling:
+<pre><code class="language-php line-numbers">&lt;?php
+var_dump("0" == 0);    // true
+var_dump(false == 0);  // true
+var_dump("10" == 10);  // true
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Strict comparisons (<code>===</code>) check both type and value:
+<pre><code class="language-php line-numbers">&lt;?php
+var_dump("10" === 10); // false
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Type Casting</li>
+    <br/>
+    <ul>
+        <li>You can explicitly cast types using:
+            <ul>
+                <li><code>(int)</code>, <code>(float)</code>, <code>(bool)</code>, <code>(string)</code>, <code>(array)</code>, <code>(object)</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+$x = "42";
+
+var_dump((int)$x);
+var_dump((float)$x);
+var_dump((bool)$x);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Casting <code>null</code> to an array gives an empty array.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Checking Types</li>
+    <br/>
+    <ul>
+        <li>PHP provides many functions to check types:</li>
+        <br/>
+        <ul>
+            <li><code>is_int()</code></li>
+            <li><code>is_float()</code></li>
+            <li><code>is_string()</code></li>
+            <li><code>is_bool()</code></li>
+            <li><code>is_array()</code></li>
+            <li><code>is_object()</code></li>
+            <li><code>is_callable()</code></li>
+            <li><code>is_null()</code></li>
+            <li><code>is_resource()</code></li>
+        </ul>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+if (is_array($data)) {
+    echo "It is an array.";
+}
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Best Practices for Using PHP Data Types</li>
+    <br/>
+    <ul>
+        <li>Use strict comparisons (<code>===</code>) to avoid unexpected type juggling.</li>
+        <br/>
+        <li>Enable strict types in modern PHP files:
+<pre><code class="language-php line-numbers">&lt;?php
+declare(strict_types=1);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Prefer type hints for function parameters and return types.</li>
+        <br/>
+        <li>Use <code>null</code> intentionally and consistently.</li>
+        <br/>
+        <li>Avoid relying on implicit conversions.</li>
+        <br/>
+        <li>Use <code>var_dump</code> or <code>debug_zval_dump</code> during debugging to inspect types.</li>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
