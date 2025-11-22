@@ -168,6 +168,7 @@
         <li><a href="#php-state-management">State Management</a></li>
         <li><a href="#php-processing-forms">Processing Forms</a></li>
         <li><a href="#php-working-with-files">Working with Files</a></li>
+        <li><a href="#php-date-time">Date and Time</a></li>
     </ol>
 </nav>
 <hr/>
@@ -5793,7 +5794,352 @@ $name = basename($_FILES["upload"]["name"]);
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="php-date-time">PHP Date and Time</h3>
+<ol>
 
+    <li>Overview of Date and Time Handling in PHP</li>
+    <br/>
+    <ul>
+        <li>PHP provides rich built-in tools to work with:
+            <ul>
+                <li>current time</li>
+                <li>formatting dates</li>
+                <li>parsing date strings</li>
+                <li>timezones</li>
+                <li>date arithmetic</li>
+                <li>timestamps</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Core components:
+            <ul>
+                <li><code>date()</code> — format timestamps</li>
+                <li><code>time()</code> — current Unix timestamp</li>
+                <li><code>DateTime</code> — object-based date/time API</li>
+                <li><code>DateTimeZone</code></li>
+                <li><code>DateInterval</code></li>
+                <li><code>strtotime()</code> — parse date strings</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The recommended modern API is <b>DateTime</b>, not raw <code>date()</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Getting the Current Date and Time</li>
+    <br/>
+    <ul>
+        <li><b>Current timestamp:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$now = time();   // e.g. 1732280000
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Formatted current date:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+echo date("Y-m-d H:i:s");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Common format characters:
+            <ul>
+                <li><code>Y</code> = 4-digit year</li>
+                <li><code>m</code> = month (01-12)</li>
+                <li><code>d</code> = day</li>
+                <li><code>H</code> = hour (24h)</li>
+                <li><code>i</code> = minute</li>
+                <li><code>s</code> = second</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>DateTime Class (Recommended)</li>
+    <br/>
+    <ul>
+        <li>Create a new DateTime instance:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$dt = new DateTime();
+echo $dt-&gt;format("Y-m-d H:i:s");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Create from a specific date string:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$dt = new DateTime("2024-10-31 12:30");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Create from a timestamp:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$dt = new DateTime("@1732280000");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Format using <code>format()</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+echo $dt-&gt;format("l, d M Y H:i");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Advantages:
+            <ul>
+                <li>mutable or immutable variants</li>
+                <li>timezone support</li>
+                <li>safe parsing</li>
+                <li>easy arithmetic</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Timezones</li>
+    <br/>
+    <ul>
+        <li>Get current timezone:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+echo date_default_timezone_get();
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Set timezone globally:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+date_default_timezone_set("Europe/Berlin");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Create DateTime with specific timezone:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$tz = new DateTimeZone("Asia/Shanghai");
+$dt = new DateTime("now", $tz);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Convert timezone:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$dt-&gt;setTimezone(new DateTimeZone("America/New_York"));
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Date Arithmetic (Adding / Subtracting Time)</li>
+    <br/>
+    <ul>
+        <li><b>Add or subtract intervals:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$dt = new DateTime("2024-01-01");
+$dt-&gt;modify("+10 days");
+$dt-&gt;modify("-2 months");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>DateInterval:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$dt = new DateTime();
+$dt-&gt;add(new DateInterval("P1Y2M10D")); // +1 year, 2 months, 10 days
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Interval format:
+            <ul>
+                <li><code>P</code> = period</li>
+                <li><code>T</code> = time</li>
+                <li>Example: <code>P3DT4H</code> = 3 days, 4 hours</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Calculating Date Differences</li>
+    <br/>
+    <ul>
+        <li><b>Date difference:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$start = new DateTime("2024-01-01");
+$end   = new DateTime("2024-12-31");
+
+$diff = $start-&gt;diff($end);
+echo $diff-&gt;days;       // total number of days
+echo $diff-&gt;format("%m months, %d days");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for:
+            <ul>
+                <li>age calculations</li>
+                <li>countdown timers</li>
+                <li>billing periods</li>
+                <li>subscriptions</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Parsing Dates from Strings (<code>strtotime()</code>)</li>
+    <br/>
+    <ul>
+        <li><code>strtotime()</code> converts natural language to a timestamp.</li>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+echo strtotime("now");
+echo strtotime("tomorrow");
+echo strtotime("next Monday");
+echo strtotime("2024-10-31 12:00");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Common with <code>date()</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+echo date("Y-m-d", strtotime("next month"));
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Working with Unix Timestamps</li>
+    <br/>
+    <ul>
+        <li>Current timestamp:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+echo time();
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Create a timestamp for a specific date:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$ts = mktime(12, 0, 0, 10, 31, 2024);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Convert timestamp to formatted date:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+echo date("Y-m-d H:i:s", 1732280000);
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Date Formatting Examples</li>
+    <br/>
+    <ul>
+        <li>Common patterns:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+echo date("Y-m-d");        // 2024-10-31
+echo date("d/m/Y");        // 31/10/2024
+echo date("l");            // Thursday
+echo date("H:i:s");        // 17:30:45
+echo date("r");            // RFC 2822 format
+echo date(DATE_ATOM);      // ISO 8601
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>International formats:</b></li>
+        <ul>
+            <li>ISO-8601: <code>Y-m-d\TH:i:sP</code></li>
+            <li>Database (SQL): <code>Y-m-d H:i:s</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Immutable Dates (<code>DateTimeImmutable</code>)</li>
+    <br/>
+    <ul>
+        <li>Immutable variant of <code>DateTime</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$dt = new DateTimeImmutable("2024-01-01");
+$new = $dt-&gt;modify("+1 day");  // returns new object
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful when:
+            <ul>
+                <li>you want safe operations,</li>
+                <li>avoid accidental mutations,</li>
+                <li>functional style programming.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Working with Time Intervals</li>
+    <br/>
+    <ul>
+        <li>Create a time interval:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$interval = new DateInterval("PT30M"); // 30 minutes
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Use with DateTime:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$dt = new DateTime();
+$dt-&gt;add(new DateInterval("P7D")); // +7 days
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Subtract interval:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$dt-&gt;sub(new DateInterval("P1M")); // -1 month
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Generating Timestamps for Logging</li>
+    <br/>
+    <ul>
+        <li>Typical log timestamp:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$logTime = (new DateTime())-&gt;format("Y-m-d H:i:s");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Common in:
+            <ul>
+                <li>error logs</li>
+                <li>user activity logs</li>
+                <li>audit trails</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
