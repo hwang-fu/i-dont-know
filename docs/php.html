@@ -158,10 +158,11 @@
         <li><a href="#php-constants">Constants</a></li>
         <li><a href="#php-comments">Comments</a></li>
         <li><a href="#php-var-dump">var_dump</a></li>
-        <li><a href="#php-data-types>Data Types</a></li>
-        <li><a href="#php-control-flow>Control Flow</a></li>
-        <li><a href="#php-functions>Functions</a></li>
-        <li><a href="#php-advanced-functions>Advanced Functions</a></li>
+        <li><a href="#php-data-types">Data Types</a></li>
+        <li><a href="#php-control-flow">Control Flow</a></li>
+        <li><a href="#php-functions">Functions</a></li>
+        <li><a href="#php-advanced-functions">Advanced Functions</a></li>
+        <li><a href="#php-arrays">Arrays</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3624,7 +3625,399 @@ declare(strict_types=1);
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="php-arrays">PHP Arrays</h3>
+<ol>
 
+    <li>What Is an Array in PHP?</li>
+    <br/>
+    <ul>
+        <li>A PHP array is an ordered map — a flexible data structure storing <code>key ⇒ value</code> pairs.</li>
+        <br/>
+        <li>Keys can be:
+            <ul>
+                <li>integers</li>
+                <li>strings</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Values can be:
+            <ul>
+                <li>any data type (scalar, array, object, resource)</li>
+                <li>nested arbitrarily deep</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Arrays can behave as:
+            <ul>
+                <li>lists</li>
+                <li>hashmaps</li>
+                <li>sets</li>
+                <li>stacks</li>
+                <li>queues</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Arrays</li>
+    <br/>
+    <ul>
+        <li>Short syntax (recommended):</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$colors = ["red", "green", "blue"];
+?&gt;
+</code></pre>
+        <br/>
+        <li>Long syntax:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$colors = array("red", "green", "blue");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Associative array:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$user = [
+    "name" =&gt; "Alice",
+    "age"  =&gt; 25,
+];
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Mixed numeric and string keys:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$mixed = [
+    0 =&gt; "a",
+    "key" =&gt; "b",
+    10 =&gt; "c",
+];
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Array Keys and Automatic Indexing</li>
+    <br/>
+    <ul>
+        <li>Keys are auto-incremented starting from 0.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+$a = [];
+$a[] = "first";   // index 0
+$a[] = "second";  // index 1
+$a[] = "third";   // index 2
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Manual key assignment:
+<pre><code class="language-php line-numbers">&lt;?php
+$a[10] = "x";   // index starts at 10
+$a[] = "y";     // this becomes index 11
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>String keys override integers if using numeric strings:
+            <ul>
+                <li><code>"1"</code> is converted to <code>1</code></li>
+                <li><code>"01"</code> stays a string key</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing Array Elements</li>
+    <br/>
+    <ul>
+        <li>Access by numeric index:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+echo $colors[1]; // green
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+
+        <li>Access by string key:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+echo $user["name"];
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+
+        <li>Checking if a key exists:
+            <ul>
+                <li><code>isset()</code> → checks existence &amp; non-null</li>
+                <li><code>array_key_exists()</code> → checks only existence</li>
+            </ul>
+        </li>
+        <br/>
+
+<pre><code class="language-php line-numbers">&lt;?php
+isset($user["age"]);           // true
+array_key_exists("age", $user); // true
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Modifying Arrays</li>
+    <br/>
+    <ul>
+        <li>Add elements:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$user["country"] = "Germany";
+$user[] = "extra value";
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Update elements:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$user["age"] = 30;
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Remove elements:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+unset($user["age"]);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Clearing an array:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$user = [];
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Iterating Arrays</li>
+    <br/>
+    <ul>
+        <li><code>foreach</code> iteration:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+foreach ($colors as $c) {
+    echo $c;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Iterating with keys:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+foreach ($user as $key =&gt; $value) {
+    echo "$key = $value\n";
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>By reference (to modify values):</li>
+<pre><code class="language-php line-numbers">&lt;?php
+foreach ($numbers as &amp;$n) {
+    $n *= 2;
+}
+unset($n); // important!
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multidimensional Arrays</li>
+    <br/>
+    <ul>
+        <li>Nested arrays represent matrices, tables, and structured data.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+$matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+];
+echo $matrix[1][2]; // 6
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Associative nesting:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$person = [
+    "name" =&gt; "Alice",
+    "address" =&gt; [
+        "city" =&gt; "Berlin",
+        "zip"  =&gt; 12345,
+    ],
+];
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Array Functions (Most Common)</li>
+    <br/>
+    <ul>
+
+        <li><b>Count elements:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+count($colors);
+?&gt;
+</code></pre>
+
+        <br/>
+        <li><b>Push / pop:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+array_push($colors, "yellow");
+array_pop($colors); // removes last
+?&gt;
+</code></pre>
+
+        <br/>
+        <li><b>Shift / unshift:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+array_unshift($colors, "pink");
+array_shift($colors); // removes first
+?&gt;
+</code></pre>
+
+        <br/>
+        <li><b>Merge arrays:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$merged = array_merge($a, $b);
+?&gt;
+</code></pre>
+
+        <br/>
+        <li><b>Search in array:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+in_array("blue", $colors);
+array_search("green", $colors);
+?&gt;
+</code></pre>
+
+        <br/>
+        <li><b>Keys and values:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+array_keys($user);
+array_values($user);
+?&gt;
+</code></pre>
+
+        <br/>
+        <li><b>Filter / map / reduce:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$evens = array_filter($nums, fn($n) =&gt; $n % 2 == 0);
+$doubled = array_map(fn($n) =&gt; $n * 2, $nums);
+$sum = array_reduce($nums, fn($c,$n) =&gt; $c+$n, 0);
+?&gt;
+</code></pre>
+
+    </ul>
+    <br/><br/>
+
+
+    <li>Array Spread Operator (PHP 7.4+)</li>
+    <br/>
+    <ul>
+        <li>You can "unpack" arrays using <code>...</code>.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$a = [1, 2, 3];
+$b = [...$a, 4, 5];
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Works with associative arrays (PHP 8.1+):</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$a = ["x" =&gt; 1];
+$b = ["y" =&gt; 2];
+$c = [...$a, ...$b];
+// ["x" =&gt; 1, "y" =&gt; 2]
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sorting Arrays</li>
+    <br/>
+    <ul>
+        <li>Sort by value:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+sort($nums);
+rsort($nums);
+?&gt;
+</code></pre>
+
+        <br/>
+        <li>Sort associative arrays by value:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+asort($user);
+arsort($user);
+?&gt;
+</code></pre>
+
+        <br/>
+        <li>Sort by key:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+ksort($user);
+krsort($user);
+?&gt;
+</code></pre>
+
+        <br/>
+        <li>Custom sort with comparator:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+usort($nums, fn($a,$b) =&gt; $a &lt;=&gt; $b);
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Array Destructuring (PHP 7.1+)</li>
+    <br/>
+    <ul>
+        <li>You can “unpack” arrays into variables.</li>
+        <br/>
+        <li>List syntax:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+list($a, $b) = [10, 20];
+?&gt;
+</code></pre>
+
+        <br/>
+        <li>Short syntax:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+[$x, $y] = [1, 2];
+?&gt;
+</code></pre>
+
+        <br/>
+        <li>Associative array destructuring:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+["name" =&gt; $name, "age" =&gt; $age] = $user;
+?&gt;
+</code></pre>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
