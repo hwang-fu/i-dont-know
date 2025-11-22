@@ -5,10 +5,7 @@
     <meta charset="utf-8" />
     <title>Symfony</title>
 
-    <!-- Theme (pick any from Prism site) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.css">
-
-    <!-- Prism core + Lisp language -->
     <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-core.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js"
             data-prismjs-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs/components/"></script>
@@ -159,6 +156,7 @@
         <li><a href="#symfony-introduction">Introduction</a></li>
         <li><a href="#symfony-installation-setup">Installing &amp; Setting UP the Symfony</a></li>
         <li><a href="#symfony-composer-intro">What Is Composer?</a></li>
+        <li><a href="#symfony-architecture">Architecture</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1020,6 +1018,377 @@ composer run start
     </ul>
     <br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-architecture">Symfony Architecture</h3>
+<ol>
+
+    <li>Overview of Symfony’s Architecture</li>
+    <br/>
+    <ul>
+        <li>Symfony follows a <b>modular, decoupled architecture</b> built around reusable components.</li>
+        <br/>
+        <li>It is designed with:
+            <ul>
+                <li><b>MVC principles</b> (Model–View–Controller)</li>
+                <li><b>Dependency Injection</b></li>
+                <li><b>Event Dispatcher</b> pattern</li>
+                <li><b>Service Container</b> as the core runtime engine</li>
+                <li><b>Bundles</b> for modular features</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This architecture makes Symfony:
+            <ul>
+                <li>highly extensible</li>
+                <li>testable</li>
+                <li>maintainable</li>
+                <li>suitable for both microservices and large enterprise apps</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>High-Level Request Lifecycle</li>
+    <br/>
+    <ul>
+        <li>Symfony transforms each HTTP request into a controller response using the HttpKernel workflow.</li>
+        <br/>
+        <li>Key concepts involved:
+            <ul>
+                <li>Front Controller</li>
+                <li>Routing</li>
+                <li>Controller Execution</li>
+                <li>Events (RequestEvent, ViewEvent, ResponseEvent)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Front Controller (<code>public/index.php</code>)</li>
+    <br/>
+    <ul>
+        <li>All requests go through one file:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+require dirname(__DIR__).'/vendor/autoload.php';
+
+$kernel = new Kernel('dev', true);
+$response = $kernel-&gt;handle($request);
+$response-&gt;send();
+$kernel-&gt;terminate($request, $response);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>This ensures:
+            <ul>
+                <li>centralized error handling</li>
+                <li>environment control (dev/prod)</li>
+                <li>security filters</li>
+                <li>consistent bootstrapping</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Routing Component</li>
+    <br/>
+    <ul>
+        <li>The Routing component maps a URL to a controller.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+#[Route('/hello/{name}', name: 'hello')]
+function hello($name) { ... }
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony loads routes from:
+            <ul>
+                <li>annotations / attributes (PHP)</li>
+                <li>YAML files</li>
+                <li>XML files</li>
+                <li>PHP config files</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>HttpKernel &amp; Event Dispatcher</li>
+    <br/>
+    <ul>
+        <li>Symfony’s request handling is event-driven.</li>
+        <br/>
+        <li>HttpKernel dispatches events such as:
+            <ul>
+                <li><code>kernel.request</code></li>
+                <li><code>kernel.controller</code></li>
+                <li><code>kernel.view</code></li>
+                <li><code>kernel.response</code></li>
+                <li><code>kernel.exception</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Developers can attach listeners/subscribers to customize the process.</li>
+        <br/>
+        <li>Examples:
+            <ul>
+                <li>JSON response formatters</li>
+                <li>Authentication listeners</li>
+                <li>Error page handlers</li>
+                <li>Profiling tools</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Controller Layer</li>
+    <br/>
+    <ul>
+        <li>Controllers are responsible for:
+            <ul>
+                <li>processing the request</li>
+                <li>interacting with models/services</li>
+                <li>returning a Response object</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Typical controller:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class HomeController extends AbstractController {
+    #[Route('/')]
+    public function index() {
+        return $this-&gt;render('home.html.twig');
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony controllers can:
+            <ul>
+                <li>render templates</li>
+                <li>redirect users</li>
+                <li>return JSON</li>
+                <li>access services from the DI container</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>View Layer (Twig Templating)</li>
+    <br/>
+    <ul>
+        <li>Symfony uses Twig as the default templating engine.</li>
+        <br/>
+        <li>Responsibilities:
+            <ul>
+                <li>output HTML</li>
+                <li>format data</li>
+                <li>extend layouts</li>
+                <li>sanitize user input</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example template:</li>
+<pre><code class="language-twig line-numbers">{% extends 'base.html.twig' %}
+
+{% block body %}
+    &lt;h1&gt;Hello {{ name }}!&lt;/h1&gt;
+{% endblock %}
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Model Layer (Doctrine ORM)</li>
+    <br/>
+    <ul>
+        <li>Symfony typically uses <b>Doctrine</b> as ORM (Object Relational Mapping).</li>
+        <br/>
+        <li>Doctrine Maps PHP classes (Entities) to database tables.</li>
+        <br/>
+        <li>Example entity:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+#[ORM\Entity]
+class Product {
+    #[ORM\Id, ORM\GeneratedValue]
+    private int $id;
+
+    #[ORM\Column(length: 255)]
+    private string $name;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Doctrine handles:
+            <ul>
+                <li>database migrations</li>
+                <li>relations (OneToMany, ManyToMany)</li>
+                <li>repositories (data access objects)</li>
+                <li>transaction management</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Service Container (Dependency Injection)</li>
+    <br/>
+    <ul>
+        <li>At the core of Symfony is the <b>dependency injection container</b>.</li>
+        <br/>
+        <li>It creates and manages objects ("services") for the entire app.</li>
+        <br/>
+        <li>Services include:
+            <ul>
+                <li>database connections</li>
+                <li>mailer</li>
+                <li>loggers</li>
+                <li>security services</li>
+                <li>custom app services</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example service registration (<code>services.yaml</code>):</li>
+<pre><code class="language-yaml line-numbers">services:
+    App\Service\Mailer:
+        arguments:
+            $adminEmail: '%env(ADMIN_EMAIL)%'</code></pre>
+        </li>
+        <br/>
+        <li>Service injection in controllers:</li>
+<pre><code class="language-php line-numbers">public function send(Mailer $mailer) {
+    $mailer-&gt;send("hello@test.com");
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Bundles: Modular Symfony Extensions</li>
+    <br/>
+    <ul>
+        <li>Bundles are reusable packages containing:
+            <ul>
+                <li>controllers</li>
+                <li>routes</li>
+                <li>services</li>
+                <li>configs</li>
+                <li>templates</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Core Symfony bundles include:
+            <ul>
+                <li><code>FrameworkBundle</code></li>
+                <li><code>SecurityBundle</code></li>
+                <li><code>TwigBundle</code></li>
+                <li><code>DoctrineBundle</code></li>
+                <li><code>MonologBundle</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Bundles are automatically registered in <code>config/bundles.php</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Configuration System</li>
+    <br/>
+    <ul>
+        <li>Symfony uses flexible config formats:
+            <ul>
+                <li>YAML</li>
+                <li>PHP</li>
+                <li>XML</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Main config areas:
+            <ul>
+                <li><code>framework.yaml</code></li>
+                <li><code>services.yaml</code></li>
+                <li><code>routes.yaml</code></li>
+                <li><code>packages/*.yaml</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Environment-specific configs:
+<pre><code class="language-plaintext line-numbers">config/
+├── packages/dev/
+├── packages/prod/
+├── services_dev.yaml
+├── services_prod.yaml
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Symfony Flex</li>
+    <br/>
+    <ul>
+        <li>Symfony Flex automates:
+            <ul>
+                <li>installing bundles</li>
+                <li>adding config files</li>
+                <li>modifying <code>composer.json</code></li>
+                <li>scaffolding project structure</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:
+<pre><code class="language-bash line-numbers">composer require symfony/security-bundle</code></pre>
+        </li>
+        <br/>
+        <li>Flex automatically:
+            <ul>
+                <li>downloads bundle</li>
+                <li>creates config files</li>
+                <li>updates env vars</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
