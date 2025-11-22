@@ -170,6 +170,7 @@
         <li><a href="#symfony-internationalization">Internationalization</a></li>
         <li><a href="#symfony-logging">Logging</a></li>
         <li><a href="#symfony-email-management">Email Management</a></li>
+        <li><a href="#symfony-unit-testing">Unit Testing</a></li>
     </ol>
 </nav>
 <hr/>
@@ -6638,6 +6639,292 @@ framework:
     </ul>
     <br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-unit-testing">Symfony Unit Testing</h3>
+<ol>
+
+    <li>What Is Unit Testing in Symfony?</li>
+    <br/>
+    <ul>
+        <li><b>Unit testing</b> is the technique of testing the smallest pieces of application logic in isolation (functions, methods, or classes).</li>
+        <br/>
+        <li>Symfony uses <b>PHPUnit</b> as its standard testing framework.</li>
+        <br/>
+        <li>Goals of unit testing include:
+            <ul>
+                <li>ensuring correctness of business logic</li>
+                <li>preventing regressions</li>
+                <li>making refactoring safer</li>
+                <li>providing reliable CI pipelines</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Unit tests avoid:
+            <ul>
+                <li>HTTP requests</li>
+                <li>database access</li>
+                <li>framework bootstrapping</li>
+            </ul>
+        </li>
+        <br/>
+        <li>These tests run extremely fast and validate small components in isolation.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing PHPUnit</li>
+    <br/>
+    <ul>
+        <li>Install using Symfony CLI (recommended):</li>
+<pre><code class="language-bash line-numbers">symfony php bin/phpunit</code></pre>
+        </li>
+        <br/>
+        <li>If PHPUnit is missing:</li>
+<pre><code class="language-bash line-numbers">composer require --dev symfony/phpunit-bridge</code></pre>
+        </li>
+        <br/>
+        <li>Configuration file is automatically added:</li>
+<pre><code class="language-plaintext line-numbers">phpunit.xml.dist</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Test Directory Structure</li>
+    <br/>
+    <ul>
+        <li>Symfony recommends the following structure:</li>
+<pre><code class="language-plaintext line-numbers">
+tests/
+    Controller/
+    Entity/
+    Service/
+    Security/
+    Functional/
+</code></pre>
+        </li>
+        <br/>
+        <li>All test classes must end with <code>Test.php</code> and extend <code>TestCase</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Writing Your First Unit Test</li>
+    <br/>
+    <ul>
+<pre><code class="language-php line-numbers">&lt;?php
+use PHPUnit\Framework\TestCase;
+
+class MathTest extends TestCase
+{
+    public function testAdd()
+    {
+        $this->assertEquals(4, 2 + 2);
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Run tests:</li>
+<pre><code class="language-bash line-numbers">bin/phpunit</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Testing Symfony Services</li>
+    <br/>
+    <ul>
+        <li>Unit tests cannot automatically use dependency injection.</li>
+        <br/>
+        <li>You test services by instantiating them manually:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class PriceCalculatorTest extends TestCase
+{
+    public function testPriceCalculation()
+    {
+        $calculator = new PriceCalculator();
+        $result = $calculator->calculate(100);
+
+        $this->assertEquals(120, $result);
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Unit tests should not interact with the Symfony kernel.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Mocks</li>
+    <br/>
+    <ul>
+        <li>Mocks simulate objects or dependencies so tests remain isolated.</li>
+        <br/>
+        <li>Example using PHPUnit’s mocking tools:</li>
+<pre><code class="language-php line-numbers">
+$repo = $this->createMock(UserRepository::class);
+$repo->method('find')->willReturn(new User('Junzhe'));
+
+$service = new UserService($repo);
+
+$this->assertEquals('Junzhe', $service->getUserNameById(1));
+</code></pre>
+        </li>
+        <br/>
+        <li>Mocks ensure:
+            <ul>
+                <li>no database communication</li>
+                <li>no external API calls</li>
+                <li>predictable input/output</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Testing Exception Handling</li>
+    <br/>
+    <ul>
+        <li>Use <code>expectException()</code>:</li>
+<pre><code class="language-php line-numbers">
+$this->expectException(\InvalidArgumentException::class);
+$calc->calculate(-1);
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for verifying business logic validations.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Data Providers</li>
+    <br/>
+    <ul>
+        <li>Use data providers to test multiple inputs:</li>
+<pre><code class="language-php line-numbers">
+/**
+ * @dataProvider provideNumbers
+ */
+public function testMultiply($a, $b, $expected)
+{
+    $this->assertEquals($expected, $a * $b);
+}
+
+public function provideNumbers()
+{
+    return [
+        [2, 3, 6],
+        [4, 5, 20],
+        [10, 10, 100],
+    ];
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Makes tests more compact and systematic.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Testing Private / Protected Methods</li>
+    <br/>
+    <ul>
+        <li>Best practice: <b>never directly test private methods</b>.</li>
+        <br/>
+        <li>Test through the public API instead.</li>
+        <br/>
+        <li>If absolutely needed, use PHP’s Reflection API (not recommended).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Testing Entities and Value Objects</li>
+    <br/>
+    <ul>
+        <li>Entity tests usually focus on:</li>
+        <ul>
+            <li>getter/setter behavior</li>
+            <li>validation logic</li>
+            <li>relationships</li>
+        </ul>
+        </li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">
+$product = new Product();
+$product->setName('Laptop');
+
+$this->assertEquals('Laptop', $product->getName());
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Functional Testing vs Unit Testing</li>
+    <br/>
+    <ul>
+        <li><b>Unit tests:</b></li>
+        <ul>
+            <li>smallest pieces of logic</li>
+            <li>no kernel boot</li>
+            <li>very fast</li>
+            <li>no HTTP requests</li>
+        </ul>
+        <br/>
+        <li><b>Functional tests:</b></li>
+        <ul>
+            <li>boot Symfony kernel</li>
+            <li>simulate HTTP requests</li>
+            <li>test routing, controllers, templates</li>
+        </ul>
+        <br/>
+        <li>This chapter focuses on <b>unit tests</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Running Unit Tests with Coverage</li>
+    <br/>
+    <ul>
+        <li>To see which lines of code are tested:</li>
+<pre><code class="language-bash line-numbers">bin/phpunit --coverage-html coverage/</code></pre>
+        </li>
+        <br/>
+        <li>Open <code>coverage/index.html</code> in a browser.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Organizing Tests</li>
+    <br/>
+    <ul>
+        <li>Follow the same structure as your source code:</li>
+<pre><code class="language-plaintext line-numbers">
+src/Service/PriceCalculator.php
+tests/Service/PriceCalculatorTest.php
+</code></pre>
+        </li>
+        <br/>
+        <li>Each file in <code>src/</code> should have a corresponding test in <code>tests/</code>.</li>
+        <br/>
+        <li>Keep unit tests small and specific.</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
