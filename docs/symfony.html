@@ -164,6 +164,7 @@
         <li><a href="#symfony-forms">Forms</a></li>
         <li><a href="#symfony-csrf">Understanding CSRF (Cross-Site Request Forgery)</a></li>
         <li><a href="#symfony-validation">Validation</a></li>
+        <li><a href="#symfony-file-uploading">File Uploading</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4928,7 +4929,231 @@ if (!preg_match('/[A-Z]/', $value)) {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-file-uploading">Symfony File Uploading</h3>
+<ol>
 
+    <li>Overview of File Uploading in Symfony</li>
+    <br/>
+    <ul>
+        <li>Symfony provides a clean and secure workflow for file uploads using:</li>
+        <ul>
+            <li><b>Form component</b> (FileType)</li>
+            <li><b>UploadedFile</b> class</li>
+            <li><b>CSRF protection</b></li>
+            <li><b>Validator</b> (File / Image constraints)</li>
+        </ul>
+        <br/>
+        <li>Uploaded files are typically stored in:</li>
+        <ul>
+            <li><code>public/uploads/</code></li>
+            <li>or a custom directory defined in <code>.env</code></li>
+        </ul>
+        <br/>
+        <li>Symfony does NOT automatically save uploaded files.</li>
+        <br/>
+        <li>You must:</li>
+        <ul>
+            <li>handle uploaded data manually,</li>
+            <li>move the file to a permanent location,</li>
+            <li>store file paths in the database (not the file itself).</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Form for File Uploading</li>
+    <br/>
+    <ul>
+        <li>A file input uses <code>FileType</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Validator\Constraints\File;
+
+$builder->add('image', FileType::class, [
+    'label' =&gt; 'Upload Image',
+    'mapped' =&gt; false,
+    'required' =&gt; false,
+    'constraints' =&gt; [
+        new File([
+            'maxSize' =&gt; '5M',
+            'mimeTypes' =&gt; ['image/jpeg', 'image/png'],
+            'mimeTypesMessage' =&gt; 'Please upload a valid JPG or PNG image.',
+        ])
+    ]
+]);
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li><b>mapped: false</b> means the file field does not correspond to an entity property.</li>
+        <br/>
+        <li>File uploads require the form to have:</li>
+<pre><code class="language-twig line-numbers">{{ form_start(form, { 'attr': { 'enctype': 'multipart/form-data' } }) }}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Rendering the Upload Form in Twig</li>
+    <br/>
+    <ul>
+<pre><code class="language-twig line-numbers">
+{{ form_start(form, { attr: { enctype: 'multipart/form-data' } }) }}
+    {{ form_row(form.image) }}
+    &lt;button class="btn btn-primary"&gt;Upload&lt;/button&gt;
+{{ form_end(form) }}
+</code></pre>
+        <li>Twig automatically handles:</li>
+        <ul>
+            <li>CSRF field</li>
+            <li>file input rendering</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Processing the Uploaded File in the Controller</li>
+    <br/>
+    <ul>
+        <li>On submit, Symfony wraps uploaded files into the <code>UploadedFile</code> class.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+
+$form = $this->createForm(ProductType::class);
+$form->handleRequest($request);
+
+if ($form->isSubmitted() && $form->isValid()) {
+    /** @var UploadedFile $file */
+    $file = $form->get('image')->getData();
+
+    if ($file) {
+        $newFilename = uniqid().'.'.$file->guessExtension();
+
+        $file->move(
+            $this->getParameter('uploads_directory'),
+            $newFilename
+        );
+
+        // Store $newFilename in the database if needed
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>The <code>move()</code> method:</li>
+        <ul>
+            <li>moves the file to your uploads folder,</li>
+            <li>generates a safe filename.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Configuring Upload Directory</li>
+    <br/>
+    <ul>
+        <li>Add this to <code>config/services.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">parameters:
+    uploads_directory: '%kernel.project_dir%/public/uploads'</code></pre>
+        </li>
+        <br/>
+        <li>Now you can inject it via:</li>
+<pre><code class="language-php line-numbers">$this->getParameter('uploads_directory');</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Displaying Uploaded Files</li>
+    <br/>
+    <ul>
+        <li>If you store the filename in the DB:</li>
+<pre><code class="language-twig line-numbers">
+&lt;img src="/uploads/{{ product.imageFilename }}" width="200" /&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>The file is publicly available in <code>public/uploads/</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Validation Rules</li>
+    <br/>
+    <ul>
+        <li>Common validators:</li>
+        <ul>
+            <li><code>maxSize</code></li>
+            <li><code>mimeTypes</code></li>
+            <li><code>minWidth</code> (for image)</li>
+            <li><code>minHeight</code></li>
+            <li><code>detectCorrupted</code></li>
+        </ul>
+        <br/>
+        <li>Image example:</li>
+<pre><code class="language-php line-numbers">
+new Assert\Image([
+    'maxSize' =&gt; '10M',
+    'minWidth' =&gt; 400,
+    'minHeight' =&gt; 300,
+])
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Multiple File Uploads</li>
+    <br/>
+    <ul>
+        <li>Use <code>multiple: true</code>:</li>
+<pre><code class="language-php line-numbers">$builder->add('photos', FileType::class, [
+    'multiple' =&gt; true,
+    'mapped' =&gt; false,
+]);
+</code></pre>
+        </li>
+        <br/>
+        <li>Controller:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$files = $form->get('photos')->getData();
+
+foreach ($files as $file) {
+    $filename = uniqid().'.'.$file->guessExtension();
+    $file->move($uploadDir, $filename);
+}
+?&gt;</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deleting Uploaded Files</li>
+    <br/>
+    <ul>
+        <li>Symfony does NOT auto-delete files.</li>
+        <br/>
+        <li>You must delete manually:</li>
+<pre><code class="language-php line-numbers">unlink($this->getParameter('uploads_directory').'/'.$product->getImageFilename());</code></pre>
+        </li>
+        <br/>
+        <li>Good practice: create a dedicated FileManager service.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Upload Error Handling</li>
+    <br/>
+    <ul>
+        <li>Symfony throws exceptions if:</li>
+        <ul>
+            <li>file size exceeds server <code>php.ini</code> limits</li>
+            <li>upload directory is not writable</li>
+            <li>file is corrupted</li>
+        </ul>
+        <br/>
+        <li>In Twig, errors appear automatically:</li>
+<pre><code class="language-twig line-numbers">{{ form_errors(form.image) }}</code></pre>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
