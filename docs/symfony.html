@@ -158,6 +158,7 @@
         <li><a href="#symfony-composer-intro">What Is Composer?</a></li>
         <li><a href="#symfony-architecture">Architecture</a></li>
         <li><a href="#symfony-components">Components</a></li>
+        <li><a href="#symfony-service-container">Service Container</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1714,7 +1715,287 @@ class ContactType extends AbstractType {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-service-container">Symfony Service Container</h3>
+<ol>
 
+    <li>Introduction to the Service Container</li>
+    <br/>
+    <ul>
+        <li>The <b>Service Container</b> is the core of Symfony’s architecture. It manages:
+            <ul>
+                <li>object creation (services)</li>
+                <li>dependency injection</li>
+                <li>configuration of services</li>
+                <li>performance optimizations (caching + compiling)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Instead of manually instantiating objects using <code>new</code>, Symfony delegates object management to the container.</li>
+        <br/>
+        <li>Advantages:
+            <ul>
+                <li>loose coupling</li>
+                <li>cleaner architecture</li>
+                <li>better testability</li>
+                <li>automatic dependency resolution</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Every major part of Symfony (routing, Twig, security, logging) is organized as a service managed by this container.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>What Is a Service?</li>
+    <br/>
+    <ul>
+        <li>A <code>service</code> is simply a PHP object that performs a reusable task in your application.</li>
+        <br/>
+        <li>Examples of services:
+            <ul>
+                <li>Mailer service</li>
+                <li>Logger</li>
+                <li>Database connection</li>
+                <li>API call client</li>
+                <li>Authentication manager</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Custom service example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+namespace App\Service;
+
+class Mailer {
+    public function send(string $email, string $message) {
+        // ...
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>The Service Container instantiates and manages this class automatically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How Dependency Injection Works</li>
+    <br/>
+    <ul>
+        <li>Dependencies are automatically passed into the constructor of a service.</li>
+        <br/>
+        <li>Example service with dependencies:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+namespace App\Service;
+
+use Psr\Log\LoggerInterface;
+
+class ReportGenerator {
+    public function __construct(
+        private LoggerInterface $logger
+    ) {}
+
+    public function generate() {
+        $this->logger->info("Report generated.");
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony automatically resolves <code>LoggerInterface</code> and injects the correct service into <code>ReportGenerator</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Service Registration</li>
+    <br/>
+    <ul>
+        <li>Symfony automatically registers most classes in <code>src/</code> as services (<b>autoconfiguration + autowiring</b>).</li>
+        <br/>
+        <li>Manual service definition (YAML):</li>
+<pre><code class="language-yaml line-numbers"># config/services.yaml
+services:
+    App\Service\Mailer:
+        arguments:
+            $host: '%env(SMTP_HOST)%'
+</code></pre>
+        </li>
+        <br/>
+        <li>Services can be registered via YAML, XML, or PHP config.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Autowiring</li>
+    <br/>
+    <ul>
+        <li><b>Autowiring</b> automatically finds and injects services based on type hints.</li>
+        <br/>
+        <li>Example controller using autowired service:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class ReportController extends AbstractController {
+    public function index(ReportGenerator $generator) {
+        $generator->generate();
+        return new Response("Done");
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>No need for configuration — Symfony sees the type <code>ReportGenerator</code> and injects it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Autoconfiguration</li>
+    <br/>
+    <ul>
+        <li>Autoconfiguration tells Symfony to automatically apply:
+            <ul>
+                <li>tags (e.g. event subscribers)</li>
+                <li>interfaces (e.g. command handlers)</li>
+                <li>service behaviors</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Enabled by default in <code>services.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">_defaults:
+    autowire: true
+    autoconfigure: true
+</code></pre>
+        </li>
+        <br/>
+        <li>Example: a class implementing <code>EventSubscriberInterface</code> is automatically tagged as an event subscriber.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Service Visibility (Public vs Private)</li>
+    <br/>
+    <ul>
+        <li><b>Private services</b> cannot be fetched directly from the container.</li>
+        <li><b>Public services</b> can be accessed via the container (discouraged).</li>
+        <br/>
+        <li>By default, all custom services are <b>private</b> — good practice.</li>
+        <br/>
+        <li>To make a service public:</li>
+<pre><code class="language-yaml line-numbers">services:
+    App\Service\Mailer:
+        public: true
+</code></pre>
+        </li>
+        <br/>
+        <li>Best practice: use <b>dependency injection</b>, not <code>$container->get()</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing the Container</li>
+    <br/>
+    <ul>
+        <li>Direct access to the container in controllers is discouraged:</li>
+<pre><code class="language-php line-numbers">$mailer = $this->container->get(Mailer::class);</code></pre>
+        </li>
+        <br/>
+        <li>Correct method: inject the service in your controller constructor or action.</li>
+        <br/>
+        <li>For rare cases, you can inject the container itself:</li>
+<pre><code class="language-yaml line-numbers">services:
+    App\Controller\SpecialController:
+        arguments: ['@service_container']
+</code></pre>
+        </li>
+        <br/>
+        <li>But this breaks dependency inversion — avoid it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Service Tags</li>
+    <br/>
+    <ul>
+        <li>Tags tell the container that a service has a special role.</li>
+        <br/>
+        <li>Examples of tags:
+            <ul>
+                <li><code>kernel.event_listener</code></li>
+                <li><code>kernel.event_subscriber</code></li>
+                <li><code>console.command</code></li>
+                <li><code>doctrine.repository_service</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example (YAML):</li>
+<pre><code class="language-yaml line-numbers">services:
+    App\Event\UserRegisteredSubscriber:
+        tags: ['kernel.event_subscriber']
+</code></pre>
+        </li>
+        <br/>
+        <li>Autoconfiguration applies many tags automatically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Service Aliases</li>
+    <br/>
+    <ul>
+        <li>Aliases provide alternative names for services.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-yaml line-numbers">services:
+    mailer: '@App\Service\Mailer'
+</code></pre>
+        </li>
+        <br/>
+        <li>Now <code>mailer</code> refers to the same service as <code>App\Service\Mailer</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Container Compilation</li>
+    <br/>
+    <ul>
+        <li>Symfony compiles and optimizes the Service Container into plain PHP.</li>
+        <br/>
+        <li>Generated container files live in:</li>
+<pre><code class="language-plaintext line-numbers">var/cache/dev/</code></pre>
+        </li>
+        <br/>
+        <li>Compilation benefits:
+            <ul>
+                <li>faster service resolution</li>
+                <li>removal of unused services</li>
+                <li>inlined definitions</li>
+                <li>cached autowiring metadata</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Recompile manually:</li>
+<pre><code class="language-bash line-numbers">symfony console cache:clear</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Debugging Services</li>
+    <br/>
+    <ul>
+        <li>List all services:</li>
+<pre><code class="language-bash line-numbers">symfony console debug:container</code></pre>
+        </li>
+        <br/>
+        <li>Find services containing name:</li>
+<pre><code class="language-bash line-numbers">symfony console debug:container mail</code></pre>
+        </li>
+        <br/>
+        <li>Inspect service details:</li>
+<pre><code class="language-bash line-numbers">symfony console debug:container App\Service\Mailer</code></pre>
+        </li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
