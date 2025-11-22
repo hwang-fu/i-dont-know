@@ -150,6 +150,7 @@
     <h2> <img src="resources/flask.svg" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ol style="line-height: 1.8;">
         <li><a href="#flask-introduction">Introduction</a></li>
+        <li><a href="#flask-application-overview">Application Overview</a></li>
     </ol>
 </nav>
 <hr/>
@@ -389,6 +390,312 @@ def api_user(id):
         <li><b>Flask-RESTful</b> — build REST APIs more easily</li>
     </ul>
     <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-application-overview">Flask Application Overview</h3>
+<ol>
+
+    <li>What Is Flask?</li>
+    <br/>
+    <ul>
+        <li><b>Flask</b> is a lightweight, flexible, and minimalistic Python web framework.</li>
+        <br/>
+        <li>It follows a <b>micro-framework</b> philosophy:
+            <ul>
+                <li>no built-in ORM</li>
+                <li>no built-in template engine (uses Jinja2)</li>
+                <li>no strict project structure</li>
+                <li>everything is extensible via extensions</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Flask is commonly used for:
+            <ul>
+                <li>REST APIs</li>
+                <li>small to mid-sized web applications</li>
+                <li>prototypes and rapid development</li>
+                <li>microservices</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Main advantages:
+            <ul>
+                <li>simple and intuitive API</li>
+                <li>minimal boilerplate</li>
+                <li>easy to integrate with SQLAlchemy, Jinja2, WTForms</li>
+                <li>large ecosystem of extensions</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing and Running a Flask Application</li>
+    <br/>
+    <ul>
+        <li>Install Flask via pip:</li>
+<pre><code class="language-bash line-numbers">pip install Flask</code></pre>
+        </li>
+        <br/>
+        <li>Minimal Flask app (<code>app.py</code>):</li>
+<pre><code class="language-python line-numbers">from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Hello, Flask!"
+
+if __name__ == "__main__":
+    app.run(debug=True)</code></pre>
+        </li>
+        <br/>
+        <li>Run the app:</li>
+<pre><code class="language-bash line-numbers">python app.py</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding the Flask Application Object</li>
+    <br/>
+    <ul>
+        <li>The <code>Flask</code> object represents your application.</li>
+        <br/>
+        <li>Created using:
+<pre><code class="language-python line-numbers">app = Flask(__name__)</code></pre>
+        </li>
+        <br/>
+        <li>Responsibilities:
+            <ul>
+                <li>handling incoming requests</li>
+                <li>mapping URLs to functions (routing)</li>
+                <li>managing application-wide configuration</li>
+                <li>initializing extensions</li>
+                <li>managing Jinja2 templates</li>
+            </ul>
+        </li>
+        <br/>
+        <li><code>__name__</code> helps Flask locate resources (templates, static files).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Routing Fundamentals</li>
+    <br/>
+    <ul>
+        <li>Routes connect URLs to Python functions (called <b>view functions</b>).</li>
+        <br/>
+        <li>Basic route:</li>
+<pre><code class="language-python line-numbers">@app.route("/about")
+def about():
+    return "About page"</code></pre>
+        </li>
+        <br/>
+        <li>Routes can accept parameters:</li>
+<pre><code class="language-python line-numbers">@app.route("/user/&lt;username&gt;")
+def profile(username):
+    return f"Hello, {username}"</code></pre>
+        </li>
+        <br/>
+        <li>Routes can restrict parameter types:</li>
+<pre><code class="language-python line-numbers">@app.route("/item/&lt;int:id&gt;")
+def item(id):
+    return f"Item {id}"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Template Rendering</li>
+    <br/>
+    <ul>
+        <li>Flask uses the Jinja2 template engine.</li>
+        <br/>
+        <li>Render templates:</li>
+<pre><code class="language-python line-numbers">from flask import render_template
+
+@app.route("/hello")
+def hello():
+    return render_template("hello.html", name="Junzhe")</code></pre>
+        </li>
+        <br/>
+        <li>Example <code>templates/hello.html</code>:</li>
+<pre><code class="language-html line-numbers">
+&lt;h1&gt;Hello {{ name }}!&lt;/h1&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Requests and Forms</li>
+    <br/>
+    <ul>
+        <li>Flask provides the <code>request</code> object:</li>
+<pre><code class="language-python line-numbers">from flask import request
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        return f"Logged in as {username}"
+    return render_template("login.html")</code></pre>
+        </li>
+        <br/>
+        <li>Use cases:
+            <ul>
+                <li>processing HTML forms</li>
+                <li>AJAX requests</li>
+                <li>JSON APIs</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Accessing JSON:</li>
+<pre><code class="language-python line-numbers">data = request.get_json()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Flask Application Configuration</li>
+    <br/>
+    <ul>
+        <li>Configuration values stored in <code>app.config</code>.</li>
+        <br/>
+        <li>Common settings:</li>
+<pre><code class="language-plaintext line-numbers">
+DEBUG = True
+SECRET_KEY = "super-secret"
+DATABASE_URI = "sqlite:///app.db"
+</code></pre>
+        </li>
+        <br/>
+        <li>Load configuration from Python file:</li>
+<pre><code class="language-python line-numbers">app.config.from_pyfile("config.py")</code></pre>
+        </li>
+        <br/>
+        <li>Or from environment variables:</li>
+<pre><code class="language-python line-numbers">app.config.from_envvar("APP_SETTINGS")</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Flask Extensions</li>
+    <br/>
+    <ul>
+        <li>Flask achieves rich functionality through extensions:</li>
+        <br/>
+        <ul>
+            <li><b>Flask-SQLAlchemy</b> — ORM</li>
+            <li><b>Flask-Migrate</b> — database migrations</li>
+            <li><b>Flask-WTF</b> — forms & CSRF</li>
+            <li><b>Flask-Login</b> — authentication</li>
+            <li><b>Flask-Mail</b> — email sending</li>
+            <li><b>Flask-RESTful</b> — API framework</li>
+        </ul>
+        <br/>
+        <li>Extensions typically follow this pattern:</li>
+<pre><code class="language-python line-numbers">
+db = SQLAlchemy()
+login = LoginManager()
+
+def create_app():
+    app = Flask(__name__)
+    db.init_app(app)
+    login.init_app(app)
+    return app
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Application Factory Pattern</li>
+    <br/>
+    <ul>
+        <li>Large applications use a factory to create the app instance.</li>
+        <br/>
+        <li>Allows:
+            <ul>
+                <li>testing flexibility</li>
+                <li>extension initialization</li>
+                <li>different configurations</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-python line-numbers">
+def create_app(config_name="default"):
+    app = Flask(__name__)
+    app.config.from_object(config_name)
+    return app
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Blueprints (Modular Applications)</li>
+    <br/>
+    <ul>
+        <li><b>Blueprints</b> allow you to break the application into reusable modules.</li>
+        <br/>
+        <li>Create a blueprint:</li>
+<pre><code class="language-python line-numbers">
+from flask import Blueprint
+
+bp = Blueprint("auth", __name__)
+
+@bp.route("/login")
+def login():
+    return "Login page"
+</code></pre>
+        </li>
+        <br/>
+        <li>Register it:</li>
+<pre><code class="language-python line-numbers">app.register_blueprint(bp, url_prefix="/auth")</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Static Files and Templates</li>
+    <br/>
+    <ul>
+        <li>Default structure:</li>
+<pre><code class="language-plaintext line-numbers">
+project/
+    static/
+        css/
+        js/
+        images/
+    templates/
+        .html files
+</code></pre>
+        </li>
+        <br/>
+        <li>Serve static files:</li>
+<pre><code class="language-html line-numbers">
+&lt;link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Handling</li>
+    <br/>
+    <ul>
+        <li>Custom error pages:</li>
+<pre><code class="language-python line-numbers">
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("404.html"), 404
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for user experience and debugging.</li>
+    </ul>
+    <br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
