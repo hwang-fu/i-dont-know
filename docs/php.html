@@ -2094,11 +2094,7 @@ $temperature = -4;
 </code></pre>
         </li>
         <br/>
-        <li>Integer limits:
-            <ul>
-                <li>depends on platform, typically 64-bit: <code>-2^63</code> to <code>2^63 - 1</code>.</li>
-            </ul>
-        </li>
+        <li>Integer limits: depends on platform, typically 64-bit: <code>-2^63</code> to <code>2^63 - 1</code>.</li>
         <br/>
         <li>Numeric literals:
             <ul>
@@ -2389,11 +2385,7 @@ var_dump("10" === 10); // false
     <li>Type Casting</li>
     <br/>
     <ul>
-        <li>You can explicitly cast types using:
-            <ul>
-                <li><code>(int)</code>, <code>(float)</code>, <code>(bool)</code>, <code>(string)</code>, <code>(array)</code>, <code>(object)</code></li>
-            </ul>
-        </li>
+        <li>You can explicitly cast types using: <code>(int)</code>, <code>(float)</code>, <code>(bool)</code>, <code>(string)</code>, <code>(array)</code>, <code>(object)</code></li>
         <br/>
         <li>Example:
 <pre><code class="language-php line-numbers">&lt;?php
@@ -2472,7 +2464,398 @@ declare(strict_types=1);
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="php-control-flow">PHP Control Flow</h3>
+<ol>
+    <li>Conditional Statements: <code>if</code>, <code>elseif</code>, <code>else</code></li>
+    <br/>
+    <ul>
+        <li>Basic structure:
+<pre><code class="language-php line-numbers">&lt;?php
+if ($x &gt; 0) {
+    echo "Positive";
+} elseif ($x &lt; 0) {
+    echo "Negative";
+} else {
+    echo "Zero";
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>The condition must evaluate to a boolean value (<code>true</code> / <code>false</code>).</li>
+        <br/>
+        <li>PHP uses common truthiness rules:
+            <ul>
+                <li><code>0</code>, <code>""</code>, <code>null</code>, <code>[]</code> are falsy</li>
+                <li>non-empty strings, non-zero numbers are truthy</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Nested conditions:
+<pre><code class="language-php line-numbers">&lt;?php
+if ($isAdmin) {
+    if ($isLogged) {
+        echo "Welcome, admin!";
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li>Ternary Operator (<code>?:</code>)</li>
+    <br/>
+    <ul>
+        <li>Short form of <code>if...else</code>:
+<pre><code class="language-php line-numbers">&lt;?php
+$message = ($age &gt;= 18) ? "Adult" : "Minor";
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Nested ternaries are possible but should be avoided for readability.</li>
+        <br/>
+        <li>Short ternary (PHP 5.3+):
+<pre><code class="language-php line-numbers">&lt;?php
+$value = $input ?: "default";
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Null coalescing operator (PHP 7+):
+<pre><code class="language-php line-numbers">&lt;?php
+$username = $_GET["user"] ?? "Guest";
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Null coalescing works without warnings even if key does not exist.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><code>switch</code> Statement</li>
+    <br/>
+    <ul>
+        <li><code>switch</code> matches a value against multiple case labels:</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+switch ($day) {
+    case "Mon":
+        echo "Monday";
+        break;
+    case "Tue":
+        echo "Tuesday";
+        break;
+    default:
+        echo "Unknown";
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Switch uses loose comparison (<code>==</code>) unless strict comparisons are used manually.</li>
+        <br/>
+        <li><code>break</code> is required to prevent fall-through.</li>
+        <br/>
+        <li>Fall-through behavior:
+<pre><code class="language-php line-numbers">&lt;?php
+switch ($n) {
+    case 1:
+    case 2:
+    case 3:
+        echo "Low number";
+        break;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><code>continue</code> inside switch works differently: it continues an outer loop.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><code>match</code> Expression (PHP 8+)</li>
+    <br/>
+    <ul>
+        <li><code>match</code> is a safer, expression-based alternative to <code>switch</code>.</li>
+        <br/>
+        <li>Features:
+            <ul>
+                <li>strict comparison (<code>===</code>)</li>
+                <li>returns a value</li>
+                <li>no <code>break</code> needed</li>
+                <li>no fall-through</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+$label = match ($status) {
+    200 =&gt; "OK",
+    404 =&gt; "Not Found",
+    500 =&gt; "Server Error",
+    default =&gt; "Unknown",
+};
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><code>while</code> Loop</li>
+    <br/>
+    <ul>
+        <li>Repeats as long as the condition is true.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+$i = 0;
+while ($i &lt; 5) {
+    echo $i;
+    $i++;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>If the condition is initially false, the loop body never runs.</li>
+        <br/>
+        <li>Be careful to avoid infinite loops.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><code>do...while</code> Loop</li>
+    <br/>
+    <ul>
+        <li>Ensures the loop body runs at least once:</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+$i = 0;
+do {
+    echo $i;
+    $i++;
+} while ($i &lt; 5);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Difference from <code>while</code>:
+            <ul>
+                <li><code>while</code> checks before executing,</li>
+                <li><code>do...while</code> checks after executing.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><code>for</code> Loop</li>
+    <br/>
+    <ul>
+        <li>Common structured loop:</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+for ($i = 0; $i &lt; 5; $i++) {
+    echo $i;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Typical components:
+            <ul>
+                <li>initialization: <code>$i = 0</code></li>
+                <li>condition: <code>$i &lt; 5</code></li>
+                <li>increment: <code>$i++</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>All parts may be omitted:
+<pre><code class="language-php line-numbers">&lt;?php
+for (;;) {
+    break; // infinite loop without condition
+}
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><code>foreach</code> Loop</li>
+    <br/>
+    <ul>
+        <li>Used to iterate arrays and objects.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+$colors = ["red", "green", "blue"];
+
+foreach ($colors as $c) {
+    echo $c;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>With keys:
+<pre><code class="language-php line-numbers">&lt;?php
+foreach ($user as $key =&gt; $value) {
+    echo "$key: $value\n";
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><code>foreach</code> does not modify the original array unless using references:
+<pre><code class="language-php line-numbers">&lt;?php
+foreach ($numbers as &amp;$n) {
+    $n *= 2;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Be careful when using references — unset the reference afterwards:
+<pre><code class="language-php line-numbers">&lt;?php
+unset($n);
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><code>break</code> and <code>continue</code></li>
+    <br/>
+    <ul>
+        <li><code>break</code> stops execution of the current loop or switch.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+for ($i = 0; $i &lt; 10; $i++) {
+    if ($i == 5) break;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><code>continue</code> skips to the next iteration.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+for ($i = 0; $i &lt; 10; $i++) {
+    if ($i % 2 == 0) continue;
+    echo $i;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>You may specify a numeric argument to break out of multiple nested loops:
+<pre><code class="language-php line-numbers">&lt;?php
+while ($a) {
+    while ($b) {
+        break 2; // exits two loops
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><code>return</code> Statement</li>
+    <br/>
+    <ul>
+        <li>Ends function execution and optionally returns a value.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+function sum($x, $y) {
+    return $x + $y;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><code>return</code> cannot be used outside of functions or methods.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Exception Handling (<code>try</code>, <code>catch</code>, <code>finally</code>)</li>
+    <br/>
+    <ul>
+        <li>Exceptions allow handling error conditions in a controlled way.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+try {
+    riskyFunction();
+} catch (Exception $e) {
+    echo "Error: " . $e-&gt;getMessage();
+} finally {
+    echo "Cleanup tasks";
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><code>finally</code> always executes, regardless of success or error.</li>
+        <br/>
+        <li>Multiple <code>catch</code> blocks are allowed:
+<pre><code class="language-php line-numbers">&lt;?php
+try {
+    foo();
+} catch (RuntimeException $e) {
+    // runtime error
+} catch (Exception $e) {
+    // general error
+}
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Alternative Syntax for Control Structures (Useful in HTML)</li>
+    <br/>
+    <ul>
+        <li>When embedding PHP in HTML, you can use the alternative syntax:</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php if ($loggedIn): ?&gt;
+    &lt;p&gt;Welcome back&lt;/p&gt;
+&lt;?php else: ?&gt;
+    &lt;p&gt;Please log in&lt;/p&gt;
+&lt;?php endif; ?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>This avoids mixing braces with HTML, improving readability.</li>
+        <br/>
+        <li>Also works for loops:
+<pre><code class="language-php line-numbers">&lt;?php foreach ($items as $it): ?&gt;
+    &lt;li&gt;&lt;?= $it ?&gt;&lt;/li&gt;
+&lt;?php endforeach; ?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
@@ -2501,4 +2884,4 @@ declare(strict_types=1);
 </body>
 <!-- * * * * * * * * * * * * * * -->
 </html>
-<!-- * * * * * * * * * * * * * * -->
+<!-- * * * * * * * * * * * * * * --
