@@ -160,6 +160,7 @@
         <li><a href="#symfony-controllers">Controllers</a></li>
         <li><a href="#symfony-routing">Routing</a></li>
         <li><a href="#symfony-view-engine">View Engine</a></li>
+        <li><a href="#symfony-doctrine-orm">Doctrine ORM</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3755,7 +3756,303 @@ class AppExtension extends AbstractExtension {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-doctrine-orm">Symfony Doctrine ORM</h3>
+<ol>
 
+    <li>What Is Doctrine ORM?</li>
+    <br/>
+    <ul>
+        <li>Doctrine ORM is Symfony’s default <b>Object–Relational Mapper</b>.</li>
+        <br/>
+        <li>It maps PHP objects (Entities) to database tables automatically.</li>
+        <br/>
+        <li>Doctrine provides:
+            <ul>
+                <li>database abstraction,</li>
+                <li>entity lifecycle management,</li>
+                <li>automatic SQL generation,</li>
+                <li>migrations,</li>
+                <li>repositories for querying,</li>
+                <li>relationship mapping.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Key benefits:
+            <ul>
+                <li>no need to write SQL manually,</li>
+                <li>database-agnostic (MySQL, PostgreSQL, SQLite...),</li>
+                <li>clean domain-driven model.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing Doctrine ORM</li>
+    <br/>
+    <ul>
+        <li>Install with Composer:</li>
+<pre><code class="language-bash line-numbers">composer require symfony/orm-pack
+composer require --dev symfony/maker-bundle</code></pre>
+        </li>
+        <br/>
+        <li>Creates configuration under <code>config/packages/doctrine.yaml</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Your First Entity</li>
+    <br/>
+    <ul>
+        <li>Use the Maker bundle:</li>
+<pre><code class="language-bash line-numbers">symfony console make:entity Product</code></pre>
+        </li>
+        <br/>
+        <li>Example entity:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+namespace App\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity]
+class Product
+{
+    #[ORM\Id, ORM\GeneratedValue, ORM\Column]
+    private int $id;
+
+    #[ORM\Column(length: 255)]
+    private string $name;
+
+    #[ORM\Column]
+    private float $price;
+
+    public function getId(): int { return $id; }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Doctrine annotations/attributes map fields to table columns.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Running Migrations</li>
+    <br/>
+    <ul>
+        <li>Analyze entity changes → generate SQL:</li>
+<pre><code class="language-bash line-numbers">symfony console make:migration</code></pre>
+        </li>
+        <br/>
+        <li>Apply migrations:</li>
+<pre><code class="language-bash line-numbers">symfony console doctrine:migrations:migrate</code></pre>
+        </li>
+        <br/>
+        <li>Doctrine keeps track of database schema state automatically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reading &amp; Writing Data (EntityManager)</li>
+    <br/>
+    <ul>
+        <li>Doctrine uses an <b>EntityManager</b> to manage entity persistence.</li>
+        <br/>
+        <li>Saving an entity:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$product = new Product();
+$product-&gt;setName('Laptop');
+$product-&gt;setPrice(999);
+
+$em-&gt;persist($product);
+$em-&gt;flush();
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li><b>persist()</b> marks entity for saving.</li>
+        <li><b>flush()</b> performs SQL execution.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Doctrine Repositories</li>
+    <br/>
+    <ul>
+        <li>Each Entity automatically gets a repository.</li>
+        <br/>
+        <li>Inject repository into a controller or service:</li>
+<pre><code class="language-php line-numbers">public function list(ProductRepository $repo) {
+    $products = $repo-&gt;findAll();
+}</code></pre>
+        </li>
+        <br/>
+        <li>Common query helpers:
+            <ul>
+                <li><code>find($id)</code></li>
+                <li><code>findOneBy([...])</code></li>
+                <li><code>findAll()</code></li>
+                <li><code>findBy([...])</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Repository Methods</li>
+    <br/>
+    <ul>
+        <li>Extend Repository class:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class ProductRepository extends ServiceEntityRepository
+{
+    public function cheapProducts() {
+        return $this-&gt;createQueryBuilder('p')
+            -&gt;where('p.price &lt; :limit')
+            -&gt;setParameter('limit', 100)
+            -&gt;getQuery()
+            -&gt;getResult();
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Uses Doctrine QueryBuilder.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Doctrine Relationships</li>
+    <br/>
+    <ul>
+        <li>Doctrine supports:
+            <ul>
+                <li><b>OneToOne</b></li>
+                <li><b>OneToMany</b></li>
+                <li><b>ManyToOne</b></li>
+                <li><b>ManyToMany</b></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example: One Product belongs to one Category:</li>
+<pre><code class="language-php line-numbers">#[ORM\ManyToOne(targetEntity: Category::class, inversedBy: 'products')]
+private Category $category;
+</code></pre>
+        </li>
+        <br/>
+        <li>Inverse side:</li>
+<pre><code class="language-php line-numbers">#[ORM\OneToMany(mappedBy: 'category', targetEntity: Product::class)]
+private Collection $products;</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Lazy Loading vs Eager Loading</li>
+    <br/>
+    <ul>
+        <li>Doctrine loads related entities lazily by default.</li>
+        <br/>
+        <li>Eager load with JOIN:</li>
+<pre><code class="language-php line-numbers">$qb-&gt;addSelect('c')
+   -&gt;leftJoin('p.category', 'c');</code></pre>
+        </li>
+        <br/>
+        <li>Important for performance when loading relationships.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Lifecycle Callbacks</li>
+    <br/>
+    <ul>
+        <li>Hooks for entity events (prePersist, postUpdate, etc.).</li>
+<pre><code class="language-php line-numbers">#[ORM\HasLifecycleCallbacks]
+class Product {
+    #[ORM\PrePersist]
+    public function onCreate() {
+        $this-&gt;createdAt = new \DateTime();
+    }
+}
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using the QueryBuilder</li>
+    <br/>
+    <ul>
+        <li>Fluent SQL-like query builder:</li>
+<pre><code class="language-php line-numbers">$qb = $repo-&gt;createQueryBuilder('p')
+    -&gt;where('p.price &gt; :min')
+    -&gt;setParameter('min', 50)
+    -&gt;orderBy('p.price', 'DESC')
+    -&gt;getQuery()
+    -&gt;getResult();</code></pre>
+        </li>
+        <br/>
+        <li>More readable and safer than DQL.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Doctrine Migrations</li>
+    <br/>
+    <ul>
+        <li>Doctrine tracks database schema via migration files:</li>
+<pre><code class="language-bash line-numbers">symfony console make:migration</code></pre>
+        </li>
+        <br/>
+        <li>Apply migrations:</li>
+<pre><code class="language-bash line-numbers">symfony console doctrine:migrations:migrate</code></pre>
+        </li>
+        <br/>
+        <li>Migrations are versioned and rollbackable.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Flushing Strategy</li>
+    <br/>
+    <ul>
+        <li>Doctrine tracks changes internally in the Unit of Work.</li>
+        <br/>
+        <li>Best practices:
+            <ul>
+                <li>Call <code>flush()</code> only when needed (not after each persist). </li>
+                <li>Batch operations → flush in chunks.</li>
+                <li>Avoid flushing inside loops.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Entity Validation (with Symfony Validator)</li>
+    <br/>
+    <ul>
+        <li>Doctrine works together with Symfony Validator:</li>
+<pre><code class="language-php line-numbers">#[Assert\NotBlank]
+#[ORM\Column(length: 255)]
+private string $name;
+</code></pre>
+        </li>
+        <br/>
+        <li>Validated automatically in forms and API requests.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Advanced Topics</li>
+    <br/>
+    <ul>
+        <li><b>Entity Inheritance</b> (mapped superclass, single table inheritance)</li>
+        <li><b>Caching</b> (metadata + query cache)</li>
+        <li><b>Custom DQL functions</b></li>
+        <li><b>Custom Type Mapping</b> (JSON, UUID)</li>
+        <li><b>Soft Deletes</b> (via Gedmo extensions)</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
