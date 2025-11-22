@@ -184,6 +184,7 @@
         <li><a href="#haskell-data-class-grammar">Grammar of <code>data</code> and <code>class</code> Declarations</a></li>
         <li><a href="#haskell-irrefutable-patterns">Irrefutable Patterns</a></li>
         <li><a href="#haskell-infix-operators-fixity">Infix Operators Fixity</a></li>
+        <li><a href="#haskell-language-extensions">LANGUAGE Extensions</a></li>
     </ul>
 </nav>
 <hr/>
@@ -10170,6 +10171,390 @@ infixr 0 $         -- lowest precedence
 <pre><code>a <> (b &lt;+&gt; c)
 </code></pre>
             because both are right-associative, and <code><+></code> has equal or greater precedence.</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-language-extensions">Haskell LANGUAGE Extensions</h3>
+<ol>
+
+    <li>What Are LANGUAGE Pragmas?</li>
+    <ul>
+        <br/>
+        <li>Haskell files can begin with LANGUAGE pragmas that enable optional features provided by GHC.</li>
+        <br/>
+        <li>The syntax is:
+<pre><code>{-# LANGUAGE ExtensionName #-}
+</code></pre>
+        </li>
+        <br/>
+        <li>Multiple pragmas may appear in one file:
+<pre><code>{-# LANGUAGE OverloadedStrings, LambdaCase, DeriveFunctor #-}
+</code></pre>
+        </li>
+        <br/>
+        <li>Extensions affect:
+            <ul>
+                <li>syntax rules</li>
+                <li>type checker behavior</li>
+                <li>pattern matching rules</li>
+                <li>name resolution</li>
+                <li>runtime semantics (rare)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Most extensions are GHC-specific, they are not part of the official Haskell 2010 standard.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Where Pragmas Can Appear</li>
+    <br/>
+    <ul>
+        <li>Pragmas must appear <b>before</b> module declaration:
+<pre><code>{-# LANGUAGE LambdaCase #-}
+module MyMod where
+</code></pre>
+        </li>
+        <li>Or can be passed via command-line:
+<pre><code>ghc -XLambdaCase MyMod.hs
+</code></pre>
+        </li>
+        <li>Some tools (Stack, Cabal) allow extension defaults in config files.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Most Common Extensions (with concrete effects)</li>
+    <br/>
+    <ul>
+        <li><code>OverloadedStrings</code></li>
+        <br/>
+        <ul>
+            <li>Allows string literals to have type <code>IsString a =&gt; a</code>, not just <code>[Char]</code>.</li>
+            <li>Useful for:
+                <ul>
+                    <li><code>Text</code></li>
+                    <li><code>ByteString</code></li>
+                    <li>custom config DSLs</li>
+                </ul>
+            </li>
+<pre><code>"abc" :: Text
+"abc" :: ByteString
+</code></pre>
+        </ul>
+        <br/>
+
+        <li><code>LambdaCase</code></li>
+        <br/>
+        <ul>
+            <li>Allows anonymous case expressions:
+<pre><code>\case
+    Just x  -&gt; x
+    Nothing -&gt; 0
+</code></pre>
+            </li>
+            <li>Equivalent to: <code>\v -&gt; case v of ...</code></li>
+        </ul>
+        <br/>
+
+        <li><code>DeriveFunctor</code></li>
+        <br/>
+        <ul>
+            <li>Allows automatic deriving of <code>Functor</code> for appropriate data types.</li>
+<pre><code>data Tree a = Leaf a | Node (Tree a) (Tree a)
+  deriving Functor
+</code></pre>
+        </ul>
+        <br/>
+
+        <li><code>DeriveFoldable</code>, <code>DeriveTraversable</code></li>
+        <br/>
+        <ul>
+            <li>Automatically implement <code>Foldable</code>/<code>Traversable</code>.</li>
+        </ul>
+        <br/>
+
+        <li><code>DerivingStrategies</code></li>
+        <br/>
+        <ul>
+            <li>Allows explicit selection of derivation strategies:
+<pre><code>deriving stock (Show)
+deriving newtype (Eq)
+deriving via Custom (Ord)
+</code></pre>
+        </ul>
+        <br/>
+
+        <li><code>GeneralizedNewtypeDeriving</code></li>
+        <br/>
+        <ul>
+            <li>Allows newtypes to automatically derive instances from underlying types.</li>
+<pre><code>newtype Age = Age Int
+  deriving (Eq, Ord, Num)
+</code></pre>
+        </ul>
+        <br/>
+
+        <li><code>StandaloneDeriving</code></li>
+        <br/>
+        <ul>
+            <li>Allows:
+<pre><code>deriving instance Show a =&gt; Show (Tree a)
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>FlexibleInstances</code></li>
+        <br/>
+        <ul>
+            <li>Allows instance heads not restricted by Haskell 98 rules:
+<pre><code>instance Show (a -&gt; b) where ...
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>FlexibleContexts</code></li>
+        <br/>
+        <ul>
+            <li>Allows arbitrary constraints:
+<pre><code>foo :: (MonadIO m, Show (m a)) =&gt; ...
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>TypeApplications</code></li>
+        <br/>
+        <ul>
+            <li>Allows passing types explicitly:
+<pre><code>read @Int "123"
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>ScopedTypeVariables</code></li>
+        <br/>
+        <ul>
+            <li>Allows explicit <code>forall</code> to scope type variables across functions.</li>
+<pre><code>foo :: forall a. [a] -&gt; a
+foo xs = head (xs :: [a])
+</code></pre>
+        </ul>
+        <br/>
+
+        <li><code>TypeFamilies</code></li>
+        <br/>
+        <ul>
+            <li>Enables associated types:
+<pre><code>type family Elem c :: *
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>MultiParamTypeClasses</code></li>
+        <br/>
+        <ul>
+            <li>Allows type classes with more than one parameter:
+<pre><code>class Convertible a b where ...
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>FunctionalDependencies</code></li>
+        <br/>
+        <ul>
+            <li>Works with multi-parameter classes to control type inference:
+<pre><code>class Convert a b | a -&gt; b where ...
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>BangPatterns</code></li>
+        <br/>
+        <ul>
+            <li>Allows strict patterns via <code>!</code> in bindings:
+<pre><code>f !x = x + 1
+</code></pre>
+        </ul>
+        <br/>
+
+        <li><code>ViewPatterns</code></li>
+        <br/>
+        <ul>
+            <li>Allows matching based on transformation results:
+<pre><code>f (reverse -&gt; x:xs) = ...
+</code></pre>
+        </ul>
+        <br/>
+
+        <li><code>PatternSynonyms</code></li>
+        <br/>
+        <ul>
+            <li>Define custom patterns that behave like constructors.</li>
+<pre><code>pattern Zero <- 0 where Zero = 0
+</code></pre>
+        </ul>
+        <br/>
+
+        <li><code>GADTs</code></li>
+        <br/>
+        <ul>
+            <li>Enables generalized algebraic data types:
+<pre><code>data Expr a where
+  Lit  :: Int -&gt; Expr Int
+  IsZero :: Expr Int -&gt; Expr Bool
+</code></pre>
+            </li>
+            <li>Constructor signatures may refine type parameters.</li>
+        </ul>
+        <br/>
+
+        <li><code>ExistentialQuantification</code></li>
+        <br/>
+        <ul>
+            <li>Allows hiding type variables inside constructors:
+<pre><code>data Box = forall a. Show a =&gt; MkBox a
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>RankNTypes</code></li>
+        <br/>
+        <ul>
+            <li>Allows universal quantifiers anywhere in types:
+<pre><code>foo :: (forall a. a -&gt; a) -&gt; (Int, Bool)
+</code></pre>
+            </li>
+            <li>Enables higher-rank functions.</li>
+        </ul>
+        <br/>
+
+        <li><code>ImpredicativeTypes</code></li>
+        <br/>
+        <ul>
+            <li>Allows instantiating type variables with polymorphic types.
+                <br/>Rarely used; fragile and complex.</li>
+        </ul>
+        <br/>
+
+        <li><code>OverloadedLists</code></li>
+        <br/>
+        <ul>
+            <li>List literals become polymorphic via <code>IsList</code>:
+<pre><code>[1,2,3] :: Set Int
+</code></pre>
+        </ul>
+        <br/>
+
+        <li><code>RecordWildCards</code></li>
+        <br/>
+        <ul>
+            <li>Allows:
+<pre><code>foo Person{..} = name ++ show age
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>RecordDotSyntax</code></li>
+        <br/>
+        <ul>
+            <li>Enables:
+<pre><code>person.name
+person.address.city
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>NamedFieldPuns</code></li>
+        <br/>
+        <ul>
+            <li>Allows:
+<pre><code>foo Person{name} = ...
+</code></pre>
+                instead of <code>foo Person{name = name}</code></li>
+        </ul>
+        <br/>
+
+        <li><code>BlockArguments</code></li>
+        <br/>
+        <ul>
+            <li>Allows:
+<pre><code>withFile "a.txt" ReadMode \h -&gt; do ...
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>TupleSections</code></li>
+        <br/>
+        <ul>
+            <li>Allows:
+<pre><code>(,3)    -- \x -&gt; (x,3)
+(1,)    -- \y -&gt; (1,y)
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>UnboxedTuples</code></li>
+        <br/>
+        <ul>
+            <li>Enable tuples without pointer indirection:
+<pre><code>(# x, y #)
+</code></pre>
+            </li>
+        </ul>
+        <br/>
+
+        <li><code>MagicHash</code></li>
+        <br/>
+        <ul>
+            <li>Allows unboxed literals:
+<pre><code>42#    -- Int#
+3.14## -- Double#
+</code></pre>
+        </ul>
+        <br/>
+
+        <li><code>DerivingVia</code></li>
+        <br/>
+        <ul>
+            <li>Explicit control over instance derivation:
+<pre><code>deriving via (Sum Int) instance Monoid MyType
+</code></pre>
+        </ul>
+        <br/>
+    </ul>
+
+    <br/>
+
+    <li>How to Inspect Active Extensions?</li>
+    <br/>
+    <ul>
+        <li>GHCi:
+<pre><code>:show language
+</code></pre>
+        </li>
+        <li>Check your .cabal or package.yaml file for defaults.</li>
+        <li>Different build tools add extensions automatically (e.g., <code>GHC2021</code> set).</li>
     </ul>
     <br/>
 </ol>
