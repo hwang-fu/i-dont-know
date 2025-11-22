@@ -106,11 +106,11 @@
         color: #24292e;                     /* text */
         background-color: #f6f8fa;          /* bg */
         border: 1px solid #d0d7de;          /* subtle frame */
-        border-radius: .375rem;
-        padding: .15rem .35rem;
+        border-radius: .300rem;
+        padding: .05rem .25rem;
         font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-        font-size: 0.875rem;                /* 14px-ish; avoid bare numbers */
-        line-height: 1.4;
+        font-size: 0.775rem;                /* 14px-ish; avoid bare numbers */
+        line-height: 1.1;
     }
 
     /* Block code container */
@@ -183,6 +183,7 @@
         <li><a href="#haskell-cabal-intro">Introduction to Cabal</a></li>
         <li><a href="#haskell-data-class-grammar">Grammar of <code>data</code> and <code>class</code> Declarations</a></li>
         <li><a href="#haskell-irrefutable-patterns">Irrefutable Patterns</a></li>
+        <li><a href="#haskell-infix-operators-fixity">Infix Operators Fixity</a></li>
     </ul>
 </nav>
 <hr/>
@@ -9953,6 +9954,223 @@ ones = xs
         <li>Without <code>~</code>, this kind of &quot;knot tying&quot; would crash immediately.</li>
     </ul>
     <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-infix-operators-fixity">Infix Operators, Fixity, and Associativity in Haskell</h3>
+<ol>
+
+    <li>What Is an Infix Operator?</li>
+    <ul>
+        <br/>
+        <li>In Haskell, most functions are written in <code>prefix</code> form: <code>add 2 3</code></li>
+        <br/>
+        <li>But operators like <code>+</code>, <code>*</code>, <code>==</code> are written in <code>infix</code> form: <code>2 + 3</code></li>
+        <br/>
+        <li>Haskell lets you turn any binary functions into an infix operator using backticks: <code>5 `mod` 2</code></li>
+        <br/>
+        <li>And you can define your own operators using symbolic names: <code>(&lt;&gt;)</code>, <code>(&amp;&amp;)</code>, <code>(!)</code>, <code>(!?)</code>, etc.</li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li>Why Fixity Matters</li>
+    <ul>
+        <br/>
+        <li>If you write <code>a ! b ! c</code>, Haskell must know how to group the expression:
+        </li>
+            <ul>
+                <li><code>(a ! b) ! c</code> &nbsp; (left-associative)</li>
+                <li>or <code>a ! (b ! c)</code> &nbsp; (right-associative)</li>
+            </ul>
+        <br/>
+        <li>Fixity declarations tell the compiler:
+            <ul>
+                <li><code>associativity</code>: left, right, or none</li>
+                <li><code>precedence</code>: how tightly it binds compared to other operators</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li>Fixity Declaration Syntax</li>
+    <br/>
+    <ul>
+        <li>The general form is:
+<pre><code>infixl &lt;precedence&gt; op1, op2, op3
+infixr &lt;precedence&gt; op
+infix  &lt;precedence&gt; op
+</code></pre>
+        </li>
+
+        <li>Associativity keywords:
+            <ul>
+                <li><code>infixl</code> → left associative</li>
+                <li><code>infixr</code> → right associative</li>
+                <li><code>infix</code>  → no associativity (chaining is disallowed)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Precedence: a number from <code>0</code> (lowest) to <code>9</code> (highest).</li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li>Example: Declaring the Map Lookup Operators</li>
+    <br/>
+    <ul>
+        <li>In <code>Data.Map</code>, these operators are declared:
+<pre><code>infixl 9 !,!?,\\
+</code></pre>
+        </li>
+        <li>This means:
+            <ul>
+                <li><code>!</code>, <code>!?</code>, and <code>\\</code> are infix operators</li>
+                <li>they are <code>left-associative</code></li>
+                <li>they have <code>precedence 9</code> (bind very tightly)</li>
+            </ul>
+        </li>
+        <li>So:
+<pre><code>m1 \\ m2 \\ m3 == (m1 \\ m2) \\ m3
+m ! k1 ! k2    == (m ! k1) ! k2
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li>Associativity Explained</li>
+    <br/>
+    <ul>
+        <li>Left-associative (infixl):
+<pre><code>a ! b ! c  ==  (a ! b) ! c
+</code></pre>
+        </li>
+        <li>Right-associative (infixr):
+<pre><code>a : b : c  ==  a : (b : c)
+</code></pre>
+        </li>
+        <li>Non-associative (infix):
+<pre><code>a == b == c  -- Syntax error, requires parentheses
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+    <li>Precedence Explained</li>
+    <ul>
+        <br/>
+        <li>Higher number → evaluated first.</li>
+        <br/>
+        <li>Common precedence levels:
+            <ul>
+                <li><code>9</code>: function composition (<code>.</code>), indexing (<code>!</code>), sequencing (<code>&gt;&gt;</code>)</li>
+                <li><code>8</code>: multiplication (<code>*</code>), division (<code>/</code>)</li>
+                <li><code>6</code>: addition (<code>+</code>), subtraction (<code>-</code>)</li>
+                <li><code>4</code>: comparison (<code>&lt;</code>), (<code>&gt;=</code>), (<code>==</code>)</li>
+                <li><code>0</code>: (<code>$</code>) application operator</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:
+<pre><code>3 + 4 * 5
+</code></pre>
+            Because <code>*</code> has higher precedence than <code>+</code>, this parses as:
+<pre><code>3 + (4 * 5)
+</code></pre>
+        </li>
+        <li>Example with Map:
+<pre><code>f m ! k
+</code></pre>
+            Parses as:
+<pre><code>(f m) ! k
+</code></pre>
+            because:
+            <ul>
+                <li>function application has the highest precedence</li>
+                <li>then <code>!</code> (precedence 9)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>Custom Operators</li>
+    <br/>
+    <ul>
+        <li>You can define your own symbolic operators:
+<pre><code>(***) :: Int -&gt; Int -&gt; Int
+a *** b = a * 1000 + b
+infixl 7 ***
+</code></pre>
+        </li>
+        <li>Now:
+<pre><code>2 + 3 *** 4     == 2 + (3 *** 4)
+</code></pre>
+            because <code>***</code> has precedence 7, higher than <code>+</code> (6).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>Fixity of Built-In Operators</b></li>
+    <br/>
+    <ul>
+        <li>Some examples from the Prelude:
+<pre><code>infixl 9 .         -- function composition
+infixl 9 !!        -- list indexing
+infixr 5 :         -- cons
+infixl 6 +, -
+infixl 7 *, /
+infixr 8 ^, ^^     -- exponentiation
+infixr 0 $         -- lowest precedence
+</code></pre>
+        </li>
+
+        <li>Because <code>$</code> has precedence 0, this:
+<pre><code>f $ g $ h x
+</code></pre>
+            means:
+<pre><code>f $ (g $ (h x))
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>How to Read Fixity in Code</b></li>
+    <br/>
+    <ul>
+        <li>A line like:
+<pre><code>infixr 6 &lt;&gt;, &lt;+&gt;
+</code></pre>
+        </li>
+        <li>Should be read as:
+            <ul>
+                <li><b>Operators</b>: <code><></code> and <code><+></code></li>
+                <li><b>Associativity</b>: right associative</li>
+                <li><b>Precedence</b>: 6</li>
+            </ul>
+        </li>
+        <li>This helps when reading expressions like:
+<pre><code>a <> b &lt;+&gt; c
+</code></pre>
+        </li>
+        <li>Which parses as:
+<pre><code>a <> (b &lt;+&gt; c)
+</code></pre>
+            because both are right-associative, and <code><+></code> has equal or greater precedence.</li>
+    </ul>
+    <br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
