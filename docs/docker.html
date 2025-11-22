@@ -151,6 +151,7 @@
     <ol style="line-height: 1.8;">
         <li><a href="#docker-overview">Overview</a></li>
         <li><a href="#docker-hub">Hub</a></li>
+        <li><a href="#docker-images">Images</a></li>
     </ol>
 </nav>
 <hr/>
@@ -522,6 +523,368 @@ docker pull python:alpine
     </ul>
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-images">Docker Images</h3>
+<ol>
+    <li>How Docker Images Work?</li>
+    <br/>
+    <ul>
+        <li>Docker images are built in <b>layers</b>.</li>
+        <br/>
+        <li>Each instruction in a Dockerfile creates a new layer:</li>
+<pre><code class="language-docker line-numbers">FROM ubuntu
+RUN apt-get update
+RUN apt-get install python3
+COPY app.py /app/app.py
+</code></pre>
+        <br/>
+        <li>Layers are cached → faster builds.</li>
+        <br/>
+        <li>If a layer does not change, Docker reuses it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Base Images vs Child Images</li>
+    <br/>
+    <ul>
+        <li>Base Image:</li>
+        <ul>
+            <li>an image that doesn't depend on any other image</li>
+            <li>examples: <code>ubuntu</code>, <code>alpine</code>, <code>scratch</code>
+            </li>
+        </ul>
+        <br/>
+        <li>Child Image:</li>
+        <ul>
+            <li>an image built from another image using <code>FROM</code></li>
+            <li>example:</li>
+<pre><code class="language-docker line-numbers">FROM python:3.12</code></pre>
+        </ul>
+        <br/>
+        <li>Most applications use child images.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Viewing Docker Images</li>
+    <br/>
+    <ul>
+        <li>List all local images:</li>
+<pre><code class="language-bash line-numbers">docker images</code></pre>
+        <br/>
+        <li>Remove an image:</li>
+<pre><code class="language-bash line-numbers">docker rmi image_id</code></pre>
+        <br/>
+        <li>Inspect image metadata:</li>
+<pre><code class="language-bash line-numbers">docker inspect image_id</code></pre>
+        <br/>
+        <li>Show image history (layers):</li>
+<pre><code class="language-bash line-numbers">docker history image_id</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Building Docker Images</li>
+    <br/>
+    <ul>
+        <li>Images are built from a <code>Dockerfile</code>.</li>
+        <br/>
+        <li>Basic build:</li>
+<pre><code class="language-bash line-numbers">docker build -t &lt;name&gt; .</code></pre>
+        <br/>
+        <li><code>-t &lt;name&gt;</code> gives your image a name.</li>
+        <br/>
+        <li>Example <code>Dockerfile</code>:</li>
+<pre><code class="language-docker line-numbers">FROM python:3.12-alpine
+WORKDIR /app
+COPY . .
+RUN pip install -r requirements.txt
+CMD ["python", "main.py"]
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Tagging Docker Images</li>
+    <br/>
+    <ul>
+        <li>An image can have multiple tags.</li>
+        <br/>
+        <li>Tags identify versions:</li>
+<pre><code class="language-bash line-numbers">docker tag myapp myapp:v1
+docker tag myapp username/myapp:latest
+</code></pre>
+        <br/>
+        <li>Common tags:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Docker Image Tag</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>latest</code></td>
+            <td>Default tag; points to the most recent stable image.</td>
+        </tr>
+        <tr>
+            <td><code>1.0</code>, <code>2.3.4</code></td>
+            <td>Specific version tags for consistent and reproducible builds.</td>
+        </tr>
+        <tr>
+            <td><code>alpine</code></td>
+            <td>Lightweight image variant based on Alpine Linux.</td>
+        </tr>
+        <tr>
+            <td><code>slim</code></td>
+            <td>Minimal-dependency image variant, smaller than the default.</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Pulling Docker Images</li>
+    <br/>
+    <ul>
+        <li>Pull from Docker Hub:</li>
+<pre><code class="language-bash line-numbers">docker pull python:3.12
+docker pull node:20-slim
+docker pull nginx:alpine
+</code></pre>
+        <br/>
+        <li>Pull default (latest):</li>
+<pre><code class="language-bash line-numbers">docker pull redis</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Running Containers from Images</li>
+    <br/>
+    <ul>
+        <li>Every container is created from an image:</li>
+<pre><code class="language-bash line-numbers">docker run -it ubuntu bash</code></pre>
+        <li>The container runs as an isolated process based on the image’s filesystem.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Layered Filesystem Explained</li>
+    <br/>
+    <ul>
+        <li>Images use a layered filesystem (UnionFS):</li>
+        <ul>
+            <li>Bottom layers = read-only</li>
+            <li>Top layer (container) = writable</li>
+        </ul>
+        <br/>
+        <li>This means:</li>
+        <ul>
+            <li>many containers share the same image layers</li>
+            <li>saves disk space</li>
+            <li>speeds up builds</li>
+        </ul>
+        <br/>
+        <li>Example layer structure:</li>
+<pre><code class="language-plaintext line-numbers">Layer 1: FROM python:3.12
+Layer 2: WORKDIR /app
+Layer 3: COPY . .
+Layer 4: RUN pip install -r requirements.txt
+Layer 5: CMD ["python", "main.py"]
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices for Docker Images</li>
+    <br/>
+    <ul>
+        <li>Use small base images like <code>alpine</code> when possible.</li>
+        <br/>
+        <li><code>Use .dockerignore</code> to exclude unnecessary files:</li>
+<pre><code class="language-plaintext line-numbers">node_modules/
+.git/
+__pycache__/
+</code></pre>
+        <br/>
+        <li>Keep layers minimal to reduce image size.</li>
+        <br/>
+        <li>Pin versions to ensure reproducible builds:</li>
+<pre><code class="language-docker line-numbers">FROM node:20.9-slim</code></pre>
+        <br/>
+        <li>Use multi-stage builds for production apps.</li>
+        <br/>
+        <li>Do not store secrets (API keys, passwords) inside images.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multi-Stage Builds (Advanced)</li>
+    <br/>
+    <ul>
+        <li>Used to create small, optimized images.</li>
+<pre><code class="language-docker line-numbers">FROM node:20 as builder
+WORKDIR /app
+COPY . .
+RUN npm install &amp;&amp; npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+</code></pre>
+        <br/>
+        <li>Benefits:</li>
+        <ul>
+            <li>final image contains only what is needed to run</li>
+            <li>build tools stay in the builder stage</li>
+            <li>reduces size dramatically</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Summary</li>
+    <br/>
+    <ul>
+        <li>Docker images are read-only templates used to create containers.</li>
+        <br/>
+        <li>They are built in layers, making them fast, efficient, and easy to reuse.</li>
+        <br/>
+        <li>Images are created from Dockerfiles and can be tagged, pushed, or pulled from Docker Hub.</li>
+        <br/>
+        <li>With best practices (small base images, multi-stage builds), images become more secure and efficient.</li>
+    </ul>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
