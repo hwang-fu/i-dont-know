@@ -167,6 +167,7 @@
         <li><a href="#php-organizing-files">Organizing Files</a></li>
         <li><a href="#php-state-management">State Management</a></li>
         <li><a href="#php-processing-forms">Processing Forms</a></li>
+        <li><a href="#php-working-with-files">Working with Files</a></li>
     </ol>
 </nav>
 <hr/>
@@ -5459,6 +5460,329 @@ if ($file["error"] === UPLOAD_ERR_OK) {
         <li>Never trust <code>$_REQUEST</code>—use <code>$_GET</code> and <code>$_POST</code> explicitly.</li>
         <br/>
         <li>Use HTTPS to avoid leaking form data.</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="php-working-with-files">PHP Working with Files</h3>
+<ol>
+    <li>Checking File Existence and Metadata</li>
+    <br/>
+    <ul>
+        <li>Check if a file exists:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+if (file_exists("data.txt")) {
+    echo "File exists";
+}
+?&gt;
+</code></pre>
+        <br/>
+        <li>Other useful checks:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+is_file("a.txt");        // true if it is a regular file
+is_dir("uploads");       // true if directory
+filesize("data.txt");    // file size in bytes
+filemtime("data.txt");   // last modification time
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Listing files in a directory:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$files = scandir("uploads");
+// [".", "..", "a.jpg", "b.png", ...]
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reading Files</li>
+    <br/>
+    <ul>
+        <li><b>Read entire file as a string:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$content = file_get_contents("data.txt");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Read a file line by line:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$lines = file("data.txt");
+foreach ($lines as $line) {
+    echo $line;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Reading with a file handle:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$fp = fopen("data.txt", "r");
+while ($line = fgets($fp)) {
+    echo $line;
+}
+fclose($fp);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Use file handles for large files to avoid memory overload.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Writing Files</li>
+    <br/>
+    <ul>
+        <li><b>Write entire content (overwrites existing file):</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+file_put_contents("output.txt", "Hello World!");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Append to file:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+file_put_contents("log.txt", "New entry\n", FILE_APPEND);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Write using manual file handle:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$fp = fopen("data.txt", "w"); // or "a" for append
+fwrite($fp, "Some content");
+fclose($fp);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Writing modes:
+            <ul>
+                <li><code>"w"</code> → write (truncate)</li>
+                <li><code>"a"</code> → append</li>
+                <li><code>"x"</code> → create new file, fail if exists</li>
+                <li><code>"r+"</code> → read/write without truncating</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Working with Directories</li>
+    <br/>
+    <ul>
+        <li><b>Create directory:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+mkdir("uploads");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Create with nested directories:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+mkdir("a/b/c", recursive: true);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Remove directory:</b> (must be empty)</li>
+<pre><code class="language-php line-numbers">&lt;?php
+rmdir("uploads");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Remove file:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+unlink("old.txt");
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Uploads via Forms</li>
+    <br/>
+    <ul>
+        <li>HTML form for uploads:</li>
+<pre><code class="language-html line-numbers">&lt;form method="post" enctype="multipart/form-data"&gt;
+    &lt;input type="file" name="upload"&gt;
+    &lt;button type="submit"&gt;Upload&lt;/button&gt;
+&lt;/form&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>PHP processing:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$file = $_FILES["upload"];
+
+if ($file["error"] === UPLOAD_ERR_OK) {
+    $tmp  = $file["tmp_name"];
+    $name = basename($file["name"]);
+    move_uploaded_file($tmp, "uploads/" . $name);
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>This ensures uploaded files are stored securely in a real location.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling File Upload Errors</li>
+    <br/>
+    <ul>
+        <li>Check <code>$file["error"]</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+switch ($file["error"]) {
+    case UPLOAD_ERR_OK:
+        echo "Success";
+        break;
+    case UPLOAD_ERR_NO_FILE:
+        echo "No file uploaded";
+        break;
+    case UPLOAD_ERR_INI_SIZE:
+    case UPLOAD_ERR_FORM_SIZE:
+        echo "File too large";
+        break;
+    default:
+        echo "Unknown error";
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Always validate:
+            <ul>
+                <li>file size</li>
+                <li>file extension</li>
+                <li>MIME type</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reading and Writing CSV Files</li>
+    <br/>
+    <ul>
+        <li><b>Reading CSV:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$fp = fopen("data.csv", "r");
+while ($row = fgetcsv($fp)) {
+    print_r($row);
+}
+fclose($fp);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Writing CSV:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$fp = fopen("output.csv", "w");
+fputcsv($fp, ["id", "name", "email"]);
+fputcsv($fp, [1, "Alice", "alice@mail.com"]);
+fclose($fp);
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Working with JSON Files</li>
+    <br/>
+    <ul>
+        <li><b>Reading JSON:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+$data = json_decode(file_get_contents("data.json"), true);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><b>Writing JSON:</b></li>
+<pre><code class="language-php line-numbers">&lt;?php
+file_put_contents("out.json", json_encode($data, JSON_PRETTY_PRINT));
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>JSON is ideal for structured data exchange.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Locking for Concurrency</li>
+    <br/>
+    <ul>
+        <li>Use locks to avoid race conditions:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$fp = fopen("log.txt", "a");
+
+if (flock($fp, LOCK_EX)) {
+    fwrite($fp, "hello\n");
+    flock($fp, LOCK_UN);
+}
+
+fclose($fp);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful when multiple users may write to the same file.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Downloads</li>
+    <br/>
+    <ul>
+        <li>Force file download in browser:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+header("Content-Type: application/octet-stream");
+header("Content-Disposition: attachment; filename=\"report.txt\"");
+readfile("report.txt");
+exit;
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Common in export features (PDF, CSV, backup).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Security Considerations</li>
+    <br/>
+    <ul>
+        <li>Never trust user-uploaded filenames.</li>
+        <br/>
+        <li>Whitelist allowed extensions.</li>
+        <br/>
+        <li>Always validate MIME types using <code>finfo_open()</code>.</li>
+        <br/>
+        <li>Use <code>htmlspecialchars()</code> when printing file contents in the browser.</li>
+        <br/>
+        <li>Prevent directory traversal:
+<pre><code class="language-php line-numbers">&lt;?php
+$name = basename($_FILES["upload"]["name"]);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Ensure correct file permissions on server (<code>chmod</code> if needed).</li>
+        <br/>
+        <li>Do not store uploaded files in <code>public/</code> unless necessary.</li>
     </ul>
     <br/>
 </ol>
