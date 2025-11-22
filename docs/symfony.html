@@ -162,6 +162,7 @@
         <li><a href="#symfony-view-engine">View Engine</a></li>
         <li><a href="#symfony-doctrine-orm">Doctrine ORM</a></li>
         <li><a href="#symfony-forms">Forms</a></li>
+        <li><a href="#symfony-csrf">Understanding CSRF (Cross-Site Request Forgery)</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4418,7 +4419,185 @@ $builder-&gt;add('tags', CollectionType::class, [
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-csrf">Understanding CSRF (Cross-Site Request Forgery)</h3>
+<ol>
 
+    <li>What Is CSRF?</li>
+    <br/>
+    <ul>
+        <li><b>CSRF (Cross-Site Request Forgery)</b> is a web security attack where a malicious website tricks a logged-in user into performing unintended actions on another website.</li>
+        <br/>
+        <li>It exploits:
+            <ul>
+                <li>the user’s legitimate login session,</li>
+                <li>browser auto-sending cookies,</li>
+                <li>hidden requests disguised as normal actions.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>CSRF does <b>not</b> steal data; instead, it forces the victim to <b>execute actions without their consent</b>.
+        <br/><br/>
+        Examples:
+            <ul>
+                <li>changing password</li>
+                <li>sending money</li>
+                <li>deleting an account</li>
+                <li>posting content</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How CSRF Works (Attack Scenario)</li>
+    <br/>
+    <ul>
+        <li>CSRF relies on the fact that browsers automatically include cookies.</li>
+        <br/>
+        <li>Attack scenario:</li>
+        <ul>
+            <li>1. User logs into <code>yourbank.com</code>; session cookie is stored.</li>
+            <li>2. User visits a malicious site <code>evil.com</code>.</li>
+            <li>3. <code>evil.com</code> secretly sends a request to:</li>
+        </ul>
+<pre><code class="language-plaintext line-numbers">https://yourbank.com/transfer?to=attacker&amp;amount=5000</code></pre>
+        <br/>
+        <li>4. Browser automatically attaches the user’s cookies.</li>
+        <li>5. The bank thinks it's a genuine user action.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Why Are Cookies Automatically Sent?</li>
+    <br/>
+    <ul>
+        <li>Browsers always send cookies for a domain when requesting resources from that domain.</li>
+        <br/>
+        <li>This means:
+            <ul>
+                <li>even requests from other sites (malicious) still include your valid session cookies.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This behavior is how CSRF becomes possible.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>CSRF vs XSS</li>
+    <br/>
+    <ul>
+        <li>Both are web vulnerabilities, but completely different:</li>
+        <br/>
+        <li><b>XSS (Cross-Site Scripting)</b> → attacker injects JavaScript into your site.</li>
+        <br/>
+        <li><b>CSRF</b> → attacker tricks your users into unintentionally sending requests.</li>
+        <br/>
+        <li>CSRF does not require JS; even HTML forms can trigger it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How CSRF Tokens Prevent Attacks</li>
+    <br/>
+    <ul>
+        <li>CSRF tokens work by embedding a <b>secret random value</b> inside each form.</li>
+        <br/>
+        <li>This value is known only to:
+            <ul>
+                <li>the server</li>
+                <li>the genuine page generated for the user</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example form:</li>
+<pre><code class="language-html line-numbers">
+&lt;form method="post"&gt;
+    &lt;input type="hidden" name="_token" value="4f7a98dcc..." /&gt;
+    &lt;button&gt;Submit&lt;/button&gt;
+&lt;/form&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>When the form is submitted:
+            <ul>
+                <li>the server compares the submitted token with the expected token stored in the session.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Since attackers cannot read the form’s token, they cannot forge valid requests.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>CSRF Tokens in Symfony</li>
+    <br/>
+    <ul>
+        <li>Symfony enables CSRF protection for all forms by default.</li>
+        <br/>
+        <li>Hidden token automatically added:</li>
+<pre><code class="language-html line-numbers">&lt;input type="hidden" name="_token" value="..."&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Controller automatically validates the token during <code>handleRequest()</code>.</li>
+        <br/>
+        <li>You can manually validate tokens as well:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$csrf->isTokenValid(new CsrfToken('delete_item', $submittedToken));
+?&gt;</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>What CSRF Does Not Protect Against</li>
+    <br/>
+    <ul>
+        <li>CSRF does <b>not</b> protect against:
+            <ul>
+                <li>XSS</li>
+                <li>session hijacking</li>
+                <li>SQL injection</li>
+                <li>MITM attacks</li>
+            </ul>
+        </li>
+        <br/>
+        <li>It only prevents <b>unauthorized cross-site actions</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Other Defenses Against CSRF</li>
+    <br/>
+    <ul>
+        <li>Aside from tokens, additional protection techniques include:</li>
+        <ul>
+            <li><b>SameSite cookies</b> (modern browsers prevent cross-site sending)</li>
+            <li><b>Double Submit Cookies</b></li>
+            <li><b>Checking HTTP Referer</b></li>
+            <li><b>Using Authorization headers for APIs</b> (cookies avoided)</li>
+        </ul>
+        <br/>
+        <li>Modern default protection: <code>SameSite=Lax</code> or <code>Strict</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Why CSRF Is Still Important</li>
+    <br/>
+    <ul>
+        <li>Even with modern <code>SameSite</code> cookie defaults, CSRF is still relevant because:</li>
+        <ul>
+            <li>browsers behave inconsistently</li>
+            <li>developers often misconfigure cookies</li>
+            <li>APIs using cookies remain vulnerable</li>
+            <li>legacy browsers/systems still exist</li>
+        </ul>
+        </li>
+        <br/>
+        <li>Therefore → CSRF tokens are still recommended and widely used.</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
