@@ -1868,7 +1868,157 @@ abcd1234       nginx   Up 10 seconds
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-stop-command">Understanding the <code>docker stop</code> Command</h3>
+<ol>
 
+    <li>What Is <code>docker stop</code>?</li>
+    <br/>
+    <ul>
+        <li>The <code>docker stop</code> command gracefully <u>stops</u> one or more running containers.</li>
+        <br/>
+        <li>Stopping a container means:
+            <ul>
+                <li>Docker sends a <code>SIGTERM</code> signal to the process</li>
+                <li>If it doesn’t exit within 10 seconds (default), Docker sends <code>SIGKILL</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Basic syntax:</li>
+<pre><code class="language-plaintext line-numbers">docker stop [OPTIONS] CONTAINER [CONTAINER...]</code></pre>
+        <br/>
+        <li>This is the preferred way to stop a running container.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Stopping a Running Container</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker stop mycontainer</code></pre>
+        <li>Explanation: <code>mycontainer</code> is the container name or ID</li>
+        <br/>
+        <li>Docker attempts a graceful shutdown via <code>SIGTERM</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Stopping Multiple Containers</li>
+    <br/>
+    <ul>
+        <li>You can stop multiple containers at once:</li>
+<pre><code class="language-bash line-numbers">docker stop container1 container2 container3</code></pre>
+        <li>Docker stops each in sequence.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding Signal Workflow</li>
+    <br/>
+    <ul>
+        <li>When stopping a container:</li>
+        <ul>
+            <li>Step 1: Docker sends <code>SIGTERM</code></li>
+            <li>Step 2: Container has time to exit cleanly (default 10 seconds)</li>
+            <li>Step 3: If still running → Docker sends <code>SIGKILL</code></li>
+        </ul>
+        <br/>
+        <li>This prevents abrupt shutdowns unless necessary.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>-t</code> — Changing the Timeout Before Force-Kill</li>
+    <br/>
+    <ul>
+        <li>Default timeout: <b>10 seconds</b>.</li>
+        <br/>
+        <li>You can change this timeout:</li>
+<pre><code class="language-bash line-numbers">docker stop -t 3 mycontainer</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>-t 3</code> waits only 3 seconds before sending <code>SIGKILL</code></li>
+            <li><code>mycontainer</code> is the the container to stop</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>What Happens to Processes Inside the Container?</li>
+    <br/>
+    <ul>
+        <li>On <code>docker stop</code>, the main process (PID 1 inside container) receives:
+            <ul>
+                <li><code>SIGTERM</code> → graceful shutdown</li>
+                <li><code>SIGKILL</code> → forced kill if shutdown fails</li>
+            </ul>
+        </li>
+        <br/>
+        <li>If the main process handles <code>SIGTERM</code> correctly (web servers, applications), shutdown is clean.</li>
+        <br/>
+        <li>If the process ignores signals → Docker eventually kills it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Stopping All Running Containers</li>
+    <br/>
+    <ul>
+        <li>Example (works via shell expansion):</li>
+<pre><code class="language-bash line-numbers">docker stop $(docker ps -q)</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>docker ps -q</code> outputs only container IDs</li>
+            <li><code>docker stop ...</code> stops all container IDs given</li>
+        </ul>
+        <br/>
+        <li>This is a commonly used bulk stop command.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Difference Between <code>docker stop</code> and <code>docker kill</code></li>
+    <br/>
+    <ul>
+        <li><code>docker stop</code> → graceful</li>
+        <ul>
+            <li>tries <code>SIGTERM</code> first</li>
+            <li>forces shutdown only if needed</li>
+        </ul>
+        <br/>
+        <li><code>docker kill</code> → force kill</li>
+        <ul>
+            <li>immediately sends <code>SIGKILL</code></li>
+            <li>no graceful shutdown</li>
+        </ul>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker kill mycontainer</code></pre>
+        <li>Only use <code>kill</code> if <code>stop</code> does not work.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example Workflow: Stop → Start → Attach</li>
+    <br/>
+    <ul>
+        <li>Step 1: Create container</li>
+<pre><code class="language-bash line-numbers">docker run -d --name web nginx</code></pre>
+
+        <br/>
+        <li>Step 2: Stop the container</li>
+<pre><code class="language-bash line-numbers">docker stop web</code></pre>
+
+        <br/>
+        <li>Step 3: Start again</li>
+<pre><code class="language-bash line-numbers">docker start web</code></pre>
+
+        <br/>
+        <li>Step 4: View logs</li>
+<pre><code class="language-bash line-numbers">docker logs web</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
