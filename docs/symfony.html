@@ -165,6 +165,8 @@
         <li><a href="#symfony-csrf">Understanding CSRF (Cross-Site Request Forgery)</a></li>
         <li><a href="#symfony-validation">Validation</a></li>
         <li><a href="#symfony-file-uploading">File Uploading</a></li>
+        <li><a href="#symfony-ajax-control">AJAX Control</a></li>
+        <li><a href="#symfony-cookies-sessions">Cookies and Sessions Management</a></li>
     </ol>
 </nav>
 <hr/>
@@ -5161,6 +5163,331 @@ foreach ($files as $file) {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-ajax-control">Symfony AJAX Control</h3>
+<ol>
+
+    <li>What Is AJAX in Symfony?</li>
+    <br/>
+    <ul>
+        <li><b>AJAX (Asynchronous JavaScript and XML)</b> refers to sending HTTP requests from JavaScript without reloading the page.</li>
+        <br/>
+        <li>Modern Symfony projects use:
+            <ul>
+                <li><b>fetch()</b> API</li>
+                <li>Axios</li>
+                <li>jQuery AJAX (legacy)</li>
+                <li>Stimulus + Symfony UX</li>
+            </ul>
+        </li>
+        <br/>
+        <li>AJAX is typically used for:
+            <ul>
+                <li>dynamic page updates</li>
+                <li>form submissions</li>
+                <li>loading partial HTML</li>
+                <li>REST API endpoints</li>
+                <li>live search / autocomplete</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Symfony controllers can return JSON, partial HTML, or any custom HTTP response for AJAX.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Route for AJAX</li>
+    <br/>
+    <ul>
+        <li>AJAX routes are standard Symfony routes:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+#[Route('/ajax/product/info', name: 'ajax_product_info', methods: ['POST'])]
+public function info(Request $req): Response {
+    $id = $req-&gt;request-&gt;get('id');
+    return $this-&gt;json(['price' =&gt; 199, 'stock' =&gt; 5]);
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>AJAX routes often use:
+            <ul>
+                <li><code>POST</code> for data submission</li>
+                <li><code>GET</code> for data loading</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Use <code>$this-&gt;json()</code> to return JSON quickly.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending AJAX Requests Using fetch()</li>
+    <br/>
+    <ul>
+        <li>Example using JavaScript <code>fetch()</code>:</li>
+<pre><code class="language-javascript line-numbers">
+fetch('/ajax/product/info', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ id: 10 })
+})
+.then(r =&gt; r.json())
+.then(data =&gt; {
+    console.log(data.price);
+});
+</code></pre>
+        </li>
+        <br/>
+        <li>JSON is the most common format for AJAX exchanges.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>CSRF Protection for AJAX</li>
+    <br/>
+    <ul>
+        <li>Symfony protects against CSRF, including AJAX.</li>
+        <br/>
+        <li>You must send a token with requests modifying data.</li>
+        <br/>
+        <li>Generate token in Twig:</li>
+<pre><code class="language-twig line-numbers">
+&lt;script&gt;
+let csrf = "{{ csrf_token('ajax_action') }}";
+&lt;/script&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Send it with AJAX request:</li>
+<pre><code class="language-javascript line-numbers">
+fetch('/ajax/action', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        _token: csrf,
+        id: 123
+    })
+});
+</code></pre>
+        </li>
+        <br/>
+        <li>Validate token in controller:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+if (!$csrf-&gt;isTokenValid(new CsrfToken('ajax_action', $req-&gt;get('_token')))) {
+    return $this-&gt;json(['error' =&gt; 'invalid_csrf'], 400);
+}
+?&gt;</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Returning JSON Responses</li>
+    <br/>
+    <ul>
+        <li>Most AJAX endpoints return JSON:</li>
+<pre><code class="language-php line-numbers">
+return $this-&gt;json([
+    'status' =&gt; 'ok',
+    'username' =&gt; 'Junzhe'
+]);
+</code></pre>
+        </li>
+        <br/>
+        <li>JSON responses automatically set <code>Content-Type: application/json</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Returning Partial HTML for Dynamic Updates</li>
+    <br/>
+    <ul>
+        <li>Some AJAX operations return small HTML fragments:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+return $this-&gt;render('product/_row.html.twig', [
+    'product' =&gt; $product
+]);
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>In JavaScript:</li>
+<pre><code class="language-javascript line-numbers">
+fetch('/ajax/product/row?id=5')
+  .then(r =&gt; r.text())
+  .then(html =&gt; {
+      document.querySelector('#products').innerHTML = html;
+  });
+</code></pre>
+        </li>
+        <br/>
+        <li>This allows dynamic table updates, search results, etc.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending Form Data via AJAX</li>
+    <br/>
+    <ul>
+        <li>Using <code>FormData()</code>:</li>
+<pre><code class="language-javascript line-numbers">
+let form = document.querySelector('#contact');
+let data = new FormData(form);
+
+fetch('/ajax/contact', {
+    method: 'POST',
+    body: data
+});
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony handles form validation normally:</li>
+<pre><code class="language-php line-numbers">
+$form-&gt;handleRequest($request);
+
+if ($form-&gt;isSubmitted() &amp;&amp; $form-&gt;isValid()) {
+    return $this-&gt;json(['success' =&gt; true]);
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for:
+            <ul>
+                <li>async form submissions</li>
+                <li>inline validation</li>
+                <li>file upload previews</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling File Uploads via AJAX</li>
+    <br/>
+    <ul>
+        <li>Use <code>FormData</code> to upload files:</li>
+<pre><code class="language-javascript line-numbers">
+let formData = new FormData();
+formData.append('photo', fileInput.files[0]);
+formData.append('_token', csrf);
+
+fetch('/ajax/upload', {
+    method: 'POST',
+    body: formData
+});
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony processes uploads via <code>UploadedFile</code> normally.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Detecting AJAX Requests in Symfony</li>
+    <br/>
+    <ul>
+        <li>Symfony detects AJAX using:</li>
+<pre><code class="language-php line-numbers">
+if ($request-&gt;isXmlHttpRequest()) {
+    // AJAX request
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Primarily useful for returning different responses for AJAX vs full page loads.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Returning Error Responses</li>
+    <br/>
+    <ul>
+        <li>Return HTTP status codes:</li>
+<pre><code class="language-php line-numbers">
+return $this-&gt;json(['error' =&gt; 'Forbidden'], 403);
+</code></pre>
+        </li>
+        <br/>
+        <li>Error format popular in APIs:</li>
+<pre><code class="language-json line-numbers">
+{ "errors": ["Price must be positive"] }
+</code></pre>
+        </li>
+        <br/>
+        <li>Twig can display errors dynamically after AJAX submission.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Stimulus &amp; Symfony UX for AJAX Enhancements</li>
+    <br/>
+    <ul>
+        <li>Symfony UX integrates AJAX naturally via Stimulus controllers.</li>
+        <br/>
+        <li>Stimulus example:</li>
+<pre><code class="language-javascript line-numbers">
+// assets/controllers/search_controller.js
+import { Controller } from '@hotwired/stimulus';
+
+export default class extends Controller {
+  search(e) {
+    fetch('/ajax/search?q=' + e.target.value)
+      .then(r =&gt; r.text())
+      .then(html =&gt; this.resultsTarget.innerHTML = html);
+  }
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Used for:
+            <ul>
+                <li>live search</li>
+                <li>table filtering</li>
+                <li>modal loading</li>
+                <li>in-place editing</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
@@ -5182,4 +5509,4 @@ foreach ($files as $file) {
 </body>
 <!-- * * * * * * * * * * * * * * -->
 </html>
-<!-- * * * * * * * * * * * * * * -->
+<!-- * * * * * * * * * * * * * * --
