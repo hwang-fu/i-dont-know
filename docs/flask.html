@@ -162,6 +162,7 @@
         <li><a href="#flask-cookies">Cookies</a></li>
         <li><a href="#flask-sessions">Sessions</a></li>
         <li><a href="#flask-redirect-erros">Redirect &amp; Errors</a></li>
+        <li><a href="#flask-message-flashing">Message Flashing</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3983,6 +3984,272 @@ def page_not_found(e):
     <br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-message-flashing">Flask Message Flashing</h3>
+<ol>
+
+    <li>What Is Message Flashing in Flask?</li>
+    <br/>
+    <ul>
+        <li><b>Message flashing</b> is a feature in Flask that allows you to store short messages temporarily and display them to the user on the next page.</li>
+        <br/>
+        <li>Common use cases:</li>
+        <ul>
+            <li>success messages (e.g., “Profile updated successfully!”)</li>
+            <li>error messages (e.g., “Invalid login credentials.”)</li>
+            <li>warnings / notices</li>
+            <li>confirmation messages</li>
+        </ul>
+        <br/>
+        <li>Flash messages persist only for <b>one request</b> (stored via session cookies).</li>
+        <br/>
+        <li>Flash messages rely on Flask sessions → requires <code>SECRET_KEY</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Enabling Flash Messages</li>
+    <br/>
+    <ul>
+        <li>Make sure you set a secret key in your Flask app:</li>
+<pre><code class="language-python line-numbers">from flask import Flask
+
+app = Flask(__name__)
+app.secret_key = 'my-secret-key'
+</code></pre>
+        <br/>
+        <li>Without a secret key, flash messages will not work because flashing uses sessions internally.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Flashing a Message</li>
+    <br/>
+    <ul>
+        <li>Use the <code>flash()</code> function:</li>
+<pre><code class="language-python line-numbers">from flask import flash
+
+@app.route('/login', methods=['POST'])
+def login():
+    flash("Login successful!")
+    return redirect(url_for('dashboard'))
+</code></pre>
+        <br/>
+        <li>You can call <code>flash()</code> multiple times to store multiple messages.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Displaying Flash Messages in Templates</li>
+    <br/>
+    <ul>
+        <li>In your template (usually <code>base.html</code>):</li>
+<pre><code class="language-html line-numbers">{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        &lt;ul class="flashes"&gt;
+        {% for msg in messages %}
+            &lt;li&gt;{{ msg }}&lt;/li&gt;
+        {% endfor %}
+        &lt;/ul&gt;
+    {% endif %}
+{% endwith %}
+</code></pre>
+        <br/>
+        <li><code>get_flashed_messages()</code> retrieves all flashed messages and clears them afterward.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Flashing Messages with Categories</li>
+    <br/>
+    <ul>
+        <li>Messages can be grouped by categories (e.g., error, success, warning):</li>
+<pre><code class="language-python line-numbers">flash("Logged in successfully!", "success")
+flash("Invalid password!", "error")
+</code></pre>
+        <br/>
+        <li>Retrieve categories in template:</li>
+<pre><code class="language-html line-numbers">{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        &lt;ul class="flashes"&gt;
+        {% for category, msg in messages %}
+            &lt;li class="{{ category }}"&gt;{{ msg }}&lt;/li&gt;
+        {% endfor %}
+        &lt;/ul&gt;
+    {% endif %}
+{% endwith %}
+</code></pre>
+        <br/>
+        <li>Use categories for UI styling (CSS classes):</li>
+<pre><code class="language-css line-numbers">.success { color: green; }
+.error   { color: red; }
+.warning { color: orange; }
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Redirect–Flash–Render Pattern</li>
+    <br/>
+    <ul>
+        <li>Flash messages are commonly used after redirecting:</li>
+<pre><code class="language-python line-numbers">@app.route('/update', methods=['POST'])
+def update():
+    flash("Profile updated!", "success")
+    return redirect(url_for('settings'))
+</code></pre>
+        <br/>
+        <li>Then the <code>settings</code> page template shows the message.</li>
+        <br/>
+        <li>This prevents message loss during navigation.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Flash Messages With Forms</li>
+    <br/>
+    <ul>
+        <li>Example for login:</li>
+<pre><code class="language-python line-numbers">@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    if username != "admin":
+        flash("Incorrect username!", "error")
+        return redirect(url_for('login_form'))
+    flash("Welcome admin!", "success")
+    return redirect(url_for('dashboard'))
+</code></pre>
+        <br/>
+        <li>Messages guide users through form errors or success events.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Storing Multiple Flash Messages</li>
+    <br/>
+    <ul>
+        <li>You can flash multiple messages before redirecting:</li>
+<pre><code class="language-python line-numbers">flash("Settings saved!", "success")
+flash("New updates applied.", "info")
+flash("Remember to restart the app.", "warning")
+</code></pre>
+        <br/>
+        <li>Templates will automatically list all of them.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Flash Message Filters</li>
+    <br/>
+    <ul>
+        <li>You can filter categories:</li>
+<pre><code class="language-python line-numbers">{% with errors = get_flashed_messages(category_filter=["error"]) %}
+    {% if errors %}
+        &lt;ul class="errors"&gt;
+            {% for err in errors %}
+                &lt;li&gt;{{ err }}&lt;/li&gt;
+            {% endfor %}
+        &lt;/ul&gt;
+    {% endif %}
+{% endwith %}
+</code></pre>
+        <br/>
+        <li>Useful when different parts of the page show different types of messages.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Displaying Flash Messages Using Bootstrap</li>
+    <br/>
+    <ul>
+        <li>Bootstrap alert example:</li>
+<pre><code class="language-html line-numbers">{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, msg in messages %}
+        &lt;div class="alert alert-{{ category }}" role="alert"&gt;
+            {{ msg }}
+        &lt;/div&gt;
+    {% endfor %}
+{% endwith %}
+</code></pre>
+        <br/>
+        <li>Use categories matching Bootstrap:</li>
+        <ul>
+            <li><code>success</code></li>
+            <li><code>danger</code></li>
+            <li><code>warning</code></li>
+            <li><code>info</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Flashing Messages in Blueprints</li>
+    <br/>
+    <ul>
+        <li>Flash works normally inside blueprints:</li>
+<pre><code class="language-python line-numbers">@bp.route('/action')
+def action():
+    flash("Action completed!", "info")
+    return redirect(url_for('bp.index'))
+</code></pre>
+        <br/>
+        <li>Messages are shared across the entire app via session.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Advanced: Flashing with Additional Payload</li>
+    <br/>
+    <ul>
+        <li>You can attach structured data (rarely needed):</li>
+<pre><code class="language-python line-numbers">flash(("File uploaded", {"size": "2MB"}), "info")</code></pre>
+        <br/>
+        <li>Template:</li>
+<pre><code class="language-html line-numbers">{% for category, data in get_flashed_messages(with_categories=true) %}
+    {% set msg, info = data %}
+    &lt;p&gt;{{ msg }} ({{ info.size }})&lt;/p&gt;
+{% endfor %}
+</code></pre>
+        <br/>
+        <li>Use sparingly—flash messages are meant to be simple.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Clearing All Flash Messages (Rare Case)</li>
+    <br/>
+    <ul>
+        <li>Flash messages clear automatically after retrieval.</li>
+        <br/>
+        <li>If needed manually:</li>
+<pre><code class="language-python line-numbers">session.pop('_flashes', None)</code></pre>
+        <br/>
+        <li>Not recommended unless you know what you're doing.</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
