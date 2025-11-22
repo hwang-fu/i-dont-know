@@ -163,6 +163,7 @@
         <li><a href="#flask-sessions">Sessions</a></li>
         <li><a href="#flask-redirect-erros">Redirect &amp; Errors</a></li>
         <li><a href="#flask-message-flashing">Message Flashing</a></li>
+        <li><a href="#flask-file-uploading">File Uploading</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4241,7 +4242,252 @@ def action():
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-file-uploading">Flask File Uploading</h3>
+<ol>
 
+    <li>Introduction to File Uploading in Flask</li>
+    <br/>
+    <ul>
+        <li>Flask makes it easy to accept uploaded files from users using HTML forms.</li>
+        <br/>
+        <li>Common upload use cases:</li>
+        <ul>
+            <li>profile pictures</li>
+            <li>documents (PDF, Word)</li>
+            <li>CSV or Excel files for processing</li>
+            <li>image galleries</li>
+            <li>audio/video uploads</li>
+        </ul>
+        <br/>
+        <li>File uploading requires:
+            <ul>
+                <li>an HTML form with <code>enctype="multipart/form-data"</code></li>
+                <li>a file input field</li>
+                <li>Flask reading <code>request.files</code></li>
+                <li>saving the file safely</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Flask stores uploaded files in memory or temporary files before you save them.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a File Upload Form</li>
+    <br/>
+    <ul>
+        <li>Create <code>templates/upload.html</code>:</li>
+<pre><code class="language-html line-numbers">&lt;h1&gt;Upload File&lt;/h1&gt;
+
+&lt;form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_file') }}"&gt;
+    &lt;input type="file" name="file" /&gt;&lt;br/&gt;&lt;br/&gt;
+    &lt;button type="submit"&gt;Upload&lt;/button&gt;
+&lt;/form&gt;
+</code></pre>
+        <br/>
+        <li>Important: <b>Without enctype="multipart/form-data", uploads will not work.</b></li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Receiving and Saving Uploaded Files</li>
+    <br/>
+    <ul>
+        <li>Basic upload route in Flask:</li>
+<pre><code class="language-python line-numbers">from flask import request, render_template
+import os
+
+UPLOAD_FOLDER = "uploads"
+
+@app.route('/upload', methods=['GET', 'POST'])
+def upload_file():
+    if request.method == "POST":
+        file = request.files.get('file')
+
+        if not file:
+            return "No file uploaded"
+
+        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(filepath)
+
+        return f"Uploaded to {filepath}"
+
+    return render_template('upload.html')
+</code></pre>
+        <br/>
+        <li><code>request.files</code> contains uploaded files keyed by the filename alias.</li>
+        <br/>
+        <li>The file is saved using <code>file.save()</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Ensuring the Upload Directory Exists</li>
+    <br/>
+    <ul>
+        <li>Create the folder manually:</li>
+<pre><code class="language-plaintext line-numbers">project/
+    app.py
+    uploads/
+    templates/
+</code></pre>
+        <br/>
+        <li>Or create it automatically:</li>
+<pre><code class="language-python line-numbers">os.makedirs(UPLOAD_FOLDER, exist_ok=True)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Securing File Uploads with <code>secure_filename()</code></li>
+    <br/>
+    <ul>
+        <li>Never trust filenames sent from clients—sanitize them:</li>
+<pre><code class="language-python line-numbers">from werkzeug.utils import secure_filename
+
+filename = secure_filename(file.filename)
+file.save(os.path.join(UPLOAD_FOLDER, filename))
+</code></pre>
+        <br/>
+        <li>This prevents dangerous names like:
+<pre><code class="language-plaintext line-numbers">../../../../etc/passwd</code></pre>
+        </li>
+        <br/>
+        <li><code>secure_filename()</code> removes risky characters and ensures safety.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Restricting Allowed File Types</li>
+    <br/>
+    <ul>
+        <li>Define allowed extensions:</li>
+<pre><code class="language-python line-numbers">ALLOWED = {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
+
+def allowed(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED
+</code></pre>
+        <br/>
+        <li>Validate before saving:</li>
+<pre><code class="language-python line-numbers">if not allowed(file.filename):
+    return "File type not allowed"
+</code></pre>
+        <br/>
+        <li>Prevents users from uploading unsafe files.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Multiple File Uploads</li>
+    <br/>
+    <ul>
+        <li>HTML form:</li>
+<pre><code class="language-html line-numbers">&lt;input type="file" name="files" multiple /&gt;</code></pre>
+        <br/>
+        <li>Flask route:</li>
+<pre><code class="language-python line-numbers">files = request.files.getlist('files')
+
+for f in files:
+    f.save(os.path.join(UPLOAD_FOLDER, secure_filename(f.filename)))
+</code></pre>
+        <br/>
+        <li>Useful for galleries, attachments, etc.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Retrieving Uploaded Files (Serving Them)</li>
+    <br/>
+    <ul>
+        <li>Use <code>send_from_directory()</code>:</li>
+<pre><code class="language-python line-numbers">from flask import send_from_directory
+
+@app.route('/uploads/&lt;filename&gt;')
+def uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+</code></pre>
+        <br/>
+        <li>This allows users to access uploaded files safely.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Limiting Maximum File Size</li>
+    <br/>
+    <ul>
+        <li>Flask allows setting a maximum upload size:</li>
+<pre><code class="language-python line-numbers">app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
+</code></pre>
+        <br/>
+        <li>Requests larger than this will raise a <code>413 Request Entity Too Large</code> error.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Upload Errors</li>
+    <br/>
+    <ul>
+        <li>Capture 413 errors:</li>
+<pre><code class="language-python line-numbers">@app.errorhandler(413)
+def too_large(e):
+    return "File is too large!", 413
+</code></pre>
+        <br/>
+        <li>Other common upload errors:
+            <ul>
+                <li>no file submitted</li>
+                <li>empty filename</li>
+                <li>invalid file type</li>
+                <li>upload directory missing</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Flash Messages for Upload Feedback</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-python line-numbers">flash("File uploaded successfully!", "success")</code></pre>
+        <br/>
+        <li>This helps guide users during upload operations.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Uploading with Blueprints</li>
+    <br/>
+    <ul>
+        <li>You can implement uploads inside a blueprint normally:</li>
+<pre><code class="language-python line-numbers">@bp.route('/upload', methods=['POST'])
+def bp_upload():
+    file = request.files.get('file')
+    file.save(os.path.join("bp_uploads", secure_filename(file.filename)))
+    return "Uploaded!"
+</code></pre>
+        <br/>
+        <li>Useful for modular applications.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Security Best Practices for File Uploads</li>
+    <br/>
+    <ul>
+        <li>Always sanitize filenames with <code>secure_filename()</code>.</li>
+        <br/>
+        <li>Always validate file types and sizes.</li>
+        <br/>
+        <li>Store uploads outside the project root if possible.</li>
+        <br/>
+        <li>Do NOT execute or trust uploaded files.</li>
+        <br/>
+        <li>Configure proper permissions on the upload directory.</li>
+        <br/>
+        <li>For large uploads, consider background processing (Celery, RQ).</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
