@@ -167,6 +167,7 @@
         <li><a href="#symfony-file-uploading">File Uploading</a></li>
         <li><a href="#symfony-ajax-control">AJAX Control</a></li>
         <li><a href="#symfony-cookies-sessions">Cookies and Sessions Management</a></li>
+        <li><a href="#symfony-internationalization">Internationalization</a></li>
     </ol>
 </nav>
 <hr/>
@@ -5735,7 +5736,283 @@ $session-&gt;migrate();
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-internationalization">Symfony Internationalization (i18n)</h3>
+<ol>
 
+    <li>What Is Internationalization (i18n)?</li>
+    <br/>
+    <ul>
+        <li><b>Internationalization (i18n)</b> is the process of preparing an application to support multiple languages and regional formats.</li>
+        <br/>
+        <li>In Symfony, i18n includes:
+            <ul>
+                <li>translation of text</li>
+                <li>translation of form labels &amp; validation messages</li>
+                <li>date and number formatting</li>
+                <li>locale switching (language selector)</li>
+                <li>message pluralization</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Symfony uses the <b>Translation Component</b> for managing language files and dynamic translations.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing and Enabling the Translation Component</li>
+    <br/>
+    <ul>
+        <li>Install using Composer:</li>
+<pre><code class="language-bash line-numbers">composer require symfony/translation</code></pre>
+        </li>
+        <br/>
+        <li>Symfony Flex enables translation support automatically by adding:</li>
+<pre><code class="language-yaml line-numbers">
+framework:
+    translator: { fallbacks: ['en'] }
+</code></pre>
+        </li>
+        <br/>
+        <li>The fallback locale is used when a translation for the user’s locale is missing.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Translation File Structure</li>
+    <br/>
+    <ul>
+        <li>Translation files are placed in:</li>
+<pre><code class="language-plaintext line-numbers">translations/</code></pre>
+        </li>
+        <br/>
+        <li>File naming convention:</li>
+        <ul>
+            <li><code>messages.en.yaml</code></li>
+            <li><code>messages.fr.yaml</code></li>
+            <li><code>validators.de.yaml</code></li>
+            <li><code>forms.zh_CN.yaml</code></li>
+        </ul>
+        </li>
+        <br/>
+        <li>Example translation file:</li>
+<pre><code class="language-yaml line-numbers">
+# translations/messages.fr.yaml
+welcome: "Bienvenue"
+logout: "Se déconnecter"
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Translations in Twig</li>
+    <br/>
+    <ul>
+        <li>Twig provides the <code>trans</code> filter:</li>
+<pre><code class="language-twig line-numbers">
+{{ 'welcome'|trans }}
+{{ 'logout'|trans }}
+</code></pre>
+        </li>
+        <br/>
+        <li>With parameters:</li>
+<pre><code class="language-twig line-numbers">
+{{ 'greeting'|trans({ '%name%': 'Junzhe' }) }}
+</code></pre>
+        </li>
+        <br/>
+        <li>Using custom translation domain:</li>
+<pre><code class="language-twig line-numbers">
+{{ 'button.save'|trans({}, 'forms') }}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Translations in Controllers and Services</li>
+    <br/>
+    <ul>
+        <li>Use <code>TranslatorInterface</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Contracts\Translation\TranslatorInterface;
+
+public function index(TranslatorInterface $translator)
+{
+    $message = $translator-&gt;trans('welcome');
+    $withName = $translator-&gt;trans('greeting', ['%name%' =&gt; 'Junzhe']);
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Translation domain:</li>
+<pre><code class="language-php line-numbers">
+$translator-&gt;trans('save', domain: 'forms');
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Pluralization</li>
+    <br/>
+    <ul>
+        <li>Symfony supports plural forms based on locale.</li>
+        <br/>
+        <li>YAML example:</li>
+<pre><code class="language-yaml line-numbers">
+apple_count:
+    one: "You have one apple"
+    other: "You have %count% apples"
+</code></pre>
+        </li>
+        <br/>
+        <li>Usage in Twig:</li>
+<pre><code class="language-twig line-numbers">
+{{ 'apple_count'|trans({ '%count%': amount }, count=amount) }}
+</code></pre>
+        </li>
+        <br/>
+        <li>Usage in PHP:</li>
+<pre><code class="language-php line-numbers">
+$translator-&gt;trans('apple_count', ['%count%' =&gt; $n], null, locale: null, count: $n);
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Translation Domains</li>
+    <br/>
+    <ul>
+        <li>Each translation can belong to a domain:</li>
+        <ul>
+            <li><code>messages</code> (default)</li>
+            <li><code>validators</code></li>
+            <li><code>forms</code></li>
+            <li><code>security</code></li>
+        </ul>
+        </li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-yaml line-numbers">
+# translations/validators.es.yaml
+This value should not be blank: "Este valor no debe estar vacío"
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Setting and Detecting Locale</li>
+    <br/>
+    <ul>
+        <li>Locales can be set in:</li>
+        <ul>
+            <li><code>.env</code></li>
+            <li>URL query</li>
+            <li>session</li>
+            <li>user preferences</li>
+            <li>browser language</li>
+        </ul>
+        </li>
+        <br/>
+        <li>Default locale (<code>config/packages/framework.yaml</code>):</li>
+<pre><code class="language-yaml line-numbers">
+framework:
+    default_locale: en
+</code></pre>
+        </li>
+        <br/>
+        <li>Changing locale dynamically:</li>
+<pre><code class="language-php line-numbers">
+$request-&gt;getSession()-&gt;set('_locale', 'fr');
+</code></pre>
+        </li>
+        <br/>
+        <li>Reading current locale:</li>
+<pre><code class="language-twig line-numbers">
+{{ app.request.locale }}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Locale Switcher (Language Selector)</li>
+    <br/>
+    <ul>
+        <li>Example Twig switcher:</li>
+<pre><code class="language-twig line-numbers">
+&lt;a href="{{ path(app.request.attributes.get('_route'), {_locale: 'en'}) }}"&gt;English&lt;/a&gt;
+&lt;a href="{{ path(app.request.attributes.get('_route'), {_locale: 'fr'}) }}"&gt;Français&lt;/a&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Requires routes to include <code>_locale</code>:</li>
+<pre><code class="language-yaml line-numbers">
+app_home:
+    path: '/{_locale}/home'
+    defaults: { _locale: 'en' }
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Translating Form Labels</li>
+    <br/>
+    <ul>
+        <li>Form labels automatically use translation keys when provided:</li>
+<pre><code class="language-php line-numbers">
+$builder-&gt;add('name', TextType::class, [
+    'label' =&gt; 'form.name'
+]);
+</code></pre>
+        </li>
+        <br/>
+        <li>Twig form rendering automatically uses translations:</li>
+<pre><code class="language-twig line-numbers">
+{{ form_label(form.name) }}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Translating Validation Messages</li>
+    <br/>
+    <ul>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Validator\Constraints as Assert;
+
+class Product
+{
+    #[Assert\NotBlank(message: 'product.name.not_blank')]
+    public string $name;
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Corresponding translation:</li>
+<pre><code class="language-yaml line-numbers">
+# translations/validators.de.yaml
+product.name.not_blank: "Name darf nicht leer sein"
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Translating Flash Messages</li>
+    <br/>
+    <ul>
+        <li>Flash messages can be translated directly in Twig:</li>
+<pre><code class="language-twig line-numbers">
+{% for msg in app.flashes('success') %}
+    {{ msg|trans }}
+{% endfor %}
+</code></pre>
+        </li>
+        <br/>
+        <li>Or before adding:</li>
+<pre><code class="language-php line-numbers">
+$this-&gt;addFlash('success', $translator-&gt;trans('profile.saved'));
+</code></pre>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
