@@ -159,8 +159,8 @@
         <li><a href="#flask-static-files">Static Files</a></li>
         <li><a href="#flask-request-object">Request Object</a></li>
         <li><a href="#flask-sending-form-data-to-template">Sending Form Data to Template</a></li>
-        <li><a href="#flask-"></a></li>
-        <li><a href="#flask-"></a></li>
+        <li><a href="#flask-cookies">Cookies</a></li>
+        <li><a href="#flask-sessions">Sessions</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3188,6 +3188,524 @@ def result():
         <li>This prevents issues when user refreshes the page after submitting a form.</li>
     </ul>
     <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-cookies">Flask Cookies</h3>
+<ol>
+
+    <li>What Are Cookies in Flask?</li>
+    <br/>
+    <ul>
+        <li>Cookies are small pieces of data stored on the client’s browser.</li>
+        <br/>
+        <li>They are sent automatically with every request to the same server, allowing Flask to:</li>
+        <ul>
+            <li>remember user preferences</li>
+            <li>store session identifiers</li>
+            <li>track login status</li>
+            <li>implement analytics</li>
+            <li>implement "remember me" functionality</li>
+        </ul>
+        <br/>
+        <li>In Flask, cookies are accessed through the <code>request</code> object and set using the <code>Response</code> object.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing Cookies (<code>request.cookies</code>)</li>
+    <br/>
+    <ul>
+        <li>Retrieve a cookie sent by the client:</li>
+<pre><code class="language-python line-numbers">@app.route('/show-cookie')
+def show_cookie():
+    username = request.cookies.get('username')
+    return f"Hello, {username}"
+</code></pre>
+        <br/>
+        <li>If the cookie doesn’t exist, <code>.get()</code> returns <code>None</code> unless a default is supplied:</li>
+<pre><code class="language-python line-numbers">username = request.cookies.get('username', 'Guest')</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Setting Cookies in Flask</li>
+    <br/>
+    <ul>
+        <li>Cookies are set on the <b>response</b> object, not directly in the route return value.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-python line-numbers">@app.route('/set-cookie')
+def set_cookie():
+    resp = make_response("Cookie Set!")
+    resp.set_cookie('username', 'Junzhe')
+    return resp
+</code></pre>
+        <br/>
+        <li>Alternatively, using <code>redirect()</code>:</li>
+<pre><code class="language-python line-numbers">@app.route('/login')
+def login():
+    resp = redirect(url_for('dashboard'))
+    resp.set_cookie('logged_in', 'true')
+    return resp
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Cookie Options (Expiration, Path, Domain)</li>
+    <br/>
+    <ul>
+        <li>You can customize how cookies behave using options:</li>
+<pre><code class="language-python line-numbers">resp.set_cookie(
+    'username',
+    'Junzhe',
+    max_age=60*60*24,  # 1 day
+    path='/',
+    secure=True,
+    httponly=True,
+    samesite='Lax'
+)
+</code></pre>
+        <br/>
+        <li>Common cookie parameters:</li>
+        <ul>
+            <li><b>max_age</b> → expiration (in seconds)</li>
+            <li><b>expires</b> → specific expiration date</li>
+            <li><b>path</b> → cookie applies only to that path</li>
+            <li><b>domain</b> → limit cookie to specific domain/subdomain</li>
+            <li><b>secure</b> → only sent over HTTPS</li>
+            <li><b>httponly</b> → JavaScript cannot access cookie</li>
+            <li><b>samesite</b> → CSRF protection ("Strict", "Lax", "None")</li>
+        </ul>
+        <br/>
+        <li>Security recommendation: always use <code>httponly=True</code> when possible.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deleting Cookies</li>
+    <br/>
+    <ul>
+        <li>To delete a cookie, use <code>delete_cookie()</code> on the response:</li>
+<pre><code class="language-python line-numbers">@app.route('/logout')
+def logout():
+    resp = make_response("Logged out")
+    resp.delete_cookie('username')
+    return resp
+</code></pre>
+        <br/>
+        <li>This sends the browser an expired cookie, effectively removing it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Cookies to Maintain User Preferences</li>
+    <br/>
+    <ul>
+        <li>Example: storing the user’s preferred theme:</li>
+<pre><code class="language-python line-numbers">@app.route('/set-theme/&lt;theme&gt;')
+def set_theme(theme):
+    resp = redirect(url_for('homepage'))
+    resp.set_cookie('theme', theme, max_age=30*24*60*60)
+    return resp
+</code></pre>
+        <br/>
+        <li>Using the stored theme in templates:</li>
+<pre><code class="language-python line-numbers">@app.route('/')
+def homepage():
+    theme = request.cookies.get('theme', 'light')
+    return render_template('index.html', theme=theme)
+</code></pre>
+        <br/>
+        <li>Inside template:</li>
+<pre><code class="language-html line-numbers">&lt;body class="{{ theme }}"&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Storing JSON or Large Data in Cookies</li>
+    <br/>
+    <ul>
+        <li>Cookies can only store <b>small strings</b>.</li>
+        <br/>
+        <li>If you need to store structured data, serialize it:</li>
+<pre><code class="language-python line-numbers">import json
+
+data = json.dumps({'theme': 'dark', 'fontsize': 16})
+resp.set_cookie('settings', data)
+</code></pre>
+        <br/>
+        <li>Retrieve and parse:</li>
+<pre><code class="language-python line-numbers">settings = json.loads(request.cookies.get('settings', '{}'))</code></pre>
+        <br/>
+        <li>Avoid storing sensitive data — cookies are visible to users.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Cookies vs Flask Sessions</li>
+    <br/>
+    <ul>
+        <li>Flask sessions use cookies internally, but with cryptographic signing.</li>
+        <br/>
+        <li><b>Cookies:</b></li>
+        <ul>
+            <li>Developer manually manages key-value pairs.</li>
+            <li>Values are exposed to the user.</li>
+        </ul>
+        <br/>
+        <li><b>Sessions:</b></li>
+        <ul>
+            <li>Automatically signed using <code>SECRET_KEY</code>.</li>
+            <li>More secure.</li>
+            <li>Simpler for storing user-specific data.</li>
+        </ul>
+        <br/>
+        <li>Rule of thumb:
+            <ul>
+                <li>Use <b>cookies</b> for simple preferences (theme, language).</li>
+                <li>Use <b>sessions</b> for authentication or private data.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Checking If a Cookie Exists</li>
+    <br/>
+    <ul>
+        <li>Example route:</li>
+<pre><code class="language-python line-numbers">@app.route('/check')
+def check():
+    if 'username' in request.cookies:
+        return 'Cookie exists'
+    return 'No cookie found'
+</code></pre>
+        <br/>
+        <li>Useful for login checks, custom preferences, and onboarding flows.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Security Best Practices for Cookies</li>
+    <br/>
+    <ul>
+        <li>Enable <b>HttpOnly</b> to prevent JavaScript access:</li>
+<pre><code class="language-python line-numbers">resp.set_cookie('token', 'abc', httponly=True)</code></pre>
+        <br/>
+        <li>Use <b>Secure</b> flag to allow sending cookies only over HTTPS:</li>
+<pre><code class="language-python line-numbers">resp.set_cookie('token', 'abc', secure=True)</code></pre>
+        <br/>
+        <li>Use <b>SameSite</b> to mitigate CSRF:</li>
+<pre><code class="language-python line-numbers">resp.set_cookie('token', 'abc', samesite='Strict')</code></pre>
+        <br/>
+        <li>Never store sensitive info (passwords, tokens, personal data).</li>
+        <br/>
+        <li>Limit cookie scope using <code>path</code> and <code>domain</code>.</li>
+        <br/>
+        <li>Consider Flask sessions for signed cookie storage.</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-sessions">Flask Sessions</h3>
+<ol>
+
+    <li>What Are Sessions in Flask?</li>
+    <br/>
+    <ul>
+        <li>A <b>session</b> in Flask is a secure way to store user-specific data across multiple requests.</li>
+        <br/>
+        <li>Unlike cookies, which store plain text data, Flask sessions store data in a cookie that is:</li>
+        <ul>
+            <li><b>signed</b> (cannot be modified by the user)</li>
+            <li><b>tamper-proof</b> (protected by secret key)</li>
+            <li><b>persistent</b> across requests</li>
+        </ul>
+        <br/>
+        <li>Sessions are ideal for:
+            <ul>
+                <li>login states</li>
+                <li>shopping carts</li>
+                <li>user preferences</li>
+                <li>multi-step forms</li>
+                <li>storing temporary user data</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Flask stores session data in a cryptographically signed cookie using <code>SECRET_KEY</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Enabling Sessions (SECRET_KEY)</li>
+    <br/>
+    <ul>
+        <li>To use sessions, you must define a <code>SECRET_KEY</code> in your Flask app:</li>
+<pre><code class="language-python line-numbers">from flask import Flask
+
+app = Flask(__name__)
+app.secret_key = 'super-secret-key'    # Use a strong random value in production
+</code></pre>
+        <br/>
+        <li>Without a secret key, Flask cannot sign session cookies.</li>
+        <br/>
+        <li>For production, generate a secure key:</li>
+<pre><code class="language-python line-numbers">import secrets
+secrets.token_hex(32)
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Storing Data in Session</li>
+    <br/>
+    <ul>
+        <li>Sessions behave like a Python dictionary:</li>
+<pre><code class="language-python line-numbers">from flask import session
+
+@app.route('/login')
+def login():
+    session['user'] = 'Junzhe'
+    session['theme'] = 'dark'
+    return 'Session data stored!'
+</code></pre>
+        <br/>
+        <li>Data persists across requests as long as the session cookie remains valid.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Retrieving Session Data</li>
+    <br/>
+    <ul>
+        <li>Use dictionary-style access:</li>
+<pre><code class="language-python line-numbers">@app.route('/dashboard')
+def dashboard():
+    user = session.get('user', 'Guest')
+    return f"Welcome, {user}!"
+</code></pre>
+        <br/>
+        <li>Always use <code>session.get()</code> to avoid <code>KeyError</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Checking If Session Keys Exist</li>
+    <br/>
+    <ul>
+        <li>Check login state example:</li>
+<pre><code class="language-python line-numbers">@app.route('/check')
+def check():
+    if 'user' in session:
+        return 'User logged in'
+    return 'User not logged in'
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Removing Items from Session</li>
+    <br/>
+    <ul>
+        <li>Use <code>pop()</code> or <code>del</code>:</li>
+<pre><code class="language-python line-numbers">@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return 'Logged out!'
+</code></pre>
+        <br/>
+        <li>Clear entire session:</li>
+<pre><code class="language-python line-numbers">session.clear()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Session Lifetime (Permanent Sessions)</li>
+    <br/>
+    <ul>
+        <li>By default, Flask sessions last until the browser is closed.</li>
+        <br/>
+        <li>Enable permanent session:</li>
+<pre><code class="language-python line-numbers">from datetime import timedelta
+
+@app.route('/remember')
+def remember():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(days=7)
+    session['user'] = 'Junzhe'
+    return 'Permanent session stored for 7 days!'
+</code></pre>
+        <br/>
+        <li>Permanent sessions store expiration time in the cookie.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How Flask Stores Sessions Internally</li>
+    <br/>
+    <ul>
+        <li>Flask stores session data inside a cookie in a structure like:</li>
+<pre><code class="language-text line-numbers">".eJyrVkrLz1eyUkpKLFKqBQB3DAwN.yh4Y8R5pp0pH2u9dTJAyWF6TA"</code></pre>
+        <br/>
+        <li>It includes:
+            <ul>
+                <li>your session data (serialized)</li>
+                <li>a secure signature</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The user cannot modify session data without breaking the signature, making sessions safe.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Sessions with Forms (Common Use Case)</li>
+    <br/>
+    <ul>
+        <li>Store submitted form data in session:</li>
+<pre><code class="language-python line-numbers">@app.route('/submit', methods=['POST'])
+def submit():
+    session['form_data'] = request.form.to_dict()
+    return redirect(url_for('show_form'))
+</code></pre>
+        <br/>
+        <li>Display in template:</li>
+<pre><code class="language-python line-numbers">@app.route('/show')
+def show_form():
+    data = session.get('form_data', {})
+    return render_template('show.html', data=data)
+</code></pre>
+        <br/>
+        <li>This pattern supports multi-step workflows.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Sessions for Login Systems</li>
+    <br/>
+    <ul>
+        <li>Simple authentication example:</li>
+<pre><code class="language-python line-numbers">@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    if username == 'admin':
+        session['user'] = username
+        return redirect(url_for('dashboard'))
+    return 'Invalid login'
+</code></pre>
+
+<pre><code class="language-python line-numbers">@app.route('/dashboard')
+def dashboard():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    return f"Welcome, {session['user']}!"
+</code></pre>
+        <br/>
+        <li>Sessions make it easy to remember authenticated users.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Securing Sessions</li>
+    <br/>
+    <ul>
+        <li>Flask sessions are secure only if <b>SECRET_KEY</b> is strong.</li>
+        <br/>
+        <li>Recommended settings:</li>
+<pre><code class="language-python line-numbers">resp.set_cookie(
+    'session',
+    httponly=True,
+    secure=True,
+    samesite='Lax'
+)
+</code></pre>
+        <br/>
+        <li>General security tips:</li>
+        <ul>
+            <li>Use HTTPS (<code>secure=True</code>)</li>
+            <li>Enable <code>HttpOnly</code> to block JavaScript access</li>
+            <li>Use <code>SameSite</code> to mitigate CSRF</li>
+            <li>Never store passwords or sensitive data in session</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>When to Use Sessions vs Cookies</li>
+    <br/>
+    <ul>
+        <li><b>Use sessions when:</b>
+            <ul>
+                <li>you need secure, tamper-proof data</li>
+                <li>you store login information</li>
+                <li>you store multi-step form progress</li>
+                <li>data should not be readable by users</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Use cookies when:</b>
+            <ul>
+                <li>storing simple preferences (theme, language)</li>
+                <li>data does not need to be protected</li>
+                <li>values are small</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Summary of Session Methods</li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Operation</th>
+                <th>Code Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Set session value</td>
+                <td><code>session['key'] = value</code></td>
+            </tr>
+            <tr>
+                <td>Get session value</td>
+                <td><code>session.get('key')</code></td>
+            </tr>
+            <tr>
+                <td>Check existence</td>
+                <td><code>'key' in session</code></td>
+            </tr>
+            <tr>
+                <td>Remove value</td>
+                <td><code>session.pop('key')</code></td>
+            </tr>
+            <tr>
+                <td>Clear all</td>
+                <td><code>session.clear()</code></td>
+            </tr>
+            <tr>
+                <td>Make session permanent</td>
+                <td><code>session.permanent = True</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
