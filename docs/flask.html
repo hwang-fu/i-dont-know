@@ -2935,7 +2935,260 @@ def content_type():
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-sending-form-data-to-template">Flask Sending Form Data to Template</h3>
+<ol>
 
+    <li>What Does It Mean to Send Form Data to a Template?</li>
+    <br/>
+    <ul>
+        <li>After a user submits a form (usually via POST), the server receives the data inside <code>request.form</code>.</li>
+        <br/>
+        <li>To display this submitted data back to the user, you pass it from the route into <code>render_template()</code>.</li>
+        <br/>
+        <li>This is common for:
+            <ul>
+                <li>login forms</li>
+                <li>registration pages</li>
+                <li>profile updates</li>
+                <li>search forms</li>
+                <li>contact or feedback forms</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Flask makes this very easy thanks to the <b>request object</b> and Jinja2 template rendering.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Typical Workflow for Sending Form Data</li>
+    <br/>
+    <ul>
+        <li>The workflow usually looks like this:</li>
+        <br/>
+        <ol>
+            <li>User fills a form in an HTML template.</li>
+            <li>Browser sends a POST request.</li>
+            <li>Flask receives the form data via <code>request.form</code>.</li>
+            <li>Flask passes this data to another template using <code>render_template()</code>.</li>
+            <li>Template displays the submitted values.</li>
+        </ol>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Simple Form in a Template</li>
+    <br/>
+    <ul>
+        <li>Create a form inside <code>templates/form.html</code>:</li>
+<pre><code class="language-html line-numbers">&lt;h1&gt;Enter Your Info&lt;/h1&gt;
+
+&lt;form action="{{ url_for('result') }}" method="POST"&gt;
+    &lt;label&gt;Name:&lt;/label&gt;
+    &lt;input type="text" name="username" /&gt;
+    &lt;br/&gt;
+
+    &lt;label&gt;Age:&lt;/label&gt;
+    &lt;input type="number" name="age" /&gt;
+    &lt;br/&gt;
+
+    &lt;button type="submit"&gt;Submit&lt;/button&gt;
+&lt;/form&gt;
+</code></pre>
+        <br/>
+        <li>The form posts data to the route named <code>result</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Receiving Form Data in Flask</li>
+    <br/>
+    <ul>
+        <li>In <code>app.py</code>:</li>
+<pre><code class="language-python line-numbers">from flask import Flask, render_template, request
+
+app = Flask(__name__)
+
+@app.route('/form')
+def form():
+    return render_template('form.html')
+
+@app.route('/result', methods=['POST'])
+def result():
+    username = request.form.get('username')
+    age = request.form.get('age')
+
+    return render_template('result.html', username=username, age=age)
+</code></pre>
+        <br/>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>request.form</code> contains all submitted form fields.</li>
+            <li>Values are passed into <code>result.html</code> template via keyword arguments.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Displaying Form Data in the Template</li>
+    <br/>
+    <ul>
+        <li><code>templates/result.html</code>:</li>
+<pre><code class="language-html line-numbers">&lt;h1&gt;Submitted Data&lt;/h1&gt;
+
+&lt;p&gt;Name: {{ username }}&lt;/p&gt;
+&lt;p&gt;Age: {{ age }}&lt;/p&gt;
+</code></pre>
+        <br/>
+        <li>The variables <code>{{ username }}</code> and <code>{{ age }}</code> come from <code>render_template()</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending Multiple Form Fields</li>
+    <br/>
+    <ul>
+        <li>Flask can pass many fields simply by including them in the context:</li>
+<pre><code class="language-python line-numbers">return render_template(
+    'profile.html',
+    name=request.form.get('name'),
+    email=request.form.get('email'),
+    address=request.form.get('address')
+)
+</code></pre>
+        <br/>
+        <li>A clean approach is sending all form values at once:</li>
+<pre><code class="language-python line-numbers">return render_template('profile.html', form=request.form)
+</code></pre>
+        <br/>
+        <li>Then in the template:</li>
+<pre><code class="language-html line-numbers">&lt;p&gt;Name: {{ form['name'] }}&lt;/p&gt;
+&lt;p&gt;Email: {{ form['email'] }}&lt;/p&gt;
+&lt;p&gt;Address: {{ form.get('address') }}&lt;/p&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Empty or Missing Form Fields</li>
+    <br/>
+    <ul>
+        <li>Use <code>get()</code> to avoid errors:</li>
+<pre><code class="language-python line-numbers">username = request.form.get('username', 'Unknown')
+</code></pre>
+        <br/>
+        <li>In templates, safely check values:</li>
+<pre><code class="language-html line-numbers">{% if username %}
+    &lt;p&gt;Hello, {{ username }}!&lt;/p&gt;
+{% else %}
+    &lt;p&gt;No username provided.&lt;/p&gt;
+{% endif %}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending Form Data to Another Template After Validation</li>
+    <br/>
+    <ul>
+        <li>Validation example:</li>
+<pre><code class="language-python line-numbers">@app.route('/signup', methods=['POST'])
+def signup():
+    username = request.form.get('username')
+
+    if not username:
+        error = "Username is required!"
+        return render_template('signup.html', error=error)
+
+    return render_template('welcome.html', username=username)
+</code></pre>
+        <br/>
+        <li>Templates:</li>
+<pre><code class="language-html line-numbers">&lt;!-- signup.html --&gt;
+{% if error %}
+    &lt;p style="color: red"&gt;{{ error }}&lt;/p&gt;
+{% endif %}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- welcome.html --&gt;
+&lt;h1&gt;Welcome, {{ username }}!&lt;/h1&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending Form Data to Template Using Jinja2 Loops</li>
+    <br/>
+    <ul>
+        <li>If the form contains repeated fields (e.g., checkboxes, multiple selects), Flask stores them with <code>getlist()</code>:</li>
+<pre><code class="language-python line-numbers">choices = request.form.getlist('interests')
+return render_template('summary.html', choices=choices)
+</code></pre>
+        <br/>
+        <li>Template:</li>
+<pre><code class="language-html line-numbers">&lt;ul&gt;
+{% for c in choices %}
+    &lt;li&gt;{{ c }}&lt;/li&gt;
+{% endfor %}
+&lt;/ul&gt;
+</code></pre>
+        <br/>
+        <li>Good for:
+            <ul>
+                <li>multi-select</li>
+                <li>checkbox groups</li>
+                <li>tags/categories</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Preserving Form Input After Submission</li>
+    <br/>
+    <ul>
+        <li>Useful to retain form values after errors.</li>
+        <br/>
+        <li>In route:</li>
+<pre><code class="language-python line-numbers">return render_template('signup.html', form=request.form, error=error)
+</code></pre>
+        <br/>
+        <li>In template:</li>
+<pre><code class="language-html line-numbers">&lt;input type="text" name="username" value="{{ form.get('username', '') }}" /&gt;
+</code></pre>
+        <br/>
+        <li>This improves usability during validation.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Passing Form Data with Redirect–POST–Redirect Pattern</li>
+    <br/>
+    <ul>
+        <li>The common pattern to avoid duplicate submissions:</li>
+        <ul>
+            <li>POST (user submits form)</li>
+            <li>Redirect</li>
+            <li>GET (display result)</li>
+        </ul>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-python line-numbers">from flask import redirect, url_for, session
+
+@app.route('/submit', methods=['POST'])
+def submit():
+    session['form_data'] = request.form.to_dict()
+    return redirect(url_for('result'))
+
+@app.route('/result')
+def result():
+    data = session.pop('form_data', {})
+    return render_template('result.html', data=data)
+</code></pre>
+        <br/>
+        <li>This prevents issues when user refreshes the page after submitting a form.</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
