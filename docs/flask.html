@@ -165,6 +165,7 @@
         <li><a href="#flask-message-flashing">Message Flashing</a></li>
         <li><a href="#flask-file-uploading">File Uploading</a></li>
         <li><a href="#flask-extensions">Extensions</a></li>
+        <li><a href="#flask-mail">Mail</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4858,6 +4859,271 @@ def create_app():
     </ul>
     <br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-mail">Flask Mail</h3>
+<ol>
+
+    <li>What Is Flask-Mail?</li>
+    <br/>
+    <ul>
+        <li><b>Flask-Mail</b> is an extension that makes it easy to send emails from your Flask application using SMTP.</li>
+        <br/>
+        <li>It supports:</li>
+        <ul>
+            <li>plain text and HTML emails</li>
+            <li>attachments</li>
+            <li>multiple recipients</li>
+            <li>CC/BCC</li>
+            <li>authentication for SMTP servers</li>
+        </ul>
+        <br/>
+        <li>Flask-Mail is suitable for:</li>
+        <ul>
+            <li>contact forms</li>
+            <li>registration confirmation</li>
+            <li>password reset flows</li>
+            <li>reporting errors or notifications</li>
+        </ul>
+        <br/>
+        <li>For high-volume email sending, consider integrating Celery or Flask-Mailman.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing Flask-Mail</li>
+    <br/>
+    <ul>
+        <li>Install using pip:</li>
+<pre><code class="language-bash line-numbers">pip install Flask-Mail</code></pre>
+        <br/>
+        <li>Import and prepare the extension:</li>
+<pre><code class="language-python line-numbers">from flask_mail import Mail, Message
+
+mail = Mail()
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Configuration</li>
+    <br/>
+    <ul>
+        <li>Add your SMTP configuration:</li>
+<pre><code class="language-python line-numbers">app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'your-email@gmail.com'
+app.config['MAIL_PASSWORD'] = 'your-password'
+
+mail.init_app(app)
+</code></pre>
+        <br/>
+        <li>Common mail settings:</li>
+        <ul>
+            <li><code>MAIL_SERVER</code></li>
+            <li><code>MAIL_PORT</code></li>
+            <li><code>MAIL_USE_TLS</code> / <code>MAIL_USE_SSL</code></li>
+            <li><code>MAIL_USERNAME</code></li>
+            <li><code>MAIL_PASSWORD</code></li>
+            <li><code>MAIL_DEFAULT_SENDER</code></li>
+        </ul>
+        <br/>
+        <li>Use environment variables in production instead of hardcoding passwords.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending a Basic Email</li>
+    <br/>
+    <ul>
+        <li>Sending a simple text email:</li>
+<pre><code class="language-python line-numbers">@app.route('/send')
+def send_email():
+    msg = Message(
+        subject='Hello from Flask!',
+        recipients=['user@example.com'],
+        body='This is a test email.'
+    )
+    mail.send(msg)
+    return "Email sent!"
+</code></pre>
+        <br/>
+        <li>Flask-Mail handles the SMTP communication automatically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending HTML Emails</li>
+    <br/>
+    <ul>
+        <li>HTML content can be added using the <code>html</code> parameter:</li>
+<pre><code class="language-python line-numbers">msg = Message(
+    subject='Welcome!',
+    recipients=['user@example.com'],
+    html='&lt;h1&gt;Welcome to our site!&lt;/h1&gt;&lt;p&gt;Thank you for joining.&lt;/p&gt;'
+)
+mail.send(msg)
+</code></pre>
+        <br/>
+        <li>You can combine plain text and HTML for email clients that do not support HTML.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending Emails Using Templates</li>
+    <br/>
+    <ul>
+        <li>Render a Flask template and send it as HTML:</li>
+<pre><code class="language-python line-numbers">from flask import render_template
+
+@app.route('/welcome')
+def welcome():
+    msg = Message("Hello!",
+                  recipients=["user@example.com"])
+    msg.html = render_template('email_welcome.html', username='Junzhe')
+    mail.send(msg)
+    return "Email sent!"
+</code></pre>
+        <br/>
+        <li>Example <code>templates/email_welcome.html</code>:</li>
+<pre><code class="language-html line-numbers">&lt;h2&gt;Hello {{ username }}!&lt;/h2&gt;
+&lt;p&gt;We are happy to have you here.&lt;/p&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending Emails with Attachments</li>
+    <br/>
+    <ul>
+        <li>Attach a file using <code>attach()</code>:</li>
+<pre><code class="language-python line-numbers">msg = Message('Your Invoice', recipients=['user@example.com'])
+msg.body = 'Please see the attached invoice.'
+with app.open_resource('invoice.pdf') as fp:
+    msg.attach('invoice.pdf', 'application/pdf', fp.read())
+
+mail.send(msg)
+</code></pre>
+        <br/>
+        <li>Useful for reports, invoices, documents, logs, etc.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending to Multiple Recipients</li>
+    <br/>
+    <ul>
+        <li>You may send to one or many:</li>
+<pre><code class="language-python line-numbers">msg = Message('Announcement',
+              recipients=['a@a.com', 'b@b.com'],
+              cc=['c@c.com'],
+              bcc=['d@d.com'])
+</code></pre>
+        <br/>
+        <li>Recipient lists must be Python lists or tuples.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Default Sender</li>
+    <br/>
+    <ul>
+        <li>Set once in config:</li>
+<pre><code class="language-python line-numbers">app.config['MAIL_DEFAULT_SENDER'] = 'admin@example.com'
+</code></pre>
+        <br/>
+        <li>Then each message can omit <code>sender</code> unless overridden.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Asynchronous Email Sending</li>
+    <br/>
+    <ul>
+        <li>Sending emails can be slow—offload to a thread or Celery.</li>
+        <br/>
+        <li>Using Python threading:</li>
+<pre><code class="language-python line-numbers">import threading
+
+def send_async(app, msg):
+    with app.app_context():
+        mail.send(msg)
+
+@app.route('/async')
+def send_async_email():
+    msg = Message("Hello", recipients=["user@example.com"])
+    thread = threading.Thread(target=send_async, args=(app, msg))
+    thread.start()
+    return "Email being sent asynchronously."
+</code></pre>
+        <br/>
+        <li>For heavy usage, prefer Celery workers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Handling</li>
+    <br/>
+    <ul>
+        <li>SMTP failures may occur, so wrap sending in try/except:</li>
+<pre><code class="language-python line-numbers">try:
+    mail.send(msg)
+except Exception as e:
+    return f"Failed to send email: {e}"
+</code></pre>
+        <br/>
+        <li>Common errors:</li>
+        <ul>
+            <li>invalid SMTP credentials</li>
+            <li>port blocked</li>
+            <li>Google blocking “less secure app access”</li>
+        </ul>
+        <br/>
+        <li>Check logs if messages don’t send.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Flask-Mail vs Other Mail Solutions</li>
+    <br/>
+    <ul>
+        <li><b>Flask-Mail</b>: simple, easy SMTP integration.</li>
+        <br/>
+        <li><b>Flask-Mailman</b>: actively maintained modern replacement, Django-like.</li>
+        <br/>
+        <li>External mail APIs:</li>
+        <ul>
+            <li>SendGrid</li>
+            <li>Mailgun</li>
+            <li>Amazon SES</li>
+        </ul>
+        <br/>
+        <li>API-based mail sending is usually more reliable and scalable.</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
