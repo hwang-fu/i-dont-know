@@ -159,6 +159,13 @@
         <li><a href="#docker-start-command">Understanding the <code>docker start</code> Command</a></li>
         <li><a href="#docker-stop-command">Understanding the <code>docker stop</code> Command</a></li>
         <li><a href="#docker-restart-command">Understanding the <code>docker restart</code> Command</a></li>
+        <li><a href="#docker-exec-command">Understanding the <code>docker exec</code> Command</a></li>
+        <li><a href="#docker-logs-command">Understanding the <code>docker logs</code> Command</a></li>
+        <li><a href="#docker-build-command">Understanding the <code>docker build</code> Command</a></li>
+        <li><a href="#docker-pull-command">Understanding the <code>docker pull</code> Command</a></li>
+        <li><a href="#docker-push-command">Understanding the <code>docker push</code> Command</a></li>
+        <li><a href="#docker-volume-command">Understanding the <code>docker volume</code> Command</a></li>
+        <li><a href="#docker-network-command">Understanding the <code>docker network</code> Command</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2130,7 +2137,173 @@ docker start [container]
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-exec-command">Understanding the <code>docker exec</code> Command</h3>
+<ol>
 
+    <li>What Is <code>docker exec</code>?</li>
+    <br/>
+    <ul>
+        <li>The <code>docker exec</code> command is used to run a new command inside an <b>already running</b> container.</li>
+        <br/>
+        <li>It does NOT start a new container — instead, it:
+            <ul>
+                <li>executes a process in an existing one</li>
+                <li>allows debugging, inspection, and tooling</li>
+                <li>can open an interactive shell</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Basic syntax:</li>
+<pre><code class="language-plaintext line-numbers">docker exec [OPTIONS] CONTAINER COMMAND [ARG...]</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Running a Simple Command Inside a Container</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker exec mycontainer ls /</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>mycontainer</code> is the name or ID of running container</li>
+            <li><code>ls /</code> is the command executed inside the container's filesystem</li>
+        </ul>
+        <br/>
+        <li>Useful for checking files or verifying application structure.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>-it</code> — Interactive Shell Inside the Container</li>
+    <br/>
+    <ul>
+        <li>Example (open a Bash shell):</li>
+<pre><code class="language-bash line-numbers">docker exec -it mycontainer bash</code></pre>
+        <li>If the container uses Alpine Linux (no bash installed):</li>
+<pre><code class="language-bash line-numbers">docker exec -it mycontainer sh</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>-i</code> keeps STDIN open</li>
+            <li><code>-t</code> allocates an interactive terminal (TTY)</li>
+            <li><code>bash</code> or <code>sh</code> is the shell inside the container</li>
+        </ul>
+        <br/>
+        <li>This is the most common use of <code>docker exec</code> — for debugging and exploration.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>-d</code> — Execute in Detached Mode</li>
+    <br/>
+    <ul>
+        <li>Run a command in the background:</li>
+<pre><code class="language-bash line-numbers">docker exec -d mycontainer touch /tmp/file.txt</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>-d</code> runs command in background</li>
+            <li><code>touch /tmp/file.txt</code> is the command executed without blocking your terminal</li>
+        </ul>
+        <br/>
+        <li>Useful for administrative tasks during runtime.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Executing Commands as Another User (<code>-u</code>)</li>
+    <br/>
+    <ul>
+        <li>Run as root (default user is often root, but not always):</li>
+<pre><code class="language-bash line-numbers">docker exec -u root mycontainer whoami</code></pre>
+        <li>Run as a specific user inside container:</li>
+<pre><code class="language-bash line-numbers">docker exec -u www-data mycontainer ls /var/www</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>-u</code> specifies user</li>
+            <li><code>www-data</code> is the user inside container</li>
+        </ul>
+        <br/>
+        <li>Useful for permission testing or debugging web servers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Passing Environment Variables Using <code>env</code></li>
+    <br/>
+    <ul>
+        <li>You cannot pass <code>-e</code> in <code>docker exec</code>, but you can wrap commands:</li>
+<pre><code class="language-bash line-numbers">docker exec mycontainer env MODE=dev sh -c 'echo $MODE'</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>env MODE=dev</code> creates a temporary environment variable</li>
+            <li><code>sh -c</code> runs shell with command inside quotes</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Executing Long-Running Processes</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker exec myapp python script.py</code></pre>
+        <br/>
+        <li>The process runs alongside the container’s main process.</li>
+        <br/>
+        <li>This is helpful for maintenance scripts.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Checking Process Status Inside Container</li>
+    <br/>
+    <ul>
+        <li>You can use <code>ps</code> or similar tools:</li>
+<pre><code class="language-bash line-numbers">docker exec myapp ps aux</code></pre>
+        <br/>
+        <li>Useful for debugging memory or CPU usage of running processes.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Inspect an Nginx Web Server Container</li>
+    <br/>
+    <ul>
+        <li>Check configuration:</li>
+<pre><code class="language-bash line-numbers">docker exec -it webserver cat /etc/nginx/nginx.conf</code></pre>
+        <li>Restart Nginx inside container:</li>
+<pre><code class="language-bash line-numbers">docker exec webserver nginx -s reload</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>nginx -s reload</code> hot-reloads config</li>
+            <li>Exec runs it inside container</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Debugging a Python App</li>
+    <br/>
+    <ul>
+        <li>View logs stored inside container:</li>
+<pre><code class="language-bash line-numbers">docker exec myapp tail -n 50 /app/logs/error.log</code></pre>
+        <li>Restart worker process:</li>
+<pre><code class="language-bash line-numbers">docker exec myapp pkill -f worker.py</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Important Limitations of <code>docker exec</code></li>
+    <br/>
+    <ul>
+        <li>Cannot exec into stopped containers → must use <code>docker start</code> first.</li>
+        <br/>
+        <li>Does not modify or change the Dockerfile / image.</li>
+        <br/>
+        <li>Commands executed via <code>exec</code> disappear when container stops unless data is saved.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
