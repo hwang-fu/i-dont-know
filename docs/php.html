@@ -160,6 +160,8 @@
         <li><a href="#php-var-dump">var_dump</a></li>
         <li><a href="#php-data-types>Data Types</a></li>
         <li><a href="#php-control-flow>Control Flow</a></li>
+        <li><a href="#php-functions>Functions</a></li>
+        <li><a href="#php-advanced-functions>Advanced Functions</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2856,6 +2858,416 @@ try {
     </ul>
     <br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="php-functions">PHP Functions</h3>
+<ol>
+
+    <li>What Is a Function in PHP?</li>
+    <br/>
+    <ul>
+        <li>A <b>function</b> in PHP is a reusable block of code that performs a specific task.</li>
+        <br/>
+        <li>Functions allow:
+            <ul>
+                <li>code reuse,</li>
+                <li>modular program structure,</li>
+                <li>cleaner and more maintainable code,</li>
+                <li>parameterization and controlled data flow.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Functions may return values or perform actions (side effects such as printing or updating global state).</li>
+        <br/>
+        <li>General syntax:
+<pre><code class="language-php line-numbers">&lt;?php
+function name(parameters) {
+    // body
+}
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defining a Function</li>
+    <br/>
+    <ul>
+        <li>Simple example:
+<pre><code class="language-php line-numbers">&lt;?php
+function hello() {
+    echo "Hello!";
+}
+hello(); // call the function
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Function names:
+            <ul>
+                <li>case-insensitive (<code>hello</code> and <code>Hello</code> are the same)</li>
+                <li>must start with a letter or underscore</li>
+                <li>can contain letters, digits, underscores</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Functions must be defined before use, unless wrapped in conditional logic or autoloaded.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Function Parameters</li>
+    <br/>
+    <ul>
+        <li>Functions can accept parameters (inputs).</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+function greet($name) {
+    echo "Hello, $name!";
+}
+greet("Alice");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>PHP parameters are traditionally passed <b>by value</b>, which means modifying the parameter does not affect the original variable</li>
+        <br/>
+        <li>Passing by reference:
+<pre><code class="language-php line-numbers">&lt;?php
+function increment(&amp;$x) {
+    $x++;
+}
+
+$a = 5;
+increment($a);
+echo $a; // 6
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Default Parameter Values</li>
+    <br/>
+    <ul>
+        <li>You can specify default values for parameters.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+function connect($host = "localhost") {
+    echo "Connecting to $host";
+}
+
+connect();          // localhost
+connect("example"); // custom host
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Default values must be:
+            <ul>
+                <li>constants,</li>
+                <li>literals,</li>
+                <li>arrays,</li>
+                <li>not expressions requiring runtime evaluation.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Declarations for Parameters and Return Types</li>
+    <br/>
+    <ul>
+        <li>PHP supports type declarations:</li>
+        <br/>
+        <ul>
+            <li><code>int</code></li>
+            <li><code>float</code></li>
+            <li><code>string</code></li>
+            <li><code>bool</code></li>
+            <li><code>array</code></li>
+            <li><code>callable</code></li>
+            <li><code>object</code></li>
+            <li>class / interface types</li>
+            <li><code>mixed</code> (PHP 8)</li>
+            <li><code>never</code> (PHP 8.1)</li>
+        </ul>
+        <br/>
+        <li>Example with type hint and return type:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function sum(int $a, int $b): int {
+    return $a + $b;
+}
+?&gt;
+</code></pre>
+        <br/>
+        <li><code>?int</code> means nullable integer:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function getId(): ?int {
+    return null;
+}
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Returning Values</li>
+    <br/>
+    <ul>
+        <li>Use <code>return</code> to give a value back to the caller.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+function square($x) {
+    return $x * $x;
+}
+
+echo square(4); // 16
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>If no <code>return</code> is given, the function returns <code>null</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Variable-Length Argument Lists</li>
+    <br/>
+    <ul>
+        <li>PHP supports <b>variadic</b> functions using <code>...</code>.</li>
+        <br/>
+        <li>Example:
+<pre><code class="language-php line-numbers">&lt;?php
+function sumAll(...$nums) {
+    $total = 0;
+    foreach ($nums as $n) {
+        $total += $n;
+    }
+    return $total;
+}
+
+echo sumAll(1, 2, 3, 4); // 10
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>You can mix regular and variadic parameters:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function logMessage($level, ...$messages) {
+    foreach ($messages as $m) {
+        echo "[$level] $m\n";
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Anonymous Functions (Closures)</li>
+    <br/>
+    <ul>
+        <li>Anonymous functions have no name and can be stored in variables.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+$double = function($x) {
+    return $x * 2;
+};
+
+echo $double(5); // 10
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Closures can capture variables using <code>use</code>:
+<pre><code class="language-php line-numbers">&lt;?php
+$factor = 3;
+$mul = function($x) use ($factor) {
+    return $x * $factor;
+};
+
+echo $mul(4); // 12
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Arrow Functions (PHP 7.4+)</li>
+    <br/>
+    <ul>
+        <li>Short syntax for simple anonymous functions.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+$double = fn($x) =&gt; $x * 2;
+
+echo $double(10); // 20
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Automatically capture variables from outer scope (<b>by value</b>).</li>
+        <br/>
+        <li>Useful for array operations:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$result = array_map(fn($n) =&gt; $n * 2, [1,2,3]);
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Named Arguments (PHP 8+)</li>
+    <br/>
+    <ul>
+        <li>Call a function specifying argument names:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function createUser($name, $age, $role = "user") {}
+
+createUser(
+    age: 25,
+    name: "Alice",
+    role: "admin"
+);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Named arguments improve readability and reduce order dependence.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Recursive Functions</li>
+    <br/>
+    <ul>
+        <li>A function can call itself.</li>
+        <br/>
+        <li>Example: factorial</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function fact($n) {
+    if ($n == 0) return 1;
+    return $n * fact($n - 1);
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Important:
+            <ul>
+                <li>must have a stopping condition,</li>
+                <li>deep recursion may hit PHP recursion limits.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Function Existence and Dynamic Calls</li>
+    <br/>
+    <ul>
+        <li>Check if a function exists:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+if (function_exists("foo")) {
+    foo();
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Call a function dynamically using a string:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function hello() { echo "Hello"; }
+
+$fn = "hello";
+$fn(); // calls hello()
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Call functions/methods via <code>call_user_func</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+call_user_func("hello");
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Global Variables Inside Functions</li>
+    <br/>
+    <ul>
+        <li>Variables inside functions are local by default.</li>
+        <br/>
+        <li>Use <code>global</code> to access globals:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$a = 10;
+
+function show() {
+    global $a;
+    echo $a;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Alternatively use <code>$GLOBALS</code> array.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Static Variables Inside Functions</li>
+    <br/>
+    <ul>
+        <li><code>static</code> preserves values across calls:</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+function counter() {
+    static $x = 0;
+    $x++;
+    return $x;
+}
+
+echo counter(); // 1
+echo counter(); // 2
+echo counter(); // 3
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for caching or iterative state.</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
