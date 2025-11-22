@@ -82,11 +82,6 @@
     .token.keyword {
         font-weight: 500;
     }
-    /*
-    .token.comment {
-        color: #888;
-    }
-    */
 
     .red-underline {
         text-decoration-line: underline;
@@ -163,6 +158,8 @@
         <li><a href="#symfony-expression-language">Expression Language</a></li>
         <li><a href="#symfony-bundles">Bundles</a></li>
         <li><a href="#symfony-controllers">Controllers</a></li>
+        <li><a href="#symfony-routing">Routing</a></li>
+        <li><a href="#symfony-view-engine">View Engine</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3169,7 +3166,295 @@ public function api(Request $req) {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-routing">Symfony Routing</h3>
+<ol>
 
+    <li>What Is Routing in Symfony?</li>
+    <br/>
+    <ul>
+        <li>The Symfony Routing component maps incoming URLs to:
+            <ul>
+                <li>a specific <b>controller</b>,</li>
+                <li>with specific <b>parameters</b>,</li>
+                <li>and optional <b>constraints</b> or <b>requirements</b>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Routing is one of the first steps in the HTTP request lifecycle.</li>
+        <br/>
+        <li>Routing supports:
+            <ul>
+                <li>static paths</li>
+                <li>dynamic placeholders</li>
+                <li>host-based routing</li>
+                <li>HTTP methods</li>
+                <li>default values</li>
+                <li>requirements (regex)</li>
+                <li>custom conditions (Expression Language)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defining Routes Using PHP Attributes (Recommended)</li>
+    <br/>
+    <ul>
+        <li>Modern Symfony uses PHP 8 attributes to define routes directly above actions:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+
+class HomeController extends AbstractController {
+    #[Route('/', name: 'home')]
+    public function index() { ... }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Advantages:
+            <ul>
+                <li>closest to controller code</li>
+                <li>no extra files needed</li>
+                <li>easy to read and maintain</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defining Routes in YAML</li>
+    <br/>
+    <ul>
+        <li>Routes can also be defined in <code>config/routes.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">home:
+    path: /
+    controller: App\Controller\HomeController::index
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for large enterprise apps or shared bundles.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defining Routes in XML</li>
+    <br/>
+    <ul>
+<pre><code class="language-xml line-numbers">&lt;route id="home" path="/"&gt;
+    &lt;default key="_controller"&gt;App\Controller\HomeController::index&lt;/default&gt;
+&lt;/route&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Mostly for older projects or bundle authors.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Dynamic Route Parameters</li>
+    <br/>
+    <ul>
+        <li>Routes can have placeholders:</li>
+<pre><code class="language-php line-numbers">#[Route('/user/{id}', name: 'user_show')]
+public function show(int $id) { ... }
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony automatically converts the placeholder into a controller argument.</li>
+        <br/>
+        <li>Optional parameters:</li>
+<pre><code class="language-php line-numbers">#[Route('/blog/{page?1}')]
+public function blog(int $page) {}
+</code></pre>
+        </li>
+        <br/>
+        <li>Default values (YAML):</li>
+<pre><code class="language-yaml line-numbers">blog:
+    path: /blog/{page}
+    controller: App\Controller\BlogController::index
+    defaults:
+        page: 1
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Parameter Requirements (Regex Constraints)</li>
+    <br/>
+    <ul>
+        <li>Use <b>requirements</b> to constrain parameters:</li>
+<pre><code class="language-php line-numbers">#[Route('/user/{id&lt;\d+&gt;}')]
+public function show(int $id) {}
+</code></pre>
+        </li>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-plaintext line-numbers">id: digits only
+slug: [a-z0-9-]+
+date: \d{4}-\d{2}-\d{2}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>HTTP Method Constraints</li>
+    <br/>
+    <ul>
+        <li>Limit routes to specific HTTP methods:</li>
+<pre><code class="language-php line-numbers">#[Route('/submit', methods: ['POST'])]
+public function submit() { ... }
+</code></pre>
+        </li>
+        <br/>
+        <li>Options include:
+            <ul>
+                <li>GET</li>
+                <li>POST</li>
+                <li>PUT</li>
+                <li>PATCH</li>
+                <li>DELETE</li>
+                <li>HEAD</li>
+            </ul>
+        </li>
+        <br/>
+        <li>YAML equivalent:</li>
+<pre><code class="language-yaml line-numbers">submit:
+    path: /submit
+    controller: App\Controller\FormController::submit
+    methods: [POST]</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Host-Based Routing</li>
+    <br/>
+    <ul>
+        <li>You can match routes based on the domain:</li>
+<pre><code class="language-php line-numbers">#[Route(host: '{subdomain}.example.com', path: '/')]
+public function index(string $subdomain) {}
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for:
+            <ul>
+                <li>multi-tenant SaaS apps</li>
+                <li>per-locale domains</li>
+                <li>API subdomains</li>
+            </ul>
+        </li>
+        <br/>
+        <li>YAML:</li>
+<pre><code class="language-yaml line-numbers">tenant_home:
+    path: /
+    host: "{tenant}.example.com"
+    controller: App\Controller\TenantController::index
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Route Conditions (Expression Language)</li>
+    <br/>
+    <ul>
+        <li>Routes can include runtime logic:</li>
+<pre><code class="language-yaml line-numbers">home:
+    path: /
+    controller: App\Controller\HomeController::index
+    condition: "context.getMethod() in ['GET', 'HEAD']"
+</code></pre>
+        </li>
+        <br/>
+        <li>Examples:
+            <ul>
+                <li>restrict API access based on IP</li>
+                <li>method-based redirects</li>
+                <li>locale-specific routing</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Another example:</li>
+<pre><code class="language-yaml line-numbers">admin:
+    path: /admin
+    controller: App\Controller\AdminController::index
+    condition: "request.headers.get('X-ADMIN') == '1'"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Route Priority (Order of Matching)</li>
+    <br/>
+    <ul>
+        <li>Routes are matched in the order they are defined.</li>
+        <br/>
+        <li>More specific routes should come before generic ones.</li>
+        <br/>
+        <li>Example — wrong order:</li>
+<pre><code class="language-yaml line-numbers">product:
+    path: /product/{slug}
+
+product_new:
+    path: /product/new</code></pre>
+        </li>
+        <br/>
+        <li>Correct order:</li>
+<pre><code class="language-yaml line-numbers">product_new:
+    path: /product/new
+
+product:
+    path: /product/{slug}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Generating URLs in Controllers and Twig</li>
+    <br/>
+    <ul>
+        <li><b>In controllers</b>:</li>
+<pre><code class="language-php line-numbers">$url = $this->generateUrl('user_show', ['id' =&gt; 5]);</code></pre>
+        </li>
+        <br/>
+        <li><b>In Twig</b>:</li>
+<pre><code class="language-twig line-numbers">{{ path('user_show', { id: 5 }) }}</code></pre>
+        </li>
+        <br/>
+        <li>Absolute URL:</li>
+<pre><code class="language-twig line-numbers">{{ url('user_show', { id: 5 }) }}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Loading Routes from Controllers Automatically</li>
+    <br/>
+    <ul>
+        <li>In <code>config/routes/annotations.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">controllers:
+    resource: ../../src/Controller/
+    type: attribute</code></pre>
+        </li>
+        <br/>
+        <li>Symfony will scan all controller files and import routes automatically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Debugging Routes</li>
+    <br/>
+    <ul>
+        <li>List all available routes:</li>
+<pre><code class="language-bash line-numbers">symfony console debug:router</code></pre>
+        </li>
+        <br/>
+        <li>Show detailed info for one route:</li>
+<pre><code class="language-bash line-numbers">symfony console debug:router user_show</code></pre>
+        </li>
+        <br/>
+        <li>Match a URL to see which route triggers:</li>
+<pre><code class="language-bash line-numbers">symfony console router:match /user/10</code></pre>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
