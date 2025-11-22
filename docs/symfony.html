@@ -162,6 +162,7 @@
         <li><a href="#symfony-events-listeners">Events &amp; Event Listeners</a></li>
         <li><a href="#symfony-expression-language">Expression Language</a></li>
         <li><a href="#symfony-bundles">Bundles</a></li>
+        <li><a href="#symfony-controllers">Controllers</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1839,7 +1840,7 @@ services:
 <pre><code class="language-php line-numbers">&lt;?php
 class ReportController extends AbstractController {
     public function index(ReportGenerator $generator) {
-        $generator->generate();
+        $generator-&gt;generate();
         return new Response("Done");
     }
 }
@@ -1890,7 +1891,7 @@ class ReportController extends AbstractController {
 </code></pre>
         </li>
         <br/>
-        <li>Best practice: use <b>dependency injection</b>, not <code>$container->get()</code>.</li>
+        <li>Best practice: use <b>dependency injection</b>, not <code>$container-&gt;get()</code>.</li>
     </ul>
     <br/><br/>
 
@@ -1899,7 +1900,7 @@ class ReportController extends AbstractController {
     <br/>
     <ul>
         <li>Direct access to the container in controllers is discouraged:</li>
-<pre><code class="language-php line-numbers">$mailer = $this->container->get(Mailer::class);</code></pre>
+<pre><code class="language-php line-numbers">$mailer = $this-&gt;container-&gt;get(Mailer::class);</code></pre>
         </li>
         <br/>
         <li>Correct method: inject the service in your controller constructor or action.</li>
@@ -2853,7 +2854,314 @@ class Kernel extends BaseKernel {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-controllers">Symfony Controllers</h3>
+<ol>
 
+    <li>What Is a Symfony Controller?</li>
+    <br/>
+    <ul>
+        <li>A <b>controller</b> in Symfony is a PHP callable (usually a class method) that:
+            <ul>
+                <li>receives the incoming HTTP request</li>
+                <li>performs logic (fetch data, call services, process forms…)</li>
+                <li>returns a <code>Response</code> object</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Controllers are the “C” in the MVC pattern.</li>
+        <br/>
+        <li>Symfony encourages <b>thin controllers, fat services</b>:
+            <ul>
+                <li>Controllers: glue code, orchestrate</li>
+                <li>Services: business logic</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Minimum controller example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\HttpFoundation\Response;
+
+function home() {
+    return new Response("Hello Symfony!");
+}
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Controller Classes</li>
+    <br/>
+    <ul>
+        <li>Most controllers are classes extending <code>AbstractController</code>.</li>
+<pre><code class="language-php line-numbers">&lt;?php
+namespace App\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+
+class HomeController extends AbstractController {
+    public function index(): Response {
+        return new Response("Welcome!");
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><code>AbstractController</code> provides helpers:
+            <ul>
+                <li><code>render()</code></li>
+                <li><code>redirectToRoute()</code></li>
+                <li><code>addFlash()</code></li>
+                <li><code>json()</code></li>
+                <li><code>getUser()</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Routing to Controllers</li>
+    <br/>
+    <ul>
+        <li>Routes map URLs to controllers.</li>
+        <br/>
+        <li>Using PHP attributes:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Routing\Annotation\Route;
+
+class HomeController extends AbstractController {
+    #[Route('/', name: 'home')]
+    public function index() { ... }
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Equivalent YAML:</li>
+<pre><code class="language-yaml line-numbers">home:
+    path: /
+    controller: App\Controller\HomeController::index
+</code></pre>
+        </li>
+        <br/>
+        <li>Route placeholders automatically map to arguments:</li>
+<pre><code class="language-php line-numbers">#[Route('/user/{id}')]
+public function show(int $id) { ... }
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Returning Responses</li>
+    <br/>
+    <ul>
+        <li>Controllers must return a <code>Response</code> object.</li>
+        <br/>
+        <li>Basic response:</li>
+<pre><code class="language-php line-numbers">return new Response("OK");</code></pre>
+        </li>
+        <br/>
+        <li>JSON response:</li>
+<pre><code class="language-php line-numbers">return $this->json(['status' =&gt; 'ok']);</code></pre>
+        </li>
+        <br/>
+        <li>Redirect response:</li>
+<pre><code class="language-php line-numbers">return $this->redirectToRoute('home');</code></pre>
+        </li>
+        <br/>
+        <li>Rendering a Twig template:</li>
+<pre><code class="language-php line-numbers">return $this->render('home/index.html.twig', [
+    'name' =&gt; 'Junzhe'
+]);</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Request Object Injection</li>
+    <br/>
+    <ul>
+        <li>Symfony automatically injects the <code>Request</code> object:</li>
+<pre><code class="language-php line-numbers">use Symfony\Component\HttpFoundation\Request;
+
+public function search(Request $req) {
+    $term = $req->query->get('q');
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful request helpers:
+            <ul>
+                <li><code>$req->query</code> → GET params</li>
+                <li><code>$req->request</code> → POST params</li>
+                <li><code>$req->cookies</code></li>
+                <li><code>$req->files</code></li>
+                <li><code>$req->getContent()</code> → raw body</li>
+                <li><code>$req->isMethod('POST')</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Autowiring Services into Controllers</li>
+    <br/>
+    <ul>
+        <li>You can autowire services into action arguments:</li>
+<pre><code class="language-php line-numbers">public function index(LoggerInterface $logger) {
+    $logger->info("Visiting index");
+    ...
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Or into the controller constructor (recommended for repeated dependencies):</li>
+<pre><code class="language-php line-numbers">public function __construct(private Mailer $mailer) {}
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony resolves dependencies automatically via type-hints.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Route Parameters</li>
+    <br/>
+    <ul>
+        <li>Route parameters are automatically mapped:</li>
+<pre><code class="language-php line-numbers">#[Route('/post/{slug}')]
+public function view(string $slug) {}
+</code></pre>
+        </li>
+        <br/>
+        <li>With constraints:</li>
+<pre><code class="language-php line-numbers">#[Route('/user/{id&lt;\d+&gt;}')]
+public function show(int $id) {}
+</code></pre>
+        </li>
+        <br/>
+        <li>Optional parameters:</li>
+<pre><code class="language-php line-numbers">#[Route('/blog/{page?1}')]
+public function blog(int $page) {}
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Param Converters (Doctrine Integration)</li>
+    <br/>
+    <ul>
+        <li>If you pass an Entity type, Symfony loads it automatically:</li>
+<pre><code class="language-php line-numbers">#[Route('/product/{id}')]
+public function show(Product $product) {
+    return $this->json($product);
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony queries the repository:
+            <ul>
+                <li><code>$productRepository->find($id)</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>If no entity → throws 404 automatically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Flash Messages</li>
+    <br/>
+    <ul>
+        <li>Flash messages persist for exactly one request.</li>
+        <br/>
+<pre><code class="language-php line-numbers">$this-&gt;addFlash('success', 'User created!');</code></pre>
+        </li>
+        <br/>
+        <li>Display in Twig:</li>
+<pre><code class="language-twig line-numbers">{% for msg in app.flashes('success') %}
+    &lt;div class="alert alert-success"&gt;{{ msg }}&lt;/div&gt;
+{% endfor %}
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Returning JSON Responses</li>
+    <br/>
+    <ul>
+<pre><code class="language-php line-numbers">return $this-&gt;json([
+    'user' =&gt; 'Junzhe',
+    'score' =&gt; 100
+]);
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony handles:
+            <ul>
+                <li>JSON encoding</li>
+                <li>setting <code>Content-Type</code></li>
+                <li>HTTP status codes</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Controller Traits and Base Features</li>
+    <br/>
+    <ul>
+        <li><code>AbstractController</code> provides:
+            <ul>
+                <br/>
+                <li><code>createForm()</code></li>
+                <li><code>render()</code></li>
+                <li><code>json()</code></li>
+                <li><code>redirectToRoute()</code></li>
+                <li><code>addFlash()</code></li>
+                <li><code>denyAccessUnlessGranted()</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>It also gives access to:
+            <ul>
+                <br/>
+                <li>Doctrine</li>
+                <li>UrlGenerator</li>
+                <li>Security</li>
+                <li>ParameterBag</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>API Controllers (Stateless)</li>
+    <br/>
+    <ul>
+        <li>API controllers typically:
+            <ul>
+                <li>return JSON</li>
+                <li>avoid sessions</li>
+                <li>disable CSRF</li>
+                <li>consume JSON request bodies</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">#[Route('/api/data', methods:['POST'])]
+public function api(Request $req) {
+    $data = json_decode($req-&gt;getContent(), true);
+    return $this-&gt;json(['received' =&gt; $data]);
+}
+</code></pre>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
