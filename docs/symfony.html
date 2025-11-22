@@ -161,6 +161,7 @@
         <li><a href="#symfony-service-container">Service Container</a></li>
         <li><a href="#symfony-events-listeners">Events &amp; Event Listeners</a></li>
         <li><a href="#symfony-expression-language">Expression Language</a></li>
+        <li><a href="#symfony-bundles">Bundles</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2506,7 +2507,345 @@ echo $phpCode;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-bundles">Symfony Bundles</h3>
+<ol>
 
+    <li>What Is a Symfony Bundle?</li>
+    <br/>
+    <ul>
+        <li>A <b>Bundle</b> in Symfony is a directory containing a set of files (PHP classes, controllers, services, config, templates, etc.) that implement a specific feature.</li>
+        <br/>
+        <li>Bundles are similar to:
+            <ul>
+                <li>Plugins (WordPress)</li>
+                <li>Modules (Drupal)</li>
+                <li>Gems (Ruby on Rails)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Bundles allow:
+            <ul>
+                <li>code reusability</li>
+                <li>easy packaging of features</li>
+                <li>sharing of code between applications</li>
+                <li>organization of large projects</li>
+            </ul>
+        </li>
+        <br/>
+        <li>In older Symfony versions (2 &amp; 3), everything was a bundle.<br/>
+            In modern Symfony (4+), apps usually have only:
+            <ul>
+                <li><code>AppBundle</code> → removed in Symfony 4</li>
+                <li><code>src/</code> directory contains the app code</li>
+                <li>Third-party bundles installed via Composer</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Today, bundles are mostly for:
+            <ul>
+                <li>reusable packages</li>
+                <li>third-party integrations (Doctrine, Twig, Security, Messenger)</li>
+                <li>major app modules in large teams</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Bundle Structure</li>
+    <br/>
+    <ul>
+        <li>A typical bundle structure looks like:</li>
+<pre><code class="language-plaintext line-numbers">MyBundle/
+├── DependencyInjection/
+│   ├── Configuration.php
+│   └── MyBundleExtension.php
+├── Resources/
+│   ├── config/
+│   ├── views/
+│   └── translations/
+├── Tests/
+├── MyBundle.php
+</code></pre>
+        <br/>
+        <li>Key components:
+            <ul>
+                <li><b>MyBundle.php</b>: the bundle class</li>
+                <li><b>DependencyInjection/</b>: service, config loading</li>
+                <li><b>Resources/views</b>: Twig templates</li>
+                <li><b>Resources/config</b>: YAML/XML/PHP configs</li>
+                <li><b>Tests/</b>: PHPUnit tests</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Core Symfony Bundles</li>
+    <br/>
+    <ul>
+        <li>Symfony comes with several built-in bundles:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Symfony Bundle</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>FrameworkBundle</code></td>
+            <td>Provides the core framework behavior and services.</td>
+        </tr>
+        <tr>
+            <td><code>TwigBundle</code></td>
+            <td>Enables Twig templating support.</td>
+        </tr>
+        <tr>
+            <td><code>DoctrineBundle</code></td>
+            <td>Integrates the Doctrine ORM and database layer.</td>
+        </tr>
+        <tr>
+            <td><code>SecurityBundle</code></td>
+            <td>Provides authentication and authorization features.</td>
+        </tr>
+        <tr>
+            <td><code>WebProfilerBundle</code></td>
+            <td>Offers the debug toolbar and profiling tools.</td>
+        </tr>
+        <tr>
+            <td><code>MonologBundle</code></td>
+            <td>Handles logging using Monolog integration.</td>
+        </tr>
+        <tr>
+            <td><code>MakerBundle</code></td>
+            <td>Provides command-line tools for code scaffolding (generators).</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>These are registered automatically by Symfony Flex.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing Third-Party Bundles</li>
+    <br/>
+    <ul>
+        <li>Install via Composer:</li>
+<pre><code class="language-bash line-numbers">composer require friendsofsymfony/user-bundle</code></pre>
+        </li>
+        <br/>
+        <li>Symfony Flex usually auto-registers the bundle in <code>config/bundles.php</code>.</li>
+        <br/>
+        <li>Example entry:</li>
+<pre><code class="language-php line-numbers">return [
+    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class =&gt; ['all' =&gt; true],
+    FOS\UserBundle\FOSUserBundle::class =&gt; ['all' =&gt; true],
+];
+</code></pre>
+        </li>
+        <br/>
+        <li>Flex also installs default configuration for the bundle.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Your Own Bundle</li>
+    <br/>
+    <ul>
+        <li>Create a bundle class:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+namespace App\MyBundle;
+
+use Symfony\Component\HttpKernel\Bundle\Bundle;
+
+class MyBundle extends Bundle {}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Add to <code>bundles.php</code>:</li>
+<pre><code class="language-php line-numbers">return [
+    App\MyBundle\MyBundle::class =&gt; ['all' =&gt; true],
+];</code></pre>
+        </li>
+        <br/>
+        <li>Bundle structure normally goes under:</li>
+<pre><code class="language-plaintext line-numbers">src/MyBundle</code></pre>
+        </li>
+        <br/>
+        <li>Then add:
+            <ul>
+                <li>controllers</li>
+                <li>services</li>
+                <li>configs</li>
+                <li>views</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Bundle Configuration with Extension Classes</li>
+    <br/>
+    <ul>
+        <li>Bundles typically have a configuration loader in:</li>
+<pre><code class="language-plaintext line-numbers">DependencyInjection/MyBundleExtension.php</code></pre>
+        </li>
+        <br/>
+        <li>Example Extension:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class MyBundleExtension extends Extension {
+    public function load(array $configs, ContainerBuilder $container) {
+        $loader = new YamlFileLoader(
+            $container,
+            new FileLocator(__DIR__.'/../Resources/config')
+        );
+        $loader-&gt;load('services.yaml');
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>This allows external configuration from <code>config/packages/my_bundle.yaml</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Configuring a Bundle Externally</li>
+    <br/>
+    <ul>
+        <li>Most third-party bundles expose configuration options:</li>
+<pre><code class="language-yaml line-numbers">my_bundle:
+    enable_feature: true
+    api_key: "%env(API_KEY)%"
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony uses <code>Configuration.php</code> in the bundle to validate configuration:</li>
+<pre><code class="language-php line-numbers">$treeBuilder-&gt;getRootNode()
+    -&gt;children()
+        -&gt;booleanNode('enable_feature')-&gt;defaultFalse()-&gt;end()
+        -&gt;scalarNode('api_key')-&gt;isRequired()-&gt;end()
+    -&gt;end();</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Bundle Best Practices (Modern Symfony)</li>
+    <br/>
+    <ul>
+        <li><b>DO NOT</b> create a bundle for normal application code — use <code>src/</code>.</li>
+        <br/>
+        <li>Create a bundle when:
+            <ul>
+                <li>the code must be reused across projects</li>
+                <li>you want to publish a package for the Symfony ecosystem</li>
+                <li>a feature needs to be fully isolated (rare)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Bundle classes should be small — most logic lives in:
+            <ul>
+                <li>services</li>
+                <li>controllers</li>
+                <li>configs</li>
+                <li>templates</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Do not overload the bundle with unnecessary files.</li>
+        <br/>
+        <li>Follow Symfony coding standards (PSR-4, PSR-12).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Examples of Popular Third-Party Bundles</li>
+    <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Bundle</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>FOSUserBundle</code></td>
+            <td>User management (registration, login, profiles).</td>
+        </tr>
+        <tr>
+            <td><code>ApiPlatformBundle</code></td>
+            <td>Automatic REST and GraphQL API generation.</td>
+        </tr>
+        <tr>
+            <td><code>EasyAdminBundle</code></td>
+            <td>Admin dashboard and CRUD backend generation.</td>
+        </tr>
+        <tr>
+            <td><code>LiipImagineBundle</code></td>
+            <td>Advanced image manipulation and caching.</td>
+        </tr>
+        <tr>
+            <td><code>HWIOAuthBundle</code></td>
+            <td>OAuth client integration (Google, Facebook, GitHub…).</td>
+        </tr>
+        <tr>
+            <td><code>KnpPaginatorBundle</code></td>
+            <td>Pagination utilities for Doctrine queries and arrays.</td>
+        </tr>
+        <tr>
+            <td><code>SymfonyCasts VerifyEmailBundle</code></td>
+            <td>Email verification workflow for user registration.</td>
+        </tr>
+    </tbody>
+</table>
+    <br/><br/>
+
+
+    <li>How Bundles Integrate into the Kernel</li>
+    <br/>
+    <ul>
+        <li>Symfony loads bundles during Kernel boot:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class Kernel extends BaseKernel {
+    public function registerBundles(): iterable {
+        // Loaded from config/bundles.php
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Each bundle may:
+            <ul>
+                <li>add services</li>
+                <li>add configuration</li>
+                <li>override templates</li>
+                <li>extend behavior of other bundles</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Bundles interact via events, DI configuration, and routing.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Bundle Overrides (Resource Inheritance)</li>
+    <br/>
+    <ul>
+        <li>You can override bundle templates:</li>
+<pre><code class="language-plaintext line-numbers">templates/bundles/TwigBundle/Exception/error404.html.twig</code></pre>
+        </li>
+        <br/>
+        <li>Or override controllers and services via DI tags or config.</li>
+        <br/>
+        <li>This makes bundles extremely flexible and customizable.</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
