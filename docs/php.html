@@ -3259,7 +3259,364 @@ echo counter(); // 3
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="php-advanced-functions">PHP Advanced Functions</h3>
+<ol>
+    <li>Higher-Order Functions (Functions That Take Functions)</li>
+    <br/>
+    <ul>
+        <li>A higher-order function is a function that:
+            <ul>
+                <li>accepts another function as an argument,</li>
+                <li>returns a function.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example: applying a callback to each element:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function apply(array $items, callable $fn): array {
+    $result = [];
+    foreach ($items as $it) {
+        $result[] = $fn($it);
+    }
+    return $result;
+}
 
+print_r(apply([1,2,3], fn($x) =&gt; $x * 2));
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>A function returning another function:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function multiplier($factor): callable {
+    return fn($x) =&gt; $x * $factor;
+}
+
+$times3 = multiplier(3);
+echo $times3(10); // 30
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Closures with <code>use</code></li>
+    <br/>
+    <ul>
+        <li>Closures can capture outer-scope variables using <code>use</code>.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+$prefix = "[LOG] ";
+$log = function($msg) use ($prefix) {
+    echo $prefix . $msg . "\n";
+};
+
+$log("System online");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Closures capture values <b>by value</b>, not by reference (unless specified).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Binding Closures to Objects</li>
+    <br/>
+    <ul>
+        <li>PHP allows dynamically binding a closure to an object, modifying <code>$this</code> inside the closure.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class User {
+    public $name = "Alice";
+}
+
+$closure = function() {
+    return $this-&gt;name;
+};
+
+$obj = new User();
+$bound = $closure-&gt;bindTo($obj, User::class);
+
+echo $bound(); // Alice
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>This allows injecting behavior into objects dynamically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Generators (<code>yield</code>)</li>
+    <br/>
+    <ul>
+        <li>A generator is a special function that produces values lazily.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function countTo($limit) {
+    for ($i = 1; $i &lt;= $limit; $i++) {
+        yield $i;
+    }
+}
+
+foreach (countTo(5) as $n) {
+    echo $n . " ";
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Benefits:
+            <ul>
+                <li>does not build arrays in memory,</li>
+                <li>efficient for large datasets,</li>
+                <li>supports <code>send()</code> and <code>return</code> (PHP 7+).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Returning a value from a generator:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function gen() {
+    yield 1;
+    return "done";
+}
+
+$g = gen();
+foreach ($g as $v) {}
+echo $g-&gt;getReturn(); // done
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Anonymous Recursion</li>
+    <br/>
+    <ul>
+        <li>A closure cannot refer to itself by name, so anonymous recursion uses <code>use</code> with references.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+$fact = function($n) use (&amp;$fact) {
+    return $n == 0 ? 1 : $n * $fact($n - 1);
+};
+
+echo $fact(5); // 120
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>This technique is used in functional programming.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Currying and Partial Application</li>
+    <br/>
+    <ul>
+        <li>Currying transforms a function into a sequence of single-argument functions.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+function currySum($a): callable {
+    return fn($b) =&gt; fn($c) =&gt; $a + $b + $c;
+}
+
+echo currySum(1)(2)(3); // 6
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Partial application: pre-filling some parameters.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+function add($a, $b) { return $a + $b; }
+
+$add5 = fn($x) =&gt; add(5, $x);
+echo $add5(10); // 15
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Callable Types and Callbacks</li>
+    <br/>
+    <ul>
+        <li>A callable can be:
+            <ul>
+                <li>a string containing a function name,</li>
+                <li>a closure,</li>
+                <li><code>[object, "method"]</code></li>
+                <li><code>[ClassName::class, "method"]</code></li>
+                <li>a static method string (<code>"Class::method"</code>)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example with <code>call_user_func</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function greet($name) { return "Hello, $name"; }
+
+echo call_user_func("greet", "Alice");
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Array callable:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class A {
+    public function hello() { echo "Hi"; }
+}
+
+$a = new A();
+call_user_func([$a, "hello"]);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Check callability:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+if (is_callable($fn)) {
+    $fn();
+}
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reflection API for Functions</li>
+    <br/>
+    <ul>
+        <li>PHP provides the Reflection API to examine functions at runtime.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function sample($a, $b) {}
+
+$ref = new ReflectionFunction("sample");
+print_r($ref-&gt;getParameters());
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Reflection can:
+            <ul>
+                <li>inspect parameters,</li>
+                <li>read default values,</li>
+                <li>get return type,</li>
+                <li>invoke functions dynamically,</li>
+                <li>modify behavior via reflection objects.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Generators with Keys and <code>yield =&gt;</code></li>
+    <br/>
+    <ul>
+        <li>You can control keys produced by generators:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+function squares($n) {
+    for ($i = 1; $i &lt;= $n; $i++) {
+        yield $i =&gt; $i * $i;
+    }
+}
+
+foreach (squares(3) as $k =&gt; $v) {
+    echo "$k =&gt; $v\n";
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>This allows lazy associative data structures.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Function Factories</li>
+    <br/>
+    <ul>
+        <li>Functions that create and return functions.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+function makeGreeter($greeting): callable {
+    return fn($name) =&gt; "$greeting, $name!";
+}
+
+$hi = makeGreeter("Hi");
+echo $hi("Alice"); // Hi, Alice!
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for creating reusable behaviors dynamically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Decorators / Function Wrappers</li>
+    <br/>
+    <ul>
+        <li>You can wrap a function to extend its behavior — similar to decorators in Python.</li>
+        <br/>
+<pre><code class="language-php line-numbers">&lt;?php
+function timed(callable $fn): callable {
+    return function(...$args) use ($fn) {
+        $start = microtime(true);
+        $result = $fn(...$args);
+        $end = microtime(true);
+        echo "Took " . ($end - $start) . "s\n";
+        return $result;
+    };
+}
+
+$slow = timed(function() {
+    sleep(1);
+    return "done";
+});
+
+echo $slow(); // prints time
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>This pattern is common in logging, caching, and profiling.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Strict Types and Advanced Typing (PHP 7+)</li>
+    <br/>
+    <ul>
+        <li>Enable strict types at the top of the file:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+declare(strict_types=1);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>This enforces exact type matches instead of automatic coercion.</li>
+        <br/>
+        <li>Advanced return types:
+            <ul>
+                <li><code>void</code></li>
+                <li><code>never</code></li>
+                <li>union types (<code>int|string</code>)</li>
+                <li>intersection types</li>
+                <li>mixed</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
