@@ -153,6 +153,7 @@
         <li><a href="#flask-application-overview">Application Overview</a></li>
         <li><a href="#flask-routing">Routing</a></li>
         <li><a href="#flask-variable-rules">variable Rules</a></li>
+        <li><a href="#flask-url-building">URL Building</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1346,7 +1347,288 @@ def page_not_found(e):
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-url-building">Flask URL Building</h3>
+<ol>
 
+    <li>What Is URL Building in Flask?</li>
+    <br/>
+    <ul>
+        <li><b>URL building</b> means generating URLs from view function names (endpoints) instead of hardcoding paths as strings.</li>
+        <br/>
+        <li>Flask provides the <code>url_for()</code> helper to build URLs based on:
+            <ul>
+                <li>the endpoint name (usually the view function name)</li>
+                <li>any variable parts (path parameters)</li>
+                <li>optional query parameters</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Advantages:</li>
+        <ul>
+            <li>no hardcoded URL strings scattered in templates and Python code</li>
+            <li>safer refactoring: renaming or changing routes in one place</li>
+            <li>supports blueprints, static files, and external URLs</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Usage of <code>url_for()</code> in Python</li>
+    <br/>
+    <ul>
+        <li>Typical pattern inside your Python code:</li>
+<pre><code class="language-python line-numbers">from flask import Flask, url_for
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    # Build URL for the 'hello' endpoint
+    return url_for('hello')
+
+@app.route('/hello')
+def hello():
+    return 'Hello!'
+</code></pre>
+        <br/>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>'hello'</code> is the endpoint name (the function name by default).</li>
+            <li><code>url_for('hello')</code> returns <code>'/hello'</code>.</li>
+        </ul>
+        <br/>
+        <li>If you later change the route to <code>/greeting</code>, only the route definition needs updating, not every link in your app.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>URL Building with Variable Rules</li>
+    <br/>
+    <ul>
+        <li>For routes with path parameters, pass them as keyword arguments to <code>url_for()</code>:</li>
+<pre><code class="language-python line-numbers">@app.route('/user/&lt;username&gt;')
+def profile(username):
+    return f'Profile: {username}'
+
+@app.route('/where-is-junzhe')
+def where_is_junzhe():
+    # Generates /user/Junzhe
+    return url_for('profile', username='Junzhe')
+</code></pre>
+        <br/>
+        <li>Important:</li>
+        <ul>
+            <li>Keyword names must match the variable names in the route (<code>username</code> in this example).</li>
+            <li>Type converters (like <code>&lt;int:id&gt;</code>) are automatically handled as long as you pass compatible values.</li>
+        </ul>
+        <br/>
+        <li>Example with an <code>int</code> converter:</li>
+<pre><code class="language-python line-numbers">@app.route('/post/&lt;int:post_id&gt;')
+def show_post(post_id):
+    return f'Post {post_id}'
+
+url_for('show_post', post_id=42)   # '/post/42'
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Adding Query Parameters with <code>url_for()</code></li>
+    <br/>
+    <ul>
+        <li>Arguments that do <b>not</b> belong to the route pattern become query parameters:</li>
+<pre><code class="language-python line-numbers">@app.route('/search')
+def search():
+    # Imagine we read request.args['q'] and request.args['page']
+    ...
+
+# In Python:
+url_for('search', q='flask', page=2)
+# Result: '/search?q=flask&amp;page=2'
+</code></pre>
+        <br/>
+        <li>Notes:</li>
+        <ul>
+            <li>Flask automatically URL-encodes special characters (spaces, &amp;, etc.).</li>
+            <li>Combine path variables and query parameters in one call.</li>
+        </ul>
+<pre><code class="language-python line-numbers">@app.route('/user/&lt;username&gt;/posts')
+def user_posts(username):
+    ...
+
+url_for('user_posts', username='Junzhe', page=3, sort='latest')
+# '/user/Junzhe/posts?page=3&amp;sort=latest'
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using <code>url_for()</code> in Templates (Jinja2)</li>
+    <br/>
+    <ul>
+        <li>In Jinja2 templates, use <code>url_for</code> exactly like in Python:</li>
+<pre><code class="language-html line-numbers">&lt;a href="{{ url_for('index') }}"&gt;Home&lt;/a&gt;
+
+&lt;a href="{{ url_for('profile', username='Junzhe') }}"&gt;
+    View profile
+&lt;/a&gt;
+
+&lt;a href="{{ url_for('search', q='flask', page=1) }}"&gt;
+    Search for Flask
+&lt;/a&gt;
+</code></pre>
+        <br/>
+        <li>Advantages:</li>
+        <ul>
+            <li>Templates react automatically to route changes.</li>
+            <li>Mixing logic (URL building) and HTML stays clean.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>URL Building for Static Files</li>
+    <br/>
+    <ul>
+        <li>Flask automatically serves static files from the <code>static/</code> directory at the <code>/static</code> URL prefix.</li>
+        <br/>
+        <li>Use <code>url_for('static', ...)</code> to generate links to static resources:</li>
+<pre><code class="language-html line-numbers">&lt;!-- In a Jinja2 template --&gt;
+&lt;link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" /&gt;
+
+&lt;img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" /&gt;
+</code></pre>
+        <br/>
+        <li>Why not write <code>/static/css/style.css</code> directly?</li>
+        <ul>
+            <li>URL prefix can be changed in app configuration.</li>
+            <li>Caches and versioning strategies sometimes modify static URLs.</li>
+            <li><code>url_for</code> ensures all links stay correct.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Endpoint Names</li>
+    <br/>
+    <ul>
+        <li>You can override the default endpoint name (function name) using the <code>endpoint</code> argument in <code>route()</code>:</li>
+<pre><code class="language-python line-numbers">@app.route('/dashboard', endpoint='user_dashboard')
+def show_dashboard():
+    return 'Dashboard'
+
+# URL building:
+url_for('user_dashboard')   # '/dashboard'
+</code></pre>
+        <br/>
+        <li>Use cases:</li>
+        <ul>
+            <li>multiple routes pointing to the same function but with different endpoint names</li>
+            <li>avoiding name clashes (e.g. in large applications)</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>URL Building with Blueprints</li>
+    <br/>
+    <ul>
+        <li>When using blueprints, endpoint names automatically get a prefix: <code>'blueprint_name.view_function'</code>.</li>
+<pre><code class="language-python line-numbers">from flask import Blueprint, url_for
+
+bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+@bp.route('/users')
+def user_list():
+    ...
+
+app.register_blueprint(bp)
+
+# Building URL:
+url_for('admin.user_list')    # '/admin/users'
+</code></pre>
+        <br/>
+        <li>In templates, you use the same endpoint:</li>
+<pre><code class="language-html line-numbers">&lt;a href="{{ url_for('admin.user_list') }}"&gt;Admin users&lt;/a&gt;
+</code></pre>
+        <br/>
+        <li>Blueprint-aware URL building keeps your routes nicely namespaced.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Building Absolute URLs (<code>_external</code> and <code>_scheme</code>)</li>
+    <br/>
+    <ul>
+        <li>By default, <code>url_for()</code> returns a <b>relative</b> path (e.g. <code>/user/Junzhe</code>).</li>
+        <br/>
+        <li>To build an absolute URL (including domain), use <code>_external=True</code>:</li>
+<pre><code class="language-python line-numbers">with app.test_request_context():
+    url_for('profile', username='Junzhe', _external=True)
+    # e.g. 'http://localhost/user/Junzhe'
+</code></pre>
+        <br/>
+        <li>To control the scheme (HTTP/HTTPS), use <code>_scheme</code>:</li>
+<pre><code class="language-python line-numbers">with app.test_request_context():
+    url_for('profile', username='Junzhe',
+            _external=True, _scheme='https')
+    # 'https://localhost/user/Junzhe'
+</code></pre>
+        <br/>
+        <li>Absolute URLs are useful for:</li>
+        <ul>
+            <li>email links</li>
+            <li>redirects to your site from external systems</li>
+            <li>API callbacks and webhooks</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using <code>url_for()</code> with <code>redirect()</code></li>
+    <br/>
+    <ul>
+        <li>Flask’s <code>redirect()</code> often works together with <code>url_for()</code>:</li>
+<pre><code class="language-python line-numbers">from flask import redirect, url_for
+
+@app.route('/old-home')
+def old_home():
+    # Redirect to the new route
+    return redirect(url_for('index'))
+
+@app.route('/')
+def index():
+    return 'New homepage'
+</code></pre>
+        <br/>
+        <li>This pattern allows you to:</li>
+        <ul>
+            <li>migrate URLs gradually</li>
+            <li>avoid broken links</li>
+            <li>implement login redirects, logout redirects, etc.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Pitfalls and Tips</li>
+    <br/>
+    <ul>
+        <li>Mismatch between variable names and parameters:</li>
+        <ul>
+            <li>Route: <code>/user/&lt;username&gt;</code></li>
+            <li><code>url_for('profile', name='Junzhe')</code> → error, should be <code>username</code>.</li>
+        </ul>
+        <br/>
+        <li>Calling <code>url_for()</code> outside a request context: Use <code>with app.test_request_context():</code> in scripts or shell.</li>
+        <br/>
+        <li>Forgetting query parameters: Always encode filters, pagination, and sorting options via <code>url_for</code> to keep URLs consistent.</li>
+        <br/>
+        <li>General recommendation: never hardcode URLs when you can use <code>url_for()</code>.</li>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
