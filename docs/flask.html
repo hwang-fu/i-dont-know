@@ -152,6 +152,7 @@
         <li><a href="#flask-introduction">Introduction</a></li>
         <li><a href="#flask-application-overview">Application Overview</a></li>
         <li><a href="#flask-routing">Routing</a></li>
+        <li><a href="#flask-variable-rules">variable Rules</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1028,7 +1029,316 @@ def users():
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-variable-rules">Flask Variable Rules</h3>
+<ol>
 
+    <li>What Are Variable Rules in Flask?</li>
+    <br/>
+    <ul>
+        <li>In Flask, <b>variable rules</b> let you capture parts of the URL as parameters and pass them into your view functions.</li>
+        <br/>
+        <li>They are defined directly inside the route pattern using angle brackets, such as <code>&lt;username&gt;</code> or <code>&lt;int:id&gt;</code>.</li>
+        <br/>
+        <li>Example idea:</li>
+        <ul>
+            <li><code>/user/junzhe</code> → passes <code>"junzhe"</code> to the view function</li>
+            <li><code>/post/42</code> → passes <code>42</code> as an integer</li>
+        </ul>
+        <br/>
+        <li>Variable rules make routes more dynamic and expressive, which is essential for REST-style APIs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Syntax of Variable Rules</li>
+    <br/>
+    <ul>
+        <li>General pattern:</li>
+<pre><code class="language-python line-numbers">from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/user/&lt;username&gt;')
+def show_user_profile(username):
+    return f'User: {username}'
+</code></pre>
+        <br/>
+        <li>Key points:</li>
+        <ul>
+            <li>Everything inside <code>&lt;...&gt;</code> is treated as a variable name.</li>
+            <li>The variable name becomes a parameter of the view function.</li>
+            <li>By default, the value is a <b>string</b>.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Built-In Converters</li>
+    <br/>
+    <ul>
+        <li>Flask provides several converters to control the type and shape of URL variables:</li>
+        <br/>
+        <table>
+            <thead>
+                <tr>
+                    <th>Converter</th>
+                    <th>Meaning</th>
+                    <th>Example URL Rule</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>string</code></td>
+                    <td>(default) any text without slashes</td>
+                    <td><code>/hello/&lt;string:name&gt;</code></td>
+                </tr>
+                <tr>
+                    <td><code>int</code></td>
+                    <td>only integers</td>
+                    <td><code>/post/&lt;int:post_id&gt;</code></td>
+                </tr>
+                <tr>
+                    <td><code>float</code></td>
+                    <td>floating-point numbers</td>
+                    <td><code>/price/&lt;float:value&gt;</code></td>
+                </tr>
+                <tr>
+                    <td><code>path</code></td>
+                    <td>string including slashes</td>
+                    <td><code>/files/&lt;path:subpath&gt;</code></td>
+                </tr>
+                <tr>
+                    <td><code>uuid</code></td>
+                    <td>UUID strings converted to <code>UUID</code> objects</td>
+                    <td><code>/item/&lt;uuid:item_id&gt;</code></td>
+                </tr>
+            </tbody>
+        </table>
+        <br/>
+        <li>Syntax with a converter:</li>
+<pre><code class="language-python line-numbers">@app.route('/post/&lt;int:post_id&gt;')
+def show_post(post_id):
+    # post_id is already an int
+    return f'Post ID: {post_id}'
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Default Converter: string</li>
+    <br/>
+    <ul>
+        <li>If you omit a converter, Flask uses the <code>string</code> converter by default.</li>
+        <br/>
+<pre><code class="language-python line-numbers">@app.route('/hello/&lt;name&gt;')
+def hello(name):
+    # name is a string
+    return f'Hello, {name}!'
+</code></pre>
+        <br/>
+        <li>The following are equivalent:</li>
+<pre><code class="language-python line-numbers">@app.route('/hello/&lt;name&gt;')
+@app.route('/hello/&lt;string:name&gt;')
+def hello(name):
+    ...
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using the int Converter</li>
+    <br/>
+    <ul>
+        <li>The <code>int</code> converter ensures that only integer values match the route.</li>
+        <br/>
+<pre><code class="language-python line-numbers">@app.route('/post/&lt;int:post_id&gt;')
+def show_post(post_id):
+    # If the URL is /post/abc, this route will NOT match.
+    # If the URL is /post/42, post_id == 42 (int).
+    return f'Post ID is {post_id}'
+</code></pre>
+        <br/>
+        <li>Advantages:</li>
+        <ul>
+            <li>Automatic type conversion (string → int)</li>
+            <li>More precise routing</li>
+            <li>Invalid URLs (e.g. non-numeric IDs) return 404 instead of entering the view</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using the float and path Converters</li>
+    <br/>
+    <ul>
+        <li><b>float</b> converter:</li>
+<pre><code class="language-python line-numbers">@app.route('/discount/&lt;float:rate&gt;')
+def show_discount(rate):
+    return f'Discount rate: {rate:.2f}'
+</code></pre>
+        <br/>
+        <li><b>path</b> converter (includes slashes):</li>
+<pre><code class="language-python line-numbers">@app.route('/files/&lt;path:subpath&gt;')
+def show_file(subpath):
+    # Matches /files/images/logo.png
+    # subpath == 'images/logo.png'
+    return f'Serving: {subpath}'
+</code></pre>
+        <br/>
+        <li><code>path</code> is useful for nested directories or "catch-all" URLs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using the uuid Converter</li>
+    <br/>
+    <ul>
+        <li>The <code>uuid</code> converter parses a standard UUID string into a Python <code>UUID</code> object.</li>
+        <br/>
+<pre><code class="language-python line-numbers">from uuid import UUID
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/items/&lt;uuid:item_id&gt;')
+def get_item(item_id: UUID):
+    # item_id is a UUID instance, not a plain string
+    return f'Item ID: {item_id}'
+</code></pre>
+        <br/>
+        <li>This is very convenient for REST APIs that use UUIDs as primary identifiers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multiple Variable Rules in One Route</li>
+    <br/>
+    <ul>
+        <li>You can define multiple variables inside the same URL pattern.</li>
+        <br/>
+<pre><code class="language-python line-numbers">@app.route('/shop/&lt;category&gt;/item/&lt;int:item_id&gt;')
+def show_item(category, item_id):
+    return f'Category: {category}, Item ID: {item_id}'
+</code></pre>
+        <br/>
+        <li>Flask maps each variable to a separate function parameter in the same order as their appearance.</li>
+        <br/>
+        <li>Make sure the parameter names in the function <b>match exactly</b> the variable names in the route.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Variable Rules and url_for()</li>
+    <br/>
+    <ul>
+        <li>When using <code>url_for()</code>, route variables become keyword arguments.</li>
+        <br/>
+<pre><code class="language-python line-numbers">from flask import url_for
+
+@app.route('/user/&lt;username&gt;')
+def profile(username):
+    return f'Profile: {username}'
+
+@app.route('/where-is-junzhe')
+def where_is_junzhe():
+    # Generates /user/Junzhe
+    return url_for('profile', username='Junzhe')
+</code></pre>
+        <br/>
+        <li>Advantages:</li>
+        <ul>
+            <li>No hardcoding of URLs</li>
+            <li>URLs update automatically if the rule changes</li>
+            <li>Safer refactoring</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Trailing Slashes and Variable Rules</li>
+    <br/>
+    <ul>
+        <li>Flask treats routes with and without trailing slashes differently:</li>
+        <br/>
+<pre><code class="language-python line-numbers">@app.route('/hello/&lt;name&gt;')    # no trailing slash
+def hello(name):
+    ...
+
+@app.route('/hello2/&lt;name&gt;/')   # with trailing slash
+def hello2(name):
+    ...
+</code></pre>
+        <br/>
+        <li>Behavior:</li>
+        <ul>
+            <li><code>/hello/Bob</code> → works</li>
+            <li><code>/hello/Bob/</code> → 404 (by default)</li>
+            <li><code>/hello2/Bob/</code> → works</li>
+            <li><code>/hello2/Bob</code> → may redirect to <code>/hello2/Bob/</code></li>
+        </ul>
+        <br/>
+        <li>Be consistent with your trailing slash style to avoid confusion.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Converters (Overview)</li>
+    <br/>
+    <ul>
+        <li>Flask allows you to create <b>custom converters</b> for more complex validation rules.</li>
+        <br/>
+        <li>Typical use cases:</li>
+        <ul>
+            <li>restricting strings to certain patterns (e.g. usernames, slugs)</li>
+            <li>matching date formats</li>
+            <li>matching serialized IDs</li>
+        </ul>
+        <br/>
+        <li>Basic steps to create a custom converter:</li>
+        <ul>
+            <li>Subclass <code>werkzeug.routing.BaseConverter</code>.</li>
+            <li>Register it on <code>app.url_map.converters</code>.</li>
+            <li>Use it in routes like <code>&lt;custom:name&gt;</code>.</li>
+        </ul>
+        <br/>
+        <li>Example (slug converter):</li>
+<pre><code class="language-python line-numbers">from werkzeug.routing import BaseConverter
+
+class SlugConverter(BaseConverter):
+    regex = r'[a-z0-9-]+'
+
+app.url_map.converters['slug'] = SlugConverter
+
+@app.route('/blog/&lt;slug:post_slug&gt;')
+def show_blog_post(post_slug):
+    return f'Post slug: {post_slug}'
+</code></pre>
+        <br/>
+        <li>Custom converters keep your routes clean and reusable.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Handling with Variable Rules</li>
+    <br/>
+    <ul>
+        <li>If a URL does not match the variable rule, Flask returns a <b>404 Not Found</b> before entering your view.</li>
+        <br/>
+        <li>Examples:</li>
+        <ul>
+            <li><code>/post/abc</code> does not match <code>/post/&lt;int:post_id&gt;</code>, so Flask returns 404.</li>
+            <li><code>/price/1.23</code> matches <code>/price/&lt;float:value&gt;</code>, but <code>/price/abc</code> does not.</li>
+        </ul>
+        <br/>
+        <li>You can provide a custom 404 handler if you want more user-friendly messages.</li>
+<pre><code class="language-python line-numbers">@app.errorhandler(404)
+def page_not_found(e):
+    return 'Custom 404 page', 404
+</code></pre>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
