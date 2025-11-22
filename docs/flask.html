@@ -166,6 +166,7 @@
         <li><a href="#flask-file-uploading">File Uploading</a></li>
         <li><a href="#flask-extensions">Extensions</a></li>
         <li><a href="#flask-mail">Mail</a></li>
+        <li><a href="#flask-sqlite">SQLite</a></li>
     </ol>
 </nav>
 <hr/>
@@ -5115,7 +5116,245 @@ except Exception as e:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-sqlite">Flask SQLite</h3>
+<ol>
 
+    <li>Introduction to SQLite in Flask</li>
+    <br/>
+    <ul>
+        <li><b>SQLite</b> is a lightweight, file-based relational database that requires no server installation.</li>
+        <br/>
+        <li>Flask works very well with SQLite because:</li>
+        <ul>
+            <li>SQLite databases are just files (easy to manage)</li>
+            <li>perfect for small/medium applications</li>
+            <li>no extra dependencies are needed</li>
+            <li>ideal for quick prototypes, student projects, or small production apps</li>
+        </ul>
+        <br/>
+        <li>SQLite integrates with Flask in two common ways:</li>
+        <ul>
+            <li>directly using Python’s built-in <code>sqlite3</code> module</li>
+            <li>using Flask-SQLAlchemy ORM (recommended for larger apps)</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using SQLite with Python’s <code>sqlite3</code> Module</li>
+    <br/>
+    <ul>
+        <li>This approach uses SQL directly and has zero dependencies:</li>
+<pre><code class="language-python line-numbers">import sqlite3
+
+def get_db():
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row  # allows dict-like access
+    return conn
+</code></pre>
+        <br/>
+        <li>Making a simple Flask route that queries the database:</li>
+<pre><code class="language-python line-numbers">@app.route('/users')
+def show_users():
+    db = get_db()
+    cursor = db.execute("SELECT * FROM users")
+    users = cursor.fetchall()
+    return { "users": [dict(row) for row in users] }
+</code></pre>
+        <br/>
+        <li>This is great for small apps or for learning SQL.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating an SQLite Database</li>
+    <br/>
+    <ul>
+        <li>Create tables using SQL statements:</li>
+<pre><code class="language-python line-numbers">def init_db():
+    db = get_db()
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL
+        )
+    """)
+    db.commit()
+</code></pre>
+        <br/>
+        <li>Call this function once to initialize the schema.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Inserting Data into SQLite</li>
+    <br/>
+    <ul>
+<pre><code class="language-python line-numbers">@app.route('/add')
+def add_user():
+    db = get_db()
+    db.execute("INSERT INTO users (name, email) VALUES (?, ?)",
+               ("Junzhe", "junzhe@example.com"))
+    db.commit()
+    return "User added!"
+</code></pre>
+        <br/>
+        <li>Use <code>?</code> placeholders to avoid SQL injection.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Fetching Data</li>
+    <br/>
+    <ul>
+        <li>Fetch one record:</li>
+<pre><code class="language-python line-numbers">cursor = db.execute("SELECT * FROM users WHERE id = ?", (1,))
+user = cursor.fetchone()
+</code></pre>
+        <br/>
+        <li>Fetch all records:</li>
+<pre><code class="language-python line-numbers">cursor = db.execute("SELECT * FROM users")
+users = cursor.fetchall()
+</code></pre>
+        <br/>
+        <li>Using <code>sqlite3.Row</code> allows:</li>
+<pre><code class="language-python line-numbers">user['name']</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using SQLite with Flask Application Context</li>
+    <br/>
+    <ul>
+        <li>Best practice: store the DB connection inside <code>g</code>:</li>
+<pre><code class="language-python line-numbers">from flask import g
+
+def get_db():
+    if 'db' not in g:
+        g.db = sqlite3.connect("database.db")
+        g.db.row_factory = sqlite3.Row
+    return g.db
+</code></pre>
+        <br/>
+        <li>Close automatically after each request:</li>
+<pre><code class="language-python line-numbers">@app.teardown_appcontext
+def close_db(e=None):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
+</code></pre>
+        <br/>
+        <li>This avoids connection leaks.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using SQLite with Flask-SQLAlchemy (Recommended)</li>
+    <br/>
+    <ul>
+        <li>Install SQLAlchemy:</li>
+<pre><code class="language-bash line-numbers">pip install Flask-SQLAlchemy
+</code></pre>
+        <br/>
+        <li>Basic setup:</li>
+<pre><code class="language-python line-numbers">from flask_sqlalchemy import SQLAlchemy
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mydb.sqlite3'
+db = SQLAlchemy(app)
+</code></pre>
+        <br/>
+        <li>Create a model:</li>
+<pre><code class="language-python line-numbers">class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+    email = db.Column(db.String(100), unique=True)
+</code></pre>
+        <br/>
+        <li>Initialize database:</li>
+<pre><code class="language-python line-numbers">with app.app_context():
+    db.create_all()
+</code></pre>
+        <br/>
+        <li>SQLAlchemy provides:</li>
+        <ul>
+            <li>ORM models</li>
+            <li>relationships</li>
+            <li>query builder</li>
+            <li>migration support</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Querying with SQLAlchemy ORM</li>
+    <br/>
+    <ul>
+        <li>Add a user:</li>
+<pre><code class="language-python line-numbers">u = User(name="Junzhe", email="junzhe@example.com")
+db.session.add(u)
+db.session.commit()
+</code></pre>
+        <br/>
+        <li>Fetch users:</li>
+<pre><code class="language-python line-numbers">users = User.query.all()
+</code></pre>
+        <br/>
+        <li>Filter:</li>
+<pre><code class="language-python line-numbers">user = User.query.filter_by(email="junzhe@example.com").first()
+</code></pre>
+        <br/>
+        <li>Delete:</li>
+<pre><code class="language-python line-numbers">db.session.delete(user)
+db.session.commit()
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Flask-Migrate with SQLite</li>
+    <br/>
+    <ul>
+        <li>Migrations help track model changes:</li>
+<pre><code class="language-bash line-numbers">pip install Flask-Migrate
+</code></pre>
+        <br/>
+        <li>Setup:</li>
+<pre><code class="language-python line-numbers">from flask_migrate import Migrate
+
+migrate = Migrate(app, db)
+</code></pre>
+        <br/>
+        <li>Commands:</li>
+<pre><code class="language-bash line-numbers">flask db init
+flask db migrate -m "Initial migration"
+flask db upgrade
+</code></pre>
+        <br/>
+        <li>Even though SQLite has limitations, migrations still work for most schema changes.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices When Using SQLite with Flask</li>
+    <br/>
+    <ul>
+        <li>Use SQLAlchemy ORM for large applications.</li>
+        <br/>
+        <li>Use raw SQL (<code>sqlite3</code> module) for lightweight apps or learning.</li>
+        <br/>
+        <li>Place your SQLite file outside the <code>static/</code> or <code>templates/</code> directory.</li>
+        <br/>
+        <li>Never commit SQLite database files for production apps (contains user data).</li>
+        <br/>
+        <li>Use migrations (Flask-Migrate) to track schema changes.</li>
+        <br/>
+        <li>Close DB connections after each request using <code>teardown_appcontext</code>.</li>
+        <br/>
+        <li>For concurrency-heavy apps, consider PostgreSQL or MySQL instead.</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
