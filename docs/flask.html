@@ -158,7 +158,7 @@
         <li><a href="#flask-templates">Templates</a></li>
         <li><a href="#flask-static-files">Static Files</a></li>
         <li><a href="#flask-request-object">Request Object</a></li>
-        <li><a href="#flask-"></a></li>
+        <li><a href="#flask-sending-form-data-to-template">Sending Form Data to Template</a></li>
         <li><a href="#flask-"></a></li>
         <li><a href="#flask-"></a></li>
     </ol>
@@ -2596,7 +2596,338 @@ def favicon():
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-request-object">Flask Request Object</h3>
+<ol>
 
+    <li>What Is the Flask Request Object?</li>
+    <br/>
+    <ul>
+        <li>The <code>request</code> object in Flask provides access to all data sent by the client (browser, API client, etc.).</li>
+        <br/>
+        <li>It includes:
+            <ul>
+                <li>HTTP method</li>
+                <li>Form data</li>
+                <li>JSON payload</li>
+                <li>Headers</li>
+                <li>Cookies</li>
+                <li>URL parameters</li>
+                <li>Uploaded files</li>
+                <li>Client IP</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Import it from Flask:</li>
+<pre><code class="language-python line-numbers">from flask import request</code></pre>
+        <br/>
+        <li>The request object is context-aware, meaning it only exists during an active request.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing HTTP Methods</li>
+    <br/>
+    <ul>
+        <li>Check the method used by the client:</li>
+<pre><code class="language-python line-numbers">@app.route('/submit', methods=['GET', 'POST'])
+def submit():
+    return f"Method used: {request.method}"
+</code></pre>
+        <br/>
+        <li>Common values:
+            <ul>
+                <li><code>GET</code></li>
+                <li><code>POST</code></li>
+                <li><code>PUT</code></li>
+                <li><code>PATCH</code></li>
+                <li><code>DELETE</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reading Query Parameters (<code>request.args</code>)</li>
+    <br/>
+    <ul>
+        <li>Query parameters come from the URL, e.g. <code>?page=3&amp;sort=asc</code>.</li>
+        <br/>
+        <li>Use <code>request.args</code> to access them:</li>
+<pre><code class="language-python line-numbers">@app.route('/search')
+def search():
+    query = request.args.get('q')
+    page = request.args.get('page', default=1, type=int)
+    return f"Search: {query}, Page: {page}"
+</code></pre>
+        <br/>
+        <li><code>request.args</code> is a <b>MultiDict</b> — it supports duplicate keys.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reading Form Data (<code>request.form</code>)</li>
+    <br/>
+    <ul>
+        <li>Form data comes from POST requests with <code>application/x-www-form-urlencoded</code> or <code>multipart/form-data</code>.</li>
+        <br/>
+<pre><code class="language-python line-numbers">@app.route('/login', methods=['POST'])
+def login():
+    username = request.form['username']
+    password = request.form.get('password')
+    return f"User: {username}"
+</code></pre>
+        <br/>
+        <li><code>request.form</code> is also a MultiDict.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reading JSON Data (<code>request.json</code>)</li>
+    <br/>
+    <ul>
+        <li>For clients sending JSON (<code>application/json</code>):</li>
+<pre><code class="language-python line-numbers">@app.route('/api/data', methods=['POST'])
+def api_data():
+    data = request.json      # or request.get_json()
+    return {'received': data}
+</code></pre>
+        <br/>
+        <li>Good for RESTful APIs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing Form and JSON Together (<code>request.values</code>)</li>
+    <br/>
+    <ul>
+        <li><code>request.values</code> merges:
+            <ul>
+                <li><code>request.form</code></li>
+                <li><code>request.args</code></li>
+            </ul>
+        </li>
+        <br/>
+<pre><code class="language-python line-numbers">@app.route('/combined')
+def combined():
+    return request.values.get('key')
+</code></pre>
+        <br/>
+        <li>Useful when a value may come from GET or POST.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing Headers (<code>request.headers</code>)</li>
+    <br/>
+    <ul>
+        <li>Retrieve client or browser headers:</li>
+<pre><code class="language-python line-numbers">@app.route('/agent')
+def agent():
+    ua = request.headers.get('User-Agent')
+    return f"Your browser: {ua}"
+</code></pre>
+        <br/>
+        <li>Common headers:
+            <ul>
+                <li><code>Content-Type</code></li>
+                <li><code>User-Agent</code></li>
+                <li><code>Accept</code></li>
+                <li><code>Authorization</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing Cookies (<code>request.cookies</code>)</li>
+    <br/>
+    <ul>
+        <li>Client cookies are handled via <code>request.cookies</code>:</li>
+<pre><code class="language-python line-numbers">@app.route('/show-cookie')
+def show_cookie():
+    token = request.cookies.get('auth_token')
+    return f"Cookie: {token}"
+</code></pre>
+        <br/>
+        <li>Cookies can be set in responses (covered in <i>Flask Responses</i> chapter).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling File Uploads (<code>request.files</code>)</li>
+    <br/>
+    <ul>
+        <li>To handle uploaded files from forms:</li>
+<pre><code class="language-python line-numbers">@app.route('/upload', methods=['POST'])
+def upload():
+    file = request.files['photo']
+    file.save(f"uploads/{file.filename}")
+    return 'Uploaded!'
+</code></pre>
+        <br/>
+        <li>Form requires <code>enctype="multipart/form-data"</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reading Route Variables (<code>request.view_args</code>)</li>
+    <br/>
+    <ul>
+        <li>For URLs with variable rules like:</li>
+<pre><code class="language-python line-numbers">@app.route('/user/&lt;username&gt;')
+def profile(username):
+    print(request.view_args)  # {'username': 'Junzhe'}
+    return username
+</code></pre>
+        <br/>
+        <li><code>view_args</code> contains the path parameters.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Getting the Full Request URL</li>
+    <br/>
+    <ul>
+        <li>You can access:</li>
+        <ul>
+            <li>Full URL — <code>request.url</code></li>
+            <li>Base URL — <code>request.base_url</code></li>
+            <li>Host URL — <code>request.host_url</code></li>
+            <li>URL without query — <code>request.path</code></li>
+        </ul>
+        <br/>
+<pre><code class="language-python line-numbers">@app.route('/info')
+def info():
+    return {
+        "url": request.url,
+        "path": request.path,
+        "base": request.base_url,
+    }
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing Client IP Address</li>
+    <br/>
+    <ul>
+        <li>Get client IP:</li>
+<pre><code class="language-python line-numbers">ip = request.remote_addr</code></pre>
+        <br/>
+        <li>If behind a proxy, use:</li>
+<pre><code class="language-python line-numbers">ip = request.headers.get('X-Forwarded-For', request.remote_addr)</code></pre>
+        <br/>
+        <li>Often needed for:
+            <ul>
+                <li>logging</li>
+                <li>rate limiting</li>
+                <li>security</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Detecting AJAX Requests</li>
+    <br/>
+    <ul>
+        <li>Traditional AJAX requests include a header:</li>
+<pre><code class="language-python line-numbers">is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+</code></pre>
+        <br/>
+        <li>Modern clients often use <code>fetch()</code> without this header, so custom headers may be needed.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Checking MIME Types</li>
+    <br/>
+    <ul>
+        <li>Access incoming request content type:</li>
+<pre><code class="language-python line-numbers">@app.route('/type', methods=['POST'])
+def content_type():
+    return request.content_type
+</code></pre>
+        <br/>
+        <li>Common MIME types:</li>
+        <ul>
+            <li><code>application/json</code></li>
+            <li><code>application/x-www-form-urlencoded</code></li>
+            <li><code>multipart/form-data</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Working with Request Data Safely</li>
+    <br/>
+    <ul>
+        <li>Use <code>.get()</code> when values may be missing.</li>
+        <br/>
+        <li>Prefer <code>request.get_json()</code> over <code>request.json</code> when needing error handling.</li>
+        <br/>
+        <li>Validate all user input (form, JSON, files).</li>
+        <br/>
+        <li>Never trust <code>request.headers</code> from the client.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Summary Table of Common Attributes</li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Attribute</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>request.method</code></td>
+                <td>HTTP method</td>
+            </tr>
+            <tr>
+                <td><code>request.args</code></td>
+                <td>Query parameters</td>
+            </tr>
+            <tr>
+                <td><code>request.form</code></td>
+                <td>Form POST data</td>
+            </tr>
+            <tr>
+                <td><code>request.json</code></td>
+                <td>JSON payload</td>
+            </tr>
+            <tr>
+                <td><code>request.files</code></td>
+                <td>Uploaded files</td>
+            </tr>
+            <tr>
+                <td><code>request.headers</code></td>
+                <td>HTTP headers</td>
+            </tr>
+            <tr>
+                <td><code>request.cookies</code></td>
+                <td>Client cookies</td>
+            </tr>
+            <tr>
+                <td><code>request.view_args</code></td>
+                <td>Route variables</td>
+            </tr>
+            <tr>
+                <td><code>request.url</code></td>
+                <td>Full URL</td>
+            </tr>
+            <tr>
+                <td><code>request.remote_addr</code></td>
+                <td>Client IP</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
