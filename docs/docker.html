@@ -153,6 +153,7 @@
         <li><a href="#docker-hub">Hub</a></li>
         <li><a href="#docker-images">Images</a></li>
         <li><a href="#docker-containers">Containers</a></li>
+        <li><a href="#docker-dockerfile-anatomy">Dockerfile Anatomy</a></li>
     </ol>
 </nav>
 <hr/>
@@ -994,7 +995,293 @@ docker rm container_id
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-dockerfile-anatomy">Dockerfile Anatomy</h3>
+<ol>
 
+    <li>What Is a Dockerfile?</li>
+    <br/>
+    <ul>
+        <li>A <code>Dockerfile</code> is a plain-text script containing step-by-step instructions for building a Docker image.</li>
+        <br/>
+        <li>Each instruction creates a <b>new layer</b> in the final image.</li>
+        <br/>
+        <li>Build an image from a Dockerfile:</li>
+<pre><code class="language-bash line-numbers">docker build -t myapp .</code></pre>
+        <br/>
+        <li>The Dockerfile must be named <code>Dockerfile</code> (default) unless you specify:</li>
+<pre><code class="language-bash line-numbers">docker build -f CustomFile -t myapp .</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Structure of a Dockerfile</li>
+    <br/>
+    <ul>
+        <li>A <code>Dockerfile</code> is a sequence of instructions.</li>
+        <br/>
+        <li>Common instructions:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Instruction</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>FROM</code></td>
+            <td>Specifies the base image.</td>
+        </tr>
+        <tr>
+            <td><code>RUN</code></td>
+            <td>Executes commands during the build process.</td>
+        </tr>
+        <tr>
+            <td><code>COPY</code></td>
+            <td>Copies files from the host into the image.</td>
+        </tr>
+        <tr>
+            <td><code>ADD</code></td>
+            <td>Like COPY but supports remote URLs and automatic extraction (use only when necessary).</td>
+        </tr>
+        <tr>
+            <td><code>WORKDIR</code></td>
+            <td>Sets the working directory for subsequent instructions.</td>
+        </tr>
+        <tr>
+            <td><code>EXPOSE</code></td>
+            <td>Documents the network ports the container listens on.</td>
+        </tr>
+        <tr>
+            <td><code>CMD</code></td>
+            <td>Default command executed when the container starts.</td>
+        </tr>
+        <tr>
+            <td><code>ENTRYPOINT</code></td>
+            <td>Defines the main entrypoint process of the container.</td>
+        </tr>
+        <tr>
+            <td><code>ENV</code></td>
+            <td>Sets environment variables inside the image.</td>
+        </tr>
+        <tr>
+            <td><code>ARG</code></td>
+            <td>Defines build-time variables available only during build.</td>
+        </tr>
+        <tr>
+            <td><code>VOLUME</code></td>
+            <td>Specifies mount points for data storage.</td>
+        </tr>
+        <tr>
+            <td><code>USER</code></td>
+            <td>Changes the user for subsequent instructions.</td>
+        </tr>
+        <tr>
+            <td><code>LABEL</code></td>
+            <td>Adds metadata to the image.</td>
+        </tr>
+        <tr>
+            <td><code>HEALTHCHECK</code></td>
+            <td>Defines a command that checks if the container is healthy.</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>All Dockerfiles start with <code>FROM</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>FROM — Choosing a Base Image</li>
+    <br/>
+    <ul>
+        <li>The first instruction must specify a base image:</li>
+<pre><code class="language-docker line-numbers">FROM python:3.12-slim</code></pre>
+        <li>To start completely from zero:</li>
+<pre><code class="language-docker line-numbers">FROM scratch</code></pre>
+        <li>Used for extremely small images.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>WORKDIR — Setting Working Directory</li>
+    <br/>
+    <ul>
+        <li>Sets the directory for the following commands:</li>
+<pre><code class="language-docker line-numbers">WORKDIR /app</code></pre>
+        <li>If the directory does not exist, Docker creates it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>COPY and ADD — Adding Files</li>
+    <br/>
+    <ul>
+        <li><code>COPY</code> copies files from host → image:</li>
+<pre><code class="language-docker line-numbers">COPY . /app</code></pre>
+        <br/>
+        <li><code>ADD</code> should be avoided unless needed:</li>
+        <ul>
+            <li>It can fetch URLs</li>
+            <li>It auto-extracts tar archives</li>
+        </ul>
+        <br/>
+        <li>Prefer <code>COPY</code> for normal usage.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>RUN — Execute Commands During Build</li>
+    <br/>
+    <ul>
+        <li>Used to install dependencies or configure the environment:</li>
+<pre><code class="language-docker line-numbers">RUN apt-get update &amp;&amp; apt-get install -y python3</code></pre>
+        <br/>
+        <li>Each <code>RUN</code> creates a new layer.</li>
+        <br/>
+        <li>Best practice: combine commands to reduce layers:</li>
+<pre><code class="language-docker line-numbers">RUN apt-get update                \
+    &amp;&amp; apt-get install -y python3 \
+    &amp;&amp; apt-get clean</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>ENV — Environment Variables</li>
+    <br/>
+    <ul>
+        <li>Define environment variables accessible inside the container:</li>
+<pre><code class="language-docker line-numbers">ENV PORT=8080
+ENV MODE=production</code></pre>
+        <li>Useful for configuration.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>ARG — Build-Time Variables</li>
+    <br/>
+    <ul>
+        <li>These exist only during the build stage (not at runtime):</li>
+<pre><code class="language-docker line-numbers">ARG VERSION=1.0</code></pre>
+        <li>You can pass them:</li>
+<pre><code class="language-bash line-numbers">docker build --build-arg VERSION=2.0 -t app:2.0 .</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>EXPOSE — Documenting Port Usage</li>
+    <br/>
+    <ul>
+        <li>Documents the port your app uses:</li>
+<pre><code class="language-docker line-numbers">EXPOSE 8080</code></pre>
+        <li>IMPORTANT: It does not actually publish ports.</li>
+        <br/>
+        <li>Publish using:</li>
+<pre><code class="language-bash line-numbers">docker run -p 8080:8080 app</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>CMD — The Default Container Command</li>
+    <br/>
+    <ul>
+        <li><code>CMD</code> specifies the command to run when the container starts:</li>
+<pre><code class="language-docker line-numbers">CMD ["python", "main.py"]</code></pre>
+        <li>If overridden, Docker uses the command passed to <code>docker run</code>.</li>
+<pre><code class="language-bash line-numbers">docker run app python other.py</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>ENTRYPOINT — Forced Command</li>
+    <br/>
+    <ul>
+        <li><code>ENTRYPOINT</code> defines the main binary for the container:</li>
+<pre><code class="language-docker line-numbers">ENTRYPOINT ["python"]</code></pre>
+        <br/>
+        <li>Combined with <code>CMD</code>:</li>
+<pre><code class="language-docker line-numbers">ENTRYPOINT ["python"]
+CMD ["main.py"]</code></pre>
+        <br/>
+        <li>This runs:</li>
+<pre><code class="language-plaintext line-numbers">python main.py</code></pre>
+        <br/>
+        <li><code>ENTRYPOINT</code> cannot be overridden easily.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>VOLUME — Persistent Data Storage</li>
+    <br/>
+    <ul>
+        <li>Define a mount point:</li>
+<pre><code class="language-docker line-numbers">VOLUME ["/data"]</code></pre>
+        <li>Useful for databases or logs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>USER — Change the Running User</li>
+    <br/>
+    <ul>
+        <li>Run the container as a non-root user for security:</li>
+<pre><code class="language-docker line-numbers">USER appuser</code></pre>
+        <li>Helps protect your system if the container is compromised.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>LABEL — Metadata</li>
+    <br/>
+    <ul>
+        <li>Labels add metadata to images:</li>
+<pre><code class="language-docker line-numbers">LABEL maintainer="someone@example.com"
+LABEL version="1.0"</code></pre>
+        <li>Used in CI/CD pipelines, orchestration, and monitoring.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>HEALTHCHECK — Container Health Verification</li>
+    <br/>
+    <ul>
+        <li>Periodically test if your app is healthy:</li>
+<pre><code class="language-docker line-numbers">HEALTHCHECK CMD curl --fail http://localhost:8080 || exit 1</code></pre>
+        <li>This helps orchestrators restart unhealthy containers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Full Dockerfile Example</li>
+    <ul>
+<pre><code class="language-docker line-numbers">FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+ENV PORT=8000
+
+EXPOSE 8000
+
+CMD ["python", "main.py"]
+</code></pre>
+        <li>This Dockerfile:</li>
+        <ul>
+            <li>uses a Python base image</li>
+            <li>installs dependencies</li>
+            <li>copies the application</li>
+            <li>sets environment variables</li>
+            <li>documents exposed port</li>
+            <li>runs the app</li>
+        </ul>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
