@@ -158,6 +158,7 @@
     <ol style="line-height: 1.8;">
         <li><a href="#symfony-introduction">Introduction</a></li>
         <li><a href="#symfony-installation-setup">Installing &amp; Setting UP the Symfony</a></li>
+        <li><a href="#symfony-composer-intro">What Is Composer?</a></li>
     </ol>
 </nav>
 <hr/>
@@ -735,6 +736,314 @@ symfony console cache:warmup --env=prod
     </ul>
     <br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-composer-intro">What Is Composer?</h3>
+<ol>
+
+    <li>Overview of Composer</li>
+    <br/>
+    <ul>
+        <li><b>Composer</b> is the official dependency manager for PHP — similar to:
+            <ul>
+                <li><b>npm</b> for JavaScript</li>
+                <li><b>pip</b> for Python</li>
+                <li><b>cargo</b> for Rust</li>
+                <li><b>bundler</b> for Ruby</li>
+            </ul>
+        </li>
+        <br/>
+        <li>It allows PHP projects to install and manage:
+            <ul>
+                <li>libraries</li>
+                <li>frameworks (Symfony, Laravel, etc.)</li>
+                <li>components</li>
+                <li>autoloaders</li>
+                <li>project dependencies</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Composer is essential for modern PHP development — most frameworks require it.</li>
+        <br/>
+        <li>It installs packages from <b>Packagist</b>, the default PHP package registry.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing Composer</li>
+    <br/>
+    <ul>
+        <li>Download the installer:</li>
+<pre><code class="language-bash line-numbers">php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"</code></pre>
+        </li>
+        <br/>
+        <li>Install globally:</li>
+<pre><code class="language-bash line-numbers">php composer-setup.php --install-dir=/usr/local/bin --filename=composer</code></pre>
+        </li>
+        <br/>
+        <li>Verify installation:</li>
+<pre><code class="language-bash line-numbers">composer --version</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>How Composer Works</li>
+    <br/>
+    <ul>
+        <li>Composer uses two primary files in your project:</li>
+        <br/>
+        <ul>
+            <li><code>composer.json</code> describes required libraries</li>
+            <li><code>composer.lock</code> locks the exact installed versions</li>
+        </ul>
+        <br/>
+        <li>When running:</li>
+<pre><code class="language-bash line-numbers">composer install</code></pre>
+        </li>
+        <br/>
+        <li>Composer will:
+            <ul>
+                <li>download dependencies</li>
+                <li>resolve version conflicts</li>
+                <li>install packages to <code>vendor/</code></li>
+                <li>generate the autoloader</li>
+            </ul>
+        </li>
+        <br/>
+        <li>All dependencies go into the <code>vendor/</code> directory.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The composer.json File</li>
+    <br/>
+    <ul>
+        <li>A typical <code>composer.json</code>:</li>
+<pre><code class="language-json line-numbers">{
+    "name": "myapp/project",
+    "require": {
+        "symfony/http-foundation": "^7.0",
+        "twig/twig": "^3.0"
+    }
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>You can also specify:
+            <ul>
+                <li>autoload rules</li>
+                <li>PHP version constraints</li>
+                <li>scripts to run</li>
+                <li>dev dependencies</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing Dependencies</li>
+    <br/>
+    <ul>
+        <li>Install all dependencies:</li>
+<pre><code class="language-bash line-numbers">composer install</code></pre>
+        </li>
+        <br/>
+        <li>Add a new dependency:</li>
+<pre><code class="language-bash line-numbers">composer require symfony/console</code></pre>
+        </li>
+        <br/>
+        <li>Add a dev-only dependency:</li>
+<pre><code class="language-bash line-numbers">composer require --dev phpunit/phpunit</code></pre>
+        </li>
+        <br/>
+        <li>Update dependencies:</li>
+<pre><code class="language-bash line-numbers">composer update</code></pre>
+        </li>
+        <br/>
+        <li>Remove a dependency:</li>
+<pre><code class="language-bash line-numbers">composer remove twig/twig</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Autoloader</li>
+    <br/>
+    <ul>
+        <li>Composer automatically generates an autoloader file:</li>
+<pre><code class="language-plaintext line-numbers">vendor/autoload.php</code></pre>
+        </li>
+        <br/>
+        <li>Load it in your PHP code:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+require __DIR__ . "/vendor/autoload.php";
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>This makes all installed packages available without manual <code>require</code> calls.</li>
+        <br/>
+        <li>Supports PSR-4 autoloading for your own namespaces:</li>
+<pre><code class="language-json line-numbers">{
+    "autoload": {
+        "psr-4": {
+            "App\\\\": "src/"
+        }
+    }
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>After editing <code>composer.json</code> autoload section:</li>
+<pre><code class="language-bash line-numbers">composer dump-autoload</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Scripts in Composer</li>
+    <br/>
+    <ul>
+        <li>You can define automation scripts in <code>composer.json</code>:</li>
+<pre><code class="language-json line-numbers">{
+    "scripts": {
+        "test": "phpunit",
+        "start": "php -S localhost:8000 -t public"
+    }
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Run scripts with:</li>
+<pre><code class="language-bash line-numbers">composer run test
+composer run start
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Composer Version Constraints Explained</li>
+    <br/>
+    <ul>
+        <li>Common version patterns:
+            <ul>
+                <li><code>^2.0</code> → allow updates except major breaking changes</li>
+                <li><code>~2.0</code> → allow updates only in minor versions</li>
+                <li><code>2.0.*</code> → patch updates only</li>
+                <li><code>&gt;=2.0</code> → any version ≥ 2.0</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-json line-numbers">"require": {
+    "monolog/monolog": "^3.0"
+}</code></pre>
+        </li>
+        <br/>
+        <li>This allows version 3.0, 3.1, 3.2… but <b>not 4.0</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Global vs Local Composer Installation</li>
+    <br/>
+    <ul>
+        <li><b>Local</b> — installed inside each project (<code>vendor/</code>)</li>
+        <li><b>Global</b> — installed once for the whole system</li>
+        <br/>
+        <li>Global installation example:</li>
+<pre><code class="language-bash line-numbers">composer global require laravel/installer</code></pre>
+        </li>
+        <br/>
+        <li>Useful for CLI tools like Laravel installer or PHPUnit.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Packagist — The PHP Package Repository</li>
+    <br/>
+    <ul>
+        <li>By default, Composer installs packages from:</li>
+<pre><code class="language-plaintext line-numbers">https://packagist.org</code></pre>
+        </li>
+        <br/>
+        <li>Packagist hosts:
+            <ul>
+                <li>Symfony components</li>
+                <li>Laravel components</li>
+                <li>Doctrine</li>
+                <li>Monolog</li>
+                <li>Twig</li>
+                <li>Guzzle</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You can browse it for any PHP library you need.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Updating Composer Itself</li>
+    <br/>
+    <ul>
+        <li>Update to latest version:</li>
+<pre><code class="language-bash line-numbers">composer self-update</code></pre>
+        </li>
+        <br/>
+        <li>Rollback to previous version:</li>
+<pre><code class="language-bash line-numbers">composer self-update --rollback</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Problems and Solutions</li>
+    <br/>
+    <ul>
+        <li>Memory limit errors:</li>
+<pre><code class="language-bash line-numbers">php -d memory_limit=-1 /usr/local/bin/composer update</code></pre>
+        </li>
+        <br/>
+        <li>Slow installs: use Composer v2 — it’s much faster.</li>
+        <br/>
+        <li>Autoload not updated:</li>
+<pre><code class="language-bash line-numbers">composer dump-autoload</code></pre>
+        </li>
+        <br/>
+        <li>Conflicts:</b> Composer tells you what packages are incompatible.</li>
+        <br/>
+        <li>Lock file ignored:</li>
+<pre><code class="language-bash line-numbers">composer install</code></pre>
+        <li>Never use <code>composer update</code> in production.</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
