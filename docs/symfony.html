@@ -161,6 +161,7 @@
         <li><a href="#symfony-routing">Routing</a></li>
         <li><a href="#symfony-view-engine">View Engine</a></li>
         <li><a href="#symfony-doctrine-orm">Doctrine ORM</a></li>
+        <li><a href="#symfony-forms">Forms</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4060,7 +4061,356 @@ private string $name;
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-forms">Symfony Forms</h3>
+<ol>
 
+    <li>What Are Symfony Forms?</li>
+    <br/>
+    <ul>
+        <li>The Symfony Form component provides a structured and secure way to handle:
+            <ul>
+                <li>HTML form rendering</li>
+                <li>form submission</li>
+                <li>data validation</li>
+                <li>mapping submitted data to objects</li>
+                <li>CSRF protection</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Forms in Symfony separate:
+            <ul>
+                <li><b>Form definition</b> (fields, types)</li>
+                <li><b>Form rendering</b> (Twig templates)</li>
+                <li><b>Form processing</b> (request handling)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This ensures clean, reusable and secure form handling.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing the Form Component</li>
+    <br/>
+    <ul>
+        <li>Install via Composer:</li>
+<pre><code class="language-bash line-numbers">composer require symfony/form
+composer require symfony/validator
+composer require symfony/twig-bundle</code></pre>
+        </li>
+        <br/>
+        <li><code>validator</code> is optional but recommended.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Form Type</li>
+    <br/>
+    <ul>
+        <li>Use the Maker bundle:</li>
+<pre><code class="language-bash line-numbers">symfony console make:form ContactFormType</code></pre>
+        </li>
+        <br/>
+        <li>Example form type:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+namespace App\Form;
+
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+
+class ContactFormType extends AbstractType
+{
+    public function buildForm(FormBuilderInterface $builder, array $options) {
+        $builder
+            -&gt;add('name', TextType::class)
+            -&gt;add('email', EmailType::class)
+            -&gt;add('message', TextareaType::class);
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Each <code>add()</code> call defines one form field.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Rendering the Form in a Controller</li>
+    <br/>
+    <ul>
+        <li>Create and render the form:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+public function contact(Request $request) {
+    $form = $this-&gt;createForm(ContactFormType::class);
+
+    return $this-&gt;render('contact/form.html.twig', [
+        'form' =&gt; $form-&gt;createView(),
+    ]);
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li><code>createView()</code> converts the form into a Twig-friendly view object.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Rendering the Form in Twig</li>
+    <br/>
+    <ul>
+        <li>Basic Twig rendering:</li>
+<pre><code class="language-twig line-numbers">
+{{ form_start(form) }}
+{{ form_row(form.name) }}
+{{ form_row(form.email) }}
+{{ form_row(form.message) }}
+{{ form_end(form) }}
+</code></pre>
+        </li>
+        <br/>
+        <li>The <code>form_row()</code> helper renders:
+            <ul>
+                <li>label</li>
+                <li>input</li>
+                <li>errors</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Form Submission</li>
+    <br/>
+    <ul>
+<pre><code class="language-php line-numbers">&lt;?php
+$form = $this-&gt;createForm(ContactFormType::class);
+$form-&gt;handleRequest($request);
+
+if ($form-&gt;isSubmitted() &amp;&amp; $form-&gt;isValid()) {
+    $data = $form-&gt;getData(); // associative array or object
+
+    // process form data...
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li><code>handleRequest()</code> populates the form using POST data.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Mapping Forms to Entities</li>
+    <br/>
+    <ul>
+        <li>Forms can be mapped directly to Doctrine entities.</li>
+        <br/>
+        <li>Example entity:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class Product {
+    private string $name;
+    private float $price;
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Bind form to entity:</li>
+<pre><code class="language-php line-numbers">$product = new Product();
+$form = $this-&gt;createForm(ProductType::class, $product);</code></pre>
+        </li>
+        <br/>
+        <li>After submit → Doctrine entity automatically filled:</li>
+<pre><code class="language-php line-numbers">$em-&gt;persist($product);
+$em-&gt;flush();</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Form Field Options</li>
+    <br/>
+    <ul>
+        <li>All fields accept configuration options:</li>
+<pre><code class="language-php line-numbers">$builder-&gt;add('name', TextType::class, [
+    'label' =&gt; 'Full Name',
+    'required' =&gt; false,
+    'attr' =&gt; ['class' =&gt; 'form-control'],
+]);
+</code></pre>
+        </li>
+        <br/>
+        <li>Common options:
+            <ul>
+                <li><code>label</code></li>
+                <li><code>required</code></li>
+                <li><code>attr</code> (HTML attributes)</li>
+                <li><code>help</code></li>
+                <li><code>constraints</code> (validation)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Built-in Form Field Types</li>
+    <br/>
+    <ul>
+        <li>Core field types include:
+            <ul>
+                <li><code>TextType</code></li>
+                <li><code>EmailType</code></li>
+                <li><code>PasswordType</code></li>
+                <li><code>ChoiceType</code></li>
+                <li><code>TextareaType</code></li>
+                <li><code>DateType</code></li>
+                <li><code>CheckboxType</code></li>
+                <li><code>IntegerType</code></li>
+                <li><code>MoneyType</code></li>
+                <li><code>FileType</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Each type has specialized rendering + validation behavior.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>ChoiceType (Dropdowns, Radios, Checkboxes)</li>
+    <br/>
+    <ul>
+        <li>Dropdown example:</li>
+<pre><code class="language-php line-numbers">
+$builder-&gt;add('color', ChoiceType::class, [
+    'choices' =&gt; [
+        'Red' =&gt; 'red',
+        'Blue' =&gt; 'blue',
+        'Green' =&gt; 'green',
+    ]
+]);
+</code></pre>
+        </li>
+        <br/>
+        <li>Multiple selection:</li>
+<pre><code class="language-php line-numbers">
+'expanded' =&gt; true,   // radio/checkboxes
+'multiple' =&gt; true
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Validation Integration</li>
+    <br/>
+    <ul>
+        <li>Forms integrate with Symfony Validator.</li>
+        <br/>
+        <li>Example constraint:</li>
+<pre><code class="language-php line-numbers">
+use Symfony\Component\Validator\Constraints as Assert;
+
+$builder-&gt;add('email', EmailType::class, [
+    'constraints' =&gt; [
+        new Assert\NotBlank(),
+        new Assert\Email(),
+    ]
+]);
+</code></pre>
+        </li>
+        <br/>
+        <li>Invalid forms automatically display error messages in Twig.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Uploads with FileType</li>
+    <br/>
+    <ul>
+<pre><code class="language-php line-numbers">
+$builder-&gt;add('photo', FileType::class, [
+    'mapped' =&gt; false,
+    'required' =&gt; false,
+]);
+</code></pre>
+        </li>
+        <br/>
+        <li><code>mapped: false</code> means → field does not map to an entity property.</li>
+        <br/>
+        <li>Access file in controller:</li>
+<pre><code class="language-php line-numbers">
+$file = $form-&gt;get('photo')-&gt;getData();
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>CSRF Protection</li>
+    <br/>
+    <ul>
+        <li>Enabled by default for all forms.</li>
+        <br/>
+        <li>Provides hidden input:</li>
+<pre><code class="language-html line-numbers">&lt;input type="hidden" name="_token" value="..." /&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Prevents cross-site request forgery attacks.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Rendering Individual Controls</li>
+    <br/>
+    <ul>
+        <li>You can render inputs manually:</li>
+<pre><code class="language-twig line-numbers">
+{{ form_label(form.name) }}
+{{ form_widget(form.name) }}
+{{ form_errors(form.name) }}
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for custom Bootstrap layouts.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Forms in API Applications</li>
+    <br/>
+    <ul>
+        <li>Forms can handle API (JSON) data:</li>
+<pre><code class="language-php line-numbers">
+$form-&gt;submit(json_decode($request-&gt;getContent(), true));
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for validation-heavy APIs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>CollectionType (Dynamic Forms)</li>
+    <br/>
+    <ul>
+        <li>Used for repeated/array-like form fields:</li>
+<pre><code class="language-php line-numbers">
+$builder-&gt;add('tags', CollectionType::class, [
+    'entry_type' =&gt; TextType::class,
+    'allow_add' =&gt; true,
+    'allow_delete' =&gt; true,
+]);
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for:
+            <ul>
+                <li>product tags</li>
+                <li>multiple phone numbers</li>
+                <li>dynamic list inputs</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
