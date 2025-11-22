@@ -2026,7 +2026,103 @@ abcd1234       nginx   Up 10 seconds
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-restart-command">Understanding the <code>docker restart</code> Command</h3>
+<ol>
 
+    <li>What Is <code>docker restart</code>?</li>
+    <br/>
+    <ul>
+        <li>The <code>docker restart</code> command is used to <u>stop and then start</u> one or more containers in a single operation.</li>
+        <br/>
+        <li>It is essentially the combination of:</li>
+<pre><code class="language-plaintext line-numbers">docker stop [container]
+docker start [container]
+</code></pre>
+        <li>Basic syntax:</li>
+<pre><code class="language-plaintext line-numbers">docker restart [OPTIONS] CONTAINER [CONTAINER...]</code></pre>
+        <li>Useful when you want the container to restart with updated configurations or refreshed network connections.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Restarting a Container</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker restart mycontainer</code></pre>
+        <li>Explanation: <code>mycontainer</code> is the container name or ID</li>
+        <br/>
+        <li>Docker performs:
+            <ul>
+                <li><code>SIGTERM</code> → graceful stop</li>
+                <li><code>SIGKILL</code> → after timeout (default 10 sec, configurable just like in <code>docker stop</code>)</li>
+                <li>Then starts the container again</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Timeout with <code>-t</code></li>
+    <br/>
+    <ul>
+        <li>You can customize the shutdown timeout before the restart begins.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker restart -t 3 mycontainer</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>-t 3</code> waits 3 seconds before force-killing during stop</li>
+            <li><code>mycontainer</code> is the container to restart</li>
+        </ul>
+        <br/>
+        <li>Useful for applications needing faster restart cycles.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Restarting Multiple Containers</li>
+    <br/>
+    <ul>
+        <li>You can restart multiple containers at once:</li>
+<pre><code class="language-bash line-numbers">docker restart web app db</code></pre>
+        <li>Explanation: Restarts <code>web</code>, <code>app</code>, and <code>db</code> containers sequentially</li>
+        <br/>
+        <li>Useful for multi-container environments.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example Workflow: Updating Configuration and Restarting</li>
+    <br/>
+    <ul>
+        <li>Step 1: Modify a config file inside a volume</li>
+<pre><code class="language-bash line-numbers">vim /host/config/nginx.conf
+</code></pre>
+
+        <br/>
+        <li>Step 2: Restart Nginx container</li>
+<pre><code class="language-bash line-numbers">docker restart nginx-server</code></pre>
+
+        <br/>
+        <li>Step 3: Confirm status</li>
+<pre><code class="language-bash line-numbers">docker ps</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Fast Restart with Custom Timeout</li>
+    <br/>
+    <ul>
+        <li>Some applications take too long to shut down gracefully.</li>
+        <br/>
+        <li>Use a shorter timeout:</li>
+<pre><code class="language-bash line-numbers">docker restart -t 1 backend</code></pre>
+        <br/>
+        <li>Meaning: wait at most 1 second before restarting.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
