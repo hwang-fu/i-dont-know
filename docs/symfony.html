@@ -171,6 +171,7 @@
         <li><a href="#symfony-logging">Logging</a></li>
         <li><a href="#symfony-email-management">Email Management</a></li>
         <li><a href="#symfony-unit-testing">Unit Testing</a></li>
+        <li><a href="#symfony-advanced-concepts">Advanced Concepts</a></li>
     </ol>
 </nav>
 <hr/>
@@ -6924,7 +6925,340 @@ tests/Service/PriceCalculatorTest.php
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-advanced-concepts">Symfony Advanced Concepts</h3>
+<ol>
 
+    <li>Overview of Advanced Symfony Concepts</li>
+    <br/>
+    <ul>
+        <li>Symfony provides a powerful and highly extensible architecture built from independent components.</li>
+        <br/>
+        <li>Advanced concepts include:
+            <ul>
+                <li>Service decoration</li>
+                <li>Compiler passes</li>
+                <li>Custom configuration & extensions</li>
+                <li>Event subscribers</li>
+                <li>Security voters</li>
+                <li>Serializer customization</li>
+                <li>Messenger message buses</li>
+                <li>HTTP caching (reverse proxy)</li>
+                <li>Environment variable processing</li>
+                <li>Custom annotations/attributes</li>
+            </ul>
+        </li>
+        <br/>
+        <li>These advanced topics allow developers to:
+            <ul>
+                <li>customize framework behavior</li>
+                <li>extend bundle features</li>
+                <li>optimize performance</li>
+                <li>build reusable modules</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Service Decoration</li>
+    <br/>
+    <ul>
+        <li>Service decoration allows you to wrap or override core services without modifying their original class.</li>
+        <br/>
+        <li>Example: decorating a mailer service to log outgoing messages.</li>
+<pre><code class="language-yaml line-numbers">
+services:
+    app.mailer_decorator:
+        decorates: mailer
+        arguments:
+            - '@app.mailer_decorator.inner'
+</code></pre>
+        </li>
+        <br/>
+        <li>Use cases:
+            <ul>
+                <li>logging</li>
+                <li>profiling</li>
+                <li>pre/post processing</li>
+                <li>feature toggling</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Compiler Passes</li>
+    <br/>
+    <ul>
+        <li>A compiler pass executes during container compilation.</li>
+        <br/>
+        <li>Used for:
+            <ul>
+                <li>modifying service definitions</li>
+                <li>registering tagged services</li>
+                <li>building service locators</li>
+                <li>adding arguments dynamically</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example structure:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class RegisterHandlersPass implements CompilerPassInterface
+{
+    public function process(ContainerBuilder $container)
+    {
+        $definition = $container->findDefinition('app.handler_registry');
+        $tagged = $container->findTaggedServiceIds('app.handler');
+
+        foreach ($tagged as $id =&gt; $tags) {
+            $definition->addMethodCall('addHandler', [new Reference($id)]);
+        }
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Compiler passes are added inside bundle classes.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Configuration & Bundle Extensions</li>
+    <br/>
+    <ul>
+        <li>Symfony bundles can provide custom configuration in <code>config/packages</code>.</li>
+        <br/>
+        <li>Example configuration:</li>
+<pre><code class="language-yaml line-numbers">
+my_bundle:
+    option: true
+    cache_dir: '%kernel.cache_dir%/mybundle'
+</code></pre>
+        </li>
+        <br/>
+        <li>Bundle extension loads and validates config:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class MyBundleExtension extends Extension
+{
+    public function load(array $configs, ContainerBuilder $container)
+    {
+        $config = $this->processConfiguration(new Configuration(), $configs);
+
+        $container->setParameter('my.option', $config['option']);
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Used for building reusable, configurable modules.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Advanced Event Subscribers</li>
+    <br/>
+    <ul>
+        <li>A subscriber listens to multiple events and centralizes event logic.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+
+class SecuritySubscriber implements EventSubscriberInterface
+{
+    public static function getSubscribedEvents()
+    {
+        return [
+            KernelEvents::REQUEST =&gt; 'checkRequest',
+            KernelEvents::RESPONSE =&gt; 'addHeaders',
+        ];
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Used for adding:
+            <ul>
+                <li>request filtering</li>
+                <li>response modification</li>
+                <li>logging</li>
+                <li>security checks</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Security Voters</li>
+    <br/>
+    <ul>
+        <li>Voters determine whether a user is allowed to perform certain actions.</li>
+        <br/>
+        <li>Example voter:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class DocumentVoter extends Voter
+{
+    protected function supports($attribute, $subject)
+    {
+        return $attribute === 'EDIT' && $subject instanceof Document;
+    }
+
+    protected function voteOnAttribute($attribute, $document, TokenInterface $token)
+    {
+        return $document->getOwner() === $token->getUser();
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Voters are essential for fine-grained access control.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Serializer Component (Advanced Usage)</li>
+    <br/>
+    <ul>
+        <li>Serializer converts objects ↔ JSON/XML automatically.</li>
+        <br/>
+        <li>Advanced features:
+            <ul>
+                <li>Groups for conditional serialization</li>
+                <li>Context processors</li>
+                <li>Custom normalizers & denormalizers</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example using groups:</li>
+<pre><code class="language-php line-numbers">
+#[Groups(['public'])]
+public string $name;
+
+#[Groups(['admin'])]
+public float $salary;
+</code></pre>
+        </li>
+        <br/>
+        <li>Serializing with a group:</li>
+<pre><code class="language-php line-numbers">
+$serializer->serialize($obj, 'json', ['groups' =&gt; ['public']]);
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Messenger Component (Advanced Message Bus)</li>
+    <br/>
+    <ul>
+        <li>Messenger provides:
+            <ul>
+                <li>async processing</li>
+                <li>background jobs</li>
+                <li>queue workers</li>
+                <li>command & event buses</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example message:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class SendNewsletter
+{
+    public string $email;
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Handler:</li>
+<pre><code class="language-php line-numbers">
+class SendNewsletterHandler
+{
+    public function __invoke(SendNewsletter $msg)
+    {
+        // send email
+    }
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Dispatching asynchronously:</li>
+<pre><code class="language-php line-numbers">
+$bus->dispatch(new SendNewsletter('user@example.com'));
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>HTTP Caching & Reverse Proxy</li>
+    <br/>
+    <ul>
+        <li>Symfony can integrate with reverse proxies such as Varnish or Symfony HttpCache.</li>
+        <br/>
+        <li>Set cache headers:</li>
+<pre><code class="language-php line-numbers">
+$response->setPublic();
+$response->setMaxAge(3600);
+$response->setSharedMaxAge(3600);
+</code></pre>
+        </li>
+        <br/>
+        <li>Supports:
+            <ul>
+                <li>ETags</li>
+                <li>Cache invalidation</li>
+                <li>Cache tagging</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Annotations / Attributes</li>
+    <br/>
+    <ul>
+        <li>You can create custom PHP attributes to add metadata:</li>
+<pre><code class="language-php line-numbers">
+#[RateLimit(10)]
+public function index() {}
+</code></pre>
+        </li>
+        <br/>
+        <li>Processed via:
+            <ul>
+                <li>event subscribers</li>
+                <li>kernel request listeners</li>
+                <li>custom bundles</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Environment Variable Processing</li>
+    <br/>
+    <ul>
+        <li>Symfony supports environment variable processors:</li>
+        <ul>
+            <li><code>base64:</code></li>
+            <li><code>file:</code></li>
+            <li><code>json:</code></li>
+            <li><code>resolve:</code></li>
+        </ul>
+        </li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-plaintext line-numbers">
+DATABASE_URL="mysql://user:pass@localhost/db"
+</code></pre>
+        </li>
+        <br/>
+        <li>Used in <code>services.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">
+parameters:
+    secret_key: '%env(base64:APP_SECRET)%'
+</code></pre>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
