@@ -152,6 +152,7 @@
         <li><a href="#docker-overview">Overview</a></li>
         <li><a href="#docker-hub">Hub</a></li>
         <li><a href="#docker-images">Images</a></li>
+        <li><a href="#docker-containers">Containers</a></li>
     </ol>
 </nav>
 <hr/>
@@ -772,7 +773,220 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-containers">Docker Containers</h3>
+<ol>
 
+    <li>What Are Docker Containers?</li>
+    <br/>
+    <ul>
+        <li>A <b>Docker container</b> is a <b>running instance</b> of a Docker image.</li>
+        <br/>
+        <li>It provides:</li>
+        <ul>
+            <li>an isolated filesystem</li>
+            <li>a lightweight runtime environment</li>
+            <li>its own processes and network stack</li>
+            <li>predictable behavior across machines</li>
+        </ul>
+        <br/>
+        <li>Multiple containers can run from the same image.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating and Running Containers</li>
+    <br/>
+    <ul>
+        <li>Basic container run:</li>
+<pre><code class="language-bash line-numbers">docker run ubuntu</code></pre>
+        <br/>
+        <li>Run interactively:</li>
+<pre><code class="language-bash line-numbers">docker run -it ubuntu bash</code></pre>
+        <br/>
+        <li>Run in detached mode (background):</li>
+<pre><code class="language-bash line-numbers">docker run -d nginx</code></pre>
+        <br/>
+        <li>Run and map ports:</li>
+<pre><code class="language-bash line-numbers">docker run -p 8080:80 nginx</code></pre>
+        <br/>
+        <li>Run with a name:</li>
+<pre><code class="language-bash line-numbers">docker run --name mycontainer ubuntu</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Viewing and Managing Containers</li>
+    <br/>
+    <ul>
+        <li>List running containers:</li>
+<pre><code class="language-bash line-numbers">docker ps</code></pre>
+        <br/>
+        <li>List all containers (including stopped):</li>
+<pre><code class="language-bash line-numbers">docker ps -a</code></pre>
+        <br/>
+        <li>Stop a container:</li>
+<pre><code class="language-bash line-numbers">docker stop mycontainer</code></pre>
+        <br/>
+        <li>Start a container:</li>
+<pre><code class="language-bash line-numbers">docker start mycontainer</code></pre>
+        <br/>
+        <li>Remove a container:</li>
+<pre><code class="language-bash line-numbers">docker rm mycontainer</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Container File System</li>
+    <br/>
+    <ul>
+        <li>Containers use a layered filesystem:</li>
+        <ul>
+            <li>Image layers = read-only</li>
+            <li>Container layer = writable</li>
+        </ul>
+        <br/>
+        <li>This means:</li>
+        <ul>
+            <li>modifications exist only inside that container</li>
+            <li>destroying the container removes its write layer</li>
+        </ul>
+        <br/>
+        <li>Inspect layers:</li>
+<pre><code class="language-bash line-numbers">docker history myimage</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Executing Commands Inside Containers</li>
+    <br/>
+    <ul>
+        <li>Run a command in a running container:</li>
+<pre><code class="language-bash line-numbers">docker exec mycontainer ls</code></pre>
+        <br/>
+        <li>Start an interactive session:</li>
+<pre><code class="language-bash line-numbers">docker exec -it mycontainer bash</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Container Networking</li>
+    <br/>
+    <ul>
+        <li>Docker containers can communicate via built-in networks:</li>
+    <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Docker Network Mode</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><b>bridge</b></td>
+            <td>Default network mode, containers get a private internal network and can communicate via virtual interfaces.</td>
+        </tr>
+        <tr>
+            <td><b>host</b></td>
+            <td>Shares the host's network stack, container ports map directly to the host's network without NAT.</td>
+        </tr>
+        <tr>
+            <td><b>none</b></td>
+            <td>Disables networking entirely, container has no network interfaces except loopback.</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>List networks:</li>
+<pre><code class="language-bash line-numbers">docker network ls</code></pre>
+        <br/>
+        <li>Connect container to network:</li>
+<pre><code class="language-bash line-numbers">docker network connect mynet mycontainer</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Container Volumes</li>
+    <br/>
+    <ul>
+        <li>Containers lose data if destroyed (ephemeral).</li>
+        <br/>
+        <li>Use volumes for persistent data:</li>
+<pre><code class="language-bash line-numbers">docker run -v myvolume:/data myimage</code></pre>
+        <br/>
+        <li>Types of storage:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Storage Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><b>Volumes</b></td>
+            <td>Managed entirely by Docker; stored in Docker’s internal storage location.</td>
+        </tr>
+        <tr>
+            <td><b>Bind Mounts</b></td>
+            <td>Maps a directory or file from the host filesystem directly into the container.</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>List volumes:</li>
+<pre><code class="language-bash line-numbers">docker volume ls</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Container Lifecycle</li>
+    <br/>
+    <ul>
+        <li>A container lifecycle includes:</li>
+        <ul>
+            <li>create</li>
+            <li>start</li>
+            <li>pause (optional)</li>
+            <li>stop</li>
+            <li>restart</li>
+            <li>remove</li>
+        </ul>
+        <br/>
+        <li>Lifecycle example:</li>
+<pre><code class="language-bash line-numbers">docker create myimage
+docker start container_id
+docker stop container_id
+docker rm container_id
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Container Logs</li>
+    <br/>
+    <ul>
+        <li>View logs:</li>
+<pre><code class="language-bash line-numbers">docker logs mycontainer</code></pre>
+        <br/>
+        <li>Follow logs (like tail -f):</li>
+<pre><code class="language-bash line-numbers">docker logs -f mycontainer</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Cleaning Up Containers</li>
+    <br/>
+    <ul>
+        <li>Remove all stopped containers:</li>
+<pre><code class="language-bash line-numbers">docker container prune</code></pre>
+        <br/>
+        <li>Remove everything (CAUTION):</li>
+<pre><code class="language-bash line-numbers">docker system prune -a</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
