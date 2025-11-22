@@ -167,6 +167,7 @@
         <li><a href="#docker-volume-command">Understanding the <code>docker volume</code> Command</a></li>
         <li><a href="#docker-network-command">Understanding the <code>docker network</code> Command</a></li>
         <li><a href="#docker-daemon-overview">Understanding the Docker Daemon</a></li>
+        <li><a href="#docker-compose-command">Understanding the <code>docker compose</code> Command</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3566,7 +3567,237 @@ docker run -d --name app2 --network appnet --ip 172.20.0.11 alpine
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-compose-command">Understanding the <code>docker compose</code> Command</h3>
+<ol>
 
+    <li>What Is <code>docker compose</code>?</li>
+    <br/>
+    <ul>
+        <li>The <code>docker compose</code> command is used to run multi-container applications using a single configuration file: <code>docker-compose.yml</code>.</li>
+        <br/>
+        <li>Purpose:</li>
+        <ul>
+            <li>Start multiple services (containers) together</li>
+            <li>Create networks automatically</li>
+            <li>Create volumes automatically</li>
+            <li>Define environment variables, ports, dependencies</li>
+            <li>Manage an entire stack with one command</li>
+        </ul>
+        <br/>
+        <li> Docker Compose is ideal for:</li>
+        <ul>
+            <li>Web applications</li>
+            <li>Microservices</li>
+            <li>Local development environments</li>
+            <li>Database + application stacks</li>
+        </ul>
+        <br/>
+        <li>Newer versions use:</li>
+<pre><code class="language-plaintext line-numbers">docker compose</code></pre>
+        <br/>
+        <li>(not <code>docker-compose</code> with a hyphen).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding the <code>docker-compose.yml</code> Structure</li>
+    <br/>
+    <ul>
+        <li>A basic example:</li>
+<pre><code class="language-yaml line-numbers">version: "3.9"
+services:
+  web:
+    image: nginx
+    ports:
+      - "8080:80"
+  db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: 12345
+</code></pre>
+        <br/>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>version</code> → Compose schema version</li>
+            <li><code>services</code> → each container definition</li>
+            <li><code>web</code> → first service</li>
+            <li><code>db</code> → second service</li>
+            <li>Compose will:
+                <ul>
+                    <li>create a shared network</li>
+                    <li>allow <code>web</code> to connect to <code>db</code> by name</li>
+                </ul>
+            </li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Starting a Compose Application — <code>docker compose up</code></li>
+    <br/>
+    <ul>
+        <li>Run everything defined in <code>docker-compose.yml</code>:</li>
+<pre><code class="language-bash line-numbers">docker compose up</code></pre>
+        <li>Foreground mode: streams logs of all services.</li>
+        <br/>
+        <li>Run in background:</li>
+<pre><code class="language-bash line-numbers">docker compose up -d</code></pre>
+        <li>What happens under the hood?</li>
+        <ul>
+            <li>Networks created</li>
+            <li>Volumes created (if any)</li>
+            <li>Containers started in dependency order</li>
+            <li>Name format: <code>foldername_service_index</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Stopping a Compose Application — <code>docker compose down</code></li>
+    <ul>
+<pre><code class="language-bash line-numbers">docker compose down</code></pre>
+        <li>Removes:</li>
+        <ul>
+            <li>containers</li>
+            <li>networks created by Compose</li>
+        </ul>
+        <br/>
+        <li>Does NOT remove:
+            <ul>
+                <li>named volumes</li>
+                <li>images</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Remove volumes too:</li>
+<pre><code class="language-bash line-numbers">docker compose down -v</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Viewing Logs — <code>docker compose logs</code></li>
+    <ul>
+<pre><code class="language-bash line-numbers">docker compose logs</code></pre>
+        <li>Real-time logs:</li>
+<pre><code class="language-bash line-numbers">docker compose logs -f</code></pre>
+        <li>Logs from specific service:</li>
+<pre><code class="language-bash line-numbers">docker compose logs web</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Listing All Services — <code>docker compose ps</code></li>
+    <ul>
+<pre><code class="language-bash line-numbers">docker compose ps</code></pre>
+        <li>Shows container status and exposed ports.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Building Images — <code>docker compose build</code></li>
+    <br/>
+    <ul>
+        <li>If your service uses a <code>Dockerfile</code>:</li>
+<pre><code class="language-bash line-numbers">docker compose build</code></pre>
+        </li>
+        <br/>
+        <li>Force rebuild (ignore cache):</li>
+<pre><code class="language-bash line-numbers">docker compose build --no-cache</code></pre>
+        <br/>
+        <li>Build a specific service:</li>
+<pre><code class="language-bash line-numbers">docker compose build web</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Running Commands in Services — <code>docker compose exec</code></li>
+    <br/>
+    <ul>
+        <li>Example: open a shell in <code>db</code> service:</li>
+<pre><code class="language-bash line-numbers">docker compose exec db bash</code></pre>
+        <li>If the container only has <code>sh</code>:</li>
+<pre><code class="language-bash line-numbers">docker compose exec db sh</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Viewing Container Resource Usage — <code>docker compose top</code></li>
+<pre><code class="language-bash line-numbers">docker compose top</code></pre>
+    <ul>
+        <li>Shows running processes inside services.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Stopping and Starting Individual Services</li>
+    <br/>
+    <ul>
+        <li>Stop one service:</li>
+<pre><code class="language-bash line-numbers">docker compose stop web</code></pre>
+        <br/>
+        <li>Start one service:</li>
+<pre><code class="language-bash line-numbers">docker compose start web</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Scaling Services — <code>--scale</code></li>
+<pre><code class="language-bash line-numbers">docker compose up -d --scale web=3</code></pre>
+    <ul>
+        <li>Runs 3 instances of the <code>web</code> service.</li>
+        <br/>
+        <li>Great for load-balancing demos or worker clusters.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Environment Files</li>
+    <br/>
+    <ul>
+        <li>Inside <code>docker-compose.yml</code>:</li>
+<pre><code class="language-yaml line-numbers">services:
+    app:
+        env_file:
+            - .env
+</code></pre>
+        <br/>
+        <li>Your <code>.env</code> file:</li>
+<pre><code class="language-plaintext line-numbers">API_KEY=12345
+DEBUG=true
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Web + Database Compose Setup</li>
+    <br/>
+    <ul>
+        <li>A common stack:</li>
+<pre><code class="language-yaml line-numbers">services:
+    web:
+        image: nginx
+        ports:
+            - "8080:80"
+        depends_on:
+            - db
+
+    db:
+        image: postgres
+        environment:
+            POSTGRES_PASSWORD: secret
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>depends_on</code> ensures DB starts before web</li>
+            <li>Both share an automatically created network</li>
+            <li>Web can reach DB via hostname <code>db</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
