@@ -2956,8 +2956,7 @@ done
 <pre><code class="language-bash line-numbers">docker images</code></pre>
         <br/>
         <li>Example output:</li>
-<pre><code class="language-plaintext line-numbers">
-REPOSITORY             TAG     IMAGE ID      SIZE
+<pre><code class="language-plaintext line-numbers">REPOSITORY             TAG     IMAGE ID      SIZE
 myusername/myapp       latest  09be1234abc   155MB
 </code></pre>
     </ul>
@@ -2987,7 +2986,199 @@ myusername/myapp       latest  09be1234abc   155MB
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-volume-command">Understanding the <code>docker volume</code> Command</h3>
+<ol>
 
+    <li>What Is <code>docker volume</code>?</li>
+    <br/>
+    <ul>
+        <li>The <code>docker volume</code> command manages Docker-managed storage volumes that persist data outside container lifecycles.</li>
+        <br/>
+        <li>Volumes allow you to:</li>
+        <ul>
+            <li>persist database files</li>
+            <li>share data between containers</li>
+            <li>keep data even after containers are removed</li>
+            <li>avoid storing data inside container layers</li>
+        </ul>
+        <br/>
+        <li>Basic syntax:</li>
+<pre><code class="language-plaintext line-numbers">docker volume [COMMAND]</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Listing Volumes with <code>docker volume ls</code></li>
+    <br/>
+    <ul>
+        <li>Shows all existing volumes:</li>
+<pre><code class="language-bash line-numbers">docker volume ls</code></pre>
+        <br/>
+        <li>Example output:</li>
+<pre><code class="language-plaintext line-numbers">DRIVER    VOLUME NAME
+local     mydata
+local     db-volume
+</code></pre>
+        </li>
+        <br/>
+        <li><u>DRIVER</u> is usually <code>local</code>, the default storage backend.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a New Volume</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker volume create mydata</code></pre>
+        <br/>
+        <li>Explanation: <code>mydata</code> is the name of the new volume</li>
+        <br/>
+        <li>Volumes are created empty and ready to be mounted into containers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Inspecting a Volume</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker volume inspect mydata</code></pre>
+        <br/>
+        <li>Example output:</li>
+<pre><code class="language-plaintext line-numbers">[
+    {
+        "Name": "mydata",
+        "Mountpoint": "/var/lib/docker/volumes/mydata/_data",
+        "Driver": "local"
+    }
+]
+</code></pre>
+        </li>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>Mountpoint</code> is the actual storage location on host</li>
+            <li><code>Driver</code> is the storage backend</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using a Volume with <code>docker run</code></li>
+    <br/>
+    <ul>
+        <li>Example: mount a volume to a container:</li>
+<pre><code class="language-bash line-numbers">docker run -d --name db     \
+  -v mydata:/var/lib/mysql  \
+  mysql:8
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>-v mydata:/var/lib/mysql</code> mounts the volume <code>mydata</code> to MySQL data folder inside the container</li>
+            <li><code>/var/lib/mysql</code> is the path inside container</li>
+            <li>All MySQL data becomes persistent</li>
+        </ul>
+        <br/>
+        <li>If the container is removed, the volume persists.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating and Mounting Volume Automatically</li>
+    <br/>
+    <ul>
+        <li>If you use a volume that doesn’t exist:</li>
+<pre><code class="language-bash line-numbers">docker run -v newvol:/data alpine
+</code></pre>
+        <li>Docker will automatically create <code>newvol</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Viewing Mounted Volumes Inside a Container</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker inspect container-name</code></pre>
+        <li>Then look under <code>.Mounts</code> for volume configuration.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Removing a Volume (<code>docker volume rm</code>)</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker volume rm mydata</code></pre>
+    <li>Important: You can <u>not</u> remove a volume that is currently in use by a container.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Removing All Unused Volumes — <code>docker volume prune</code></li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker volume prune</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li>Deletes all volumes not referenced by any container</li>
+            <li>Helpful for cleaning disk space</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Difference Between Volumes, Bind Mounts, and tmpfs</li>
+    <br/>
+    <ul>
+        <li><code>Volumes</code> are managed by Docker, best for persistence.</li>
+        <br/>
+        <li><code>Bind mounts</code> map a specific host directory:</li>
+<pre><code class="language-bash line-numbers">docker run -v /host/path:/container/path app
+</code></pre>
+        <li><code>tmpfs</code> is memory-only storage:</li>
+<pre><code class="language-bash line-numbers">docker run --tmpfs /cache app
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Persisting PostgreSQL Data</li>
+<pre><code class="language-bash line-numbers">docker volume create pgdata
+
+docker run -d                        \
+  --name pg                          \
+  -e POSTGRES_PASSWORD=12345         \
+  -v pgdata:/var/lib/postgresql/data \
+  postgres:15
+</code></pre>
+    <ul>
+        <li>Now database data persists across container restarts or removals.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Sharing a Volume Between Multiple Containers</li>
+<pre><code class="language-bash line-numbers">docker run -d --name c1 -v sharedvol:/data alpine
+docker run -d --name c2 -v sharedvol:/data alpine
+</code></pre>
+    <ul>
+        <li>Both containers share the same storage location.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Where Docker Volumes Are Stored on Host</li>
+    <br/>
+    <ul>
+        <li>Default path:</li>
+<pre><code class="language-plaintext line-numbers">/var/lib/docker/volumes/[VOLUME_NAME]/_data
+</code></pre>
+        <li>But you should not directly modify those files unless necessary.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
