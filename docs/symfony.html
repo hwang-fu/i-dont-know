@@ -6364,7 +6364,280 @@ public function pay(LoggerInterface $checkoutLogger)
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-email-management">Symfony Email Management</h3>
+<ol>
 
+    <li>What Is Email Management in Symfony?</li>
+    <br/>
+    <ul>
+        <li>Symfony provides a powerful <b>Mailer Component</b> to send emails using different transport layers.</li>
+        <br/>
+        <li>Modern email handling in Symfony includes:</li>
+        <ul>
+            <li>building rich email messages</li>
+            <li>sending via SMTP or third-party APIs</li>
+            <li>sending transactional emails</li>
+            <li>sending templated emails (Twig)</li>
+            <li>attaching files & inline images</li>
+            <li>failover transports</li>
+            <li>async email sending (Messenger)</li>
+        </ul>
+        <br/>
+        <li>The Mailer component replaces the old <b>SwiftMailer</b> library.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing the Symfony Mailer Component</li>
+    <br/>
+    <ul>
+        <li>Install via Composer:</li>
+<pre><code class="language-bash line-numbers">composer require symfony/mailer symfony/twig-bundle</code></pre>
+        </li>
+        <br/>
+        <li>This installs:
+            <ul>
+                <li>Mailer component</li>
+                <li>Email message builder</li>
+                <li>Twig integration for email templates</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Email configuration file:</li>
+<pre><code class="language-plaintext line-numbers">config/packages/mailer.yaml</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Configuring Email Transport</li>
+    <br/>
+    <ul>
+        <li>Transport is defined in <code>.env</code>:</li>
+<pre><code class="language-plaintext line-numbers">
+MAILER_DSN=smtp://username:password@smtp.example.com:587
+</code></pre>
+        </li>
+        <br/>
+        <li>Supported transports:</li>
+        <ul>
+            <li>SMTP (most common)</li>
+            <li>Gmail</li>
+            <li>SendGrid</li>
+            <li>Mailgun</li>
+            <li>Postmark</li>
+            <li>Amazon SES</li>
+            <li>sendmail</li>
+        </ul>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-plaintext line-numbers">
+MAILER_DSN=gmail://username:password@default
+MAILER_DSN=sendgrid://API_KEY@default
+MAILER_DSN=ses+smtp://AWS_KEY:AWS_SECRET@default
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending a Basic Email</li>
+    <br/>
+    <ul>
+        <li>Inject <code>MailerInterface</code> into a controller:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
+
+public function sendEmail(MailerInterface $mailer)
+{
+    $email = (new Email())
+        ->from('admin@example.com')
+        ->to('user@example.com')
+        ->subject('Welcome!')
+        ->text('Hello!')
+        ->html('&lt;p&gt;Welcome to our service!&lt;/p&gt;');
+
+    $mailer->send($email);
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Emails can include both plain text and HTML.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending Templated Emails (Twig)</li>
+    <br/>
+    <ul>
+        <li>Use <code>TemplatedEmail</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+
+$email = (new TemplatedEmail())
+    ->from('support@example.com')
+    ->to('user@example.com')
+    ->subject('Account Activation')
+    ->htmlTemplate('emails/activation.html.twig')
+    ->context([
+        'username' => 'Junzhe',
+        'activationLink' => 'https://example.com/activate',
+    ]);
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Example Twig template:</li>
+<pre><code class="language-twig line-numbers">
+&lt;h1&gt;Hello {{ username }}!&lt;/h1&gt;
+&lt;p&gt;Click the link to activate your account:&lt;/p&gt;
+&lt;a href="{{ activationLink }}"&gt;Activate&lt;/a&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Attaching Files</li>
+    <br/>
+    <ul>
+<pre><code class="language-php line-numbers">
+$email = (new Email())
+    ->from('admin@example.com')
+    ->to('user@example.com')
+    ->subject('Invoice')
+    ->attachFromPath('invoices/jan.pdf');
+</code></pre>
+        <br/>
+        <li>You can attach binary data:</li>
+<pre><code class="language-php line-numbers">
+$email->attach($pdfContent, 'invoice.pdf', 'application/pdf');
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Inline Images</li>
+    <br/>
+    <ul>
+        <li>You can embed images inside HTML emails:</li>
+<pre><code class="language-php line-numbers">
+$email->embedFromPath('images/logo.png', 'logo');
+</code></pre>
+        <br/>
+        <li>Twig template:</li>
+<pre><code class="language-twig line-numbers">
+&lt;img src="cid:logo" alt="Logo" /&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multiple Recipients</li>
+    <br/>
+    <ul>
+<pre><code class="language-php line-numbers">
+$email->to('a@example.com')
+      ->cc('b@example.com')
+      ->bcc('c@example.com')
+      ->replyTo('support@example.com');
+</code></pre>
+        </li>
+        <br/>
+        <li>Supports:
+            <ul>
+                <li><code>to()</code></li>
+                <li><code>cc()</code></li>
+                <li><code>bcc()</code></li>
+                <li><code>replyTo()</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Transport Failover and Load Balancing</li>
+    <br/>
+    <ul>
+        <li>Symfony can automatically retry emails using multiple transports.</li>
+        <br/>
+        <li>Example failover DSN:</li>
+<pre><code class="language-plaintext line-numbers">
+MAILER_DSN=failover(smtp://a.com, smtp://b.com)
+</code></pre>
+        </li>
+        <br/>
+        <li>Load balancing across transports:</li>
+<pre><code class="language-plaintext line-numbers">
+MAILER_DSN=roundrobin(smtp://a.com, smtp://b.com)
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sending Emails Asynchronously (Messenger Integration)</li>
+    <br/>
+    <ul>
+        <li>Heavy email processing should be done asynchronously.</li>
+        <br/>
+        <li>Enable async transport:</li>
+<pre><code class="language-yaml line-numbers">
+framework:
+    messenger:
+        transports:
+            async: 'doctrine://default'
+        routing:
+            'Symfony\Component\Mailer\Messenger\SendEmailMessage': async
+</code></pre>
+        </li>
+        <br/>
+        <li>Now emails are queued and sent in background:</li>
+<pre><code class="language-bash line-numbers">symfony console messenger:consume async</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Testing Emails in Development</li>
+    <br/>
+    <ul>
+        <li>Symfony provides a nice email tester:</li>
+<pre><code class="language-bash line-numbers">symfony open:local:webmail</code></pre>
+        </li>
+        <br/>
+        <li>Emails are captured in:
+            <ul>
+                <li>Symfony Web Debug Toolbar</li>
+                <li>Symfony Profiler (Emails tab)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>No real emails are sent in dev mode by default.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Logging and Debugging Email Sending</li>
+    <br/>
+    <ul>
+        <li>Mailer logs to:</li>
+<pre><code class="language-plaintext line-numbers">var/log/dev.log</code></pre>
+        </li>
+        <br/>
+        <li>Use Profiler & Toolbar to inspect:
+            <ul>
+                <li>email content</li>
+                <li>transport</li>
+                <li>attachments</li>
+                <li>status</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You can enable mail delivery disable mode for safety:</li>
+<pre><code class="language-yaml line-numbers">framework:
+    mailer:
+        envelope:
+            recipients: ['test@example.com']
+</code></pre>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
