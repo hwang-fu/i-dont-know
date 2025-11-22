@@ -163,6 +163,7 @@
         <li><a href="#symfony-doctrine-orm">Doctrine ORM</a></li>
         <li><a href="#symfony-forms">Forms</a></li>
         <li><a href="#symfony-csrf">Understanding CSRF (Cross-Site Request Forgery)</a></li>
+        <li><a href="#symfony-validation">Validation</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4605,7 +4606,321 @@ $csrf->isTokenValid(new CsrfToken('delete_item', $submittedToken));
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-validation">Symfony Validation</h3>
+<ol>
 
+    <li>What Is Symfony Validation?</li>
+    <br/>
+    <ul>
+        <li>The Symfony Validator component provides a structured system to verify that data meets certain rules before being processed or saved.</li>
+        <br/>
+        <li>Validation is commonly used for:
+            <ul>
+                <li>form input validation</li>
+                <li>API request validation</li>
+                <li>entity property validation</li>
+                <li>custom object validation</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Advantages:
+            <ul>
+                <li>declarative constraints</li>
+                <li>automatic error messages</li>
+                <li>integration with Symfony Forms</li>
+                <li>supports both attributes and YAML/XML/PHP config</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing the Validator Component</li>
+    <br/>
+    <ul>
+        <li>Install via Composer:</li>
+<pre><code class="language-bash line-numbers">composer require symfony/validator</code></pre>
+        </li>
+        <br/>
+        <li>Validation config is placed in <code>config/packages/validator.yaml</code>.</li>
+        <br/>
+        <li>Works seamlessly with forms and Doctrine entities.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Adding Validation Using PHP Attributes</li>
+    <br/>
+    <ul>
+        <li>Most modern Symfony apps use PHP attributes.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Validator\Constraints as Assert;
+
+class UserInput
+{
+    #[Assert\NotBlank]
+    public string $name;
+
+    #[Assert\Email]
+    public string $email;
+
+    #[Assert\Length(min: 8)]
+    public string $password;
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Each <code>#[Assert\...]</code> defines a rule for the property.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Validating Objects Manually</li>
+    <br/>
+    <ul>
+        <li>Inject the <code>ValidatorInterface</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+
+public function submit(ValidatorInterface $validator)
+{
+    $input = new UserInput();
+    $input->name = '';
+    $input->email = 'wrong email';
+    $input->password = '123';
+
+    $errors = $validator->validate($input);
+
+    if (count($errors) &gt; 0) {
+        return (string) $errors;
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Each error describes:
+            <ul>
+                <li>the violated constraint,</li>
+                <li>the field,</li>
+                <li>the error message.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Validation with Symfony Forms</li>
+    <br/>
+    <ul>
+        <li>Forms automatically use validation constraints.</li>
+        <br/>
+        <li>Example entity with constraints:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class Product
+{
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 3)]
+    private string $name;
+
+    #[Assert\Positive]
+    private float $price;
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Form controller:</li>
+<pre><code class="language-php line-numbers">
+$form = $this->createForm(ProductType::class, $product);
+$form->handleRequest($request);
+
+if ($form->isSubmitted() && $form->isValid()) {
+    // valid data
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Errors automatically appear in Twig:</li>
+<pre><code class="language-twig line-numbers">{{ form_errors(form.name) }}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Validation Constraints</li>
+    <br/>
+    <ul>
+        <li><b>String constraints</b>
+            <ul>
+                <li><code>NotBlank</code></li>
+                <li><code>NotNull</code></li>
+                <li><code>Length</code></li>
+                <li><code>Email</code></li>
+                <li><code\Regex</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Number constraints</b>
+            <ul>
+                <li><code>Range</code></li>
+                <li><code>Positive</code></li>
+                <li><code>Negative</code></li>
+                <li><code>LessThan</code></li>
+                <li><code>GreaterThan</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Date constraints</b>
+            <ul>
+                <li><code>Date</code></li>
+                <li><code>DateTime</code></li>
+                <li><code>LessThanOrEqual</code></li>
+                <li><code>GreaterThanOrEqual</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Collection constraints</b>
+            <ul>
+                <li><code>Choice</code></li>
+                <li><code>Count</code></li>
+                <li><code>All</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>File constraints</b>
+            <ul>
+                <li><code>File</code></li>
+                <li><code>Image</code></li>
+                <li><code>MimeType</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Entity constraints</b>
+            <ul>
+                <li><code>UniqueEntity</code> (Doctrine)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Error Messages</li>
+    <br/>
+    <ul>
+<pre><code class="language-php line-numbers">#[Assert\NotBlank(message: 'Name cannot be empty')]
+private string $name;</code></pre>
+        </li>
+        <br/>
+        <li>All constraints accept custom messages.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Validating Nested Objects</li>
+    <br/>
+    <ul>
+        <li>Use <code>Valid</code> constraint:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class Order
+{
+    #[Assert\Valid]
+    public Customer $customer;
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>This ensures that constraints inside <code>Customer</code> are also validated.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Groups for Conditional Validation</li>
+    <br/>
+    <ul>
+        <li>Validation groups allow different rule sets depending on context.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">
+#[Assert\NotBlank(groups: ['create'])]
+public string $password;
+</code></pre>
+        </li>
+        <br/>
+        <li>Controller validation with groups:</li>
+<pre><code class="language-php line-numbers">
+$errors = $validator->validate($user, null, ['create']);
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for:
+            <ul>
+                <li>Entity creation vs edition</li>
+                <li>User registration vs login</li>
+                <li>Step-based forms</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Validation Using YAML or XML</li>
+    <br/>
+    <ul>
+        <li>You can define validation rules without touching PHP code.</li>
+        <br/>
+        <li>Example YAML:</li>
+<pre><code class="language-yaml line-numbers">App\Entity\User:
+    properties:
+        email:
+            - Email: ~
+            - NotBlank: ~
+        age:
+            - Range: { min: 18 }</code></pre>
+        </li>
+        <br/>
+        <li>This is useful for reusable bundles or clean domain models.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Validation Constraints</li>
+    <br/>
+    <ul>
+        <li>Create your own constraints:</li>
+<pre><code class="language-bash line-numbers">symfony console make:validator StrongPassword</code></pre>
+        </li>
+        <br/>
+        <li>Structure:</li>
+        <ul>
+            <li>a <b>constraint class</b></li>
+            <li>a <b>validator class</b> containing logic</li>
+        </ul>
+        <br/>
+        <li>Example validation logic:</li>
+<pre><code class="language-php line-numbers">
+if (!preg_match('/[A-Z]/', $value)) {
+    $this->context->buildViolation('Must contain uppercase')->addViolation();
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using the Validation Profiler</li>
+    <br/>
+    <ul>
+        <li>The Symfony Profiler shows:</li>
+        <ul>
+            <li>validated values</li>
+            <li>constraints executed</li>
+            <li>violation messages</li>
+        </ul>
+        </li>
+        <br/>
+        <li>Helps troubleshoot form or API validation issues.</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
