@@ -161,6 +161,7 @@
         <li><a href="#flask-sending-form-data-to-template">Sending Form Data to Template</a></li>
         <li><a href="#flask-cookies">Cookies</a></li>
         <li><a href="#flask-sessions">Sessions</a></li>
+        <li><a href="#flask-redirect-erros">Redirect &amp; Errors</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3714,7 +3715,274 @@ def dashboard():
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-redirect-errors">Flask Redirect &amp; Errors</h3>
+<ol>
 
+    <li>Introduction to Redirects and Error Handling in Flask</li>
+    <br/>
+    <ul>
+        <li>Redirects and error handling are essential in every real-world Flask application.</li>
+        <br/>
+        <li><b>Redirects</b> allow you to send the user from one route to another.</li>
+        <br/>
+        <li><b>Error handling</b> allows you to show custom pages when something goes wrong (404, 500, etc.).</li>
+        <br/>
+        <li>Flask provides built-in functions like <code>redirect()</code>, <code>url_for()</code>, and decorators for handling errors.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using <code>redirect()</code> with <code>url_for()</code></li>
+    <br/>
+    <ul>
+        <li>The most common way to redirect:</li>
+<pre><code class="language-python line-numbers">from flask import redirect, url_for
+
+@app.route('/old')
+def old():
+    return redirect(url_for('new'))
+
+@app.route('/new')
+def new():
+    return "You have been redirected!"
+</code></pre>
+        <br/>
+        <li><code>redirect()</code> returns an HTTP 302 response by default.</li>
+        <br/>
+        <li><code>url_for()</code> builds the correct URL for the target route.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Redirecting to External URLs</li>
+    <br/>
+    <ul>
+        <li>You can also redirect to websites outside your application:</li>
+<pre><code class="language-python line-numbers">@app.route('/github')
+def github():
+    return redirect("https://github.com")
+</code></pre>
+        <br/>
+        <li>Useful for linking to external services, documentation, or OAuth providers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Different Redirect Status Codes</li>
+    <br/>
+    <ul>
+        <li>Default: <code>302 Found</code> (temporary redirect).</li>
+        <br/>
+        <li>Permanent redirect (<code>301</code>):</li>
+<pre><code class="language-python line-numbers">return redirect(url_for('new'), code=301)
+</code></pre>
+        <br/>
+        <li>Other redirect codes:
+            <ul>
+                <li><b>303</b> — See Other</li>
+                <li><b>307</b> — Temporary redirect (same method)</li>
+                <li><b>308</b> — Permanent redirect (same method)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Flask supports all of them via the <code>code</code> parameter.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Redirect After Form Submission (POST → Redirect → GET)</li>
+    <br/>
+    <ul>
+        <li>This prevents duplicate form submissions.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-python line-numbers">@app.route('/submit', methods=['POST'])
+def submit():
+    # Process form...
+    return redirect(url_for('thank_you'))
+
+@app.route('/thank-you')
+def thank_you():
+    return "Form submitted!"
+</code></pre>
+        <br/>
+        <li>This is the recommended pattern for all POST requests.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Error Handling Using <code>abort()</code></li>
+    <br/>
+    <ul>
+        <li>Flask provides <code>abort()</code> to trigger HTTP errors manually:</li>
+<pre><code class="language-python line-numbers">from flask import abort
+
+@app.route('/secret')
+def secret():
+    abort(403)  # Forbidden
+</code></pre>
+        <br/>
+        <li>Common error codes:</li>
+        <ul>
+            <li>400 — Bad Request</li>
+            <li>401 — Unauthorized</li>
+            <li>403 — Forbidden</li>
+            <li>404 — Not Found</li>
+            <li>500 — Server Error</li>
+        </ul>
+        <br/>
+        <li><code>abort()</code> stops execution immediately and raises an error response.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Custom Error Pages</li>
+    <br/>
+    <ul>
+        <li>Use the <code>@app.errorhandler</code> decorator:</li>
+<pre><code class="language-python line-numbers">@app.errorhandler(404)
+def not_found(e):
+    return render_template('404.html'), 404
+</code></pre>
+        <br/>
+        <li>Custom templates improve user experience.</li>
+        <br/>
+        <li>Example <code>404.html</code>:</li>
+<pre><code class="language-html line-numbers">&lt;h1&gt;Page Not Found&lt;/h1&gt;
+&lt;p&gt;The page you are looking for does not exist.&lt;/p&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling 500 Internal Server Errors</li>
+    <br/>
+    <ul>
+        <li>A custom global error handler:</li>
+<pre><code class="language-python line-numbers">@app.errorhandler(500)
+def server_error(e):
+    return render_template('500.html'), 500
+</code></pre>
+        <br/>
+        <li>You can log the error for debugging:</li>
+<pre><code class="language-python line-numbers">import logging
+logging.error(e)
+</code></pre>
+        <br/>
+        <li>Custom 500 pages are vital for production apps.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Multiple Errors in One Place</li>
+    <br/>
+    <ul>
+        <li>You can register handlers for multiple codes:</li>
+<pre><code class="language-python line-numbers">@app.errorhandler(403)
+@app.errorhandler(401)
+@app.errorhandler(400)
+def handle_auth_errors(e):
+    return render_template('auth_error.html', error=e), e.code
+</code></pre>
+        <br/>
+        <li>Useful for grouping similar errors.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Raising Custom Error Messages</li>
+    <br/>
+    <ul>
+        <li>You can provide a custom message:</li>
+<pre><code class="language-python line-numbers">abort(404, description="User not found")
+</code></pre>
+        <br/>
+        <li>Render description inside templates:</li>
+<pre><code class="language-html line-numbers">&lt;p&gt;{{ error.description }}&lt;/p&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Redirecting Instead of Showing an Error</li>
+    <br/>
+    <ul>
+        <li>Sometimes it’s better to redirect the user:</li>
+<pre><code class="language-python line-numbers">@app.route('/admin')
+def admin():
+    if not session.get('is_admin'):
+        return redirect(url_for('login'))
+    return "Admin page"
+</code></pre>
+        <br/>
+        <li>This avoids exposing internal logic to users.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Pages with Jinja2 and Dynamic Data</li>
+    <br/>
+    <ul>
+        <li>You can pass variables to error templates:</li>
+<pre><code class="language-python line-numbers">@app.errorhandler(404)
+def not_found(e):
+    path = request.path
+    return render_template('404.html', path=path), 404
+</code></pre>
+
+        <br/>
+        <li>Example template:</li>
+<pre><code class="language-html line-numbers">&lt;p&gt;The path &lt;b&gt;{{ path }}&lt;/b&gt; does not exist.&lt;/p&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Blueprints for Error Handling</li>
+    <br/>
+    <ul>
+        <li>Blueprint-specific error handlers:</li>
+<pre><code class="language-python line-numbers">@bp.errorhandler(404)
+def page_not_found(e):
+    return render_template('errors/404.html'), 404
+</code></pre>
+        <br/>
+        <li>Allows modular error management.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Summary of Redirect and Error Functions</li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Function</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>redirect()</code></td>
+                <td>Send browser to another URL</td>
+            </tr>
+            <tr>
+                <td><code>url_for()</code></td>
+                <td>Build a route URL</td>
+            </tr>
+            <tr>
+                <td><code>abort()</code></td>
+                <td>Raise an HTTP error</td>
+            </tr>
+            <tr>
+                <td><code>@app.errorhandler()</code></td>
+                <td>Custom error page for an HTTP code</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
