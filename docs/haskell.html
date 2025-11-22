@@ -185,6 +185,7 @@
         <li><a href="#haskell-irrefutable-patterns">Irrefutable Patterns</a></li>
         <li><a href="#haskell-infix-operators-fixity">Infix Operators Fixity</a></li>
         <li><a href="#haskell-language-extensions">LANGUAGE Extensions</a></li>
+        <li><a href="#ghc-non-language-pragmas">GHC Non-LANGUAGE Pragmas</a></li>
     </ul>
 </nav>
 <hr/>
@@ -10555,6 +10556,246 @@ person.address.city
         </li>
         <li>Check your .cabal or package.yaml file for defaults.</li>
         <li>Different build tools add extensions automatically (e.g., <code>GHC2021</code> set).</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="ghc-non-language-pragmas">GHC Non-LANGUAGE Pragmas (INLINE, UNPACK, SPECIALIZE, etc.)</h3>
+<ol>
+
+    <li>What Are Non-LANGUAGE Pragmas?</li>
+    <ul>
+        <br/>
+        <li>These pragmas use the same syntax:
+<pre><code>{-# SOME_PRAGMA stuff #-}</code></pre>
+    but they are <u>not</u> language extensions.</li>
+
+        <br/>
+        <li>Their purpose:
+            <ul>
+                <li>control compiler optimizations,</li>
+                <li>give hints to GHC’s simplifier,</li>
+                <li>control strictness and memory layout,</li>
+                <li>define rewrite rules,</li>
+                <li>dictate INLINE behavior.</li>
+            </ul>
+        </li>
+
+        <br/>
+        <li>They affect:
+            <ul>
+                <li>runtime performance,</li>
+                <li>memory representation,</li>
+                <li>calling convention,</li>
+                <li>inlining decisions.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>INLINE and NOINLINE</li>
+    <br/>
+    <ul>
+        <li><code>INLINE</code> tells GHC to inline a function after optimization phases.</li>
+
+        <li>Example:
+<pre><code>{-# INLINE f #-}
+f :: Int -&gt; Int
+f x = x + 1
+</code></pre>
+        </li>
+
+        <li>Inlining:
+            <ul>
+                <li>removes function call overhead,</li>
+                <li>enables further optimizations (like constant folding),</li>
+                <li>may reduce performance if used excessively (code bloat).</li>
+            </ul>
+        </li>
+        <br/>
+
+        <li>Example from <code>Data.Map</code>:
+<pre><code>{-# INLINE (\\) #-}</code></pre>
+    means: inline the operator <code>(\\)</code>.
+        </li>
+        <br/>
+
+        <li><code>NOINLINE</code> forces GHC NOT to inline a function:
+<pre><code>{-# NOINLINE unsafePerformIO #-}
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+
+
+    <li>INLINABLE</li>
+    <br/>
+    <ul>
+        <li><code>INLINE</code> → inline here and now.</li>
+        <br/>
+        <li><code>INLINABLE</code> → export the function’s core code so other modules may inline it.</li>
+        <br/>
+        <li>Useful for libraries.</li>
+<pre><code>{-# INLINABLE f #-}
+</code></pre>
+    </ul>
+    <br/>
+
+
+    <li>UNPACK and PACK</li>
+    <br/>
+    <ul>
+        <li><code>UNPACK</code> controls how fields inside constructors are laid out in memory.</li>
+        <li>Example:
+<pre><code>data Pair = Pair {-# UNPACK #-} !Int {-# UNPACK #-} !Int
+</code></pre>
+        </li>
+
+        <li>Effect:
+            <ul>
+                <li>stores <code>Int</code> inside constructor directly,</li>
+                <li>avoids pointer indirection,</li>
+                <li>reduces memory usage,</li>
+                <li>improves cache locality.</li>
+            </ul>
+        </li>
+
+        <li>Without <code>UNPACK</code>: GHC stores a pointer to an <code>Int</code> heap object.</li>
+
+        <li>With <code>UNPACK</code>: GHC stores the raw <code>Int</code> directly.</li>
+
+        <li><code>PACK</code> is rarely used (affects constructors for FFI).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>BangPatterns vs UNPACK</li>
+    <br/>
+    <ul>
+        <li><code>!x</code> forces strict evaluation of the field, but still stores a pointer.</li>
+        <li><code>{-# UNPACK #-} !x</code> forces strict evaluation <u>and</u> removes the pointer layer.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b>SPECIALIZE</b></li>
+    <br/>
+    <ul>
+        <li>Creates optimized versions of polymorphic functions.</li>
+        <li>Example:
+<pre><code>{-# SPECIALIZE foo :: Int -&gt; Int #-}
+</code></pre>
+        </li>
+
+        <li>GHC normally compiles polymorphic functions using dictionaries (slower).</li>
+        <li><code>SPECIALIZE</code> generates monomorphized code (faster).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>RULES — Rewrite Rules</li>
+    <br/>
+    <ul>
+        <li>Lets you define custom optimizer rewrite transformations.</li>
+
+        <li>Example from <code>Prelude</code>:
+<pre><code>{-# RULES
+"map/map" forall f g xs. map f (map g xs) = map (f . g) xs
+#-}
+</code></pre>
+        </li>
+
+        <li>GHC will apply this during simplification.</li>
+
+        <li>Used in:
+            <ul>
+                <li>vector libraries</li>
+                <li>bytestring</li>
+                <li>fusion frameworks</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>INLINEABLE vs SPECIALIZE in combination</li>
+    <br/>
+    <ul>
+        <li><code>INLINEABLE</code> exposes function body to other modules.</li>
+        <li><code>SPECIALIZE</code> ensures monomorphic compiled versions exist.</li>
+
+<pre><code>{-# INLINEABLE f #-}
+{-# SPECIALIZE f :: Int -&gt; Int #-}
+</code></pre>
+
+        <li>This is a common optimization pattern.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>COMPLETE — Pattern Completeness Sets</li>
+    <br/>
+    <ul>
+        <li>Allows defining custom “complete pattern sets” for pattern matching.</li>
+
+<pre><code>{-# COMPLETE Nil, Cons #-}
+</code></pre>
+
+        <li>Useful when defining your own pattern synonyms.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>DEPRECATED / WARNING</li>
+    <br/>
+    <ul>
+        <li>Attach compile-time warnings to definitions.</li>
+
+<pre><code>{-# DEPRECATED foo "Use bar instead" #-}
+foo = ...
+</code></pre>
+
+        <li>Used for evolving libraries.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>SOURCE pragma for imports</li>
+    <br/>
+    <ul>
+        <li>Controls import priority when modules have multiple versions.</li>
+
+<pre><code>import {-# SOURCE #-} ModuleA
+</code></pre>
+
+        <li>Used to break recursive import cycles.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li>INLINE Pragmas for Operators</li>
+    <br/>
+    <ul>
+        <li>Operators require parentheses:
+<pre><code>{-# INLINE (&gt;&gt;=) #-}
+</code></pre>
+        </li>
     </ul>
     <br/>
 </ol>
