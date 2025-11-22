@@ -154,6 +154,7 @@
         <li><a href="#flask-routing">Routing</a></li>
         <li><a href="#flask-variable-rules">variable Rules</a></li>
         <li><a href="#flask-url-building">URL Building</a></li>
+        <li><a href="#flask-http-methods">HTTP Methods</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1636,7 +1637,324 @@ def index():
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-http-methods">Flask HTTP Methods</h3>
+<ol>
 
+    <li>What Are HTTP Methods in Flask?</li>
+    <br/>
+    <ul>
+        <li>HTTP methods define the action a client wants to perform when sending a request to a server.</li>
+        <br/>
+        <li>Flask allows each route to explicitly define which HTTP methods it accepts.</li>
+        <br/>
+        <li>If a request uses a method not allowed by the route, Flask returns <b>405 Method Not Allowed</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defining Allowed Methods in <code>@app.route()</code></li>
+    <br/>
+    <ul>
+        <li>Use the <code>methods</code> parameter to specify allowed HTTP methods:</li>
+<pre><code class="language-python line-numbers">@app.route('/submit', methods=['POST'])
+def submit():
+    return 'Form submitted!'
+</code></pre>
+        <br/>
+        <li>If <code>methods</code> is not specified, Flask defaults to <b>GET</b>.</li>
+        <br/>
+        <li>Multiple allowed methods:</li>
+<pre><code class="language-python line-numbers">@app.route('/user', methods=['GET', 'POST'])
+def user():
+    if request.method == 'POST':
+        return 'Posted!'
+    return 'User page'
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>GET Method</li>
+    <br/>
+    <ul>
+        <li><b>GET</b> requests retrieve data from the server.</li>
+        <br/>
+        <li>Typical use cases:</li>
+        <ul>
+            <li>loading pages</li>
+            <li>fetching API resources</li>
+            <li>reading query parameters</li>
+        </ul>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-python line-numbers">@app.route('/hello')
+def hello():
+    return 'Hello, World!'
+</code></pre>
+        <br/>
+        <li>GET requests can include query parameters such as <code>?page=2</code> via <code>request.args</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>POST Method</li>
+    <br/>
+    <ul>
+        <li><b>POST</b> is used to submit data, often from forms or JSON clients.</li>
+        <br/>
+        <li>Reads data via <code>request.form</code> or <code>request.json</code>.</li>
+        <br/>
+        <li>Example using HTML form data:</li>
+<pre><code class="language-python line-numbers">@app.route('/login', methods=['POST'])
+def login():
+    username = request.form['username']
+    return f'Logged in as {username}'
+</code></pre>
+        </li>
+        <br/>
+        <li>JSON POST example:</li>
+<pre><code class="language-python line-numbers">@app.route('/api/data', methods=['POST'])
+def api_data():
+    data = request.json
+    return {'received': data}
+</code></pre>
+        <br/>
+        <li>POST is not idempotent — each call may create new data.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>PUT Method</li>
+    <br/>
+    <ul>
+        <li><b>PUT</b> replaces an entire resource.</li>
+        <br/>
+        <li>Often used in REST APIs.</li>
+<pre><code class="language-python line-numbers">@app.route('/profile/&lt;int:id&gt;', methods=['PUT'])
+def update_profile(id):
+    data = request.json
+    return {'id': id, 'updated_profile': data}
+</code></pre>
+        <br/>
+        <li>PUT is idempotent: sending the same request multiple times results in the same final state.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>PATCH Method</li>
+    <br/>
+    <ul>
+        <li><b>PATCH</b> updates <b>part</b> of a resource.</li>
+        <br/>
+        <li>Used for partial modifications, such as updating a single field.</li>
+<pre><code class="language-python line-numbers">@app.route('/profile/&lt;int:id&gt;', methods=['PATCH'])
+def patch_profile(id):
+    changes = request.json
+    return {'id': id, 'changes': changes}
+</code></pre>
+        <br/>
+        <li>PATCH is sometimes non-idempotent (depends on implementation).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>DELETE Method</li>
+    <br/>
+    <ul>
+        <li><b>DELETE</b> removes a resource.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-python line-numbers">@app.route('/item/&lt;int:item_id&gt;', methods=['DELETE'])
+def delete_item(item_id):
+    return {'status': 'deleted', 'id': item_id}
+</code></pre>
+        <br/>
+        <li>DELETE is idempotent — deleting the same resource twice yields the same result.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>HEAD Method</li>
+    <br/>
+    <ul>
+        <li><b>HEAD</b> returns headers only (no body).</li>
+        <br/>
+        <li>Used for:</li>
+        <ul>
+            <li>checking if a resource exists</li>
+            <li>metadata queries</li>
+            <li>lightweight monitoring</li>
+        </ul>
+        <br/>
+        <li>Flask automatically provides a HEAD method for <b>every GET route</b>.</li>
+        <br/>
+        <li>No extra code needed:</li>
+<pre><code class="language-python line-numbers">@app.route('/info')
+def info():
+    return 'data'
+</code></pre>
+        <br/>
+        <li><code>HEAD /info</code> → same headers, empty body.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>OPTIONS Method</li>
+    <br/>
+    <ul>
+        <li><b>OPTIONS</b> asks the server which HTTP methods are supported.</li>
+        <br/>
+        <li>Flask automatically provides an OPTIONS response for every route.</li>
+        <br/>
+        <li>Useful for:
+            <ul>
+                <li>CORS preflight checks</li>
+                <li>API clients</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example client request:</li>
+<pre><code class="language-text line-numbers">OPTIONS /user
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Different Methods Inside a Single View</li>
+    <br/>
+    <ul>
+        <li>You can check the incoming method using <code>request.method</code>:</li>
+<pre><code class="language-python line-numbers">@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+    if request.method == 'POST':
+        return 'Settings updated'
+    return 'Settings page'
+</code></pre>
+        <br/>
+        <li>Useful for pages that show a form (GET) and process it (POST).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using <code>@app.get</code>, <code>@app.post</code>, <code>@app.put</code> (Shorthand Decorators)</li>
+    <br/>
+    <ul>
+        <li>Starting from Flask 2.0, convenient decorators were added:</li>
+<pre><code class="language-python line-numbers">@app.get('/hello')
+def hello():
+    return 'GET request'
+
+@app.post('/submit')
+def submit():
+    return 'POST request'
+
+@app.delete('/remove/&lt;int:id&gt;')
+def remove(id):
+    return f'Removed {id}'
+</code></pre>
+        <br/>
+        <li>Each shortcut decorator is equivalent to <code>@app.route(..., methods=['...'])</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Method-Specific Routing Examples</li>
+    <br/>
+    <ul>
+        <li><b>RESTful user API example:</b></li>
+<pre><code class="language-python line-numbers">@app.route('/users', methods=['GET'])
+def list_users():
+    return 'List users'
+
+@app.route('/users', methods=['POST'])
+def create_user():
+    return 'Create user'
+
+@app.route('/users/&lt;int:id&gt;', methods=['GET'])
+def get_user(id):
+    return f'Get user {id}'
+
+@app.route('/users/&lt;int:id&gt;', methods=['PUT'])
+def update_user(id):
+    return f'Update user {id}'
+
+@app.route('/users/&lt;int:id&gt;', methods=['DELETE'])
+def delete_user(id):
+    return f'Delete user {id}'
+</code></pre>
+        <br/>
+        <li>This style is common for building full REST APIs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>405 Method Not Allowed</li>
+    <br/>
+    <ul>
+        <li>If a method is not allowed on a route, Flask returns <b>405</b>.</li>
+        <br/>
+        <li>Example:</li>
+        <ul>
+            <li>Route: <code>/login</code> only accepts POST.</li>
+            <li>Sending GET → Flask responds 405.</li>
+        </ul>
+        <br/>
+        <li>Flask also includes an <code>Allow</code> header showing valid methods.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Summary Table of HTTP Methods</li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Purpose</th>
+                <th>Idempotent?</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><b>GET</b></td>
+                <td>Retrieve data</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td><b>POST</b></td>
+                <td>Create or submit data</td>
+                <td>No</td>
+            </tr>
+            <tr>
+                <td><b>PUT</b></td>
+                <td>Replace entire resource</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td><b>PATCH</b></td>
+                <td>Modify part of resource</td>
+                <td>Sometimes</td>
+            </tr>
+            <tr>
+                <td><b>DELETE</b></td>
+                <td>Remove resource</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td><b>HEAD</b></td>
+                <td>Headers only</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td><b>OPTIONS</b></td>
+                <td>Discover supported methods</td>
+                <td>Yes</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
