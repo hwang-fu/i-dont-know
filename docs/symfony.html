@@ -160,6 +160,7 @@
         <li><a href="#symfony-components">Components</a></li>
         <li><a href="#symfony-service-container">Service Container</a></li>
         <li><a href="#symfony-events-listeners">Events &amp; Event Listeners</a></li>
+        <li><a href="#symfony-expression-language">Expression Language</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2298,7 +2299,206 @@ class ExceptionListener {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-expression-language">Symfony Expression Language</h3>
+<ol>
 
+    <li>What Is the Symfony Expression Language?</li>
+    <br/>
+    <ul>
+        <li>The <b>Expression Language</b> is a component that allows you to write small, dynamic expressions inside configuration files, annotations/attributes, security rules, or service definitions.</li>
+        <br/>
+        <li>It provides:
+            <ul>
+                <li>a small, safe scripting language</li>
+                <li>type-safe evaluation</li>
+                <li>variables and functions</li>
+                <li>integration with Symfony Security and DI Container</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Its primary use cases:
+            <ul>
+                <li>Security (access control)</li>
+                <li>Routing expressions</li>
+                <li>Service configuration</li>
+                <li>Validation</li>
+                <li>Workflow component</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The Expression Language allows logic like:</li>
+<pre><code class="language-plaintext line-numbers">user.isAdmin() and request.getPath() matches "^/admin"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Syntax of Expressions</li>
+    <br/>
+    <ul>
+        <li>The Expression Language syntax is similar to JavaScript / C-like expressions.</li>
+        <br/>
+        <li>Supported operations:
+            <ul>
+                <li><b>Arithmetic</b>: <code>1 + 2 * 5</code></li>
+                <li><b>Comparisons</b>: <code>a == b</code>, <code>x &gt; 10</code></li>
+                <li><b>Logical</b>: <code>and</code>, <code>or</code>, <code>not</code></li>
+                <li><b>Function calls</b>: <code>min(1, 2)</code></li>
+                <li><b>Property access</b>: <code>user.name</code></li>
+                <li><b>Method calls</b>: <code>user.getProfile()</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-plaintext line-numbers">user.age &gt;= 18 and user.hasVerifiedEmail()</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Expression Language in PHP Code</li>
+    <br/>
+    <ul>
+        <li>You can evaluate expressions directly:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
+
+$el = new ExpressionLanguage();
+
+echo $el->evaluate('1 + 2 * 10'); // 21
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Expressions can reference variables:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$el->evaluate('user.age &gt;= 18', [
+    'user' =&gt; $user
+]);
+?&gt;</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Expressions in Security (Most Common Use Case)</li>
+    <br/>
+    <ul>
+        <li>Expressions are heavily used in <code>security.yaml</code> for access control.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-yaml line-numbers">security:
+    access_control:
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/profile, allow_if: "user.isActive() and user.age &gt;= 18" }
+</code></pre>
+        </li>
+        <br/>
+        <li>Other examples:</li>
+<pre><code class="language-plaintext line-numbers">is_granted('ROLE_ADMIN')
+is_granted('EDIT', object)
+user == post.getAuthor()
+request.getMethod() == 'POST'
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Expressions in Service Container</li>
+    <br/>
+    <ul>
+        <li>You can use expressions in service definitions:</li>
+<pre><code class="language-yaml line-numbers">services:
+    App\Service\Cache:
+        arguments:
+            $timeout: "@=parameter('cache_timeout') * 2"
+</code></pre>
+        </li>
+        <br/>
+        <li>Notice the <code>@=</code> prefix — this tells Symfony to evaluate it as an expression.</li>
+        <br/>
+        <li>Expressions can also access services:</li>
+<pre><code class="language-yaml line-numbers">$handler: "@=service('logger').getHandlers()[0]"</code></pre>
+        </li>
+        <br/>
+        <li>Available functions:
+            <ul>
+                <li><code>service()</code></li>
+                <li><code>parameter()</code></li>
+                <li><code>constant()</code></li>
+                <li><code>env()</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Expressions in Workflow Component</li>
+    <br/>
+    <ul>
+        <li>Expressions can limit transitions:</li>
+<pre><code class="language-yaml line-numbers">framework:
+    workflows:
+        article_process:
+            transitions:
+                publish:
+                    guard: "user.isEditor() and not subject.isLocked()"
+</code></pre>
+        </li>
+        <br/>
+        <li><code>subject</code> = the entity in the workflow (e.g. Article).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Expressions in Routing</li>
+    <br/>
+    <ul>
+        <li>Routing conditions allow request-based filtering:</li>
+<pre><code class="language-yaml line-numbers">homepage:
+    path: /
+    controller: App\Controller\HomeController::index
+    condition: "context.getMethod() in ['GET', 'HEAD']"
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for API method checks or host-based routing.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Custom Functions for Expression Language</li>
+    <br/>
+    <ul>
+        <li>You can register custom functions to expand the language:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$el-&gt;register('range', function ($arg) {
+    return sprintf('range(%s)', $arg);
+}, function ($values, $arg) {
+    return range($arg, $arg * 2);
+});
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Now usable as:
+<pre><code class="language-plaintext line-numbers">range(5)</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Expression Caching</li>
+    <br/>
+    <ul>
+        <li>Expressions can be compiled into PHP code for performance:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$phpCode = $el-&gt;compile('user.age * 2', ['user']);
+echo $phpCode;
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>You can store compiled expressions to accelerate runtime execution.</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
