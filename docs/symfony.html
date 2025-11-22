@@ -5456,7 +5456,278 @@ export default class extends Controller {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-cookies-sessions">Symfony Cookies and Session Management</h3>
+<ol>
 
+    <li>Overview of Cookies and Session Management in Symfony</li>
+    <br/>
+    <ul>
+        <li>Symfony provides built-in tools for managing:
+            <ul>
+                <li><b>Cookies</b> — small key/value pairs stored in the user’s browser.</li>
+                <li><b>Sessions</b> — server-side storage linked to a specific user.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Use cases include:
+            <ul>
+                <li>remembering user preferences</li>
+                <li>tracking login sessions</li>
+                <li>temporary storage across requests</li>
+                <li>flash messages</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Symfony uses the <code>Session</code> component to manage server-side sessions and the <code>Cookie</code> class to create/modify cookies.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding Cookies</li>
+    <br/>
+    <ul>
+        <li>Cookies are stored in the user's browser and sent with each request to the server.</li>
+        <br/>
+        <li>They contain name/value pairs and optional properties:
+            <ul>
+                <li>expiration time</li>
+                <li>path and domain</li>
+                <li>secure flag</li>
+                <li>httpOnly flag</li>
+                <li>SameSite policy</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Cookies are used for:
+            <ul>
+                <li>persistent preferences</li>
+                <li>remember-me tokens</li>
+                <li>tracking</li>
+                <li>frontend storage</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Important: <b>Never store sensitive data in cookies</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Cookie in Symfony</li>
+    <br/>
+    <ul>
+        <li>Cookies are added to the <code>Response</code> object:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\HttpFoundation\Cookie;
+
+$response = new Response();
+$response-&gt;headers-&gt;setCookie(
+    Cookie::create('theme', 'dark')
+        -&gt;withExpires(strtotime('+1 year'))
+);
+
+return $response;
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Symfony provides fluent methods:
+            <ul>
+                <li><code>withExpires()</code></li>
+                <li><code>withSecure()</code></li>
+                <li><code>withHttpOnly()</code></li>
+                <li><code>withSameSite('Strict')</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reading Cookies</li>
+    <br/>
+    <ul>
+        <li>Access cookies from the <code>Request</code> object:</li>
+<pre><code class="language-php line-numbers">
+$theme = $request-&gt;cookies-&gt;get('theme', 'light');
+</code></pre>
+        </li>
+        <br/>
+        <li>The second argument is the default value.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deleting Cookies</li>
+    <br/>
+    <ul>
+        <li>To delete a cookie:</li>
+<pre><code class="language-php line-numbers">
+$response-&gt;headers-&gt;clearCookie('theme');
+</code></pre>
+        </li>
+        <br/>
+        <li>Deletes by sending an expired cookie.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding Session Management</li>
+    <br/>
+    <ul>
+        <li>Sessions store data on the server for each user.</li>
+        <br/>
+        <li>A session is identified by a <code>session ID</code> stored in a cookie (<code>PHPSESSID</code>).</li>
+        <br/>
+        <li>Sessions are useful for:
+            <ul>
+                <li>authentication state</li>
+                <li>shopping carts</li>
+                <li>user preferences</li>
+                <li>temporary values</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Symfony sessions are available via the <code>Request</code> object or <code>SessionInterface</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Writing Data to Session</li>
+    <br/>
+    <ul>
+        <li>Access the session:</li>
+<pre><code class="language-php line-numbers">
+$session = $request-&gt;getSession();
+$session-&gt;set('user_id', 42);
+</code></pre>
+        </li>
+        <br/>
+        <li>Session data persists until:
+            <ul>
+                <li>user logs out</li>
+                <li>session expires</li>
+                <li>session is cleared</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reading Session Data</li>
+    <br/>
+    <ul>
+<pre><code class="language-php line-numbers">
+$userId = $session-&gt;get('user_id', null);
+</code></pre>
+        <br/>
+        <li>If key does not exist → default value returned.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Removing Session Data</li>
+    <br/>
+    <ul>
+<pre><code class="language-php line-numbers">
+$session-&gt;remove('user_id');
+</code></pre>
+        </li>
+        <br/>
+        <li>To clear everything:</li>
+<pre><code class="language-php line-numbers">
+$session-&gt;clear();
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Flash Messages (Session-Based)</li>
+    <br/>
+    <ul>
+        <li>Flash messages last for exactly one request.</li>
+        <br/>
+        <li>Setting a flash message:</li>
+<pre><code class="language-php line-numbers">
+$this-&gt;addFlash('success', 'Profile updated!');
+</code></pre>
+        </li>
+        <br/>
+        <li>Display in Twig:</li>
+<pre><code class="language-twig line-numbers">
+{% for msg in app.flashes('success') %}
+    &lt;div class="alert alert-success"&gt;{{ msg }}&lt;/div&gt;
+{% endfor %}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Session Storage Backends</li>
+    <br/>
+    <ul>
+        <li>Symfony can store session data in various backends:</li>
+        <ul>
+            <li>native filesystem (default)</li>
+            <li>Redis</li>
+            <li>Memcached</li>
+            <li>database</li>
+        </ul>
+        </li>
+        <br/>
+        <li>Configured in <code>framework.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">
+framework:
+    session:
+        handler_id: 'snc_redis.session.handler'
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Preventing Session Fixation</li>
+    <br/>
+    <ul>
+        <li>Always regenerate session ID when user logs in:</li>
+<pre><code class="language-php line-numbers">
+$session-&gt;migrate();
+</code></pre>
+        </li>
+        <br/>
+        <li>This prevents attackers from stealing known session IDs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Cookies Security Best Practices</li>
+    <br/>
+    <ul>
+        <li>Enable <code>httpOnly</code> (prevents JavaScript access).</li>
+        <br/>
+        <li>Use <code>secure</code> flag on HTTPS:</li>
+<pre><code class="language-php line-numbers">-&gt;withSecure(true)
+</code></pre>
+        </li>
+        <br/>
+        <li>Use <code>SameSite=Lax</code> or <code>Strict</code> to mitigate CSRF.</li>
+        <br/>
+        <li>Never store passwords or sensitive info in cookies.</li>
+    </ul>
+    <br/>
+
+
+    <li>Session Best Practices</li>
+    <br/>
+    <ul>
+        <li>Store minimal data in session — avoid large objects.</li>
+        <br/>
+        <li>Regenerate session ID after login.</li>
+        <br/>
+        <li>Use Redis for high-traffic applications.</li>
+        <br/>
+        <li>Do not store sensitive information unencrypted.</li>
+        <br/>
+        <li>Use <code>flash</code> messages for one-time events.</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
