@@ -168,6 +168,8 @@
         <li><a href="#symfony-ajax-control">AJAX Control</a></li>
         <li><a href="#symfony-cookies-sessions">Cookies and Sessions Management</a></li>
         <li><a href="#symfony-internationalization">Internationalization</a></li>
+        <li><a href="#symfony-logging">Logging</a></li>
+        <li><a href="#symfony-email-management">Email Management</a></li>
     </ol>
 </nav>
 <hr/>
@@ -6020,7 +6022,341 @@ $this-&gt;addFlash('success', $translator-&gt;trans('profile.saved'));
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-logging">Symfony Logging</h3>
+<ol>
 
+    <li>What Is Logging in Symfony?</li>
+    <br/>
+    <ul>
+        <li>Logging is the process of recording important events that occur during the execution of an application.</li>
+        <br/>
+        <li>Symfony uses the <b>Monolog</b> library by default to provide powerful and flexible logging features.</li>
+        <br/>
+        <li>Logs are essential for:
+            <ul>
+                <li>debugging issues</li>
+                <li>monitoring system behavior</li>
+                <li>auditing user actions</li>
+                <li>diagnosing production errors</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Symfony automatically logs framework-level events, HTTP requests, routing issues, and errors.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing Monolog (Usually Installed by Default)</li>
+    <br/>
+    <ul>
+        <li>Most Symfony projects already have Monolog pre-installed.</li>
+        <br/>
+        <li>If not installed:</li>
+<pre><code class="language-bash line-numbers">composer require symfony/monolog-bundle</code></pre>
+        </li>
+        <br/>
+        <li>Configuration file:</li>
+<pre><code class="language-plaintext line-numbers">config/packages/monolog.yaml</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding Log Levels</li>
+    <br/>
+    <ul>
+        <li>Symfony (via Monolog) supports PSR-3 log levels:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Log Level</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><b>DEBUG</b></td>
+            <td>Detailed debugging information.</td>
+        </tr>
+        <tr>
+            <td><b>INFO</b></td>
+            <td>Key runtime events.</td>
+        </tr>
+        <tr>
+            <td><b>NOTICE</b></td>
+            <td>Normal but significant events.</td>
+        </tr>
+        <tr>
+            <td><b>WARNING</b></td>
+            <td>Potential issues or irregular states.</td>
+        </tr>
+        <tr>
+            <td><b>ERROR</b></td>
+            <td>An error occurred, but the application can still continue running.</td>
+        </tr>
+        <tr>
+            <td><b>CRITICAL</b></td>
+            <td>Critical conditions requiring immediate attention.</td>
+        </tr>
+        <tr>
+            <td><b>ALERT</b></td>
+            <td>Action must be taken immediately.</td>
+        </tr>
+        <tr>
+            <td><b>EMERGENCY</b></td>
+            <td>The system is unusable.</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Log visibility depends on environment configuration.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Logging in a Controller or Service</li>
+    <br/>
+    <ul>
+        <li>Inject <code>LoggerInterface</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Psr\Log\LoggerInterface;
+
+public function index(LoggerInterface $logger)
+{
+    $logger-&gt;info('User visited the homepage');
+    $logger-&gt;debug('Debug data: ', ['user' =&gt; 'Junzhe']);
+    $logger-&gt;error('Something went wrong!');
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Each method corresponds to a log level.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Customizing Log Messages</li>
+    <br/>
+    <ul>
+        <li>Include context information:</li>
+<pre><code class="language-php line-numbers">
+$logger-&gt;warning('Low disk space', [
+    'free_space_mb' =&gt; 120,
+    'path' =&gt; '/var/www'
+]);
+</code></pre>
+        </li>
+        <br/>
+        <li>Context is automatically JSON-encoded in logs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Where Logs Are Stored</li>
+    <br/>
+    <ul>
+        <li>Default log location:</li>
+<pre><code class="language-plaintext line-numbers">var/log/dev.log
+var/log/prod.log</code></pre>
+        </li>
+        <br/>
+        <li>The logs differ by environment:
+            <ul>
+                <li><code>dev</code> — verbose logs for debugging</li>
+                <li><code>prod</code> — performance-optimized logs</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Configuring Monolog Handlers</li>
+    <br/>
+    <ul>
+        <li>Handlers define how logs are processed and stored.</li>
+        <br/>
+        <li>Common handlers:
+        <br/>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Handler</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>stream</code></td>
+            <td>Writes logs to a file.</td>
+        </tr>
+        <tr>
+            <td><code>rotating_file</code></td>
+            <td>Creates daily or size-based rotating log files.</td>
+        </tr>
+        <tr>
+            <td><code>fingers_crossed</code></td>
+            <td>Buffers logs and releases them only when an error occurs.</td>
+        </tr>
+        <tr>
+            <td><code>syslog</code></td>
+            <td>Sends logs to the system logger.</td>
+        </tr>
+        <tr>
+            <td><code>slack</code></td>
+            <td>Sends log messages to a Slack channel.</td>
+        </tr>
+        <tr>
+            <td><code>email</code></td>
+            <td>Sends error logs via email.</td>
+        </tr>
+    </tbody>
+</table>
+        </li>
+        <br/>
+        <li>Example in <code>monolog.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">monolog:
+    handlers:
+        main:
+            type: stream
+            path: "%kernel.logs_dir%/app.log"
+            level: debug
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Daily Log Rotation</li>
+    <br/>
+    <ul>
+        <li>Useful for production:</li>
+<pre><code class="language-yaml line-numbers">monolog:
+    handlers:
+        rotating:
+            type: rotating_file
+            path: "%kernel.logs_dir%/app.log"
+            max_files: 30
+            level: info
+</code></pre>
+        </li>
+        <br/>
+        <li>Keeps logs manageable over time.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using the Fingers Crossed Handler</li>
+    <br/>
+    <ul>
+        <li>Buffers logs until a serious error occurs.</li>
+        <br/>
+        <li>Configuration:</li>
+<pre><code class="language-yaml line-numbers">monolog:
+    handlers:
+        filtered:
+            type: fingers_crossed
+            action_level: error
+            handler: stream_handler
+
+        stream_handler:
+            type: stream
+            path: "%kernel.logs_dir%/error.log"
+</code></pre>
+        </li>
+        <br/>
+        <li>Ideal for production: keeps logs clean until something goes wrong.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Logging from Twig Templates</li>
+    <br/>
+    <ul>
+        <li>Not recommended for production but possible:</li>
+<pre><code class="language-twig line-numbers">{% do logger.info('Rendering homepage template') %}
+</code></pre>
+        </li>
+        <br/>
+        <li>Requires <code>logger</code> to be passed as a Twig global.</li>
+        <br/>
+        <li>Better to log from controllers or services.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Channel-Based Logging</li>
+    <br/>
+    <ul>
+        <li>Channels provide logical separation for logs.</li>
+        <br/>
+        <li>Example channels:
+            <ul>
+                <li>doctrine</li>
+                <li>security</li>
+                <li>mailer</li>
+                <li>http_client</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Custom channels:</li>
+<pre><code class="language-yaml line-numbers">monolog:
+    channels: ['checkout', 'billing']
+</code></pre>
+        </li>
+        <br/>
+        <li>Inject channel-specific loggers:</li>
+<pre><code class="language-php line-numbers">use Psr\Log\LoggerInterface;
+
+public function pay(LoggerInterface $checkoutLogger)
+{
+    $checkoutLogger-&gt;info('Payment started');
+}
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Logging Exceptions</li>
+    <br/>
+    <ul>
+        <li>Symfony automatically logs uncaught exceptions in <code>prod.log</code>.</li>
+        <br/>
+        <li>You can manually log exceptions:</li>
+<pre><code class="language-php line-numbers">try {
+    // risky action
+} catch (\Throwable $e) {
+    $logger-&gt;error('Payment failed', ['exception' =&gt; $e]);
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Exceptions include stack traces for debugging.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Viewing Logs in the Symfony Profiler</li>
+    <br/>
+    <ul>
+        <li>In <code>dev</code> mode, logs are displayed in:
+            <ul>
+                <li>Web Debug Toolbar</li>
+                <li>Profiler (Logs tab)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Shows:
+            <ul>
+                <li>log levels</li>
+                <li>message context</li>
+                <li>originating file &amp; line</li>
+                <li>timing</li>
+            </ul>
+        </li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
