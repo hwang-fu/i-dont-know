@@ -151,6 +151,7 @@
     <ol style="line-height: 1.8;">
         <li><a href="#flask-introduction">Introduction</a></li>
         <li><a href="#flask-application-overview">Application Overview</a></li>
+        <li><a href="#flask-routing">Routing</a></li>
     </ol>
 </nav>
 <hr/>
@@ -722,6 +723,327 @@ def not_found(e):
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="flask-routing">Flask Routing</h3>
+<ol>
+
+    <li>What Is Routing in Flask?</li>
+    <br/>
+    <ul>
+        <li><b>Routing</b> is the mechanism that maps a URL path to a Python function (called a <b>view function</b>).</li>
+        <br/>
+        <li>The route determines:
+            <ul>
+                <li>which function handles which URL</li>
+                <li>which HTTP methods are allowed</li>
+                <li>how dynamic URL segments are parsed</li>
+                <li>how parameters are passed to the function</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Defined using the <code>@app.route()</code> decorator.</li>
+        <br/>
+        <li>Flask uses Werkzeug’s routing system under the hood.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Route Definition</li>
+    <br/>
+    <ul>
+        <li>Simplest route example:</li>
+<pre><code class="language-python line-numbers">@app.route("/")
+def home():
+    return "Hello!"
+</code></pre>
+        </li>
+        <br/>
+        <li>Routes must return either:
+            <ul>
+                <li>a string</li>
+                <li>a Response object</li>
+                <li>a tuple (body, status code, headers)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defining Routes with URLs</li>
+    <br/>
+    <ul>
+        <li>Another simple example:</li>
+<pre><code class="language-python line-numbers">@app.route("/about")
+def about():
+    return "About Page"
+</code></pre>
+        </li>
+        <br/>
+        <li>Flask automatically handles trailing slashes:
+            <ul>
+                <li><code>/about/</code> redirects to <code>/about</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Dynamic URL Parameters</li>
+    <br/>
+    <ul>
+        <li>URLs can contain dynamic segments:</li>
+<pre><code class="language-python line-numbers">@app.route("/user/&lt;username&gt;")
+def profile(username):
+    return f"User: {username}"
+</code></pre>
+        </li>
+        <br/>
+        <li>Example request:
+<pre><code class="language-plaintext line-numbers">/user/junzhe</code></pre>
+        </li>
+        <br/>
+        <li>Function receives:
+<pre><code class="language-plaintext line-numbers">username = "junzhe"</code></pre>
+        </li>
+        <br/>
+        <li>Available converters:
+            <ul>
+                <li><code>string</code> (default)</li>
+                <li><code>int</code></li>
+                <li><code>float</code></li>
+                <li><code>path</code> (accepts slashes)</li>
+                <li><code>uuid</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-python line-numbers">@app.route("/item/&lt;int:item_id&gt;")
+def item(item_id):
+    return f"Item ID = {item_id}"
+
+@app.route("/files/&lt;path:filepath&gt;")
+def files(filepath):
+    return f"File Path = {filepath}"
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>URL Building with <code>url_for()</code></li>
+    <br/>
+    <ul>
+        <li>Instead of hardcoding URLs, Flask encourages <code>url_for</code>:</li>
+<pre><code class="language-python line-numbers">from flask import url_for
+
+@app.route("/")
+def index():
+    return url_for("hello")
+
+@app.route("/hello")
+def hello():
+    return "Hi!"
+</code></pre>
+        </li>
+        <br/>
+        <li>URL with parameters:</li>
+<pre><code class="language-python line-numbers">url_for("profile", username="Alice")
+</code></pre>
+        </li>
+        <br/>
+        <li>Benefits:
+            <ul>
+                <li>automatic URL creation</li>
+                <li>avoiding broken links</li>
+                <li>routes remain consistent if changed later</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>HTTP Methods (GET, POST, etc.)</li>
+    <br/>
+    <ul>
+        <li>Routes accept only GET by default.</li>
+        <br/>
+        <li>To enable POST or other methods:</li>
+<pre><code class="language-python line-numbers">@app.route("/submit", methods=["POST"])
+def submit():
+    return "Form submitted"
+</code></pre>
+        </li>
+        <br/>
+        <li>Multiple methods:</li>
+<pre><code class="language-python line-numbers">@app.route("/api/user", methods=["GET", "POST"])
+def api_user():
+    if request.method == "POST":
+        return "Created"
+    return "Listing users"
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Query Parameters</li>
+    <br/>
+    <ul>
+        <li>Access via <code>request.args</code>:</li>
+<pre><code class="language-python line-numbers">from flask import request
+
+@app.route("/search")
+def search():
+    keyword = request.args.get("q")
+    return f"Keyword: {keyword}"
+</code></pre>
+        </li>
+        <br/>
+        <li>Example request:
+<pre><code class="language-plaintext line-numbers">/search?q=python</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Route Defaults</li>
+    <br/>
+    <ul>
+        <li>Set default values for parameters:</li>
+<pre><code class="language-python line-numbers">@app.route("/page/&lt;int:num&gt;")
+@app.route("/page", defaults={"num": 1})
+def page(num):
+    return f"Page {num}"
+</code></pre>
+        </li>
+        <br/>
+        <li>Useful for pagination or optional params.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Redirects</li>
+    <br/>
+    <ul>
+        <li>Use <code>redirect</code> together with <code>url_for</code>:</li>
+<pre><code class="language-python line-numbers">from flask import redirect
+
+@app.route("/old")
+def old():
+    return redirect(url_for("new"))
+
+@app.route("/new")
+def new():
+    return "This is the new page"
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Error Routes</li>
+    <br/>
+    <ul>
+        <li>Define custom error handlers:</li>
+<pre><code class="language-python line-numbers">@app.errorhandler(404)
+def not_found(e):
+    return "Page not found!", 404
+</code></pre>
+        </li>
+        <br/>
+        <li>Common handlers:
+            <ul>
+                <li>404 — Not Found</li>
+                <li>500 — Server Error</li>
+                <li>405 — Method Not Allowed</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Routing Inside Blueprints</li>
+    <br/>
+    <ul>
+        <li>Blueprints let you group related routes.</li>
+        <br/>
+        <li>Create blueprint:</li>
+<pre><code class="language-python line-numbers">from flask import Blueprint
+
+auth = Blueprint("auth", __name__)
+
+@auth.route("/login")
+def login():
+    return "Login Page"
+</code></pre>
+        </li>
+        <br/>
+        <li>Register blueprint:</li>
+<pre><code class="language-python line-numbers">app.register_blueprint(auth, url_prefix="/auth")
+</code></pre>
+        </li>
+        <br/>
+        <li>Final route becomes:</li>
+<pre><code class="language-plaintext line-numbers">/auth/login
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Advanced Routing Features</li>
+    <br/>
+    <ul>
+        <li>Custom URL Converters:</li>
+<pre><code class="language-python line-numbers">from werkzeug.routing import BaseConverter
+
+class EvenIntConverter(BaseConverter):
+    regex = r"\d*[02468]"
+
+app.url_map.converters["even"] = EvenIntConverter
+
+@app.route("/number/&lt;even:n&gt;")
+def even_number(n):
+    return f"Even: {n}"
+</code></pre>
+        </li>
+        <br/>
+        <li>Subdomain Routing:</li>
+<pre><code class="language-python line-numbers">@app.route("/", subdomain="api")
+def api_home():
+    return "API Home"
+</code></pre>
+        </li>
+        <br/>
+        <li>Strict Slash Control:</li>
+<pre><code class="language-python line-numbers">@app.route("/users/", strict_slashes=False)
+def users():
+    return "Users"
+</code></pre>
+        </li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
@@ -751,4 +1073,4 @@ def not_found(e):
 </body>
 <!-- * * * * * * * * * * * * * * -->
 </html>
-<!-- * * * * * * * * * * * * * * -->
+<!-- * * * * * * * * * * * * * * --
