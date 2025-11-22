@@ -151,6 +151,7 @@
     <ol style="line-height: 1.8;">
         <li><a href="#nginx-beginners">Nginx for Beginners</a></li>
         <li><a href="#nginx-main-vs-server-config">Difference Between Nginx Main Config and Server Config</a></li>
+        <li><a href="#nginx-smallest-app-workflow"></a>Serving a Smallest App Using Nginx</li>
     </ol>
 </nav>
 <hr/>
@@ -639,6 +640,200 @@ http {
     </ul>
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="nginx-smallest-app-workflow">Serving a Smallest App Using Nginx — Workflow</h3>
+<ol>
+
+    <li>Overview</li>
+    <br/>
+    <ul>
+        <li>This chapter explains the <b>minimal, beginner-friendly workflow</b> to serve a simple website using Nginx.</li>
+        <br/>
+        <li>The “smallest app” means:</li>
+        <ul>
+            <li>a single <code>index.html</code> file</li>
+            <li>served from Nginx</li>
+            <li>using the simplest valid server block</li>
+        </ul>
+        <br/>
+        <li>This is the foundation for hosting more advanced applications later.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 1 — Install Nginx</li>
+    <br/>
+    <ul>
+        <li>On Ubuntu/Debian:</li>
+<pre><code class="language-bash line-numbers">sudo apt update
+sudo apt install nginx
+</code></pre>
+        <li>Check status:</li>
+<pre><code class="language-bash line-numbers">systemctl status nginx</code></pre>
+        <li>Open in browser:</li>
+<pre><code class="language-plaintext line-numbers">http://localhost
+</code></pre>
+        <li>You should see an Nginx welcome page.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 2 — Create the Smallest Possible Web App</li>
+    <br/>
+    <ul>
+        <li>Create a directory for your website:</li>
+<pre><code class="language-bash line-numbers">sudo mkdir -p /var/www/smallapp</code></pre>
+        <br/>
+        <li>Create a minimal HTML file:</li>
+<pre><code class="language-html line-numbers">&lt;!-- /var/www/smallapp/index.html --&gt;
+&lt;h1&gt;Hello from Nginx!&lt;/h1&gt;
+</code></pre>
+        <br/>
+        <li>Set correct permissions:</li>
+<pre><code class="language-bash line-numbers">sudo chown -R $USER:$USER /var/www/smallapp</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 3 — Create a Simple Nginx Server Block</li>
+    <br/>
+    <ul>
+        <li>Create a config file for your app:</li>
+<pre><code class="language-bash line-numbers">sudo vim /etc/nginx/sites-available/smallapp</code></pre>
+        <br/>
+        <li>Insert this minimal configuration:</li>
+<pre><code class="language-nginx line-numbers">server {
+    listen 80;
+    server_name _;   # matches any hostname
+
+    root /var/www/smallapp;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+</code></pre>
+        <br/>
+        <li>Activate the server block:</li>
+<pre><code class="language-bash line-numbers">sudo ln -s /etc/nginx/sites-available/smallapp /etc/nginx/sites-enabled/</code></pre>
+        <br/>
+        <li>Test your configuration:</li>
+<pre><code class="language-bash line-numbers">sudo nginx -t</code></pre>
+        <br/>
+        <li>Reload Nginx:</li>
+<pre><code class="language-bash line-numbers">sudo systemctl reload nginx</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 4 — Access the Application</li>
+    <br/>
+    <ul>
+        <li>Now open your browser:</li>
+<pre><code class="language-plaintext line-numbers">http://localhost</code></pre>
+        <br/>
+        <li>You should see:</li>
+<pre><code class="language-plaintext line-numbers">Hello from Nginx!</code></pre>
+        <br/>
+        <li>Congratulations — you served the smallest possible app using Nginx!</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 5 — Optional: Use a Custom Domain (Local Testing)</li>
+    <br/>
+    <ul>
+        <li>Edit your <code>/etc/hosts</code> file:</li>
+<pre><code class="language-plaintext line-numbers">127.0.0.1   myapp.local</code></pre>
+        <br/>
+        <li>Update the server block:</li>
+<pre><code class="language-nginx line-numbers">server_name myapp.local;</code></pre>
+        <br/>
+        <li>Reload Nginx again:</li>
+<pre><code class="language-bash line-numbers">sudo systemctl reload nginx</code></pre>
+        <br/>
+        <li>Visit:</li>
+<pre><code class="language-plaintext line-numbers">http://myapp.local</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 6 — Understand the Minimal Workflow</li>
+    <br/>
+    <ul>
+        <li>The minimal workflow for serving any app with Nginx is:</li>
+        <ol>
+            <br/>
+            <li>Install Nginx</li>
+            <br/>
+            <li>Create your web application directory</li>
+            <br/>
+            <li>Write your app files (HTML, static files, or reverse proxy endpoint)</li>
+            <br/>
+            <li>Create a server block in <code>sites-available/</code></li>
+            <br/>
+            <li>Link it into sites-enabled</li>
+            <br/>
+            <li>Test configuration with <code>nginx -t</code></li>
+            <br/>
+            <li>Reload Nginx</li>
+            <br/>
+            <li>Access the site in the browser</li>
+        </ol>
+        <br/>
+        <li>This same workflow applies to:</li>
+        <ul>
+            <br/>
+            <li>serving SPA (Vue/React/Angular)</li>
+            <br/>
+            <li>hosting Python backends (Flask/Django)</li>
+            <br/>
+            <li>hosting Node.js backends</li>
+            <br/>
+            <li>hosting static assets or APIs</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 7 — Optional Extensions</li>
+    <br/>
+    <ul>
+        <li>After serving the smallest app, you can extend the server:</li>
+        <ul>
+            <br/>
+            <li>Add SSL (Let's Encrypt)</li>
+            <br/>
+            <li>Add reverse proxy (proxy_pass)</li>
+            <br/>
+            <li>Enable compression (gzip)</li>
+            <br/>
+            <li>Enable caching</li>
+            <br/>
+            <li>Add file upload size limits</li>
+            <br/>
+            <li>Add logging &amp; monitoring</li>
+        </ul>
+        <br/>
+        <li>But everything starts with mastering the smallest workflow.</li>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
