@@ -159,6 +159,7 @@
         <li><a href="#symfony-architecture">Architecture</a></li>
         <li><a href="#symfony-components">Components</a></li>
         <li><a href="#symfony-service-container">Service Container</a></li>
+        <li><a href="#symfony-events-listeners">Events &amp; Event Listeners</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1992,6 +1993,300 @@ class ReportController extends AbstractController {
         <br/>
         <li>Inspect service details:</li>
 <pre><code class="language-bash line-numbers">symfony console debug:container App\Service\Mailer</code></pre>
+        </li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="symfony-events-listeners">Symfony Events &amp; Event Listeners</h3>
+<ol>
+
+    <li>Introduction to Symfony’s Event System</li>
+    <br/>
+    <ul>
+        <li>Symfony uses an <b>event-driven architecture</b> at the heart of its HTTP Kernel.</li>
+        <br/>
+        <li>This architecture enables different parts of the framework (and your app) to <b>react to events</b> during the request–response lifecycle.</li>
+        <br/>
+        <li>Core ideas:
+            <ul>
+                <li>Events represent something that happens (request received, controller chosen, response sent…)</li>
+                <li>Event listeners react to those events</li>
+                <li>Event subscribers register multiple listeners</li>
+                <li>The EventDispatcher triggers the events</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The system allows:
+            <ul>
+                <li>decoupling</li>
+                <li>clean cross-cutting logic</li>
+                <li>plug-in architecture</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>What Is the EventDispatcher?</li>
+    <br/>
+    <ul>
+        <li>The <b>EventDispatcher</b> component is responsible for:
+            <ul>
+                <li>registering event listeners</li>
+                <li>dispatching events</li>
+                <li>triggering listener callbacks</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example in plain PHP:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use Symfony\Component\EventDispatcher\EventDispatcher;
+
+$dispatcher = new EventDispatcher();
+$dispatcher->addListener('user.registered', function () {
+    echo "Event caught!";
+});
+$dispatcher->dispatch(new Event(), 'user.registered');
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Symfony uses this internally for routing, controllers, responses, exceptions, security, etc.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Symfony’s Built-In Kernel Events</li>
+    <br/>
+    <ul>
+        <li>Symfony emits many core events during request processing.</li>
+        <br/>
+        <li>Most important events:
+            <ul>
+                <li><code>kernel.request</code></li>
+                <li><code>kernel.controller</code></li>
+                <li><code>kernel.controller_arguments</code></li>
+                <li><code>kernel.view</code></li>
+                <li><code>kernel.response</code></li>
+                <li><code>kernel.terminate</code></li>
+                <li><code>kernel.exception</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example lifecycle:</li>
+<pre><code class="language-plaintext line-numbers">Request → kernel.request → kernel.controller → controller → response
+         ↑                                         ↓
+     listeners                                kernel.view
+</code></pre>
+        </li>
+        <br/>
+        <li>You can hook into any of these with listeners or subscribers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Custom Event</li>
+    <br/>
+    <ul>
+        <li>Define your own event class:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+namespace App\Event;
+
+use Symfony\Contracts\EventDispatcher\Event;
+
+class UserRegisteredEvent extends Event {
+    public function __construct(
+        public readonly string $email
+    ) {}
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>This encapsulates the data that listeners will handle.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Dispatching an Event</li>
+    <br/>
+    <ul>
+        <li>Inject the EventDispatcher into your service or controller:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use App\Event\UserRegisteredEvent;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+
+class UserService {
+    public function __construct(private EventDispatcherInterface $dispatcher) {}
+
+    public function register(string $email) {
+        // ... save user ...
+        $this->dispatcher->dispatch(new UserRegisteredEvent($email));
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Dispatching triggers all listeners registered for this event.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating an Event Listener</li>
+    <br/>
+    <ul>
+        <li>An <b>event listener</b> is a class with a single public method reacting to an event:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+namespace App\EventListener;
+
+use App\Event\UserRegisteredEvent;
+
+class WelcomeEmailListener {
+    public function onUserRegistered(UserRegisteredEvent $event) {
+        // send email
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+
+        <li>Register the listener (YAML):</li>
+<pre><code class="language-yaml line-numbers">services:
+    App\EventListener\WelcomeEmailListener:
+        tags:
+            - { name: 'kernel.event_listener', event: 'App\Event\UserRegisteredEvent', method: 'onUserRegistered' }
+</code></pre>
+        </li>
+        <br/>
+        <li>Symfony automatically calls <code>onUserRegistered()</code> when the event is dispatched.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating an Event Subscriber</li>
+    <br/>
+    <ul>
+        <li>A subscriber is a class that listens to multiple events.</li>
+        <br/>
+        <li>Implement <code>EventSubscriberInterface</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+namespace App\EventSubscriber;
+
+use App\Event\UserRegisteredEvent;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+
+class UserSubscriber implements EventSubscriberInterface {
+    public static function getSubscribedEvents(): array {
+        return [
+            UserRegisteredEvent::class => 'onRegister',
+            'kernel.response'          => 'onResponse',
+        ];
+    }
+
+    public function onRegister(UserRegisteredEvent $event) { /* ... */ }
+
+    public function onResponse($event) { /* ... */ }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+
+        <li>Register subscriber (YAML):</li>
+<pre><code class="language-yaml line-numbers">services:
+    App\EventSubscriber\UserSubscriber:
+        tags:
+            - { name: 'kernel.event_subscriber' }
+</code></pre>
+        </li>
+        <br/>
+
+        <li>Subscribers are better than listeners when:
+            <ul>
+                <li>you handle many events</li>
+                <li>you want clearer organization</li>
+                <li>you want automatic tagging via autoconfiguration</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Event Priorities</li>
+    <br/>
+    <ul>
+        <li>Multiple listeners can react to the same event.</li>
+        <br/>
+        <li>You can control execution order using <b>priority</b> (higher = earlier):</li>
+<pre><code class="language-yaml line-numbers">services:
+    App\EventListener\FirstListener:
+        tags:
+            - { name: kernel.event_listener, event: App\Event\UserRegisteredEvent, priority: 20 }
+
+    App\EventListener\SecondListener:
+        tags:
+            - { name: kernel.event_listener, event: App\Event\UserRegisteredEvent, priority: 10 }
+</code></pre>
+        </li>
+        <br/>
+        <li>Example:
+            <ul>
+                <li>priority 20 → runs first</li>
+                <li>priority 10 → runs second</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Modifying Responses with Events</li>
+    <br/>
+    <ul>
+        <li>You can modify or replace the response using <code>kernel.response</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class AddHeaderListener {
+    public function onKernelResponse(ResponseEvent $event) {
+        $response = $event->getResponse();
+        $response->headers->set('X-App', 'Demo');
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Useful for:
+            <ul>
+                <li>security headers</li>
+                <li>performance headers</li>
+                <li>response normalization</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Exceptions with Events</li>
+    <br/>
+    <ul>
+        <li><code>kernel.exception</code> allows custom exception handling:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+class ExceptionListener {
+    public function onKernelException(ExceptionEvent $event) {
+        $event->setResponse(new Response("Custom error!", 500));
+    }
+}
+?&gt;</code></pre>
+        </li>
+        <br/>
+        <li>Use cases:
+            <ul>
+                <li>API JSON error formatting</li>
+                <li>Custom error pages</li>
+                <li>Logging exceptions</li>
+            </ul>
         </li>
     </ul>
     <br/>
