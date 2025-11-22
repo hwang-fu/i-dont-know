@@ -3186,7 +3186,221 @@ docker run -d --name c2 -v sharedvol:/data alpine
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-network-command">Understanding the <code>docker network</code> Command</h3>
+<ol>
 
+    <li>What Is <code>docker network</code>?</li>
+    <br/>
+    <ul>
+        <li>The <code>docker network</code> command manages Docker's virtual networks that containers use to communicate with each other and the outside world.</li>
+        <br/>
+        <li>Docker networks allow you to:</li>
+        <ul>
+            <li>connect containers together</li>
+            <li>isolate services</li>
+            <li>assign custom IP ranges</li>
+            <li>control DNS resolution inside Docker</li>
+            <li>create multi-container apps</li>
+        </ul>
+        <br/>
+        <li>Basic syntax:</li>
+<pre><code class="language-plaintext line-numbers">docker network [COMMAND]</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Listing Existing Docker Networks</li>
+    <ul>
+<pre><code class="language-bash line-numbers">docker network ls</code></pre>
+        <li>Example output:</li>
+<pre><code class="language-plaintext line-numbers">NETWORK ID     NAME      DRIVER    SCOPE
+ad8c32f1c012   bridge    bridge    local
+bfd9a1023cd2   host      host      local
+cd1fc8c98bb1   none      null      local
+</code></pre>
+        <li>Default networks:</li>
+        <ul>
+            <li><code>bridge</code> → default virtual network for containers</li>
+            <li><code>host</code> → container shares host networking stack</li>
+            <li><code>none</code> → no networking</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Custom Network</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker network create mynet</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>mynet</code> is the name of the new network</li>
+            <li>Driver defaults to <code>bridge</code></li>
+        </ul>
+        <br/>
+        <li>Custom networks allow automatic container name-based DNS.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Network with Custom Subnet and Gateway</li>
+    <ul>
+<pre><code class="language-bash line-numbers">docker network create           \
+    --subnet=192.168.10.0/24    \
+    --gateway=192.168.10.1      \
+    mycustomnet
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>--subnet</code> is the CIDR block for IP allocation</li>
+            <li><code>--gateway</code> is the network gateway</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Inspecting a Network</li>
+<pre><code class="language-bash line-numbers">docker network inspect mynet</code></pre>
+    <ul>
+        <li>Example output section:</li>
+    </ul>
+<pre><code class="language-plaintext line-numbers">{
+    "Name": "mynet",
+    "Driver": "bridge",
+    "Containers": {
+        "abcd1234": {
+            "Name": "web",
+            "IPv4Address": "172.18.0.2/16"
+        }
+    }
+}
+</code></pre>
+    <br/><br/>
+
+
+    <li>Running a Container Attached to a Network</li>
+<pre><code class="language-bash line-numbers">docker run -d --name webapp --network mynet nginx
+</code></pre>
+    <ul>
+        <li>Explanation: <code>--network mynet</code> → container joins the <code>mynet</code> network</li>
+        <br/>
+        <li>Containers on the same network can reach each other by name.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Connecting an Existing Container to a Network</li>
+<pre><code class="language-bash line-numbers">docker network connect mynet backend</code></pre>
+    <ul>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>mynet</code> is the network</li>
+            <li><code>backend</code> is the existing container</li>
+        </ul>
+        <br/>
+        <li>This allows dynamic network changes without restarting containers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Disconnecting a Container from a Network</li>
+<pre><code class="language-bash line-numbers">docker network disconnect mynet backend</code></pre>
+    <ul>
+        <li>Explanation: it removes the <code>backend</code> container from <code>mynet</code></li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Removing a Docker Network</li>
+<pre><code class="language-bash line-numbers">docker network rm mynet</code></pre>
+    <ul>
+        <li>Important: you cannot remove a network while containers are attached</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Removing All Unused Networks — <code>docker network prune</code></li>
+<pre><code class="language-bash line-numbers">docker network prune</code></pre>
+    <ul>
+        <li>Deletes all networks not being used by any container.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding Docker Network Drivers</li>
+    <br/>
+    <ul>
+        <li>Docker supports multiple network drivers:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Network Driver</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>bridge</code></td>
+            <td>Default driver; best for communication between local containers.</td>
+        </tr>
+        <tr>
+            <td><code>host</code></td>
+            <td>Container shares the host's network stack directly.</td>
+        </tr>
+        <tr>
+            <td><code>none</code></td>
+            <td>Disables networking entirely.</td>
+        </tr>
+        <tr>
+            <td><code>overlay</code></td>
+            <td>Used for multi-host networking in Docker Swarm.</td>
+        </tr>
+        <tr>
+            <td><code>macvlan</code></td>
+            <td>Assigns each container its own MAC address on the physical LAN.</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Most users only need <code>bridge</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Two Containers Talking to Each Other</li>
+    <br/>
+    <ul>
+        <li>Create network:</li>
+<pre><code class="language-bash line-numbers">docker network create appnet</code></pre>
+        <br/>
+        <li>Start containers:</li>
+<pre><code class="language-bash line-numbers">docker run -d --name api --network appnet node:18
+docker run -d --name web --network appnet nginx
+</code></pre>
+        <br/>
+        <li>Now inside <code>web</code> container:</li>
+<pre><code class="language-bash line-numbers">curl http://api:3000
+</code></pre>
+        <br/>
+        <li><code>api</code> is resolved by Docker DNS!</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Static IP Assignment</li>
+<pre><code class="language-bash line-numbers">
+docker network create --subnet=172.20.0.0/16 appnet
+
+docker run -d --name app1 --network appnet --ip 172.20.0.10 alpine
+docker run -d --name app2 --network appnet --ip 172.20.0.11 alpine
+</code></pre>
+    <ul>
+        <li>Allows fixed IPs for legacy systems.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
