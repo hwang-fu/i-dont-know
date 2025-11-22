@@ -150,6 +150,7 @@
     <h2> <img src="resources/nginx.png" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ol style="line-height: 1.8;">
         <li><a href="#nginx-beginners">Nginx for Beginners</a></li>
+        <li><a href="#nginx-main-vs-server-config">Difference Between Nginx Main Config and Server Config</a></li>
     </ol>
 </nav>
 <hr/>
@@ -185,10 +186,10 @@
     <br/><br/>
 
 
-    <li>How Nginx Works (Beginner-Friendly Explanation)</li>
+    <li>How Nginx Works?</li>
     <br/>
     <ul>
-        <li>Nginx uses an <b>event-driven</b> architecture instead of creating a new process for each request.</li>
+        <li>Nginx uses an <code>event-driven</code> architecture instead of creating a new process for each request.</li>
         <br/>
         <li>This makes Nginx extremely efficient:</li>
         <ul>
@@ -197,35 +198,33 @@
         </ul>
         <br/>
         <li>Common roles of Nginx:</li>
-        <ul>
-            <li><b>Web Server</b>: serves HTML, images, CSS, JS</li>
-            <li><b>Reverse Proxy</b>: forwards requests to backend apps like Flask, Django, Node.js</li>
-            <li><b>Load Balancer</b>: distributes traffic across multiple servers</li>
-            <li><b>SSL Terminator</b>: handles HTTPS connections</li>
-        </ul>
-    </ul>
-    <br/><br/>
+<table>
+    <thead>
+        <tr>
+            <th>Nginx Role</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><b>Web Server</b></td>
+            <td>Serves static files such as HTML, CSS, JavaScript, and images.</td>
+        </tr>
+        <tr>
+            <td><b>Reverse Proxy</b></td>
+            <td>Forwards incoming requests to backend applications (Flask, Django, Node.js, Spring, etc.).</td>
+        </tr>
+        <tr>
+            <td><b>Load Balancer</b></td>
+            <td>Distributes traffic across multiple backend servers to improve scalability and reliability.</td>
+        </tr>
+        <tr>
+            <td><b>SSL Terminator</b></td>
+            <td>Handles HTTPS/TLS encryption so backend apps can stay on plain HTTP.</td>
+        </tr>
+    </tbody>
+</table>
 
-
-    <li>Installing Nginx</li>
-    <br/>
-    <ul>
-        <li>On Ubuntu/Debian:</li>
-<pre><code class="language-bash line-numbers">sudo apt update
-sudo apt install nginx
-</code></pre>
-        <br/>
-        <li>On CentOS/RHEL:</li>
-<pre><code class="language-bash line-numbers">sudo yum install nginx
-</code></pre>
-        <br/>
-        <li>Start Nginx:</li>
-<pre><code class="language-bash line-numbers">sudo systemctl start nginx
-sudo systemctl enable nginx
-</code></pre>
-        <br/>
-        <li>Verify:</li>
-<pre><code class="language-bash line-numbers">curl http://localhost</code></pre>
     </ul>
     <br/><br/>
 
@@ -386,7 +385,7 @@ sudo systemctl status nginx
     <br/><br/>
 
 
-    <li>Where Nginx Is Used in Real Projects</li>
+    <li>Where Is Nginx Used in Real Projects?</li>
     <br/>
     <ul>
         <li>Nginx is often used to:</li>
@@ -410,7 +409,236 @@ sudo systemctl status nginx
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="nginx-main-vs-server-config">Difference Between Nginx Main Config and Server Config</h3>
+<ol>
 
+    <li>Overview</li>
+    <br/>
+    <ul>
+        <li>Nginx configuration is split into multiple layers, each defining different types of behavior.</li>
+        <br/>
+        <li>Two of the most important configuration scopes are:</li>
+        <ul>
+            <li><code>Main Configuration</code> which is global, affects the entire Nginx service</li>
+            <li><code>Server Configuration</code> which applies to a specific domain or virtual host</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>What Is the Main Configuration?</li>
+    <br/>
+    <ul>
+        <li>Main configuration lives in:</li>
+<pre><code class="language-plaintext line-numbers">/etc/nginx/nginx.conf</code></pre>
+        <br/>
+        <li>Main config settings affect the entire Nginx system regardless of the domain or app being served.</li>
+        <br/>
+        <li>Common directives found in the main config:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Directive</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>user</code></td>
+            <td>Specifies the system user under which Nginx worker processes run.</td>
+        </tr>
+        <tr>
+            <td><code>worker_processes</code></td>
+            <td>Defines the number of worker processes handling client requests.</td>
+        </tr>
+        <tr>
+            <td><code>events { ... }</code></td>
+            <td>Configures event-driven connection handling (e.g., max connections).</td>
+        </tr>
+        <tr>
+            <td><code>http { ... }</code></td>
+            <td>Contains global HTTP settings and includes server blocks.</td>
+        </tr>
+    </tbody>
+</table>
+
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-nginx line-numbers">user nginx;
+worker_processes auto;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    sendfile on;
+}
+</code></pre>
+        <br/>
+        <li>In short: <code>Main Configuration</code> represents the global foundational settings.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>What Is the Server Configuration?</li>
+    <br/>
+    <ul>
+        <li>Server configurations live in:</li>
+<pre><code class="language-plaintext line-numbers">/etc/nginx/sites-available/
+/etc/nginx/sites-enabled/
+</code></pre>
+        <br/>
+        <li>Each <code>server { ... }</code> block defines settings for a specific domain, application, or service.</li>
+        <br/>
+        <li>Server configs control:</li>
+        <ul>
+            <li>domain names</li>
+            <li>SSL certificates</li>
+            <li>proxy settings</li>
+            <li>routing &amp; locations</li>
+            <li>static file paths</li>
+        </ul>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-nginx line-numbers">server {
+    listen 80;
+    server_name example.com;
+
+    root /var/www/example;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+</code></pre>
+        <br/>
+        <li>In short: <code>Server Configuration</code> represents per-website or per-application settings.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Relationship Between Main Config and Server Config</li>
+    <br/>
+    <ul>
+        <li>The main config provides global HTTP defaults:</li>
+<pre><code class="language-nginx line-numbers">http {
+    sendfile on;
+    keepalive_timeout 65;
+
+    include /etc/nginx/sites-enabled/*;
+}
+</code></pre>
+        <br/>
+        <li><code>sites-enabled</code> is included inside <code>http { }</code>, meaning all server blocks inherit the global settings.</li>
+        <br/>
+        <li>Server blocks override or extend what is defined in the main config.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Key Differences at a Glance</li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Main Config</th>
+                <th>Server Config</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Global Nginx settings</td>
+                <td>Settings for a single website or application</td>
+            </tr>
+            <tr>
+                <td>Located in <code>/etc/nginx/nginx.conf</code></td>
+                <td>Located in <code>sites-available/</code> and <code>sites-enabled/</code></td>
+            </tr>
+            <tr>
+                <td>Defines worker processes, events, global http behavior</td>
+                <td>Defines domains, paths, proxies, SSL, routing</td>
+            </tr>
+            <tr>
+                <td>Affects entire Nginx instance</td>
+                <td>Affects only that specific server block</td>
+            </tr>
+            <tr>
+                <td>Rarely changed once set</td>
+                <td>Frequently edited when adding domains or apps</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li>When to Use Main Config</li>
+    <br/>
+    <ul>
+        <li>You modify <b>main config</b> when you need to change:</li>
+        <ul>
+            <li>global Nginx behavior</li>
+            <li>performance tuning</li>
+            <li>connection limits</li>
+            <li>MIME types</li>
+            <li>compression rules</li>
+            <li>log formatting rules</li>
+        </ul>
+        <br/>
+        <li>Example use case:</li>
+        <ul>
+            <li>Enable Gzip for all domains</li>
+            <li>Change worker process settings</li>
+            <li>Configure caching engine globally</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>When to Use Server Config</li>
+    <br/>
+    <ul>
+        <li>You modify <b>server config</b> for:</li>
+        <ul>
+            <li>setting up a new website</li>
+            <li>reverse proxy for an app</li>
+            <li>SSL configuration for a domain</li>
+            <li>custom routing (API endpoints, static content)</li>
+        </ul>
+        <br/>
+        <li>Example use cases:</li>
+        <ul>
+            <li>Host <code>example.com</code> and <code>blog.example.com</code> separately</li>
+            <li>Connect Nginx to Flask/Django via <code>proxy_pass</code></li>
+            <li>Specify a root directory for only one project</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example Comparison</li>
+    <br/>
+    <ul>
+        <li><b>Main config (global)</b>:</li>
+<pre><code class="language-nginx line-numbers">http {
+    sendfile on;
+    client_max_body_size 10M;
+}
+</code></pre>
+        <br/>
+        <li><b>Server config (specific domain)</b>:</li>
+<pre><code class="language-nginx line-numbers">server {
+    client_max_body_size 50M;   # overrides global limit
+}
+</code></pre>
+        <br/>
+        <li>Server block overrides main config <b>only for that domain</b>.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
