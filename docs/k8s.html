@@ -150,6 +150,7 @@
     <h2> <img src="resources/k8s.jpeg" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ol style="line-height: 1.8;">
         <li><a href="#k8s-key-terminologies">Key Concepts and Terminologies</a></li>
+        <li><a href="#k8s-deploy-first-app">Deploying Your First Application in Kubernetes</a></li>
     </ol>
 </nav>
 <hr/>
@@ -476,6 +477,261 @@
     </ul>
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="k8s-deploy-first-app">Deploying Your First Application in Kubernetes</h3>
+<ul>
+    <li>Step 1: Ensure Your Kubernetes Cluster Is Ready</li>
+    <br/>
+    <ul>
+        <li>You need a running cluster.
+            <br/>Examples:
+            <ul>
+                <li><b>minikube</b> (local development)</li>
+                <li><b>Docker Desktop Kubernetes</b></li>
+                <li><b>kind</b> (Kubernetes-in-Docker)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Verify cluster status:</li>
+<pre><code class="language-bash line-numbers">kubectl get nodes</code></pre>
+        <br/>
+        <li>You should see at least one node in <code>Ready</code> state.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 2: Create Your First Deployment</li>
+    <br/>
+    <ul>
+        <li>Create a file named <code>nginx-deployment.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-app
+  template:
+    metadata:
+      labels:
+        app: nginx-app
+    spec:
+      containers:
+        - name: nginx-container
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+</code></pre>
+        <br/>
+        <li>Explanation:
+            <ul>
+                <li><code>replicas: 2</code> → run two identical pods</li>
+                <li><code>selector</code> → Deployment uses this label to manage pods</li>
+                <li><code>template</code> → describes the pod</li>
+                <li><code>containerPort: 80</code> → nginx listens on port 80</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Apply the manifest:</li>
+<pre><code class="language-bash line-numbers">kubectl apply -f nginx-deployment.yaml</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 3: Verify Deployment</li>
+    <br/>
+    <ul>
+        <li>Check deployments:</li>
+<pre><code class="language-bash line-numbers">kubectl get deployments</code></pre>
+        <br/>
+        <li>Check pods:</li>
+<pre><code class="language-bash line-numbers">kubectl get pods</code></pre>
+        <br/>
+        <li>You should see two <code>nginx</code> pods running.</li>
+        <br/>
+        <li>Describe more details:</li>
+<pre><code class="language-bash line-numbers">kubectl describe deployment nginx-deploy</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 4: Expose Your Application with a Service</li>
+    <br/>
+    <ul>
+        <li>Create <code>nginx-service.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  type: NodePort
+  selector:
+    app: nginx-app
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 32000
+</code></pre>
+        <br/>
+        <li>Explanation:
+            <ul>
+                <li><code>type: NodePort</code> → expose service on all nodes</li>
+                <li><code>selector</code> → connect service to pods</li>
+                <li><code>port: 80</code> → service port</li>
+                <li><code>targetPort: 80</code> → container port</li>
+                <li><code>nodePort: 32000</code> → external port (30000–32767)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Apply the service:</li>
+<pre><code class="language-bash line-numbers">kubectl apply -f nginx-service.yaml</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 5: Access the Application</li>
+    <br/>
+    <ul>
+        <li>Get your node’s IP:</li>
+<pre><code class="language-bash line-numbers">kubectl get nodes -o wide</code></pre>
+        <br/>
+        <li>Check <code>INTERNAL-IP</code> or <code>EXTERNAL-IP</code>.</li>
+        <br/>
+        <li>Now visit the app in your browser:
+<pre><code class="language-plaintext line-numbers">http://NODE-IP:32000</code></pre>
+        </li>
+        <br/>
+        <li>If you use minikube:
+<pre><code class="language-bash line-numbers">minikube service nginx-service</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 6: Scaling Your Application</li>
+    <br/>
+    <ul>
+        <li>Kubernetes makes scaling easy:</li>
+<pre><code class="language-bash line-numbers">kubectl scale deployment nginx-deploy --replicas=5</code></pre>
+        <br/>
+        <li>Verify the new pods:</li>
+<pre><code class="language-bash line-numbers">kubectl get pods</code></pre>
+        <br/>
+        <li>Your application now runs with 5 replicas.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 7: Updating Your Application (Rolling Update)</li>
+    <br/>
+    <ul>
+        <li>Update image version:</li>
+<pre><code class="language-bash line-numbers">
+kubectl set image deployment/nginx-deploy nginx-container=nginx:1.25
+</code></pre>
+        <br/>
+        <li>Kubernetes will:
+            <ul>
+                <li>start new pods using new image</li>
+                <li>stop old pods gradually</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Check rollout status:</li>
+<pre><code class="language-bash line-numbers">kubectl rollout status deployment nginx-deploy</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 8: Rolling Back to Previous Version</li>
+    <br/>
+    <ul>
+        <li>Undo the last update:</li>
+<pre><code class="language-bash line-numbers">kubectl rollout undo deployment nginx-deploy</code></pre>
+        <br/>
+        <li>Kubernetes automatically returns to the last stable version.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 9: Deleting the Application</li>
+    <br/>
+    <ul>
+        <li>Delete service:</li>
+<pre><code class="language-bash line-numbers">kubectl delete -f nginx-service.yaml</code></pre>
+        <br/>
+        <li>Delete deployment:</li>
+<pre><code class="language-bash line-numbers">kubectl delete -f nginx-deployment.yaml</code></pre>
+        <br/>
+        <li>Pods and Service are cleanly removed.</li>
+    </ul>
+    <br/><br/>
+</ul>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
