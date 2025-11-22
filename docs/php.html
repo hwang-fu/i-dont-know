@@ -165,6 +165,7 @@
         <li><a href="#php-arrays">Arrays</a></li>
         <li><a href="#php-advanced-array-operations">Advanced Array Operations</a></li>
         <li><a href="#php-organizing-files">Organizing Files</a></li>
+        <li><a href="#php-state-management">State Management</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4738,7 +4739,383 @@ $slug = StringHelper::slugify("Hello World!");
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="php-state-management">PHP State Management</h3>
+<ol>
 
+    <li>What Is “State” in PHP and HTTP?</li>
+    <br/>
+    <ul>
+        <li>HTTP is a <b>stateless</b> protocol:
+            <ul>
+                <li>each request is independent,</li>
+                <li>the server does not automatically “remember” previous requests.</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>State management</b> in PHP means:
+            <ul>
+                <li>remembering information across multiple requests,</li>
+                <li>linking requests to the same user (session),</li>
+                <li>storing things like login status, shopping cart, preferences.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Main tools in PHP for state management:
+            <ul>
+                <li>query parameters (<code>$_GET</code>)</li>
+                <li>form data (<code>$_POST</code>)</li>
+                <li>cookies (<code>$_COOKIE</code>)</li>
+                <li>sessions (<code>$_SESSION</code>)</li>
+                <li>server-side storage (database, cache, files)</li>
+                <li>URL routing (path-based “state”)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Per-Request Data: <code>$_GET</code> and <code>$_POST</code></li>
+    <br/>
+    <ul>
+        <li>Request data is one-time state: it exists only for that HTTP request.</li>
+        <br/>
+        <li><b>Query parameters</b> (<code>$_GET</code>):</li>
+<pre><code class="language-php line-numbers">&lt;?php
+// URL: /search.php?q=php+state&amp;page=2
+$q = $_GET["q"] ?? "";
+$page = (int)($_GET["page"] ?? 1);
+?&gt;
+</code></pre>
+        <br/>
+        <li><b>Form data</b> (<code>$_POST</code>):</li>
+<pre><code class="language-php line-numbers">&lt;?php
+// After submitting a &lt;form method="post"&gt;
+$username = $_POST["username"] ?? "";
+$password = $_POST["password"] ?? "";
+?&gt;
+</code></pre>
+        <br/>
+        <li>Characteristics:
+            <ul>
+                <li>exists only during the request,</li>
+                <li>good for single actions (login, submit form),</li>
+                <li>not persistent by itself (unless you store it somewhere).</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Client-Side State: Cookies (<code>$_COOKIE</code>)</li>
+    <br/>
+    <ul>
+        <li><b>Cookies</b> are small pieces of data stored in the browser and sent with each request to the same domain.</li>
+        <br/>
+        <li>PHP reads them via <code>$_COOKIE</code> and sends them with <code>setcookie()</code>.</li>
+        <br/>
+        <li>Setting a cookie:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+// Must be called before any output
+setcookie(
+    "theme",        // name
+    "dark",         // value
+    time() + 3600,  // expire (1 hour)
+    "/",            // path
+    "",             // domain (default)
+    true,           // secure (HTTPS only)
+    true            // HttpOnly (not accessible via JS)
+);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Reading a cookie:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$theme = $_COOKIE["theme"] ?? "light";
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Cookie properties:
+            <ul>
+                <li><b>Persistent</b> across requests until expiration.</li>
+                <li>Stored and controlled by the client (user can delete or modify).</li>
+                <li>Size-limited and insecure for sensitive data (never store raw passwords, secrets).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Typical uses:
+            <ul>
+                <li>remembering language preference,</li>
+                <li>“remember me” tokens (hashed, secure),</li>
+                <li>UI theme, tracking IDs.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Server-Side State: Sessions (<code>$_SESSION</code>)</li>
+    <br/>
+    <ul>
+        <li><b>Sessions</b> link multiple requests to the same user by:
+            <ul>
+                <li>issuing a session ID (usually in a cookie <code>PHPSESSID</code>),</li>
+                <li>storing session data on the server (file, memory, etc.),</li>
+                <li>reloading that data each time the session ID is sent.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Starting a session:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+// At the top of script, before output
+session_start();
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Storing state:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$_SESSION["user_id"] = 42;
+$_SESSION["cart"] = ["product_1" =&gt; 2, "product_5" =&gt; 1];
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Reading state:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+session_start();
+$userId = $_SESSION["user_id"] ?? null;
+$cart = $_SESSION["cart"] ?? [];
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Ending a session (logout):</li>
+<pre><code class="language-php line-numbers">&lt;?php
+session_start();
+$_SESSION = [];
+session_destroy();
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Sessions are the main tool for:
+            <ul>
+                <li>login state,</li>
+                <li>shopping carts,</li>
+                <li>wizards / multi-step forms,</li>
+                <li>user preferences during a visit.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>State via URL: Path and Query Design</li>
+    <br/>
+    <ul>
+        <li>Part of state can be encoded in URLs:</li>
+        <br/>
+        <ul>
+            <li>path segments: <code>/products/42</code> → product ID 42</li>
+            <li>query parameters: <code>?page=2&amp;sort=price</code></li>
+        </ul>
+        <br/>
+        <li>Example simple router:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$uri = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
+
+if (preg_match("~^/product/(\\d+)$~", $uri, $m)) {
+    $productId = (int)$m[1];
+    // load product from DB
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>URL-based state:
+            <ul>
+                <li>is shareable (bookmarks, links),</li>
+                <li>ideal for read-only state (filters, sorting, pagination),</li>
+                <li>not suitable for secrets or sensitive actions by itself.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Persistent State: Database and Storage</li>
+    <br/>
+    <ul>
+        <li>For long-term or multi-device state, use a database or other storage:
+            <ul>
+                <li>SQL DB (MySQL, PostgreSQL)</li>
+                <li>NoSQL (Redis, Mongo)</li>
+                <li>files, key-value stores</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Typical pattern:
+            <ul>
+                <li>Use sessions for short-lived UI state (who is logged in).</li>
+                <li>Use DB for persistent state (user profile, orders, messages).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example: user preferences in DB + session cache:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+session_start();
+
+if (!isset($_SESSION["prefs"])) {
+    // query database once
+    $_SESSION["prefs"] = loadUserPrefsFromDb($_SESSION["user_id"]);
+}
+
+$prefs = $_SESSION["prefs"];
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Managing Authentication State</li>
+    <br/>
+    <ul>
+        <li>Common pattern:
+            <ul>
+                <li>user posts credentials via <code>$_POST</code>,</li>
+                <li>you verify against DB,</li>
+                <li>you store user ID in <code>$_SESSION</code>,</li>
+                <li>later requests check <code>$_SESSION["user_id"]</code> to know who is logged in.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example login handling:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+session_start();
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $user = findUserByEmail($_POST["email"]);
+    if ($user &amp;&amp; password_verify($_POST["password"], $user["password_hash"])) {
+        $_SESSION["user_id"] = $user["id"];
+        header("Location: /dashboard.php");
+        exit;
+    } else {
+        $error = "Invalid credentials";
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Checking authentication on protected pages:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+session_start();
+if (!isset($_SESSION["user_id"])) {
+    header("Location: /login.php");
+    exit;
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Optional enhancement: remember-me cookies with secure tokens + DB.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Flash Messages (One-Time State)</li>
+    <br/>
+    <ul>
+        <li><b>Flash messages</b> are short-lived messages that survive one redirect and then disappear:
+            <ul>
+                <li>“Profile updated successfully”</li>
+                <li>“Login failed”</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Implement via session:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+// Set flash
+$_SESSION["flash"] = "Profile saved!";
+header("Location: /profile.php");
+exit;
+</code></pre>
+        </li>
+        <br/>
+        <li>Read and clear:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+session_start();
+
+$flash = $_SESSION["flash"] ?? null;
+unset($_SESSION["flash"]);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>This pattern is very common in frameworks (Laravel, Symfony, etc.).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>State Management in APIs (Stateless vs Session-Based)</li>
+    <br/>
+    <ul>
+        <li>For REST-ish APIs, it is common to keep them <b>stateless</b>:
+            <ul>
+                <li>authentication via tokens (JWT, API keys) in headers,</li>
+                <li>no PHP session usage,</li>
+                <li>each request is self-contained.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example: token passed in header:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$headers = getallheaders();
+$token = $headers["Authorization"] ?? null;
+// validate token, load user from DB
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Sessions are still possible in APIs, but tokens are more scalable for mobile / external clients.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Security Considerations in State Management</li>
+    <br/>
+    <ul>
+        <li><b>Never store sensitive data in cookies</b> (passwords, card info).</li>
+        <br/>
+        <li>Use:
+            <ul>
+                <li><code>HttpOnly</code> cookies to prevent JavaScript access,</li>
+                <li><code>Secure</code> flag over HTTPS.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Regenerate session IDs on login to prevent fixation:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+session_start();
+session_regenerate_id(true);
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Protect against CSRF when using cookies for authentication:
+            <ul>
+                <li>use CSRF tokens in forms,</li>
+                <li>or use SameSite cookies.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Validate and sanitize any state coming from the client (cookies, GET, POST).</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
