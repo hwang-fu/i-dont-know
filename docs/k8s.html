@@ -83,11 +83,6 @@
     .token.keyword {
         font-weight: 500;
     }
-    /*
-    .token.comment {
-        color: #888;
-    }
-    */
 
     .red-underline {
         text-decoration-line: underline;
@@ -155,6 +150,7 @@
     <h2> <img src="resources/k8s.jpeg" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ol style="line-height: 1.8;">
         <li><a href="#k8s-introduction">Introduction</a></li>
+        <li><a href="#k8s-key-terminologies">Key Concepts and Terminologies</a></li>
     </ol>
 </nav>
 <hr/>
@@ -479,7 +475,325 @@ spec:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="k8s-key-terminologies">Key Concepts & Terminologies in Kubernetes</h3>
+<ol>
+    <li>Cluster</li>
+    <br/>
+    <ul>
+        <li>A <code>cluster</code> is a group of machines (nodes) managed by Kubernetes.</li>
+        <br/>
+        <li>It consists of:
+            <ul>
+                <li><b>Control Plane</b> — the brain</li>
+                <li><b>Nodes (Workers)</b> — machines that run applications</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Kubernetes ensures the cluster always matches the “desired state” you declare in YAML manifests.</li>
+    </ul>
+    <br/><br/>
 
+
+    <li>Node</li>
+    <br/>
+    <ul>
+        <li>A <code>node</code> is a machine (VM or physical) that runs your containers.</li>
+        <br/>
+        <li>Each node runs:
+            <ul>
+                <li><b>kubelet</b> — talks to the control plane</li>
+                <li><b>container runtime</b> — containerd, CRI-O, etc.</li>
+                <li><b>kube-proxy</b> — manages networking rules</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Nodes are the worker machines powering workloads.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Pod</li>
+    <br/>
+    <ul>
+        <li>A <code>pod</code> is the smallest deployable unit in Kubernetes.</li>
+        <br/>
+        <li>It contains:
+            <ul>
+                <li>one container</li>
+                <li>or multiple tightly-coupled containers</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Pods share:
+            <ul>
+                <li>network namespace</li>
+                <li>IP address</li>
+                <li>volumes</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Pods are ephemeral — they can be destroyed and recreated anytime.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deployment</li>
+    <br/>
+    <ul>
+        <li>A <code>Deployment</code> manages stateless applications.</li>
+        <br/>
+        <li>It defines:
+            <ul>
+                <li>how many pods should exist</li>
+                <li>how pods update (rolling updates)</li>
+                <li>how to roll back</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Kubernetes ensures the Deployment maintains the correct number of pods at all times.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>ReplicaSet</li>
+    <br/>
+    <ul>
+        <li>A <code>ReplicaSet</code> ensures that the specified number of pod replicas are running.</li>
+        <br/>
+        <li>Deployments use ReplicaSets internally.</li>
+        <br/>
+        <li>You rarely interact with ReplicaSets directly.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Service</li>
+    <br/>
+    <ul>
+        <li>A <code>Service</code> exposes pods to other pods or to the outside world.</li>
+        <br/>
+        <li>Types of services:
+            <ul>
+                <li><b>ClusterIP</b> — internal access only</li>
+                <li><b>NodePort</b> — exposed on a port on each node</li>
+                <li><b>LoadBalancer</b> — cloud provider load balancer</li>
+                <li><b>ExternalName</b> — DNS alias</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Services provide stable networking even if pods constantly restart.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Ingress</li>
+    <br/>
+    <ul>
+        <li>An <code>Ingress</code> exposes HTTP/HTTPS routes from outside the cluster to services inside the cluster.</li>
+        <br/>
+        <li>Example routing features:</li>
+        <ul>
+            <li>domain routing</li>
+            <li>path-based routing</li>
+            <li>TLS termination</li>
+        </ul>
+        <br/>
+        <li>Requires an Ingress Controller (e.g., NGINX Ingress Controller).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>ConfigMap</li>
+    <br/>
+    <ul>
+        <li><code>ConfigMaps</code> store non-sensitive configuration data such as:
+            <ul>
+                <li>environment variables</li>
+                <li>application configs</li>
+                <li>files</li>
+            </ul>
+        </li>
+        <br/>
+        <li>They help avoid hardcoding configuration inside images.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Secret</li>
+    <br/>
+    <ul>
+        <li><code>Secrets</code> store sensitive data such as:
+            <ul>
+                <li>passwords</li>
+                <li>API keys</li>
+                <li>tokens</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Unlike ConfigMaps, Secrets are base64-encoded and handled more securely.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>PersistentVolume (PV)</li>
+    <br/>
+    <ul>
+        <li>A <code>PV</code> is storage that exists independently of pods.</li>
+        <br/>
+        <li>PVs represent actual storage resources:
+            <ul>
+                <li>local disk</li>
+                <li>NFS</li>
+                <li>cloud disk (AWS EBS, GCP Persistent Disk)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>PersistentVolumeClaim (PVC)</li>
+    <br/>
+    <ul>
+        <li><code>PVCs</code> are storage requests made by pods.</li>
+        <br/>
+        <li>A PVC asks:
+            <ul>
+                <li>“Give me 10GB of storage”</li>
+                <li>“Give me ReadWriteOnce access”</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Kubernetes binds PVCs to PVs automatically if requirements match.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>StatefulSet</li>
+    <br/>
+    <ul>
+        <li>A <code>StatefulSet</code> manages stateful applications like:
+            <ul>
+                <li>databases</li>
+                <li>message queues</li>
+                <li>storage systems</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Features:</li>
+        <ul>
+            <li>stable network identity</li>
+            <li>stable persistent storage</li>
+            <li>ordered pod startup/shutdown</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>DaemonSet</li>
+    <br/>
+    <ul>
+        <li>A <code>DaemonSet</code> ensures that exactly one instance of a pod runs on every node.</li>
+        <br/>
+        <li>Used for:
+            <ul>
+                <li>log collectors</li>
+                <li>node monitoring (Prometheus Node Exporter)</li>
+                <li>storage drivers</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Job</li>
+    <br/>
+    <ul>
+        <li>A <code>Job</code> runs a task to completion one time.</li>
+        <br/>
+        <li>Example use cases:
+            <ul>
+                <li>database migrations</li>
+                <li>data processing tasks</li>
+                <li>one-time scripts</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>CronJob</li>
+    <br/>
+    <ul>
+        <li>A <code>CronJob</code> runs a Job on a time-based schedule.</li>
+        <br/>
+        <li>Example:</li>
+        <ul>
+            <li>clean temporary data every hour</li>
+            <li>run backups daily</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Labels and Selectors</li>
+    <br/>
+    <ul>
+        <li><code>Labels</code> are key-value metadata attached to objects.</li>
+        <br/>
+        <li><code>Selectors</code> are queries used to match labels.</li>
+        <br/>
+        <li>Used for:
+            <ul>
+                <li>service-to-pod matching</li>
+                <li>deployment-to-pod matching</li>
+                <li>organizational grouping</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Namespace</li>
+    <br/>
+    <ul>
+        <li>A <code>namespace</code> logically divides cluster resources.</li>
+        <br/>
+        <li>Common uses:
+            <ul>
+                <li>separate teams or projects</li>
+                <li>isolate environments (dev, staging, prod)</li>
+                <li>apply resource quotas</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Default namespaces:
+            <ul>
+                <li><b>default</b></li>
+                <li><b>kube-system</b></li>
+                <li><b>kube-public</b></li>
+                <li><b>kube-node-lease</b></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Control Plane (Master Components)</li>
+    <br/>
+    <ul>
+        <li>Core components controlling the cluster:</li>
+        <ul>
+            <li><b>kube-apiserver</b> — central API interface</li>
+            <li><b>etcd</b> — persistent key-value store</li>
+            <li><b>kube-scheduler</b> — decides which node to place pods on</li>
+            <li><b>kube-controller-manager</b> — manages controllers (jobs, nodes, replicas)</li>
+            <li><b>cloud-controller-manager</b> — integrates cloud provider logic</li>
+        </ul>
+        <br/>
+        <li>Users normally interact only with the API server via <code>kubectl</code>.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
