@@ -164,6 +164,7 @@
         <li><a href="#php-advanced-functions">Advanced Functions</a></li>
         <li><a href="#php-arrays">Arrays</a></li>
         <li><a href="#php-advanced-array-operations">Advanced Array Operations</a></li>
+        <li><a href="#php-organizing-files">Organizing Files</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4351,7 +4352,385 @@ $sumOfSquares =
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="php-organizing-files">Organizing PHP Files</h3>
+<ol>
+    <li>Typical Small Project Structure</li>
+    <br/>
+    <ul>
+        <li>Simple structure for a small site:</li>
+<pre><code class="language-plaintext line-numbers">project/
+├── public/
+│   ├── index.php
+│   ├── about.php
+│   ├── contact.php
+│   └── assets/
+│       ├── style.css
+│       └── script.js
+├── src/
+│   ├── functions.php
+│   ├── User.php
+│   └── Mailer.php
+├── config/
+│   └── config.php
+└── vendor/   (created by Composer)
+</code></pre>
+        <br/>
+        <li>Ideas:
+            <ul>
+                <li><code>public/</code> contains only web-accessible files (entry points, assets).</li>
+                <li><code>src/</code> contains application logic (classes, functions).</li>
+                <li><code>config/</code> holds configuration files.</li>
+                <li><code>vendor/</code> is managed by Composer.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The web server document root should be <code>public/</code>, not the project root.</li>
+    </ul>
+    <br/><br/>
 
+
+    <li>Using a Front Controller (<code>index.php</code>)</li>
+    <br/>
+    <ul>
+        <li>Instead of many separate PHP files as entry points, use a single front controller:</li>
+        <br/>
+        <li>Example basic front controller:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+// public/index.php
+
+require __DIR__ . "/../vendor/autoload.php";
+require __DIR__ . "/../config/config.php";
+
+$uri = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
+
+if ($uri === "/" || $uri === "/index.php") {
+    require __DIR__ . "/../src/Controllers/HomeController.php";
+    (new HomeController())-&gt;index();
+} elseif ($uri === "/contact") {
+    require __DIR__ . "/../src/Controllers/ContactController.php";
+    (new ContactController())-&gt;showForm();
+} else {
+    http_response_code(404);
+    echo "Not Found";
+}
+?&gt;
+</code></pre>
+        <br/>
+        <li>Advantages:
+            <ul>
+                <li>centralized routing,</li>
+                <li>uniform error handling,</li>
+                <li>easier middleware (auth, logging).</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Separating Configuration Files</li>
+    <br/>
+    <ul>
+        <li>Keep configuration out of main scripts.</li>
+        <br/>
+        <li>Example <code>config/config.php</code>:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+return [
+    "db" =&gt; [
+        "host" =&gt; "localhost",
+        "name" =&gt; "app",
+        "user" =&gt; "root",
+        "pass" =&gt; "",
+    ],
+    "debug" =&gt; true,
+];
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Usage in front controller or bootstrap:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+$config = require __DIR__ . "/../config/config.php";
+$dbConfig = $config["db"];
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Benefits:
+            <ul>
+                <li>easier to change environment-specific values,</li>
+                <li>config can be excluded from version control if it contains secrets.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using <code>require</code>, <code>include</code>, and <code>autoload</code></li>
+    <br/>
+    <ul>
+        <li>For manual organization:
+            <ul>
+                <li><code>require</code> / <code>require_once</code> → fatal error if missing.</li>
+                <li><code>include</code> / <code>include_once</code> → warning if missing.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+require __DIR__ . "/../src/functions.php";
+require __DIR__ . "/../src/User.php";
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Better: use Composer’s autoloader:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+require __DIR__ . "/../vendor/autoload.php";
+// classes are loaded automatically by namespace
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Autoloading avoids many manual <code>require</code> calls and keeps files clean.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Organizing with Namespaces and PSR-4</li>
+    <br/>
+    <ul>
+        <li>Namespaces prevent name conflicts and map naturally to directories.</li>
+        <br/>
+        <li>Example class with namespace:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+// src/Service/Mailer.php
+namespace App\Service;
+
+class Mailer {
+    public function send(string $to, string $subject, string $body): void {
+        // ...
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li><code>composer.json</code> for PSR-4 autoloading:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+{
+    "autoload": {
+        "psr-4": {
+            "App\\\\" : "src/"
+        }
+    }
+}
+</code></pre>
+        </li>
+        <br/>
+        <li>Then run:</li>
+<pre><code class="language-plaintext line-numbers">composer dump-autoload
+</code></pre>
+        <br/>
+        <li>Usage in code:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use App\Service\Mailer;
+
+$mailer = new Mailer();
+?&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Separating Views (Templates) from Logic</li>
+    <br/>
+    <ul>
+        <li>Store HTML templates separately from PHP logic.</li>
+        <br/>
+        <li>Example structure:</li>
+<pre><code class="language-plaintext line-numbers">src/
+├── Controllers/
+│   └── HomeController.php
+└── Views/
+    ├── layout.php
+    └── home.php
+</code></pre>
+        <br/>
+        <li>Simple controller:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+// src/Controllers/HomeController.php
+namespace App\Controllers;
+
+class HomeController {
+    public function index(): void {
+        $title = "Home";
+        $message = "Welcome!";
+        require __DIR__ . "/../Views/home.php";
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Simple view:</li>
+<pre><code class="language-php line-numbers">&lt;?php /* src/Views/home.php */ ?&gt;
+&lt;!doctype html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;&lt;?= htmlspecialchars($title) ?&gt;&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;&lt;?= htmlspecialchars($message) ?&gt;&lt;/h1&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Goal:
+            <ul>
+                <li>controllers prepare data,</li>
+                <li>views handle presentation,</li>
+                <li>no SQL or heavy logic inside view files.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Organizing Environment-Specific Settings</li>
+    <br/>
+    <ul>
+        <li>Avoid hardcoding secrets and environment-specific values in tracked files.</li>
+        <br/>
+        <li>Use <code>.env</code> files loaded by a library (like <code>vlucas/phpdotenv</code>) or environment variables.</li>
+        <br/>
+        <li>Example config loader:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+// config/env.php
+$env = [
+    "DB_HOST" =&gt; getenv("DB_HOST") ?: "localhost",
+    "DB_NAME" =&gt; getenv("DB_NAME") ?: "app",
+];
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Keep <code>.env</code> out of version control and commit a <code>.env.example</code> instead.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Splitting Logic into Domains (Controllers, Services, Models)</li>
+    <br/>
+    <ul>
+        <li>As project grows, organize <code>src/</code> by responsibility:</li>
+        <br/>
+<pre><code class="language-plaintext line-numbers">src/
+├── Controllers/
+├── Models/
+├── Service/
+├── Repository/
+└── Helpers/
+</code></pre>
+        <br/>
+        <li>Examples:
+            <ul>
+                <li><b>Controllers</b>: handle HTTP requests and responses.</li>
+                <li><b>Models</b>: represent domain entities (User, Post, Order).</li>
+                <li><b>Services</b>: business logic (Mailer, PaymentService).</li>
+                <li><b>Repositories</b>: database access layer.</li>
+                <li><b>Helpers</b>: generic functions (string utilities, array helpers).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Idea: put each concern in its own file and directory.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Organizing Reusable Functions and Helpers</li>
+    <br/>
+    <ul>
+        <li>Option 1: a simple <code>functions.php</code> (for small projects).</li>
+        <br/>
+        <li>Option 2: split helpers by topic:</li>
+<pre><code class="language-plaintext line-numbers">src/
+├── Helpers/
+│   ├── StringHelper.php
+│   ├── ArrayHelper.php
+│   └── HtmlHelper.php
+</code></pre>
+        <br/>
+        <li>Example static helper:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+namespace App\Helpers;
+
+class StringHelper {
+    public static function slugify(string $text): string {
+        $text = strtolower(trim($text));
+        $text = preg_replace("/[^a-z0-9]+/", "-", $text);
+        return trim($text, "-");
+    }
+}
+?&gt;
+</code></pre>
+        </li>
+        <br/>
+        <li>Usage:</li>
+<pre><code class="language-php line-numbers">&lt;?php
+use App\Helpers\StringHelper;
+
+$slug = StringHelper::slugify("Hello World!");
+?&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Organizing Tests (If You Use PHPUnit)</li>
+    <br/>
+    <ul>
+        <li>Place tests in a separate <code>tests/</code> directory.</li>
+        <br/>
+<pre><code class="language-plaintext line-numbers">project/
+├── src/
+└── tests/
+    ├── UserTest.php
+    └── Service/
+        └── MailerTest.php
+</code></pre>
+        <br/>
+        <li>Match namespace structure between <code>src/</code> and <code>tests/</code> for clarity.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Organizing for Deployment</li>
+    <br/>
+    <ul>
+        <li>Only the necessary files should be deployed to the web server:</li>
+        <br/>
+        <ul>
+            <li><code>public/</code></li>
+            <li><code>src/</code></li>
+            <li><code>vendor/</code></li>
+            <li><code>config/</code> (without secrets in version control)</li>
+        </ul>
+        <br/>
+        <li>Exclude:
+            <ul>
+                <li>development tools,</li>
+                <li>local configuration files,</li>
+                <li><code>tests/</code>,</li>
+                <li>documentation that is not needed at runtime.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Make sure the web server document root is <code>public/</code>, so <code>src/</code> is not directly accessible via URL.</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
