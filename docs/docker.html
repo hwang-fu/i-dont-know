@@ -156,6 +156,9 @@
         <li><a href="#docker-dockerfile-anatomy">Dockerfile Anatomy</a></li>
         <li><a href="#docker-commands-intro">Introduction to Docker Commands</a></li>
         <li><a href="#docker-run-command">Understanding the <code>docker run</code> Command</a></li>
+        <li><a href="#docker-start-command">Understanding the <code>docker start</code> Command</a></li>
+        <li><a href="#docker-stop-command">Understanding the <code>docker stop</code> Command</a></li>
+        <li><a href="#docker-restart-command">Understanding the <code>docker restart</code> Command</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1692,7 +1695,172 @@ CMD ["python", "main.py"]
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="docker-start-command">Understanding the <code>docker start</code> Command</h3>
+<ol>
 
+    <li>What Is <code>docker start</code>?</li>
+    <br/>
+    <ul>
+        <li>The <code>docker start</code> command is used to <u>start</u> an existing (stopped) container.</li>
+        <br/>
+        <li>Unlike <code>docker run</code>:
+            <ul>
+                <li><code>docker run</code> creates a new container from an image</li>
+                <li><code>docker start</code> starts an already created container</li>
+            </ul>
+        </li>
+        <br/>
+        <li>It does NOT create new containers.</li>
+        <br/>
+        <li>Basic syntax:</li>
+<pre><code class="language-plaintext line-numbers">docker start [OPTIONS] CONTAINER</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Starting an Existing Container</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker start mycontainer</code></pre>
+        <li>Explanation: <code>mycontainer</code> is the name (or ID) of a previously created container</li>
+        <br/>
+        <li>The container resumes running from its configured command or entrypoint.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>List Containers Before Starting Them</li>
+    <br/>
+    <ul>
+        <li>Show only stopped containers:</li>
+<pre><code class="language-bash line-numbers">docker ps -a</code></pre>
+        <br/>
+        <li>Example output:</li>
+<pre><code class="language-plaintext line-numbers">CONTAINER ID   IMAGE   COMMAND    STATUS
+abcd1234       nginx   "nginx…"   Exited (0)
+</code></pre>
+        </li>
+        <br/>
+        <li>Now you can start it:</li>
+<pre><code class="language-bash line-numbers">docker start abcd1234</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>-a</code> — Attach to the Container Output</li>
+    <br/>
+    <ul>
+        <li>The <code>-a</code> flag attaches your terminal to the container’s STDOUT/STDERR.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker start -a mycontainer</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>-a</code> shows the container output in your terminal</li>
+            <li><code>mycontainer</code> is the container name or ID</li>
+        </ul>
+        <br/>
+        <li>Useful when container prints logs or immediately exits.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>-i</code> — Attach Standard Input (STDIN)</li>
+    <br/>
+    <ul>
+        <li>Use this when restarting a container that expects terminal input.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker start -i mycontainer</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>-i</code> keeps STDIN open for the container</li>
+            <li><code>mycontainer</code> is the name of container</li>
+        </ul>
+        <br/>
+        <li>This is similar to <code>docker run -it</code>, but only works if the container was originally created with interactive capabilities.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Starting Multiple Containers at Once</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker start container1 container2 container3</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li>You can pass multiple names/IDs</li>
+            <li>Docker starts all of them in sequence</li>
+        </ul>
+        <br/>
+        <li>Useful for restarting a multi-container setup.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Check Status After Starting</li>
+    <br/>
+    <ul>
+        <li>Inspect running containers:</li>
+<pre><code class="language-bash line-numbers">docker ps</code></pre>
+        <br/>
+        <li>Example output:</li>
+<pre><code class="language-plaintext line-numbers">CONTAINER ID   IMAGE   STATUS
+abcd1234       nginx   Up 10 seconds
+</code></pre>
+        </li>
+        <br/>
+        <li>This confirms the container is running.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Difference Between <code>docker start</code> and <code>docker restart</code></li>
+    <br/>
+    <ul>
+        <li><code>docker start</code>:</li>
+        <ul>
+            <li>Starts stopped containers</li>
+            <li>Does nothing if already running</li>
+        </ul>
+        <br/>
+        <li><code>docker restart</code>:</li>
+        <ul>
+            <li>Stops the container first</li>
+            <li>Then starts it again</li>
+            <li>Works even if container is already running</li>
+        </ul>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">docker restart mycontainer</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example Workflow: Create with <code>run</code>, Start Again with <code>start</code></li>
+    <br/>
+    <ul>
+        <li>Step 1: Create a container</li>
+<pre><code class="language-bash line-numbers">docker run --name testcontainer ubuntu sleep 1000</code></pre>
+        <ul>
+            <li>Container sleeps for 1000 seconds</li>
+        </ul>
+        <br/>
+
+        <li>Step 2: Stop the container</li>
+<pre><code class="language-bash line-numbers">docker stop testcontainer</code></pre>
+
+        <br/>
+        <li>Step 3: Start it again</li>
+<pre><code class="language-bash line-numbers">docker start testcontainer</code></pre>
+
+        <br/>
+        <li>This starts the original container without recreating it.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
