@@ -151,6 +151,7 @@
     <ol style="line-height: 1.8;">
         <li><a href="#k8s-key-terminologies">Key Concepts and Terminologies</a></li>
         <li><a href="#k8s-deploy-first-app">Deploying Your First Application in Kubernetes</a></li>
+        <li><a href="#k8s-deployment-yaml">How to Write a Kubernetes Deployment YAML?</a></li>
     </ol>
 </nav>
 <hr/>
@@ -567,8 +568,7 @@ spec:
     <br/>
     <ul>
         <li>Create <code>nginx-service.yaml</code>:</li>
-<pre><code class="language-yaml line-numbers">
-apiVersion: v1
+<pre><code class="language-yaml line-numbers">apiVersion: v1
 kind: Service
 metadata:
   name: nginx-service
@@ -683,7 +683,378 @@ kubectl set image deployment/nginx-deploy nginx-container=nginx:1.25
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="k8s-deployment-yaml">How to Write a Kubernetes Deployment YAML (Step by Step)</h3>
+<ol>
 
+    <li>What Is a Deployment YAML?</li>
+    <br/>
+    <ul>
+        <li>A <b>Deployment</b> in Kubernetes is a higher-level object that:
+            <ul>
+                <li>manages <b>Pods</b> (your running containers)</li>
+                <li>ensures a certain number of replicas (copies) are running</li>
+                <li>handles rolling updates and rollbacks</li>
+            </ul>
+        </li>
+        <br/>
+        <li>A <code>Deployment</code> is described in a YAML file (often called <code>deployment.yaml</code> or similar).</li>
+        <br/>
+        <li>You then apply this file with:</li>
+<pre><code class="language-bash line-numbers">kubectl apply -f deployment.yaml</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Skeleton of a Deployment</li>
+    <br/>
+    <ul>
+        <li>Every Deployment YAML has 4 main top-level keys:</li>
+<pre><code class="language-yaml line-numbers">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deployment
+spec:
+  # deployment details go here
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>apiVersion: apps/v1</code> is the API group &amp; version for Deployments (modern standard).</li>
+            <li><code>kind: Deployment</code> tells Kubernetes this file defines a Deployment.</li>
+            <li><code>metadata:</code> identifies information like name, labels, annotations.</li>
+            <li><code>spec:</code> is the desired state (what this Deployment should do).</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 1: Choose a Name and Labels in <code>metadata</code></li>
+    <br/>
+    <ul>
+        <li><code>metadata</code> describes the Deployment object itself, not the Pods.</li>
+<pre><code class="language-yaml line-numbers">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy
+  labels:
+    app: nginx-app
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>name: nginx-deploy</code> tells how you reference this Deployment via <code>kubectl</code>.</li>
+            <li><code>labels:</code> are key-value metadata, often used for grouping and selection.</li>
+        </ul>
+        <br/>
+        <li>Common pattern:
+            <ul>
+                <li>Deployment label: <code>app: nginx-app</code></li>
+                <li>Pods inside will also have <code>app: nginx-app</code> label, so Services can target them.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 2: Define Replicas and the Pod Selector in <code>spec</code></li>
+    <br/>
+    <ul>
+        <li>The <code>spec</code> section of a Deployment has two critical parts:
+            <ul>
+                <br/>
+                <li><code>replicas</code> &mdash; how many Pods</li>
+                <br/>
+                <li><code>selector</code> &mdash; which Pods belong to this Deployment</li>
+            </ul>
+            <br/>
+        </li>
+<pre><code class="language-yaml line-numbers">spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-app
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>replicas: 3</code> tells that Deployment maintains 3 identical Pods.</li>
+            <li><code>selector.matchLabels</code> tells that Deployment manages all Pods with label <code>app=nginx-app</code>.</li>
+        </ul>
+        <br/>
+        <li>Important rule: The labels defined here must match the labels inside the Pod template (next step).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 3: Define the Pod Template in <code>spec.template</code></li>
+    <br/>
+    <ul>
+        <li><code>spec.template</code> describes the Pod that will be created.</li>
+<pre><code class="language-yaml line-numbers">spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-app
+  template:
+    metadata:
+      labels:
+        app: nginx-app
+    spec:
+      containers:
+        - name: nginx-container
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+</code></pre>
+        <li>Breakdown of <code>template</code>:</li>
+        <ul>
+            <li><code>template:</code> is the Pod template definition.</li>
+            <li><code>template.metadata.labels</code> labels applied to each Pod.</li>
+            <li><code>template.spec.containers</code> is a list of containers in the Pod.</li>
+        </ul>
+        <br/>
+        <li>Container details:</li>
+        <ul>
+            <li><code>name: nginx-container</code> is the internal name for this container.</li>
+            <li><code>image: nginx:1.25</code> tells which Docker image to run.</li>
+            <li><code>ports.containerPort: 80</code> tells which port the container listens on.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 4: Add Environment Variables with <code>env</code></li>
+    <br/>
+    <ul>
+        <li>You often need to pass configuration to containers via environment variables.</li>
+<pre><code class="language-yaml line-numbers">spec:
+  template:
+    spec:
+      containers:
+        - name: nginx-container
+          image: nginx:1.25
+          env:
+            - name: NGINX_ENV
+              value: "production"
+            - name: API_URL
+              value: "https://api.example.com"
+          ports:
+            - containerPort: 80
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>env</code> is a list of <code>name</code> / <code>value</code> pairs.</li>
+            <li>These become environment variables inside the container.</li>
+        </ul>
+        <br/>
+        <li>For secrets or ConfigMaps, you’d later replace <code>value</code> with <code>valueFrom</code> (advanced topic).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 5: Set Resource Requests and Limits</li>
+    <br/>
+    <ul>
+        <li>To control CPU and memory usage, use <code>resources</code>:</li>
+<pre><code class="language-yaml line-numbers">spec:
+  template:
+    spec:
+      containers:
+        - name: nginx-container
+          image: nginx:1.25
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>requests</code> tells what the container <b>needs at minimum</b>.</li>
+            <li><code>limits</code> tells maximum CPU/memory allowed.</li>
+            <li><code>"100m"</code> means 0.1 CPU core (100 millicores).</li>
+            <li><code>"128Mi"</code> means 128 mebibytes of memory.</li>
+        </ul>
+        <br/>
+        <li>Good practice: always define at least requests for production workloads.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 6: Add Liveness and Readiness Probes</li>
+    <br/>
+    <ul>
+        <li>Probes let Kubernetes know whether your app is:
+            <ul>
+                <li><b>alive</b> (liveness)</li>
+                <li><b>ready to receive traffic</b> (readiness)</li>
+            </ul>
+        </li>
+<pre><code class="language-yaml line-numbers">spec:
+  template:
+    spec:
+      containers:
+        - name: nginx-container
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>livenessProbe</code> &mdash; if it fails repeatedly, Kubernetes restarts the container.</li>
+            <li><code>readinessProbe</code> &mdash; if it fails, the Pod is removed from Service load-balancing.</li>
+            <li><code>initialDelaySeconds</code> &mdash; wait this long before first check.</li>
+            <li><code>periodSeconds</code> &mdash; how often to check.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 7: Set the Update Strategy</li>
+    <br/>
+    <ul>
+        <li>Deployments support rolling updates controlled by <code>strategy</code>:</li>
+<pre><code class="language-yaml line-numbers">spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>type: RollingUpdate</code> updates Pods gradually (default).</li>
+            <li><code>maxUnavailable: 1</code> means at most 1 Pod can be unavailable during update.</li>
+            <li><code>maxSurge: 1</code> means Kubernetes may create 1 extra Pod above desired replicas during update.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 8: Add Annotations (Optional but Useful)</li>
+    <br/>
+    <ul>
+        <li><b>Annotations</b> store extra metadata (not used for selection):</li>
+<pre><code class="language-yaml line-numbers">metadata:
+  name: nginx-deploy
+  labels:
+    app: nginx-app
+  annotations:
+    app.kubernetes.io/owner: "Junzhe"
+    app.kubernetes.io/description: "Demo nginx deployment"
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 9: Full Example of a Well-Structured Deployment</li>
+    <br/>
+    <ul>
+        <li>Here is a complete Deployment that combines all core concepts:</li>
+<pre><code class="language-yaml line-numbers">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy
+  labels:
+    app: nginx-app
+  annotations:
+    app.kubernetes.io/owner: "Junzhe"
+    app.kubernetes.io/description: "Simple Nginx web server"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: nginx-app
+    spec:
+      containers:
+        - name: nginx-container
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+          env:
+            - name: NGINX_ENV
+              value: "production"
+            - name: API_URL
+              value: "https://api.example.com"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+</code></pre>
+        <br/>
+        <li>What this Deployment guarantees:</li>
+        <ul>
+            <li>Exactly <b>3 Pods</b> with Nginx are running (unless you scale).</li>
+            <li>Pods have label <code>app=nginx-app</code> so Services can route to them.</li>
+            <li>Deployment updates Pods gradually with rolling update rules.</li>
+            <li>Resources are constrained and requested properly.</li>
+            <li>Health checks ensure traffic only goes to healthy Pods.</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 10: Using and Inspecting Your Deployment</li>
+    <br/>
+    <ul>
+        <li>Apply the YAML:</li>
+<pre><code class="language-bash line-numbers">kubectl apply -f nginx-deploy.yaml</code></pre>
+        <br/>
+        <li>See the Deployment:</li>
+<pre><code class="language-bash line-numbers">kubectl get deployments</code></pre>
+        <br/>
+        <li>See the Pods it created:</li>
+<pre><code class="language-bash line-numbers">kubectl get pods -l app=nginx-app</code></pre>
+        <br/>
+        <li>Detailed info:</li>
+<pre><code class="language-bash line-numbers">kubectl describe deployment nginx-deploy</code></pre>
+        <br/>
+        <li>Update the image:</li>
+<pre><code class="language-bash line-numbers">kubectl set image deployment/nginx-deploy \
+  nginx-container=nginx:1.26
+</code></pre>
+        <br/>
+        <li>Roll back if something goes wrong:</li>
+<pre><code class="language-bash line-numbers">kubectl rollout undo deployment nginx-deploy</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
