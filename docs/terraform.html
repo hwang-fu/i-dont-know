@@ -150,6 +150,7 @@
         <li><a href="#terraform-init-command">Understanding the <code>terraform init</code> Command</a></li>
         <li><a href="#terraform-block-reference">Understanding the <code>terraform</code> Block</a></li>
         <li><a href="#terraform-provider-reference">Understanding the <code>provider</code> Block</a></li>
+        <li><a href="#terraform-resource-reference">Understanding the <code>resource</code> Block</a></li>
     </ol>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -2479,7 +2480,286 @@ resource "aws_s3_bucket" "example" {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-resource-block">Understanding the <code>resource</code> Block in Terraform</h3>
+<ol>
 
+    <li>What Is a <code>resource</code> Block?</li>
+    <br/>
+    <ul>
+        <li>The <code>resource</code> block is the core building block of Terraform.</li>
+        <br/>
+        <li>It describes:
+            <ul>
+                <li>WHAT infrastructure should be created</li>
+                <li>HOW it should look</li>
+                <li>WHICH provider should manage it</li>
+                <li>WHAT arguments customize the resource</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example resources include:
+            <ul>
+                <li><code>aws_instance</code> → EC2 VM</li>
+                <li><code>google_compute_network</code> → GCP VPC</li>
+                <li><code>kubernetes_deployment</code> → K8S Deployment</li>
+                <li><code>azurerm_storage_account</code> → Azure storage</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Terraform reads the <code>resource</code> blocks, calculates the desired state, and makes provider API calls to achieve it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Structure of a <code>resource</code> Block</li>
+    <br/>
+    <ul>
+        <li>Basic syntax:</li>
+<pre><code class="language-hcl line-numbers">resource "PROVIDER_RESOURCE_TYPE" "LOCAL_NAME" {
+    # arguments (config)
+}
+</code></pre>
+
+        <li>Breakdown:</li>
+        <ul>
+            <li><code>PROVIDER_RESOURCE_TYPE</code> → e.g. <code>aws_s3_bucket</code></li>
+            <li><code>LOCAL_NAME</code> → your own identifier (internal to Terraform)</li>
+            <li>arguments inside block → specify configuration</li>
+        </ul>
+
+        <br/>
+
+        <li>Example:</li>
+<pre><code class="language-hcl line-numbers">resource "aws_s3_bucket" "my_bucket" {
+    bucket = "junzhe-terraform-demo"
+    acl    = "private"
+}
+</code></pre>
+
+        <li>Here:
+            <ul>
+                <li><code>aws_s3_bucket</code> is the resource type</li>
+                <li><code>my_bucket</code> is the name used within Terraform</li>
+                <li>It creates a real AWS S3 bucket</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding Resource Types</li>
+    <br/>
+    <ul>
+        <li>Resource types follow this naming pattern:</li>
+<pre><code class="language-plaintext line-numbers">&lt;PROVIDER_NAME&gt;_&lt;RESOURCE_TYPE&gt;
+</code></pre>
+
+        <li>Examples:</li>
+        <ul>
+            <li><code>aws_instance</code></li>
+            <li><code>aws_security_group</code></li>
+            <li><code>google_storage_bucket</code></li>
+            <li><code>kubernetes_service</code></li>
+        </ul>
+
+        <br/>
+        <li>The provider determines which resource types exist.
+            Check your provider documentation for the full list.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example 1: AWS EC2 Instance</li>
+<pre><code class="language-hcl line-numbers">resource "aws_instance" "web" {
+    ami           = "ami-0ff8a91507f77f867"
+    instance_type = "t3.micro"
+
+    tags = {
+        Name = "WebServer"
+    }
+}
+</code></pre>
+    <ul>
+        <li>Arguments:</li>
+        <ul>
+            <li><code>ami</code> → machine image</li>
+            <li><code>instance_type</code> → VM size</li>
+            <li><code>tags</code> → metadata</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Resource Arguments vs. Attributes</li>
+    <br/>
+    <ul>
+        <li><b>Arguments</b> are input from your configuration</li>
+        <br/>
+        <li><b>Attributes</b> are output from the infrastructure provider</li>
+        <br/>
+
+        <li>Example:</li>
+<pre><code class="language-hcl line-numbers">resource "aws_s3_bucket" "example" {
+    bucket = "my-bucket"
+}
+
+output "bucket_arn" {
+    value = aws_s3_bucket.example.arn
+}
+</code></pre>
+
+        <ul>
+            <li><code>bucket</code> → argument</li>
+            <li><code>arn</code> → computed attribute</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Lifecycles for Resources (<code>lifecycle</code> Block)</li>
+    <br/>
+    <ul>
+        <li>You can customize how Terraform manages updates:</li>
+<pre><code class="language-hcl line-numbers">resource "aws_s3_bucket" "demo" {
+    bucket = "demo-bucket"
+
+    lifecycle {
+        prevent_destroy = true
+        ignore_changes  = [tags]
+        create_before_destroy = true
+    }
+}
+</code></pre>
+        <li>Key lifecycle options:</li>
+        <ul>
+            <li><code>prevent_destroy</code> protects critical resources</li>
+            <li><code>ignore_changes</code> makes Terraform ignore drift on selected attributes</li>
+            <li><code>create_before_destroy</code> avoids downtime during resource replacement</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Meta-Arguments in Resource Blocks</li>
+    <br/>
+    <ul>
+        <li>1. <code>count</code></li>
+<pre><code class="language-hcl line-numbers">resource "aws_s3_bucket" "buckets" {
+    count  = 3
+    bucket = "bucket-${count.index}"
+}
+</code></pre>
+
+        <li>2. <code>for_each</code></li>
+<pre><code class="language-hcl line-numbers">resource "aws_s3_bucket" "buckets" {
+    for_each = toset(["a", "b", "c"])
+    bucket   = "bucket-${each.key}"
+}
+</code></pre>
+
+        <li>3. <code>depends_on</code> — force explicit ordering</li>
+<pre><code class="language-hcl line-numbers">resource "aws_iam_role" "role" {
+    # ...
+}
+
+resource "aws_instance" "server" {
+    depends_on = [aws_iam_role.role]
+    # ...
+}
+</code></pre>
+
+        <li>4. <code>provider</code> — choose a provider configuration</li>
+<pre><code class="language-hcl line-numbers">provider "aws" {
+    alias  = "us"
+    region = "us-east-1"
+}
+
+resource "aws_s3_bucket" "us_bucket" {
+    provider = aws.us
+    bucket   = "bucket-us"
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Resource Dependencies</li>
+    <br/>
+    <ul>
+        <li>Terraform automatically infers ordering via variables and references:</li>
+<pre><code class="language-hcl line-numbers">resource "aws_vpc" "main" {
+    cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_subnet" "subnet" {
+    vpc_id = aws_vpc.main.id   # implicit dependency
+}
+</code></pre>
+        <li>If implicit dependencies fail, use <code>depends_on</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Importing Existing Resources</li>
+    <br/>
+    <ul>
+        <li>You can import existing real cloud resources into Terraform state:</li>
+<pre><code class="language-bash line-numbers">terraform import aws_s3_bucket.my_bucket my-real-bucket</code></pre>
+        <li>After import:
+            <ul>
+                <li>The resource exists in state</li>
+                <li>You must write the matching <code>resource</code> block manually</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Destroying Resources</li>
+    <br/>
+    <ul>
+        <li>Delete a resource from config → <code>terraform apply</code> will destroy it.</li>
+        <br/>
+        <li>Or destroy explicitly:</li>
+<pre><code class="language-bash line-numbers">terraform destroy -target=aws_s3_bucket.my_bucket</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete Example Project</li>
+    <ul>
+<pre><code class="language-hcl line-numbers">provider "aws" {
+    region = "eu-central-1"
+}
+
+resource "aws_vpc" "main" {
+    cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_subnet" "subnet" {
+    vpc_id            = aws_vpc.main.id
+    cidr_block        = "10.0.1.0/24"
+    availability_zone = "eu-central-1a"
+}
+
+resource "aws_instance" "web" {
+    ami           = "ami-0ff8a91507f77f867"
+    instance_type = "t3.micro"
+    subnet_id     = aws_subnet.subnet.id
+}
+</code></pre>
+
+        <li>Terraform will automatically create:
+            <ul>
+                <li>VPC</li>
+                <li>Subnet inside that VPC</li>
+                <li>EC2 inside that subnet</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
