@@ -149,8 +149,9 @@
         <li><a href="#terraform-aws-intro">Introduction Using Terraform with AWS</a></li>
         <li><a href="#terraform-init-command">Understanding the <code>terraform init</code> Command</a></li>
         <li><a href="#terraform-block-reference">Understanding the <code>terraform</code> Block</a></li>
-        <li><a href="#terraform-provider-reference">Understanding the <code>provider</code> Block</a></li>
-        <li><a href="#terraform-resource-reference">Understanding the <code>resource</code> Block</a></li>
+        <li><a href="#terraform-provider-block">Understanding the <code>provider</code> Block</a></li>
+        <li><a href="#terraform-resource-block">Understanding the <code>resource</code> Block</a></li>
+        <li><a href="#terraform-variable-block">Understanding the <code>variable</code> Block</a></li>
     </ol>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -2767,7 +2768,306 @@ resource "aws_instance" "web" {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-variable-block">Understanding the <code>variable</code> Block in Terraform</h3>
+<ol>
 
+    <li>What Is a <code>variable</code> Block?</li>
+    <br/>
+    <ul>
+        <li>The <code>variable</code> block defines an input variable that you can pass into a Terraform module or configuration.</li>
+        <br/>
+        <li>Input variables allow your Terraform code to be:
+            <ul>
+                <li>reusable</li>
+                <li>parameterized</li>
+                <li>dynamic for multiple environments</li>
+                <li>clean and maintainable</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Variables are evaluated at runtime and can be supplied from:
+            <ul>
+                <li><code>terraform.tfvars</code></li>
+                <li><code>*.auto.tfvars</code></li>
+                <li>CLI flags (<code>-var</code>)</li>
+                <li>environment variables</li>
+                <li>Terraform Cloud variables</li>
+                <li>module input parameters</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Every variable must be declared using a <code>variable</code> block.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Structure of a <code>variable</code> Block</li>
+    <br/>
+    <ul>
+        <li>General syntax:</li>
+<pre><code class="language-hcl line-numbers">variable "NAME" {
+    type        = TYPE
+    default     = VALUE
+    description = "Human-readable text"
+    sensitive   = BOOLEAN
+}
+</code></pre>
+        <li>All attributes inside the block are optional except the variable name.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: A Simple String Variable</li>
+    <ul>
+<pre><code class="language-hcl line-numbers">variable "region" {
+    type        = string
+    default     = "eu-central-1"
+    description = "AWS region where resources will be created."
+}
+</code></pre>
+        <li>Here:</li>
+        <ul>
+            <li><code>type</code> → string</li>
+            <li><code>default</code> → optional fallback value</li>
+            <li><code>description</code> → optional but recommended</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Supported Variable Types</li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>string</code></td>
+                <td>Text value</td>
+                <td><code>"hello"</code></td>
+            </tr>
+            <tr>
+                <td><code>number</code></td>
+                <td>Numeric value</td>
+                <td><code>42</code></td>
+            </tr>
+            <tr>
+                <td><code>bool</code></td>
+                <td>true / false</td>
+                <td><code>true</code></td>
+            </tr>
+            <tr>
+                <td><code>list(type)</code></td>
+                <td>Ordered list</td>
+                <td><code>["a", "b"]</code></td>
+            </tr>
+            <tr>
+                <td><code>map(type)</code></td>
+                <td>Key-value map</td>
+                <td><code>{ env = "prod" }</code></td>
+            </tr>
+            <tr>
+                <td><code>set(type)</code></td>
+                <td>Unique unordered list</td>
+                <td><code>set(["a", "b"])</code></td>
+            </tr>
+            <tr>
+                <td><code>object({})</code></td>
+                <td>Structured key/value object</td>
+                <td><code>{ name = string, size = number }</code></td>
+            </tr>
+            <tr>
+                <td><code>tuple([])</code></td>
+                <td>Fixed-length list of various types</td>
+                <td><code>[string, number]</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li>Example: List Variable</li>
+<pre><code class="language-hcl line-numbers">variable "availability_zones" {
+    type = list(string)
+    default = ["eu-central-1a", "eu-central-1b"]
+}
+</code></pre>
+    <ul>
+        <li>Usage:</li>
+    </ul>
+<pre><code class="language-hcl line-numbers">subnet_id = var.availability_zones[0]
+</code></pre>
+    <br/><br/>
+
+
+    <li>Example: Map Variable</li>
+<pre><code class="language-hcl line-numbers">variable "instance_tags" {
+    type = map(string)
+    default = {
+        project = "terraform-demo"
+        owner   = "junzhe"
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>Usage:</li>
+    </ul>
+<pre><code class="language-hcl line-numbers">tags = var.instance_tags
+</code></pre>
+    <br/><br/>
+
+
+    <li>Example: Object Variable</li>
+<pre><code class="language-hcl line-numbers">variable "server_config" {
+    type = object({
+        size = string
+        count = number
+        tags = map(string)
+    })
+}
+</code></pre>
+
+    <ul>
+        <li>Usage:</li>
+    </ul>
+<pre><code class="language-hcl line-numbers">instance_type = var.server_config.size
+tags          = var.server_config.tags
+</code></pre>
+    <br/><br/>
+
+
+    <li>Using Variables in a Configuration</li>
+    <br/>
+    <ul>
+        <li>Reference variables via <code>var.NAME</code>:</li>
+    </ul>
+<pre><code class="language-hcl line-numbers">provider "aws" {
+    region = var.region
+}
+</code></pre>
+
+    <ul>
+        <li>Variables are always prefixed with <code>var.</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>You can set variable values from many sources</li>
+    <br/>
+    <ul>
+        <li>1. <code>terraform.tfvars</code></li>
+<pre><code class="language-hcl line-numbers">region = "us-east-1"
+</code></pre>
+
+        <br/>
+        <li>2. Auto-loaded files: <code>anything.auto.tfvars</code></li>
+        <br/>
+
+        <li>3. CLI flags (<code>-var</code>)</li>
+<pre><code class="language-bash line-numbers">terraform apply -var="region=us-east-1"
+</code></pre>
+        <br/>
+
+        <li>4. Variable files (<code>-var-file</code>)</li>
+<pre><code class="language-bash line-numbers">terraform apply -var-file="production.tfvars"
+</code></pre>
+        <br/>
+
+        <li>5. Environment variables</li>
+<pre><code class="language-bash line-numbers">export TF_VAR_region=us-east-1
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sensitive Variables</li>
+    <br/>
+    <ul>
+        <li>To hide variable values in CLI output, use:</li>
+<pre><code class="language-hcl line-numbers">variable "db_password" {
+    type      = string
+    sensitive = true
+}
+</code></pre>
+
+        <li>Terraform will:
+            <ul>
+                <li>avoid printing sensitive values in terminal</li>
+                <li>mask outputs</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Default Values</li>
+    <br/>
+    <ul>
+        <li>A variable without a default is <b>required</b>.</li>
+        <br/>
+
+        <li>Example required variable:</li>
+<pre><code class="language-hcl line-numbers">variable "project_id" {
+    type = string
+}
+</code></pre>
+
+        <li>If you don't supply <code>project_id</code>, <code>terraform plan</code> will ask for it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Validation Rules</li>
+    <br/>
+    <ul>
+        <li>Terraform allows validation inside a variable block:</li>
+<pre><code class="language-hcl line-numbers">variable "env" {
+    type = string
+
+    validation {
+        condition     = contains(["dev", "prod"], var.env)
+        error_message = "env must be either 'dev' or 'prod'"
+    }
+}
+</code></pre>
+
+        <li>This ensures correct input values.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete Example</li>
+<pre><code class="language-hcl line-numbers">variable "region" {
+    type        = string
+    default     = "eu-central-1"
+    description = "The AWS region"
+}
+
+variable "tags" {
+    type = map(string)
+    default = {
+        project = "demo"
+        owner   = "junzhe"
+    }
+}
+
+resource "aws_s3_bucket" "example" {
+    bucket = "my-demo-bucket"
+    tags   = var.tags
+}
+
+provider "aws" {
+    region = var.region
+}
+</code></pre>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
