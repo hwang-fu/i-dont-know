@@ -3846,7 +3846,237 @@ import {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-module-block">Understanding the <code>module</code> Block in Terraform</h3>
+<ol>
+    <br/>
+    <li>A <b>module</b> block is how you call or reuse Terraform configurations stored in another directory or registry.</li>
+    <br/><br/>
 
+
+    <li>Basic Structure of a <code>module</code> Block</li>
+<pre><code class="language-hcl line-numbers">module "NAME" {
+    source = "SOURCE_LOCATION"
+
+    # input variables
+    variable1 = VALUE
+    variable2 = VALUE
+}
+</code></pre>
+    <ul>
+        <li>A module must always have a <code>source</code> argument.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Module Source Types</li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Source Type</th>
+                <th>Example</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><b>Local path</b></td>
+                <td><code>./modules/vpc</code></td>
+                <td>Call module stored locally</td>
+            </tr>
+            <tr>
+                <td><b>Git Repository</b></td>
+                <td><code>git::https://github.com/user/repo.git</code></td>
+                <td>Load modules directly from Git</td>
+            </tr>
+            <tr>
+                <td><b>Terraform Registry</b></td>
+                <td><code>terraform-aws-modules/vpc/aws</code></td>
+                <td>Official or community modules</td>
+            </tr>
+            <tr>
+                <td><b>Private Registry</b></td>
+                <td><code>app.terraform.io/org/module/aws</code></td>
+                <td>Enterprise patterns</td>
+            </tr>
+            <tr>
+                <td><b>HTTP URL</b></td>
+                <td><code>https://example.com/module.zip</code></td>
+                <td>Download module archive</td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+
+    <li>Example: Local Module</li>
+<pre><code class="language-hcl line-numbers">module "network" {
+    source = "./modules/network"
+
+    cidr_block = "10.0.0.0/16"
+    env        = var.env
+}
+</code></pre>
+
+    <ul>
+        <li>This loads files from:</li>
+    </ul>
+<pre><code class="language-plaintext line-numbers">modules/
+    network/
+        main.tf
+        variables.tf
+        outputs.tf
+</code></pre>
+    <br/><br/>
+
+
+    <li>Example: Using a Public Registry Module</li>
+<pre><code class="language-hcl line-numbers">module "vpc" {
+    source  = "terraform-aws-modules/vpc/aws"
+    version = "5.5.0"
+
+    name = "demo"
+    cidr = "10.0.0.0/16"
+}
+</code></pre>
+
+    <ul>
+        <li>Terraform automatically downloads and caches the module.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Passing Input Variables to a Module</li>
+    <br/>
+    <ul>
+        <li>Modules accept input variables via attributes inside the block:</li>
+
+<pre><code class="language-hcl line-numbers">
+module "compute" {
+    source = "./modules/compute"
+
+    instance_count = 3
+    instance_type  = "t3.micro"
+}
+</code></pre>
+
+        <li>Inside the module, variables must be declared:</li>
+
+<pre><code class="language-hcl line-numbers">variable "instance_count" { type = number }
+variable "instance_type"  { type = string }
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Consuming Module Outputs</li>
+    <br/>
+    <ul>
+        <li>A module can expose outputs:</li>
+
+<pre><code class="language-hcl line-numbers">output "vpc_id" {
+    value = aws_vpc.main.id
+}
+</code></pre>
+
+        <li>Parent module can access them:</li>
+
+<pre><code class="language-hcl line-numbers">resource "aws_subnet" "subnet1" {
+    vpc_id = module.vpc.vpc_id
+}
+</code></pre>
+
+        <li>Modules behave exactly like objects with attributes.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Multiple Modules</li>
+    <ul>
+        <br/>
+        <li>A real Terraform project may use many modules:</li>
+    </ul>
+<pre><code class="language-hcl line-numbers">module "network" { ... }
+module "database" { ... }
+module "frontend" { ... }
+module "backend" { ... }
+</code></pre>
+
+    <ul>
+        <li>Terraform keeps each module isolated and reusable.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Meta-Arguments in Modules</li>
+    <br/>
+    <ul>
+        <li>Modules support these meta-arguments: <code>depends_on</code>, <code>count</code>, <code>for_each</code></li>
+
+        <br/>
+
+        <li>Example using <code>depends_on</code>:</li>
+<pre><code class="language-hcl line-numbers">module "app" {
+    source = "./modules/app"
+    depends_on = [module.network]
+}
+</code></pre>
+
+        <li>Example using <code>for_each</code>:</li>
+<pre><code class="language-hcl line-numbers">module "bucket" {
+    source = "./modules/s3"
+    for_each = toset(["dev", "test", "prod"])
+
+    env = each.key
+}
+</code></pre>
+
+        <li>Modules become fully programmable like resources.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Versioning Modules</li>
+<pre><code class="language-hcl line-numbers">module "vpc" {
+    source  = "terraform-aws-modules/vpc/aws"
+    version = "~&gt; 5.5"
+}
+</code></pre>
+
+    <ul>
+        <li>Use semantic versioning to control upgrades.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete Real-World Example</li>
+    <br/>
+    <ul>
+        <li>Main project:</li>
+    </ul>
+
+<pre><code class="language-hcl line-numbers">module "network" {
+    source  = "./modules/network"
+    cidr    = "10.0.0.0/16"
+}
+
+module "compute" {
+    source        = "./modules/compute"
+    subnet_ids    = module.network.subnet_ids
+    instance_type = "t3.micro"
+    count         = 2
+}
+
+output "instance_ips" {
+    value = module.compute.instance_ips
+}
+</code></pre>
+
+    <ul>
+        <li>This structure keeps the project scalable and clean.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
