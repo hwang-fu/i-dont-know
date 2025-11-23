@@ -148,6 +148,8 @@
         <li><a href="#terraform-write-config">Writing Terraform Configuration</a></li>
         <li><a href="#terraform-aws-intro">Introduction Using Terraform with AWS</a></li>
         <li><a href="#terraform-init-command">Understanding the <code>terraform init</code> Command</a></li>
+        <li><a href="#terraform-block-reference">Understanding the <code>terraform</code> Block</a></li>
+        <li><a href="#terraform-provider-reference">Understanding the <code>provider</code> Block</a></li>
     </ol>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -1970,7 +1972,237 @@ terraform init -migrate-state -reconfigure</code></pre>
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-block-reference">Understanding the <code>terraform</code> Block in Terraform</h3>
+<ol>
 
+    <li>What Is the <code>terraform</code> Block?</li>
+    <br/>
+    <ul>
+        <li>The <code>terraform</code> block is a special <b>top-level</b> configuration block in Terraform that controls:
+            <ul>
+                <li>required provider versions</li>
+                <li>required Terraform CLI version</li>
+                <li>backend configuration (state storage)</li>
+                <li>module behavior</li>
+                <li>dependency lockfile rules</li>
+            </ul>
+        </li>
+        <br/>
+        <li>It does <u>not</u> provision infrastructure itself. It only configures Terraform’s behavior.</li>
+        <br/>
+        <li>This block is normally placed at the top of <code>main.tf</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The General Structure of the <code>terraform</code> Block</li>
+    <br/>
+    <ul>
+        <li>Example:</li>
+<pre><code class="language-hcl line-numbers">terraform {
+    required_version = "~&gt; 1.5.0"
+
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+            version = "~&gt; 5.0"
+        }
+    }
+
+    backend "s3" {
+        bucket = "my-terraform-state"
+        key    = "prod/terraform.tfstate"
+        region = "eu-central-1"
+    }
+}
+</code></pre>
+
+        <br/>
+        <li>This block lets Terraform know:
+            <ul>
+                <li>What version of Terraform is allowed</li>
+                <li>Which providers are required</li>
+                <li>Where to store the state</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>required_version</code> — Terraform CLI Version Constraint</li>
+    <br/>
+    <ul>
+        <li>Ensures compatibility across team members and CI pipelines.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-hcl line-numbers">terraform {
+    required_version = "&gt;= 1.4.0, < 1.6.0"
+}
+</code></pre>
+
+        <li>What it means:</li>
+        <ul>
+            <li>Terraform must be at least version <code>1.4.0</code></li>
+            <li>Terraform must be &lt; <code>1.6.0</code></li>
+        </ul>
+        <br/>
+        <li>If you run an incompatible version, Terraform will refuse to continue.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>required_providers</code> — Provider Requirements</li>
+    <ul>
+        <br/>
+        <li>This section tells Terraform which providers your configuration needs.</li>
+        <br/>
+        <li>This also defines:
+            <ul>
+                <li>provider source (where to download it from)</li>
+                <li>provider version constraints</li>
+            </ul>
+        </li>
+        <br/>
+
+        <li>Example:</li>
+<pre><code class="language-hcl line-numbers">terraform {
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+            version = "~&gt; 5.0"
+        }
+        random = {
+            source  = "hashicorp/random"
+            version = "&gt;= 3.5.0"
+        }
+    }
+}
+</code></pre>
+
+        <br/>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>aws</code> provider must be downloaded from the Hashicorp registry.</li>
+            <li>Version must match <code>~&gt; 5.0</code> means <code>&gt;= 5.0.0, &lt; 6.0.0</code>
+            </li>
+            <li><code>random</code> provider must be at least <code>3.5.0</code></li>
+        </ul>
+        <br/>
+        <li>These rules will be saved in <code>.terraform.lock.hcl</code> after <code>terraform init</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li><code>backend</code> — Terraform State Storage</li>
+    <br/>
+    <ul>
+        <li>Terraform stores its state (<code>terraform.tfstate</code>) externally using backends.</li>
+        <br/>
+        <li>Backends DO NOT support interpolation. Everything must be hard-coded or supplied via <code>-backend-config</code>.</li>
+        <br/>
+
+        <li>Example (S3 backend):</li>
+<pre><code class="language-hcl line-numbers">terraform {
+    backend "s3" {
+        bucket = "my-tf-state"
+        key    = "dev/state.tfstate"
+        region = "eu-central-1"
+    }
+}
+</code></pre>
+
+        <li>What it does:</li>
+        <ul>
+            <li>Stores state in S3 bucket</li>
+            <li>Key identifies the file path inside the bucket</li>
+            <li>Supports locking when combined with DynamoDB</li>
+        </ul>
+        <br/>
+
+        <li>You can override backend values:</li>
+<pre><code class="language-bash line-numbers">terraform init                                  \
+    -backend-config="bucket=my-other-bucket"    \
+    -backend-config="key=new-key.tfstate"
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Less Common but Useful Settings</li>
+    <br/>
+    <ol>
+        <li><code>provider_meta</code> (rare)</li>
+<pre><code class="language-hcl line-numbers">terraform {
+    provider_meta "aws" {
+        module_name = "custom-aws-module"
+    }
+}
+</code></pre>
+
+        <br/>
+
+        <li><code>experiments</code> (very rare)</li>
+<pre><code class="language-hcl line-numbers">terraform {
+    experiments = [module_variable_optional_attrs]
+}
+</code></pre>
+
+        <br/>
+
+        <li><code>cloud</code> block (Terraform Cloud/Enterprise)</li>
+<pre><code class="language-hcl line-numbers">terraform {
+    cloud {
+        organization = "mycompany"
+
+        workspaces {
+            name = "production"
+        }
+    }
+}
+</code></pre>
+        <ul>
+            <li>This integrates Terraform Cloud as the state backend + runs.</li>
+        </ul>
+        <br/>
+    </ol>
+    <br/><br/>
+
+
+    <li>Putting It All Together — Complete Example</li>
+<pre><code class="language-hcl line-numbers">terraform {
+    required_version = "~&gt; 1.5"
+
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+            version = "~&gt; 5.0"
+        }
+        kubernetes = {
+            source  = "hashicorp/kubernetes"
+            version = "~&gt; 2.20"
+        }
+    }
+
+    backend "s3" {
+        bucket = "my-terraform-state-bucket"
+        key    = "envs/prod/state.tfstate"
+        region = "eu-central-1"
+        encrypt = true
+    }
+}
+</code></pre>
+
+    <ul>
+        <li>This prepares Terraform to:</li>
+        <ul>
+            <li>Use Terraform CLI 1.5.x</li>
+            <li>Download AWS and Kubernetes providers</li>
+            <li>Store state remotely in S3</li>
+            <li>Use encryption for the state file</li>
+        </ul>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
