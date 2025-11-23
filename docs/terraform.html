@@ -152,6 +152,8 @@
         <li><a href="#terraform-provider-block">Understanding the <code>provider</code> Block</a></li>
         <li><a href="#terraform-resource-block">Understanding the <code>resource</code> Block</a></li>
         <li><a href="#terraform-variable-block">Understanding the <code>variable</code> Block</a></li>
+        <li><a href="#terraform-output-block">Understanding the <code>output</code> Block</a></li>
+        <li><a href="#terraform-locals-block">Understanding the <code>locals</code> Block</a></li>
     </ol>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -3075,7 +3077,247 @@ provider "aws" {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-output-block">Understanding the <code>output</code> Block in Terraform</h3>
+<ol>
 
+    <li>What Is an <code>output</code> Block?</li>
+    <br/>
+    <ul>
+        <li>The <code>output</code> block defines values that are displayed after <code>terraform apply</code> and can be used by:
+            <ul>
+                <li>the end user</li>
+                <li>scripts</li>
+                <li>other Terraform modules</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Outputs are useful for showing:
+            <ul>
+                <li>IP addresses</li>
+                <li>URLs</li>
+                <li>resource IDs</li>
+                <li>credentials</li>
+                <li>any useful computed value</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Outputs reflect data stored in the <b>Terraform state</b>, not live API calls.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Structure of an <code>output</code> Block</li>
+<pre><code class="language-hcl line-numbers">output "NAME" {
+    value       = EXPRESSION
+    description = "Human-readable text"
+    sensitive   = BOOLEAN
+}
+</code></pre>
+    <ul>
+        <li>Only <code>value</code> is required.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Simple Output</li>
+<pre><code class="language-hcl line-numbers">output "bucket_name" {
+    value = aws_s3_bucket.my_bucket.id
+}
+</code></pre>
+        <ul>
+        <li>Usage: after <code>terraform apply</code>, Terraform prints:</li>
+        </ul>
+<pre><code class="language-plaintext line-numbers">
+bucket_name = "my-bucket-123"
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>When Are Outputs Shown?</li>
+    <br/>
+    <ul>
+        <li>Outputs display only after <code>terraform apply</code> or <code>terraform output</code></li>
+        <br/>
+
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">terraform output bucket_name</code></pre>
+
+        <br/>
+
+        <li>Terraform stores outputs in the state file.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The <code>value</code> Argument</li>
+    <br/>
+    <ul>
+        <li>Accepts any Terraform expression:</li>
+        <ul>
+            <li>resource attributes</li>
+            <li>variables</li>
+            <li>functions</li>
+            <li>maps / lists</li>
+        </ul>
+
+        <br/>
+
+        <li>Example:</li>
+<pre><code class="language-hcl line-numbers">output "instance_url" {
+    value = "https://${aws_instance.web.public_ip}"
+}
+</code></pre>
+        <br/>
+        <li>Output will look like:</li>
+<pre><code class="language-plaintext line-numbers">instance_url = "https://54.23.111.20"
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Marking Outputs as Sensitive</li>
+    <br/>
+    <ul>
+        <li>Prevent them from appearing in CLI output:</li>
+<pre><code class="language-hcl line-numbers">output "db_password" {
+    value     = random_password.db.result
+    sensitive = true
+}
+</code></pre>
+        <li>CLI output becomes masked:</li>
+<pre><code class="language-plaintext line-numbers">db_password = (sensitive value)
+</code></pre>
+        <li>This prevents accidental exposure in CI/CD logs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using <code>output</code> in Modules</li>
+    <br/>
+    <ul>
+        <li>Outputs from a child module can be referenced by the parent module.</li>
+        <br/>
+
+        <li>Child module (<code>modules/network/outputs.tf</code>):</li>
+<pre><code class="language-hcl line-numbers">output "vpc_id" {
+    value = aws_vpc.main.id
+}
+</code></pre>
+
+        <li>Parent module:</li>
+<pre><code class="language-hcl line-numbers">module "network" {
+    source = "./modules/network"
+}
+
+resource "aws_subnet" "example" {
+    vpc_id = module.network.vpc_id
+}
+</code></pre>
+        <li><code>module.network.vpc_id</code> references the child’s output.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Outputs for Cross-Project Sharing</li>
+    <br/>
+    <ul>
+        <li>Terraform Cloud and some CI setups allow one workspace’s outputs to feed another workspace.</li>
+        <br/>
+        <li>Example use case:</li>
+        <ul>
+            <li>Network workspace outputs VPC ID</li>
+            <li>Compute workspace uses that VPC ID as input</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Output Format Options: <code>terraform output</code></li>
+    <br/>
+    <ul>
+        <li>Show all outputs:</li>
+<pre><code class="language-bash line-numbers">terraform output</code></pre>
+        <li>Show one output:</li>
+<pre><code class="language-bash line-numbers">terraform output vpc_id</code></pre>
+        <li>Show output in JSON (useful for scripts):</li>
+<pre><code class="language-bash line-numbers">terraform output -json</code></pre>
+        <li>JSON output enables automation with tools such as Ansible, Bash, Python, etc.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complex Output Values</li>
+    <br/>
+    <ul>
+        <li>You can output maps, lists, and objects.</li>
+        <br/>
+
+        <li>Example 1: List</li>
+<pre><code class="language-hcl line-numbers">output "azs" {
+    value = var.availability_zones
+}
+</code></pre>
+
+        <li>Example 2: Map</li>
+<pre><code class="language-hcl line-numbers">output "instance_endpoints" {
+    value = {
+        app  = aws_instance.app.public_ip
+        db   = aws_instance.db.private_ip
+    }
+}
+</code></pre>
+
+        <li>Example 3: Object</li>
+<pre><code class="language-hcl line-numbers">output "info" {
+    value = {
+        id   = aws_instance.web.id
+        name = aws_instance.web.tags["Name"]
+        url  = "https://${aws_instance.web.public_ip}"
+    }
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Conditional Outputs</li>
+<pre><code class="language-hcl line-numbers">output "endpoint" {
+    value = var.is_prod
+        ? aws_lb.prod_lb.dns_name
+        : aws_lb.dev_lb.dns_name
+}
+</code></pre>
+    <ul>
+        <li>You can dynamically output different values depending on environment variables.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete Example</li>
+<pre><code class="language-hcl line-numbers">resource "aws_instance" "web" {
+    ami           = "ami-0ff8a91507f77f867"
+    instance_type = "t3.micro"
+}
+
+output "public_ip" {
+    value       = aws_instance.web.public_ip
+    description = "The public IP of the web server"
+}
+
+output "ssh_command" {
+    value = "ssh ec2-user@${aws_instance.web.public_ip}"
+}
+</code></pre>
+
+    <ul>
+        <li>Example output:</li>
+    </ul>
+<pre><code class="language-plaintext line-numbers">public_ip = "54.22.13.91"
+ssh_command = "ssh ec2-user@54.22.13.91"
+</code></pre>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
