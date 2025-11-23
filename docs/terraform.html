@@ -3325,7 +3325,258 @@ ssh_command = "ssh ec2-user@54.22.13.91"
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-locals-block">Understanding the <code>locals</code> Block in Terraform</h3>
+<ol>
 
+    <li>What Is a <code>locals</code> Block?</li>
+    <br/>
+    <ul>
+        <li>The <code>locals</code> block defines <b>local values</b> — named expressions that behave like constants inside a Terraform module.</li>
+        <br/>
+        <li>Locals help you:</li>
+        <ul>
+            <li>avoid repeating long or complex expressions</li>
+            <li>keep configuration clean and readable</li>
+            <li>group transformation logic in one place</li>
+            <li>compute values dynamically</li>
+        </ul>
+        <br/>
+        <li>Local values cannot be passed from outside the module and cannot be overridden.</li>
+        <br/>
+        <li>They exist only within the module they're declared in.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Structure of a <code>locals</code> Block</li>
+<pre><code class="language-hcl line-numbers">locals {
+    NAME = EXPRESSION
+    NAME2 = EXPRESSION
+}
+</code></pre>
+    <ul>
+        <li>A module can contain multiple <code>locals</code> blocks; Terraform merges them.</li>
+        <br/>
+        <li>Define as many locals as you want inside the block.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Referencing Local Values</li>
+    <br/>
+    <ul>
+        <li>Use the <code>local.</code> prefix:</li>
+<pre><code class="language-hcl line-numbers">local.NAME
+</code></pre>
+
+        <li>Example:</li>
+<pre><code class="language-hcl line-numbers">locals {
+    region = "eu-central-1"
+}
+
+provider "aws" {
+    region = local.region
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Avoiding Duplication</li>
+<pre><code class="language-hcl line-numbers">
+locals {
+  common_tags = {
+    project = "demo"
+    owner   = "junzhe"
+  }
+}
+
+resource "aws_s3_bucket" "bucket1" {
+  bucket = "bucket-one"
+  tags   = local.common_tags
+}
+
+resource "aws_s3_bucket" "bucket2" {
+  bucket = "bucket-two"
+  tags   = local.common_tags
+}
+</code></pre>
+
+    <ul>
+        <li>The same tag structure is reused with consistency.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Local Values Can Use Expressions</li>
+    <br/>
+    <ul>
+        <li>Locals can compute values dynamically.</li>
+
+<pre><code class="language-hcl line-numbers">locals {
+    full_name = "${var.env}-${var.app_name}-${terraform.workspace}"
+}
+</code></pre>
+
+        <li>Usage:</li>
+<pre><code class="language-hcl line-numbers">resource "aws_s3_bucket" "app" {
+    bucket = local.full_name
+}
+</code></pre>
+
+        <li>This produces predictable naming conventions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Complex Expression</li>
+    <br/>
+    <ul>
+        <li>Compute local values based on logic:</li>
+<pre><code class="language-hcl line-numbers">locals {
+    is_prod = var.env == "prod"
+    instance_type = local.is_prod ? "t3.medium" : "t3.micro"
+}
+</code></pre>
+
+        <li>This allows declarative environment-based logic.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Locals with Maps</li>
+<pre><code class="language-hcl line-numbers">locals {
+    app_ports = {
+        http = 80
+        https = 443
+        metrics = 9100
+    }
+}
+
+output "http_port" {
+    value = local.app_ports["http"]
+}
+</code></pre>
+
+    <ul>
+        <li>Locals help group structured data.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Locals with Lists</li>
+<pre><code class="language-hcl line-numbers">locals {
+    zones = [
+        "${var.region}a",
+        "${var.region}b",
+        "${var.region}c"
+    ]
+}
+
+resource "aws_subnet" "subnet1" {
+    availability_zone = local.zones[0]
+}
+</code></pre>
+
+    <ul>
+        <li>Local lists simplify multi-AZ deployments.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Locals with Resource References</li>
+    <br/>
+    <ul>
+        <li>Locals can include resource attributes:</li>
+<pre><code class="language-hcl line-numbers">locals {
+    web_url = "http://${aws_instance.web.public_ip}"
+}
+</code></pre>
+
+        <li>Becomes a reusable reference:</li>
+<pre><code class="language-hcl line-numbers">output "website" {
+    value = local.web_url
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Combining Map + Logic</li>
+<pre><code class="language-hcl line-numbers">
+locals {
+    configs = {
+        dev = { instance = "t3.micro", count = 1 }
+        prod = { instance = "t3.large", count = 3 }
+    }
+
+    active_config = local.configs[var.env]
+}
+</code></pre>
+
+    <ul>
+        <li>Usage:</li>
+    </ul>
+<pre><code class="language-hcl line-numbers">resource "aws_instance" "web" {
+    instance_type = local.active_config.instance
+    count         = local.active_config.count
+}
+</code></pre>
+
+    <ul>
+        <li>This pattern is extremely common in production modules.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Multiple <code>locals</code> Blocks</li>
+    <br/>
+    <ul>
+        <li>You can declare locals in separate files or separate blocks:</li>
+<pre><code class="language-hcl line-numbers">locals {
+    project = "demo"
+}
+
+locals {
+    region = "eu-central-1"
+}
+</code></pre>
+        <li>Terraform merges them into a single <code>local</code> namespace.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete Practical Example</li>
+<pre><code class="language-hcl line-numbers">variable "env" {
+    type    = string
+    default = "dev"
+}
+
+locals {
+    common_tags = {
+        project = "terraform-demo"
+        owner   = "junzhe"
+    }
+
+    full_name = "${var.env}-webserver"
+}
+
+resource "aws_instance" "web" {
+    ami           = "ami-0ff8a91507f77f867"
+    instance_type = "t3.micro"
+    tags          = local.common_tags
+}
+
+output "name" {
+    value = local.full_name
+}
+</code></pre>
+
+    <ul>
+        <li>Locals improve readability, reduce duplication, and centralize logic.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
