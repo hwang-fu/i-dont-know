@@ -156,6 +156,7 @@
         <li><a href="#terraform-locals-block">Understanding the <code>locals</code> Block</a></li>
         <li><a href="#terraform-import-block">Understanding the <code>import</code> Block</a></li>
         <li><a href="#terraform-module-block">Understanding the <code>module</code> Block</a></li>
+        <li><a href="#terraform-file-structure">Where to Put Each Terraform Block &amp; Recommended File Structure</a></li>
     </ol>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -4084,7 +4085,346 @@ output "instance_ips" {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-file-structure">Where to Put Each Terraform Block &amp; Recommended File Structure</h3>
+<ol>
 
+    <li>How Terraform Reads Files (Very Important Concept)</li>
+    <br/>
+    <ul>
+        <li>Terraform does <u>not</u> care about file names, it only cares about the directory (module root) and all <code>.tf</code> / <code>.tf.json</code> files in it.</li>
+        <br/>
+        <li>This means:
+            <ul>
+                <li>you can technically put everything into a single <code>main.tf</code></li>
+                <li>or spread blocks across many files like <code>variables.tf</code>, <code>outputs.tf</code>, etc.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>However, to keep your configuration <b>readable and standard</b>, people follow common conventions.</li>
+        <br/>
+        <li>Terraform loads all <code>.tf</code> files in <b>lexicographical order</b>, but you should not rely on this for logic — Terraform builds a dependency graph instead.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Typical Recommended File Layout in a Small Project</li>
+    <br/>
+    <ul>
+        <li>A common starting layout:</li>
+<pre><code class="language-bash line-numbers">project-root/
+├── main.tf          # core resources &amp; module calls
+├── providers.tf     # provider blocks
+├── versions.tf      # terraform block (required_version, required_providers)
+├── variables.tf     # variable blocks
+├── outputs.tf       # output blocks
+├── locals.tf        # locals block(s)
+├── import.tf        # optional: import blocks
+└── modules/         # reusable child modules
+    └── &lt;module-name&gt;/...
+</code></pre>
+        <li>You can adjust names, but this structure is widely understood by other Terraform users.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Where to Put the <code>terraform</code> Block</li>
+    <br/>
+    <ul>
+        <li>The <code>terraform</code> block configures:
+            <ul>
+                <li><code>required_version</code></li>
+                <li><code>required_providers</code></li>
+                <li><code>backend</code></li>
+                <li>optionally <code>cloud</code>, experiments, etc.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Common conventionally, put it into a dedicated file named <code>versions.tf</code> or <code>terraform.tf</code>.</li>
+        <br/>
+        <li>Example (<code>versions.tf</code>):</li>
+<pre><code class="language-hcl line-numbers">terraform {
+    required_version = "~&gt; 1.6"
+
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+            version = "~&gt; 5.0"
+        }
+    }
+
+    backend "s3" {
+        bucket = "my-tf-state"
+        key    = "envs/dev/state.tfstate"
+        region = "eu-central-1"
+    }
+}
+</code></pre>
+        <li>Put exactly one <code>terraform</code> block per module (per folder).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Where to Put <code>provider</code> Blocks</li>
+    <br/>
+    <ul>
+        <li><code>provider</code> blocks configure how Terraform connects to a vendor (AWS, GCP, Azure, Kubernetes...).</li>
+        <br/>
+        <li>Typical convention: Put all provider blocks into <code>providers.tf</code>.</li>
+        <br/>
+        <li>Example (<code>providers.tf</code>):</li>
+<pre><code class="language-hcl line-numbers">
+provider "aws" {
+  region = var.region
+}
+
+provider "aws" {
+  alias  = "us"
+  region = "us-east-1"
+}
+</code></pre>
+        <li>In child modules:
+            <ul>
+                <li>you often omit providers or just write <code>provider</code> requirements</li>
+                <li>the root module usually owns provider configuration</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Where to Put <code>variable</code> Blocks</li>
+    <br/>
+    <ul>
+        <li><code>variable</code> blocks define input parameters for a module.</li>
+        <br/>
+        <li>Standard practice: Put them into a dedicated <code>variables.tf</code> file.</li>
+        <br/>
+        <li>Root module <code>variables.tf</code>: variables that users must pass via <code>terraform.tfvars</code>, <code>-var</code>, etc.</li>
+        <br/>
+        <li>Child module <code>variables.tf</code>: inputs that the parent module must provide via a <code>module</code> block</li>
+        <br/>
+        <li>Example (<code>variables.tf</code>):</li>
+<pre><code class="language-hcl line-numbers">variable "region" {
+    type        = string
+    default     = "eu-central-1"
+    description = "AWS region for all resources."
+}
+
+variable "env" {
+    type        = string
+    description = "Environment name (e.g. dev, prod)."
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Where to Put <code>locals</code> Blocks</li>
+    <br/>
+    <ul>
+        <li><code>locals</code> define internal helper values and computed expressions.</li>
+        <br/>
+        <li>Recommended:
+            <ul>
+                <li>Put most of them in <code>locals.tf</code>, especially shared/common ones.</li>
+                <li>Optionally keep small, context-specific locals close to where they are used, in the same file as the resources.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example (<code>locals.tf</code>):</li>
+<pre><code class="language-hcl line-numbers">locals {
+    common_tags = {
+        project = "demo"
+        owner   = "junzhe"
+    }
+
+    full_env_name = "${var.env}-example"
+}
+</code></pre>
+        <li>Usage (e.g. in <code>main.tf</code>):</li>
+<pre><code class="language-hcl line-numbers">resource "aws_s3_bucket" "logs" {
+    bucket = "${local.full_env_name}-logs"
+    tags   = local.common_tags
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Where to Put <code>resource</code> Blocks</li>
+    <br/>
+    <ul>
+        <li><code>resource</code> blocks define actual infrastructure (S3, EC2, VPCs, etc.).</li>
+        <br/>
+        <li>For very small configs:
+            <ul>
+                <li>place all resources into <code>main.tf</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>For medium/large projects:
+            <ul>
+                <li>split by domain or function:</li>
+            </ul>
+<pre><code class="language-bash line-numbers">main.tf           # high-level modules, maybe some core resources
+network.tf        # VPCs, subnets, route tables
+security.tf       # security groups, IAM
+compute.tf        # EC2 instances, autoscaling groups
+storage.tf        # S3, EBS, RDS
+kubernetes.tf     # EKS / K8S resources
+</code></pre>
+        <li>This makes it easier to navigate and reason about your infra.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Where to Put <code>output</code> Blocks</li>
+    <br/>
+    <ul>
+        <li><code>output</code> blocks define values Terraform will show or pass to parent modules.</li>
+        <br/>
+        <li>Standard convention: Put all outputs into <code>outputs.tf</code>.</li>
+        <br/>
+        <li>Example (<code>outputs.tf</code>):</li>
+<pre><code class="language-hcl line-numbers">
+output "vpc_id" {
+  value       = aws_vpc.main.id
+  description = "The ID of the main VPC."
+}
+
+output "public_url" {
+  value = "https://${aws_lb.app_lb.dns_name}"
+}
+</code></pre>
+        <li>Both root and child modules can have outputs:</li>
+        <ul>
+            <li>root module outputs → for humans / external tooling</li>
+            <li>child module outputs → used by parent modules via <code>module.&lt;name&gt;.&lt;output&gt;</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Where to Put <code>module</code> Blocks (Calling Modules)</li>
+    <br/>
+    <ul>
+        <li><code>module</code> blocks call reusable submodules.</li>
+        <br/>
+        <li>Common approaches:</li>
+        <ul>
+            <li>Keep them at the top-level in <code>main.tf</code>, so that reading <code>main.tf</code> gives you a high-level overview.</li>
+            <li>When you have many modules, you can also group them:
+                <ul>
+                    <li><code>modules-network.tf</code></li>
+                    <li><code>modules-app.tf</code></li>
+                </ul>
+            </li>
+        </ul>
+        <br/>
+        <li>Example (<code>main.tf</code>):</li>
+<pre><code class="language-hcl line-numbers">module "network" {
+    source = "./modules/network"
+    cidr   = "10.0.0.0/16"
+    env    = var.env
+}
+
+module "app" {
+    source     = "./modules/app"
+    vpc_id     = module.network.vpc_id
+    subnet_ids = module.network.subnet_ids
+}
+</code></pre>
+        <li>The actual module implementations live under <code>modules/&lt;name&gt;</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Where to Put <code>import</code> Blocks</li>
+    <br/>
+    <ul>
+        <li><code>import</code> blocks describe how to map existing resources into Terraform state.</li>
+        <br/>
+        <li>Good practice:
+            <ul>
+                <li>Put them in a dedicated <code>import.tf</code> file.</li>
+                <li>Optionally add comments explaining where the resource came from.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example (<code>import.tf</code>):</li>
+<pre><code class="language-hcl line-numbers"># Import existing S3 bucket created manually in the console
+import {
+    to = aws_s3_bucket.logs
+    id = "my-existing-logs-bucket"
+}
+</code></pre>
+        <br/>
+        <li>Related <code>resource</code> must exist somewhere (e.g. in <code>storage.tf</code>):</li>
+<pre><code class="language-hcl line-numbers">resource "aws_s3_bucket" "logs" {
+    # configuration that matches the real bucket
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Recommended Structure for Child Modules</li>
+    <br/>
+    <ul>
+        <li>Inside <code>modules/&lt;module-name&gt;/</code>, use a mini version of the same pattern:</li>
+<pre><code class="language-bash line-numbers">
+modules/
+    network/
+        main.tf        # resources (vpc, subnets, routes)
+        variables.tf   # module inputs
+        outputs.tf     # module outputs
+        locals.tf      # internal helpers (optional)
+    app/
+        main.tf        # EC2, ASG, LB, etc.
+        variables.tf
+        outputs.tf
+        locals.tf
+</code></pre>
+        <li>Usually child modules do <u>not</u> define:
+            <ul>
+                <li><code>terraform</code> block</li>
+                <li><code>backend</code></li>
+            </ul>
+            The <b>root module</b> owns those.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Putting It All Together: Example Full Layout</li>
+<pre><code class="language-bash line-numbers">project-root/
+├── versions.tf      # terraform { ... }
+├── providers.tf     # provider "aws" { ... }
+├── variables.tf     # variable "env" { ... }, etc.
+├── locals.tf        # locals { ... }
+├── main.tf          # top-level modules &amp; maybe a few core resources
+├── network.tf       # VPC, subnets, routes
+├── security.tf      # security groups, IAM
+├── compute.tf       # EC2, autoscaling
+├── storage.tf       # S3, RDS, EBS
+├── outputs.tf       # output "..." { ... }
+├── import.tf        # optional import { ... } blocks
+└── modules/
+    ├── network/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   ├── outputs.tf
+    │   └── locals.tf
+    └── app/
+        ├── main.tf
+        ├── variables.tf
+        ├── outputs.tf
+        └── locals.tf
+</code></pre>
+    <ul>
+        <li>Remember: Terraform itself doesn’t enforce this structure, but following it makes your life (and teamwork) much easier.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
