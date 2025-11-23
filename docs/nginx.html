@@ -152,6 +152,7 @@
         <li><a href="#nginx-beginners">Nginx for Beginners</a></li>
         <li><a href="#nginx-main-vs-server-config">Difference Between Nginx Main Config and Server Config</a></li>
         <li><a href="#nginx-smallest-app-workflow">Serving a Smallest App Using Nginx</a></li>
+        <li><a href="#nginx-deploy-frontend-backend">Deploying a Frontend + Backend App Using Nginx</a></li>
     </ol>
 </nav>
 <hr/>
@@ -833,7 +834,270 @@ sudo apt install nginx
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="nginx-deploy-frontend-backend">Deploying a Frontend + Backend App Using Nginx</h3>
+<ol>
 
+    <li>Overview</li>
+    <br/>
+    <ul>
+        <li>We will build a simple 2-part application:</li>
+        <ul>
+            <li><b>Frontend</b>: a static site (HTML/CSS/JS) served by Nginx</li>
+            <li><b>Backend</b>: a small API server (Node.js example is used here)</li>
+        </ul>
+        <br/>
+        <li>Nginx will act as:</li>
+        <ul>
+            <li>a <b>static file server</b> for frontend assets</li>
+            <li>a <b>reverse proxy</b> that forwards <code>/api</code> requests to the backend server</li>
+        </ul>
+        <br/>
+        <li>This is the <b>standard real-world deployment pattern</b> for many modern web applications.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Project Structure Example</li>
+    <br/>
+    <ul>
+        <li>We use this simple folder structure:</li>
+<pre><code class="language-plaintext line-numbers">myapp/
+├── frontend/
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
+├── backend/
+│   └── server.js
+└── nginx/
+    └── app.conf
+</code></pre>
+        <br/>
+        <li>You can freely rename these folders.</li>
+        <br/>
+        <li>Nginx will serve <code>frontend/</code> and proxy <code>/api</code> to <code>backend/</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 1: Create a Simple Frontend</li>
+    <br/>
+    <ul>
+        <li>An extremely small frontend (<code>frontend/index.html</code>):</li>
+<pre><code class="language-html line-numbers">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;MyApp Frontend&lt;/title&gt;
+    &lt;link rel="stylesheet" href="styles.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Hello from Frontend&lt;/h1&gt;
+    &lt;button id="btn"&gt;Call API&lt;/button&gt;
+    &lt;pre id="result"&gt;&lt;/pre&gt;
+
+    &lt;script src="app.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+        <br/>
+        <li><code>frontend/app.js</code>:</li>
+<pre><code class="language-javascript line-numbers">document.getElementById('btn').onclick = async () =&gt; {
+    const res = await fetch('/api/hello');
+    const text = await res.text();
+    document.getElementById('result').innerText = text;
+};
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 2: Create a Simple Backend API</li>
+    <br/>
+    <ul>
+        <li><code>backend/server.js</code> using Node.js:</li>
+<pre><code class="language-javascript line-numbers">const express = require('express');
+const app = express();
+const PORT = 5000;
+
+app.get('/hello', (req, res) =&gt; {
+    res.send("Hello from Backend API!");
+});
+
+app.listen(PORT, () =&gt; {
+    console.log("Backend running on port", PORT);
+});
+</code></pre>
+        <br/>
+        <li>The backend listens on <code>http://localhost:5000</code>.</li>
+        <br/>
+        <li>Nginx will forward <code>/api/*</code> to this backend.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 3: Write the Nginx Configuration File</li>
+    <br/>
+    <ul>
+        <li>Place a file <code>nginx/app.conf</code>:</li>
+
+<pre><code class="language-nginx line-numbers">server {
+    listen 80;
+    server_name localhost;
+
+    # -------------------------------
+    # 1. Serve the frontend files
+    # -------------------------------
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Allow direct file delivery for static assets
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # -------------------------------
+    # 2. Reverse proxy for backend
+    # -------------------------------
+    location /api/ {
+        proxy_pass http://backend:5000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+</code></pre>
+
+        <li>What this config does:
+            <ul>
+                <li><code>root /usr/share/nginx/html</code> → directory where frontend files live (in container)</li>
+                <li><code>location /</code> → serve static frontend files</li>
+                <li><code>location /api/</code> → all requests to <code>/api/*</code> get forwarded to the backend server</li>
+                <li><code>proxy_pass http://backend:5000</code> → backend container hostname = <code>backend</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Note:
+            <ul>
+                <li>The name <code>backend</code> comes from Docker Compose network resolution.</li>
+                <li>In production Nginx normally runs inside a container, so you copy frontend files into <code>/usr/share/nginx/html</code>.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 4: Build the Dockerfile for the Frontend + Nginx</li>
+    <br/>
+    <ul>
+        <li>Create <code>frontend/Dockerfile</code>:</li>
+<pre><code class="language-dockerfile line-numbers">FROM nginx:latest
+
+# remove default nginx welcome page
+RUN rm -rf /usr/share/nginx/html/*
+
+# copy frontend
+COPY . /usr/share/nginx/html/
+
+# copy custom nginx config
+COPY ../nginx/app.conf /etc/nginx/conf.d/default.conf
+</code></pre>
+
+        <li>Explanation of arguments:</li>
+        <ul>
+            <li><code>FROM nginx:latest</code> → base image with nginx installed</li>
+            <li><code>rm -rf</code> → remove default site</li>
+            <li><code>COPY . /usr/share/nginx/html/</code> → copy frontend files into nginx web root</li>
+            <li><code>COPY app.conf</code> → override default server config</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 5: Write a Dockerfile for the Backend</li>
+    <br/>
+    <ul>
+        <li>Create <code>backend/Dockerfile</code>:</li>
+<pre><code class="language-dockerfile line-numbers">FROM node:18
+
+WORKDIR /app
+
+COPY . .
+
+RUN npm install
+
+CMD ["node", "server.js"]
+</code></pre>
+        <li>Explanation:</li>
+        <ul>
+            <li><code>FROM node:18</code> → Node.js backend</li>
+            <li><code>WORKDIR /app</code> → directory inside container</li>
+            <li><code>COPY . .</code> → copy backend code</li>
+            <li><code>npm install</code> → install dependencies</li>
+            <li><code>CMD ["node","server.js"]</code> → start backend</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 6: Use Docker Compose to Link Everything</li>
+    <br/>
+    <ul>
+        <li>Create <code>docker-compose.yml</code> at root:</li>
+
+<pre><code class="language-yaml line-numbers">version: "3.9"
+
+services:
+
+  backend:
+    build: ./backend
+    container_name: backend
+    expose:
+      - "5000"
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+</code></pre>
+
+        <li>Explanation:</li>
+        <ul>
+            <li><code>backend</code> → backend API, accessible inside network at <code>http://backend:5000</code></li>
+            <li><code>expose</code> → only expose internally (not to host)</li>
+            <li><code>frontend</code> runs nginx → port mapping:
+                <ul>
+                    <li><code>8080:80</code> → host port 8080 → container port 80</li>
+                </ul>
+            </li>
+            <li><code>depends_on</code> → start backend before frontend</li>
+        </ul>
+        <br/>
+        <li>After building and running, Nginx will:
+            <ul>
+                <li>serve <code>/</code> from frontend</li>
+                <li>proxy <code>/api/*</code> to backend</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 7: Run Everything</li>
+    <br/>
+    <ul>
+<pre><code class="language-bash line-numbers">docker compose up --build</code></pre>
+        <br/>
+        <li>Visit frontend:</li>
+<pre><code class="language-plaintext line-numbers">http://localhost:8080</code></pre>
+        <br/>
+        <li>Click the button and you should see:
+<pre><code class="language-plaintext line-numbers">Hello from Backend API!
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
