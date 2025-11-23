@@ -74,11 +74,6 @@
     .token.keyword {
         font-weight: 500;
     }
-    /*
-    .token.comment {
-        color: #888;
-    }
-    */
 
     .red-underline {
         text-decoration-line: underline;
@@ -152,6 +147,7 @@
         <li><a href="#terraform-cli">CLI</a></li>
         <li><a href="#terraform-write-config">Writing Terraform Configuration</a></li>
         <li><a href="#terraform-aws-intro">Introduction Using Terraform with AWS</a></li>
+        <li><a href="#terraform-init-command">Understanding the <code>terraform init</code> Command</a></li>
     </ol>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -1659,6 +1655,394 @@ resource "aws_iam_policy" "app_bucket_policy" {
     </ul>
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-init-command">Understanding the <code>terraform init</code> Command</h3>
+<ol>
+
+    <li>What Does <code>terraform init</code> Do?</li>
+    <br/>
+    <ul>
+        <li><code>terraform init</code> is the <b>first command</b> you run in any new or cloned Terraform project directory.</li>
+        <br/>
+        <li>Its main responsibilities:</li>
+        <ul>
+            <li>Initialize the working directory as a Terraform project</li>
+            <li>Download and install required <b>providers</b> (e.g. AWS, Azure, Google)</li>
+            <li>Download <b>modules</b> defined in your configuration</li>
+            <li>Initialize and configure the <b>backend</b> (where the state is stored)</li>
+            <li>Create internal metadata like <code>.terraform/</code> and <code>.terraform.lock.hcl</code></li>
+        </ul>
+        <br/>
+        <li>Typical workflow:</li>
+<pre><code class="language-bash line-numbers">terraform init
+terraform plan
+terraform apply</code></pre>
+        <br/>
+        <li>If you skip <code>terraform init</code>, <code>plan</code> and <code>apply</code> will fail because providers/backends are not set up.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>What Happens in the Working Directory?</li>
+    <br/>
+    <ul>
+        <li>After running <code>terraform init</code>, Terraform creates/updates:</li>
+        <br/>
+        <ul>
+            <li><code>.terraform/</code> — internal directory for:
+                <ul>
+                    <li>downloaded provider plugins</li>
+                    <li>downloaded modules</li>
+                    <li>backend metadata</li>
+                </ul>
+            </li>
+            <li><code>.terraform.lock.hcl</code> — dependency lockfile (provider versions, etc.)</li>
+        </ul>
+        <br/>
+        <li>This makes your project:
+            <ul>
+                <li>reproducible (same provider versions)</li>
+                <li>ready to run plans/applies</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Usage: <code>terraform init</code></li>
+    <br/>
+    <ul>
+        <li>Inside a folder containing <code>*.tf</code> files:</li>
+<pre><code class="language-bash line-numbers">cd my-terraform-project
+terraform init</code></pre>
+        <br/>
+        <li>Terraform then:</li>
+        <ul>
+            <li>Scans your <code>.tf</code> files for:
+                <ul>
+                    <li><code>required_providers</code></li>
+                    <li><code>terraform</code> block</li>
+                    <li><code>backend</code> configuration</li>
+                    <li><code>module</code> blocks</li>
+                </ul>
+            </li>
+            <li>Downloads missing providers</li>
+            <li>Fetches modules from:
+                <ul>
+                    <li>Terraform Registry</li>
+                    <li>Git repositories</li>
+                    <li>local paths</li>
+                </ul>
+            </li>
+            <li>Configures backend (local or remote state)</li>
+        </ul>
+        <br/>
+        <li>You usually run this:
+            <ul>
+                <li>once when starting a new project</li>
+                <li>again when:
+                    <ul>
+                        <li>changing providers/backends</li>
+                        <li>upgrading provider versions</li>
+                        <li>adding new modules</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How <code>terraform init</code> Handles Providers</li>
+    <br/>
+    <ul>
+        <li>Example configuration (<code>main.tf</code>):</li>
+<pre><code class="language-hcl line-numbers">terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~&gt; 5.0"
+    }
+  }
+}</code></pre>
+        <br/>
+        <li>When you run:</li>
+<pre><code class="language-bash line-numbers">terraform init</code></pre>
+        <br/>
+        <li>Terraform will:</li>
+        <ul>
+            <li>Look up provider <code>"hashicorp/aws"</code> in the Terraform Registry</li>
+            <li>Download a version compatible with <code>~&gt; 5.0</code></li>
+            <li>Store it under <code>.terraform/providers/...</code></li>
+            <li>Record the exact version in <code>.terraform.lock.hcl</code></li>
+        </ul>
+        <br/>
+        <li>This ensures every developer on the project uses exactly the same provider versions.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How <code>terraform init</code> Handles Modules</li>
+    <br/>
+    <ul>
+        <li>Example module usage:</li>
+<pre><code class="language-hcl line-numbers">module "network" {
+  source = "terraform-aws-modules/vpc/aws"
+  version = "5.0.0"
+
+  name = "example-vpc"
+  cidr = "10.0.0.0/16"
+}</code></pre>
+        <br/>
+        <li>On <code>terraform init</code>, Terraform will:</li>
+        <ul>
+            <li>Locate module <code>terraform-aws-modules/vpc/aws</code> in the Registry</li>
+            <li>Download it into <code>.terraform/modules/</code></li>
+            <li>Use that local copy when running <code>plan</code>/<code>apply</code></li>
+        </ul>
+        <br/>
+        <li>If you update <code>version</code> or <code>source</code>, re-run <code>terraform init</code> to fetch the new module version.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Backends and <code>terraform init</code></li>
+    <br/>
+    <ul>
+        <li>The <b>backend</b> defines where your Terraform state (<code>terraform.tfstate</code>) is stored.</li>
+        <br/>
+        <li>Example local backend (default):</li>
+<pre><code class="language-hcl line-numbers">terraform {
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}</code></pre>
+        <br/>
+        <li>Example remote backend (Amazon S3):</li>
+<pre><code class="language-hcl line-numbers">terraform {
+  backend "s3" {
+    bucket = "my-terraform-state-bucket"
+    key    = "envs/prod/terraform.tfstate"
+    region = "eu-central-1"
+  }
+}</code></pre>
+        <br/>
+        <li>When you run <code>terraform init</code> with a backend block:</li>
+        <ul>
+            <li>Terraform configures the backend</li>
+            <li>It may prompt you to migrate existing local state into the remote backend</li>
+            <li>It writes backend metadata into <code>.terraform/</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Useful Options for <code>terraform init</code></li>
+    <br/>
+    <ul>
+        <li>1. <code>-upgrade</code> &mdash; Upgrade providers and modules</li>
+        <br/>
+<pre><code class="language-bash line-numbers">terraform init -upgrade</code></pre>
+        <li>What it does:</li>
+        <ul>
+            <li>Checks for newer versions of required providers (within your version constraints)</li>
+            <li>Redownloads modules to the latest acceptable versions</li>
+            <li>Updates <code>.terraform.lock.hcl</code></li>
+        </ul>
+        <br/>
+        <br/>
+
+        <li>2. <code>-backend-config</code> &mdash; Override backend settings</li>
+        <br/>
+        <li>Instead of putting secrets in <code>.tf</code> files, you can pass them via CLI:</li>
+<pre><code class="language-bash line-numbers">terraform init \
+  -backend-config="bucket=my-tf-state" \
+  -backend-config="region=eu-central-1"</code></pre>
+        <br/>
+        <li>Each <code>-backend-config</code> argument sets/overrides a backend argument.</li>
+        <br/>
+        <br/>
+
+        <li>3. <code>-reconfigure</code> &mdash; Force backend reconfiguration</li>
+        <br/>
+<pre><code class="language-bash line-numbers">terraform init -reconfigure</code></pre>
+        <br/>
+        <li>Use when:</li>
+        <ul>
+            <li>you changed backend type or remote config</li>
+            <li>you want Terraform to forget previous backend settings and ask again</li>
+        </ul>
+        <br/>
+        <br/>
+
+        <li>4. <code>-migrate-state</code> &mdash; Move state between backends</li>
+        <br/>
+<pre><code class="language-bash line-numbers">terraform init -migrate-state</code></pre>
+        <br/>
+        <li>Use when you:</li>
+        <ul>
+            <li>switch from local → remote backend (e.g., local → S3)</li>
+            <li>move between two different remote backends</li>
+        </ul>
+        <br/>
+        <li>Terraform will ask for confirmation before physically moving the state file.</li>
+        <br/>
+        <br/>
+
+        <li>5. <code>-from-module</code> &mdash; Initialize a new project from a module</li>
+        <br/>
+<pre><code class="language-bash line-numbers">terraform init -from-module=git::https://github.com/example/infra-module.git</code></pre>
+        <br/>
+        <li>What it does:</li>
+        <ul>
+            <li>Clones/copies the specified module into the current directory</li>
+            <li>Then initializes providers and submodules as usual</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Idempotency: Re-running <code>terraform init</code></li>
+    <br/>
+    <ul>
+        <li>It is <b>safe</b> to run <code>terraform init</code> multiple times.</li>
+        <br/>
+        <li>On repeated runs, Terraform will:</li>
+        <ul>
+            <li>Reuse already-downloaded providers (unless <code>-upgrade</code> is set)</li>
+            <li>Reuse modules (again, unless <code>-upgrade</code>)</li>
+            <li>Verify backend configuration</li>
+        </ul>
+        <br/>
+        <li>You should re-run <code>init</code> when:</li>
+        <ul>
+            <li>cloning a repo for the first time</li>
+            <li>changing provider versions</li>
+            <li>changing backend configs</li>
+            <li>adding/removing modules</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Putting It All Together: Example Session</li>
+    <br/>
+    <ul>
+        <li>Imagine you have this setup in <code>main.tf</code>:</li>
+<pre><code class="language-hcl line-numbers">terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~&gt; 5.0"
+    }
+  }
+  backend "s3" {
+    bucket = "my-tf-state-bucket"
+    key    = "dev/terraform.tfstate"
+    region = "eu-central-1"
+  }
+}</code></pre>
+        <br/>
+        <li>Typical usage:</li>
+<pre><code class="language-bash line-numbers"># 1. Initialize project, providers, modules, backend
+terraform init
+
+# 2. (Later) change versions or modules, then upgrade
+terraform init -upgrade
+
+# 3. (Later) migrate from local backend to S3
+terraform init -migrate-state -reconfigure</code></pre>
+        <br/>
+        <li>This sequence is extremely common in real-world Terraform projects.</li>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
