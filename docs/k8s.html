@@ -152,6 +152,7 @@
         <li><a href="#k8s-key-terminologies">Key Concepts and Terminologies</a></li>
         <li><a href="#k8s-deploy-first-app">Deploying Your First Application in Kubernetes</a></li>
         <li><a href="#k8s-deployment-yaml">How to Write a Kubernetes Deployment YAML?</a></li>
+        <li><a href="#k8s-kubectl-intro">Introduction to <code>kubectl</code></a></li>
     </ol>
 </nav>
 <hr/>
@@ -1062,7 +1063,224 @@ spec:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="k8s-kubectl-intro">Introduction to <code>kubectl</code> (Kubernetes Command-Line Tool)</h3>
+<ol>
 
+    <li>What Is <code>kubectl</code>?</li>
+    <br/>
+    <ul>
+        <li><code>kubectl</code> is the <b>official command-line interface</b> used to interact with Kubernetes clusters.</li>
+        <br/>
+        <li>Under the hood:
+            <ul>
+                <li><code>kubectl</code> communicates with the Kubernetes API Server</li>
+                <li>authentication is based on <code>~/.kube/config</code></li>
+                <li>commands produce YAML or JSON outputs</li>
+            </ul>
+        </li>
+        <br/>
+        <li><code>kubectl</code> is the <b>primary tool</b> used by developers, DevOps engineers, and SREs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Where Does <code>kubectl</code> Connect?</li>
+    <br/>
+    <ul>
+        <li><code>kubectl</code> communicates with the Kubernetes API Server via HTTP(S).</li>
+        <br/>
+        <li>The connection details are stored in:
+<pre><code class="language-plaintext line-numbers">~/.kube/config</code></pre>
+        </li>
+        <br/>
+        <li>This config file defines:
+            <ul>
+                <li><code>clusters</code> → the API server endpoints</li>
+                <li><code>users</code> → authentication credentials</li>
+                <li><code>contexts</code> → cluster + namespace + user combinations</li>
+            </ul>
+        </li>
+        <br/>
+        <li>List contexts:</li>
+<pre><code class="language-bash line-numbers">kubectl config get-contexts</code></pre>
+        <br/>
+        <li>Switch context:</li>
+<pre><code class="language-bash line-numbers">kubectl config use-context minikube</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Basic Syntax of <code>kubectl</code></li>
+    <br/>
+    <ul>
+        <li>The general structure is:</li>
+<pre><code class="language-plaintext line-numbers">kubectl [COMMAND] [TYPE] [NAME] [FLAGS]</code></pre>
+        </li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-bash line-numbers">kubectl get pods -n kube-system</code></pre>
+        <br/>
+        <li>Meaning:
+            <ul>
+                <li><code>get</code> → list resources</li>
+                <li><code>pods</code> → resource type</li>
+                <li><code>-n kube-system</code> → in this namespace</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Command groups:
+            <ul>
+                <li>View → <code>get</code>, <code>describe</code>, <code>logs</code>, <code>events</code></li>
+                <li>Modify → <code>apply</code>, <code>edit</code>, <code>scale</code>, <code>patch</code></li>
+                <li>Delete → <code>delete</code></li>
+                <li>Debug → <code>exec</code>, <code>port-forward</code>, <code>attach</code></li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Resource Types</li>
+    <br/>
+    <ul>
+        <li>Some common Kubernetes objects you will interact with:</li>
+        <br/>
+        <table>
+            <thead>
+                <tr>
+                    <th>Resource Type</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>pods</code> / <code>po</code></td><td>Individual running containers</td></tr>
+                <tr><td><code>deployments</code> / <code>deploy</code></td><td>Manages replicas and updates</td></tr>
+                <tr><td><code>services</code> / <code>svc</code></td><td>Networking entry points</td></tr>
+                <tr><td><code>nodes</code></td><td>Worker machines</td></tr>
+                <tr><td><code>configmaps</code> / <code>cm</code></td><td>Configuration as key-value data</td></tr>
+                <tr><td><code>secrets</code></td><td>Base64-encoded sensitive data</td></tr>
+                <tr><td><code>ingress</code></td><td>HTTP routing gateway</td></tr>
+                <tr><td><code>namespaces</code></td><td>Logical grouping of resources</td></tr>
+            </tbody>
+        </table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Essential Commands Every Developer Uses</li>
+    <br/>
+    <ul>
+        <li>1. View resources:</li>
+<pre><code class="language-bash line-numbers">kubectl get pods</code></pre>
+<pre><code class="language-bash line-numbers">kubectl get deployments</code></pre>
+<pre><code class="language-bash line-numbers">kubectl get services</code></pre>
+        <br/>
+
+        <li>2. Describe resources:</li>
+<pre><code class="language-bash line-numbers">kubectl describe pod mypod</code></pre>
+        <br/>
+
+        <li>3. Get logs from a container:</li>
+<pre><code class="language-bash line-numbers">kubectl logs mypod</code></pre>
+        <br/>
+
+        <li>4. Execute a command inside a container:</li>
+<pre><code class="language-bash line-numbers">kubectl exec -it mypod -- bash</code></pre>
+        <br/>
+
+        <li>5. Apply a YAML file:</li>
+<pre><code class="language-bash line-numbers">kubectl apply -f deployment.yaml</code></pre>
+        <br/>
+
+        <li>6. Delete resources:</li>
+<pre><code class="language-bash line-numbers">kubectl delete pod mypod</code></pre>
+        <br/>
+
+        <li>7. Port-forward for local testing:</li>
+<pre><code class="language-bash line-numbers">kubectl port-forward deployment/myapp 8080:80</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using <code>-o</code> for Output Formatting</li>
+    <br/>
+    <ul>
+        <li><code>kubectl</code> can output data in multiple formats:</li>
+<pre><code class="language-bash line-numbers">kubectl get pods -o wide</code></pre>
+<pre><code class="language-bash line-numbers">kubectl get pod mypod -o yaml</code></pre>
+<pre><code class="language-bash line-numbers">kubectl get nodes -o json</code></pre>
+
+        <li>Common formats:</li>
+        <ul>
+            <li><code>-o wide</code> → more details</li>
+            <li><code>-o yaml</code> → show full YAML spec</li>
+            <li><code>-o json</code> → machine-parsable JSON</li>
+            <li><code>-o name</code> → only return resource names</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Editing Resources with <code>kubectl edit</code></li>
+    <br/>
+    <ul>
+        <li>You can modify resources live:</li>
+<pre><code class="language-bash line-numbers">kubectl edit deployment nginx-deploy</code></pre>
+        <br/>
+        <li>This opens the YAML in your system editor (usually <code>vi</code> or <code>nano</code>).</li>
+        <br/>
+        <li>When saved, Kubernetes applies the change automatically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Scaling Applications</li>
+    <br/>
+    <ul>
+        <li>Increase or decrease the number of Pods:</li>
+<pre><code class="language-bash line-numbers">kubectl scale deployment nginx-deploy --replicas=5</code></pre>
+        <li>Kubernetes will automatically create or remove Pods.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Rollouts and Rollbacks</li>
+    <br/>
+    <ul>
+        <li>Check rollout status:</li>
+<pre><code class="language-bash line-numbers">kubectl rollout status deployment nginx-deploy</code></pre>
+        <li>Undo a failed rollout:</li>
+<pre><code class="language-bash line-numbers">kubectl rollout undo deployment nginx-deploy</code></pre>
+        <li>This is extremely useful when updating images.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Namespaces</li>
+    <br/>
+    <ul>
+        <li>List namespaces:</li>
+<pre><code class="language-bash line-numbers">kubectl get namespaces</code></pre>
+        <li>Specify a namespace:</li>
+<pre><code class="language-bash line-numbers">kubectl get pods -n testing</code></pre>
+        <li>Set a default namespace for your context:</li>
+<pre><code class="language-bash line-numbers">kubectl config set-context --current --namespace=testing</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Debugging with <code>kubectl</code></li>
+    <br/>
+    <ul>
+        <li>Run an interactive shell inside a container:</li>
+<pre><code class="language-bash line-numbers">kubectl exec -it mypod -- bash</code></pre>
+        <li>Check events:</li>
+<pre><code class="language-bash line-numbers">kubectl get events --sort-by=.metadata.creationTimestamp</code></pre>
+        <li>Inspect failing pods:</li>
+<pre><code class="language-bash line-numbers">kubectl describe pod mypod</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
