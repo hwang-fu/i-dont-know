@@ -103,11 +103,11 @@
         color: #24292e;
         background-color: #f6f8fa;
         border: 1px solid #d0d7de;
-        border-radius: .375rem;
-        padding: .15rem .35rem;
+        border-radius: .3rem;
+        padding: .15rem .25rem;
         font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-        font-size: 0.875rem;
-        line-height: 1.4;
+        font-size: 0.775rem;
+        line-height: 1.2;
     }
 
     pre {
@@ -187,6 +187,7 @@
         <li><a href="#python-asyncio-run-vs-await">Understanding the Difference Between <code>asyncio.run()</code> and <code>await</code></a></li>
         <li><a href="#python-c-api-intro">Introduction to C API</a></li>
         <li><a href="#python-call-c">Calling C Code from Python</a></li>
+        <li><a href="#python-threading">Threading</a></li>
     </ol>
 </nav>
 <hr/>
@@ -14234,7 +14235,291 @@ print(mymodule.py_add(3, 4))  # 7
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="python-threading">Python Threading</h3>
+<ol>
 
+    <li>What Is Threading in Python?</li>
+    <br/>
+    <ul>
+        <li><b>Threading</b> is a way to run multiple operations concurrently within the same process.</li>
+        <br/>
+        <li>A <b>thread</b> is a lightweight execution unit that shares:
+            <ul>
+                <li>memory</li>
+                <li>variables</li>
+                <li>resources</li>
+            </ul>
+            with other threads of the same process.
+        </li>
+        <br/>
+        <li><b>Important:</b> In CPython, the Global Interpreter Lock (GIL) prevents true parallel execution of Python bytecode.
+            However, threads still run concurrently during I/O.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Importing the Threading Module</li>
+<pre><code class="language-python line-numbers">import threading
+</code></pre>
+    <br/><br/>
+
+
+    <li>Creating and Starting a Thread</li>
+    <br/>
+    <ul>
+        <li>Threads can run any function.</li>
+    </ul>
+<pre><code class="language-python line-numbers">import threading
+import time
+
+def task():
+    print("Task started")
+    time.sleep(2)
+    print("Task finished")
+
+t = threading.Thread(target=task)
+t.start()          # start the thread
+t.join()           # wait for the thread to finish
+</code></pre>
+
+    <ul>
+        <li>Parameter meanings:</li>
+        <ul>
+            <li><code>target</code> &nbsp; → the function to execute in the thread</li>
+            <li><code>start()</code> → actually runs the thread</li>
+            <li><code>join()</code> &nbsp; → blocks until the thread finishes</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Passing Arguments to a Thread</li>
+<pre><code class="language-python line-numbers">def greet(name):
+    print(f"Hello, {name}")
+
+t = threading.Thread(target=greet, args=("Junzhe",))
+t.start()
+</code></pre>
+
+    <ul>
+        <li><code>args=()</code> must be a tuple.</li>
+        <br/>
+        <li>You can also use <code>kwargs={}</code> for named arguments.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Thread by Subclassing <code>Thread</code></li>
+<pre><code class="language-python line-numbers">class Worker(threading.Thread):
+    def run(self):
+        print("Worker running")
+
+w = Worker()
+w.start()
+</code></pre>
+
+    <ul>
+        <li>Recommended only for more complex behaviors.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Daemon Threads</li>
+    <br/>
+    <ul>
+        <li>A daemon thread runs in the background and does NOT block program exit.</li>
+    </ul>
+<pre><code class="language-python line-numbers">def background():
+    while True:
+        print("Running...")
+        time.sleep(1)
+
+t = threading.Thread(target=background, daemon=True)
+t.start()
+</code></pre>
+
+    <ul>
+        <li>When the main thread exits, daemon threads are killed immediately.</li>
+        <br/>
+        <li>Good for:
+            <ul>
+                <li>logging threads</li>
+                <li>background monitoring</li>
+                <li>cleanup tasks</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Global Interpreter Lock (GIL)</li>
+    <br/>
+    <ul>
+        <li>CPython has a global lock that ensures only one thread executes Python bytecode at a time.</li>
+        <br/>
+        <li>Implications:</li>
+        <ul>
+            <li>CPU-bound tasks → NOT faster with threads</li>
+            <li>I/O-bound tasks → benefit greatly</li>
+        </ul>
+
+        <br/>
+        <li>Examples of I/O-bound tasks that benefit:</li>
+        <ul>
+            <li>HTTP requests</li>
+            <li>database queries</li>
+            <li>reading/writing files</li>
+            <li>sleeping</li>
+        </ul>
+
+        <br/>
+        <li>For CPU-bound tasks, use:</li>
+        <ul>
+            <li><code>multiprocessing</code></li>
+            <li>or C extensions</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Thread Synchronization with <code>Lock</code></li>
+    <br/>
+    <ul>
+        <li>A <code>Lock</code> prevents race conditions when multiple threads modify shared data.</li>
+<pre><code class="language-python line-numbers">lock = threading.Lock()
+counter = 0
+
+def increment():
+    global counter
+    for _ in range(100000):
+        with lock:        # lock acquired
+            counter += 1   # safe update
+
+threads = [threading.Thread(target=increment) for _ in range(5)]
+for t in threads: t.start()
+for t in threads: t.join()
+
+print(counter)
+</code></pre>
+
+        <li>Without locks, the result would be incorrect.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Other Synchronization Primitives</li>
+    <br/>
+    <ul>
+        <li>Python threading provides several powerful tools:</li>
+        <br/>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Primitive</th>
+                    <th>Description</th>
+                    <th>Use Case</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>Lock</code></td>
+                    <td>Mutual exclusion</td>
+                    <td>Avoid race conditions</td>
+                </tr>
+                <tr>
+                    <td><code>RLock</code></td>
+                    <td>Reentrant lock (same thread may lock multiple times)</td>
+                    <td>Recursive functions</td>
+                </tr>
+                <tr>
+                    <td><code>Semaphore</code></td>
+                    <td>Limit number of concurrent threads</td>
+                    <td>Connection pools</td>
+                </tr>
+                <tr>
+                    <td><code>Event</code></td>
+                    <td>Send signals between threads</td>
+                    <td>Thread coordination</td>
+                </tr>
+                <tr>
+                    <td><code>Condition</code></td>
+                    <td>Complex wait/notify patterns</td>
+                    <td>Producer–consumer</td>
+                </tr>
+                <tr>
+                    <td><code>Barrier</code></td>
+                    <td>Block threads until all have reached the same point</td>
+                    <td>Parallel stages</td>
+                </tr>
+            </tbody>
+        </table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Queue: The Best Way to Pass Data Between Threads</li>
+    <br/>
+    <ul>
+        <li><code>queue.Queue</code> is thread-safe and used heavily in multi-threaded programs.</li>
+<pre><code class="language-python line-numbers">from queue import Queue
+import threading
+
+q = Queue()
+
+def producer():
+    for i in range(5):
+        q.put(i)
+
+def consumer():
+    while True:
+        item = q.get()
+        print("Consumed", item)
+        q.task_done()
+
+threading.Thread(target=producer).start()
+threading.Thread(target=consumer, daemon=True).start()
+
+q.join()
+</code></pre>
+
+        <li>Queues eliminate the need for manual locks.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Comparison: Threading vs Multiprocessing vs Asyncio</li>
+    <br/>
+    <ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>Best For</th>
+                    <th>True Parallelism?</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>Threading</b></td>
+                    <td>I/O-bound, waiting tasks</td>
+                    <td>No (GIL)</td>
+                </tr>
+                <tr>
+                    <td><b>Multiprocessing</b></td>
+                    <td>CPU-bound tasks</td>
+                    <td>Yes</td>
+                </tr>
+                <tr>
+                    <td><b>Asyncio</b></td>
+                    <td>Large numbers of concurrent tasks</td>
+                    <td>No, but highly efficient</td>
+                </tr>
+            </tbody>
+        </table>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
