@@ -150,11 +150,12 @@
     <h2> <img src="resources/k8s.jpeg" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ol style="line-height: 1.8;">
         <li><a href="#k8s-key-terminologies">Key Concepts and Terminologies</a></li>
-        <li><a href="#k8s-deploy-first-app">Deploying Your First Application in Kubernetes</a></li>
         <li><a href="#k8s-deployment-yaml">How to Write a Kubernetes Deployment YAML?</a></li>
         <li><a href="#k8s-kubectl-intro">Introduction to <code>kubectl</code></a></li>
         <li><a href="#k8s-choosing-managed-provider">Choosing a Managed Provider</a></li>
         <li><a href="#k8s-install-local-cluster">Installing a Local Cluster</a></li>
+        <li><a href="#k8s-deploy-first-app">Deploying Your First Application in Kubernetes</a></li>
+        <li><a href="#k8s-minikube-first-app">Deploying Your First Real Application in Minikube</a></li>
     </ol>
 </nav>
 <hr/>
@@ -481,204 +482,6 @@
     </ul>
     <br/><br/>
 </ol>
-<!-- * * * * * * * * * * * * * * -->
-
-
-<hr/>
-
-
-<!-- * * * * * * * * * * * * * * -->
-<h3 id="k8s-deploy-first-app">Deploying Your First Application in Kubernetes</h3>
-<ul>
-    <li>Step 1: Ensure Your Kubernetes Cluster Is Ready</li>
-    <br/>
-    <ul>
-        <li>You need a running cluster.
-            <br/>Examples:
-            <ul>
-                <li><b>minikube</b> (local development)</li>
-                <li><b>Docker Desktop Kubernetes</b></li>
-                <li><b>kind</b> (Kubernetes-in-Docker)</li>
-            </ul>
-        </li>
-        <br/>
-        <li>Verify cluster status:</li>
-<pre><code class="language-bash line-numbers">kubectl get nodes</code></pre>
-        <br/>
-        <li>You should see at least one node in <code>Ready</code> state.</li>
-    </ul>
-    <br/><br/>
-
-
-    <li>Step 2: Create Your First Deployment</li>
-    <br/>
-    <ul>
-        <li>Create a file named <code>nginx-deployment.yaml</code>:</li>
-<pre><code class="language-yaml line-numbers">apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-deploy
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: nginx-app
-  template:
-    metadata:
-      labels:
-        app: nginx-app
-    spec:
-      containers:
-        - name: nginx-container
-          image: nginx:latest
-          ports:
-            - containerPort: 80
-</code></pre>
-        <br/>
-        <li>Explanation:
-            <ul>
-                <li><code>replicas: 2</code> → run two identical pods</li>
-                <li><code>selector</code> → Deployment uses this label to manage pods</li>
-                <li><code>template</code> → describes the pod</li>
-                <li><code>containerPort: 80</code> → nginx listens on port 80</li>
-            </ul>
-        </li>
-        <br/>
-        <li>Apply the manifest:</li>
-<pre><code class="language-bash line-numbers">kubectl apply -f nginx-deployment.yaml</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Step 3: Verify Deployment</li>
-    <br/>
-    <ul>
-        <li>Check deployments:</li>
-<pre><code class="language-bash line-numbers">kubectl get deployments</code></pre>
-        <br/>
-        <li>Check pods:</li>
-<pre><code class="language-bash line-numbers">kubectl get pods</code></pre>
-        <br/>
-        <li>You should see two <code>nginx</code> pods running.</li>
-        <br/>
-        <li>Describe more details:</li>
-<pre><code class="language-bash line-numbers">kubectl describe deployment nginx-deploy</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Step 4: Expose Your Application with a Service</li>
-    <br/>
-    <ul>
-        <li>Create <code>nginx-service.yaml</code>:</li>
-<pre><code class="language-yaml line-numbers">apiVersion: v1
-kind: Service
-metadata:
-  name: nginx-service
-spec:
-  type: NodePort
-  selector:
-    app: nginx-app
-  ports:
-    - port: 80
-      targetPort: 80
-      nodePort: 32000
-</code></pre>
-        <br/>
-        <li>Explanation:
-            <ul>
-                <li><code>type: NodePort</code> → expose service on all nodes</li>
-                <li><code>selector</code> → connect service to pods</li>
-                <li><code>port: 80</code> → service port</li>
-                <li><code>targetPort: 80</code> → container port</li>
-                <li><code>nodePort: 32000</code> → external port (30000–32767)</li>
-            </ul>
-        </li>
-        <br/>
-        <li>Apply the service:</li>
-<pre><code class="language-bash line-numbers">kubectl apply -f nginx-service.yaml</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Step 5: Access the Application</li>
-    <br/>
-    <ul>
-        <li>Get your node’s IP:</li>
-<pre><code class="language-bash line-numbers">kubectl get nodes -o wide</code></pre>
-        <br/>
-        <li>Check <code>INTERNAL-IP</code> or <code>EXTERNAL-IP</code>.</li>
-        <br/>
-        <li>Now visit the app in your browser:
-<pre><code class="language-plaintext line-numbers">http://NODE-IP:32000</code></pre>
-        </li>
-        <br/>
-        <li>If you use minikube:
-<pre><code class="language-bash line-numbers">minikube service nginx-service</code></pre>
-        </li>
-    </ul>
-    <br/><br/>
-
-
-    <li>Step 6: Scaling Your Application</li>
-    <br/>
-    <ul>
-        <li>Kubernetes makes scaling easy:</li>
-<pre><code class="language-bash line-numbers">kubectl scale deployment nginx-deploy --replicas=5</code></pre>
-        <br/>
-        <li>Verify the new pods:</li>
-<pre><code class="language-bash line-numbers">kubectl get pods</code></pre>
-        <br/>
-        <li>Your application now runs with 5 replicas.</li>
-    </ul>
-    <br/><br/>
-
-
-    <li>Step 7: Updating Your Application (Rolling Update)</li>
-    <br/>
-    <ul>
-        <li>Update image version:</li>
-<pre><code class="language-bash line-numbers">
-kubectl set image deployment/nginx-deploy nginx-container=nginx:1.25
-</code></pre>
-        <br/>
-        <li>Kubernetes will:
-            <ul>
-                <li>start new pods using new image</li>
-                <li>stop old pods gradually</li>
-            </ul>
-        </li>
-        <br/>
-        <li>Check rollout status:</li>
-<pre><code class="language-bash line-numbers">kubectl rollout status deployment nginx-deploy</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Step 8: Rolling Back to Previous Version</li>
-    <br/>
-    <ul>
-        <li>Undo the last update:</li>
-<pre><code class="language-bash line-numbers">kubectl rollout undo deployment nginx-deploy</code></pre>
-        <br/>
-        <li>Kubernetes automatically returns to the last stable version.</li>
-    </ul>
-    <br/><br/>
-
-
-    <li>Step 9: Deleting the Application</li>
-    <br/>
-    <ul>
-        <li>Delete service:</li>
-<pre><code class="language-bash line-numbers">kubectl delete -f nginx-service.yaml</code></pre>
-        <br/>
-        <li>Delete deployment:</li>
-<pre><code class="language-bash line-numbers">kubectl delete -f nginx-deployment.yaml</code></pre>
-        <br/>
-        <li>Pods and Service are cleanly removed.</li>
-    </ul>
-    <br/><br/>
-</ul>
 <!-- * * * * * * * * * * * * * * -->
 
 
@@ -1568,7 +1371,197 @@ kubectl get svc
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="k8s-deploy-first-app">Deploying Your First Application in Kubernetes</h3>
+<ul>
+    <li>Step 1: Ensure Your Kubernetes Cluster Is Ready</li>
+    <br/>
+    <ul>
+        <li>You need a running cluster.
+            <br/>Examples:
+            <ul>
+                <li><b>minikube</b> (local development)</li>
+                <li><b>Docker Desktop Kubernetes</b></li>
+                <li><b>kind</b> (Kubernetes-in-Docker)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Verify cluster status:</li>
+<pre><code class="language-bash line-numbers">kubectl get nodes</code></pre>
+        <br/>
+        <li>You should see at least one node in <code>Ready</code> state.</li>
+    </ul>
+    <br/><br/>
 
+
+    <li>Step 2: Create Your First Deployment</li>
+    <br/>
+    <ul>
+        <li>Create a file named <code>nginx-deployment.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-app
+  template:
+    metadata:
+      labels:
+        app: nginx-app
+    spec:
+      containers:
+        - name: nginx-container
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+</code></pre>
+        <br/>
+        <li>Explanation:
+            <ul>
+                <li><code>replicas: 2</code> → run two identical pods</li>
+                <li><code>selector</code> → Deployment uses this label to manage pods</li>
+                <li><code>template</code> → describes the pod</li>
+                <li><code>containerPort: 80</code> → nginx listens on port 80</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Apply the manifest:</li>
+<pre><code class="language-bash line-numbers">kubectl apply -f nginx-deployment.yaml</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 3: Verify Deployment</li>
+    <br/>
+    <ul>
+        <li>Check deployments:</li>
+<pre><code class="language-bash line-numbers">kubectl get deployments</code></pre>
+        <br/>
+        <li>Check pods:</li>
+<pre><code class="language-bash line-numbers">kubectl get pods</code></pre>
+        <br/>
+        <li>You should see two <code>nginx</code> pods running.</li>
+        <br/>
+        <li>Describe more details:</li>
+<pre><code class="language-bash line-numbers">kubectl describe deployment nginx-deploy</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 4: Expose Your Application with a Service</li>
+    <br/>
+    <ul>
+        <li>Create <code>nginx-service.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  type: NodePort
+  selector:
+    app: nginx-app
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 32000
+</code></pre>
+        <br/>
+        <li>Explanation:
+            <ul>
+                <li><code>type: NodePort</code> → expose service on all nodes</li>
+                <li><code>selector</code> → connect service to pods</li>
+                <li><code>port: 80</code> → service port</li>
+                <li><code>targetPort: 80</code> → container port</li>
+                <li><code>nodePort: 32000</code> → external port (30000–32767)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Apply the service:</li>
+<pre><code class="language-bash line-numbers">kubectl apply -f nginx-service.yaml</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 5: Access the Application</li>
+    <br/>
+    <ul>
+        <li>Get your node’s IP:</li>
+<pre><code class="language-bash line-numbers">kubectl get nodes -o wide</code></pre>
+        <br/>
+        <li>Check <code>INTERNAL-IP</code> or <code>EXTERNAL-IP</code>.</li>
+        <br/>
+        <li>Now visit the app in your browser:
+<pre><code class="language-plaintext line-numbers">http://NODE-IP:32000</code></pre>
+        </li>
+        <br/>
+        <li>If you use minikube:
+<pre><code class="language-bash line-numbers">minikube service nginx-service</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 6: Scaling Your Application</li>
+    <br/>
+    <ul>
+        <li>Kubernetes makes scaling easy:</li>
+<pre><code class="language-bash line-numbers">kubectl scale deployment nginx-deploy --replicas=5</code></pre>
+        <br/>
+        <li>Verify the new pods:</li>
+<pre><code class="language-bash line-numbers">kubectl get pods</code></pre>
+        <br/>
+        <li>Your application now runs with 5 replicas.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 7: Updating Your Application (Rolling Update)</li>
+    <br/>
+    <ul>
+        <li>Update image version:</li>
+<pre><code class="language-bash line-numbers">
+kubectl set image deployment/nginx-deploy nginx-container=nginx:1.25
+</code></pre>
+        <br/>
+        <li>Kubernetes will:
+            <ul>
+                <li>start new pods using new image</li>
+                <li>stop old pods gradually</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Check rollout status:</li>
+<pre><code class="language-bash line-numbers">kubectl rollout status deployment nginx-deploy</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 8: Rolling Back to Previous Version</li>
+    <br/>
+    <ul>
+        <li>Undo the last update:</li>
+<pre><code class="language-bash line-numbers">kubectl rollout undo deployment nginx-deploy</code></pre>
+        <br/>
+        <li>Kubernetes automatically returns to the last stable version.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 9: Deleting the Application</li>
+    <br/>
+    <ul>
+        <li>Delete service:</li>
+<pre><code class="language-bash line-numbers">kubectl delete -f nginx-service.yaml</code></pre>
+        <br/>
+        <li>Delete deployment:</li>
+<pre><code class="language-bash line-numbers">kubectl delete -f nginx-deployment.yaml</code></pre>
+        <br/>
+        <li>Pods and Service are cleanly removed.</li>
+    </ul>
+    <br/><br/>
+</ul>
 <!-- * * * * * * * * * * * * * * -->
 
 
@@ -1576,7 +1569,317 @@ kubectl get svc
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="k8s-minikube-first-app">Deploying Your First Real Application in Minikube</h3>
+<ol>
 
+    <li>Overview</li>
+    <br/>
+    <ul>
+        <li>After installing Minikube, the next step is deploying a real workload.</li>
+        <br/>
+        <li>We will now try to deploy a complete real-world application consisting of:
+            <ul>
+                <li>a backend API (Node.js)</li>
+                <li>a frontend (Nginx static site)</li>
+                <li>a Kubernetes Service to expose the app</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Minikube behaves like a real Kubernetes cluster:
+            <ul>
+                <li>Pods, Deployments, Services, Ingress all work the same</li>
+                <li>Perfect for local development before pushing to cloud</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Project Structure</li>
+    <br/>
+    <ul>
+        <li>Create a workspace:</li>
+<pre><code class="language-plaintext line-numbers">myapp/
+├── backend/
+│   └── server.js
+├── frontend/
+│   └── index.html
+└── k8s/
+    ├── backend-deploy.yaml
+    ├── backend-svc.yaml
+    ├── frontend-deploy.yaml
+    ├── frontend-svc.yaml
+    └── ingress.yaml
+</code></pre>
+        <li>We will deploy <b>backend → service → frontend → ingress</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 1: Write the Backend API</li>
+    <br/>
+    <ul>
+        <li><code>backend/server.js</code>:</li>
+<pre><code class="language-javascript line-numbers">const express = require('express');
+const app = express();
+const PORT = 5000;
+
+app.get('/api/hello', (req, res) =&gt; {
+    res.json({ message: "Hello from Minikube Backend!" });
+});
+
+app.listen(PORT, () =&gt; console.log("Backend running on port", PORT));
+</code></pre>
+
+    <li>Create a simple <code>Dockerfile</code> for backend:</li>
+<pre><code class="language-dockerfile line-numbers">FROM node:18
+WORKDIR /app
+COPY . .
+RUN npm install express
+CMD ["node", "server.js"]
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 2: Write the Frontend</li>
+    <br/>
+    <ul>
+        <li><code>frontend/index.html</code>:</li>
+<pre><code class="language-html line-numbers">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+    &lt;h1&gt;Frontend served in Minikube&lt;/h1&gt;
+    &lt;button id="btn"&gt;Call API&lt;/button&gt;
+    &lt;pre id="result"&gt;&lt;/pre&gt;
+    &lt;script&gt;
+        document.getElementById('btn').onclick = async () =&gt; {
+            const res = await fetch('/api/hello');
+            const data = await res.json();
+            document.getElementById('result').innerText = data.message;
+        }
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+    <li>Frontend <code>Dockerfile</code>:</li>
+<pre><code class="language-dockerfile line-numbers">FROM nginx:latest
+COPY . /usr/share/nginx/html/
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 3: Build Docker Images Inside Minikube</li>
+    <br/>
+    <ul>
+        <li>Minikube uses its own Docker daemon.</li>
+        <br/>
+        <li>Connect your terminal to Minikube's Docker environment:</li>
+<pre><code class="language-bash line-numbers">eval $(minikube docker-env)</code></pre>
+        <li>Build images:</li>
+<pre><code class="language-bash line-numbers">docker build -t my-backend:1.0 ./backend
+docker build -t my-frontend:1.0 ./frontend
+</code></pre>
+        <li>These images remain inside Minikube’s Docker daemon, NOT your system Docker.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 4: Write the Backend Deployment + Service</li>
+    <br/>
+    <ul>
+
+        <li><code>k8s/backend-deploy.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: my-backend:1.0
+          ports:
+            - containerPort: 5000
+</code></pre>
+
+        <li><code>k8s/backend-svc.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 5000
+      targetPort: 5000
+  type: ClusterIP
+</code></pre>
+        <li>This exposes the backend internally as <code>http://backend-svc:5000</code>.</li>
+
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 5: Write the Frontend Deployment + Service</li>
+    <br/>
+    <ul>
+
+        <li><code>k8s/frontend-deploy.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: my-frontend:1.0
+          ports:
+            - containerPort: 80
+</code></pre>
+
+        <li><code>k8s/frontend-svc.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
+</code></pre>
+
+        <li>This exposes frontend internally as <code>http://frontend-svc</code>.</li>
+
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 6: Configure Ingress for External Access</li>
+    <br/>
+    <ul>
+        <li>Enable Minikube ingress:</li>
+<pre><code class="language-bash line-numbers">minikube addons enable ingress</code></pre>
+
+        <li><code>k8s/ingress.yaml</code>:</li>
+<pre><code class="language-yaml line-numbers">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: myapp-ingress
+spec:
+  rules:
+  - host: myapp.local
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: frontend-svc
+              port:
+                number: 80
+        - path: /api
+          pathType: Prefix
+          backend:
+            service:
+              name: backend-svc
+              port:
+                number: 5000
+</code></pre>
+
+        <li>Explanation:</li>
+        <ul>
+            <li><code>myapp.local</code> will point to Minikube</li>
+            <li><code>/</code> → serve frontend</li>
+            <li><code>/api</code> → route to backend</li>
+        </ul>
+
+        <br/>
+        <li>Add to local hosts file (<code>/etc/hosts</code>):</li>
+<pre><code class="language-plaintext line-numbers">127.0.0.1   myapp.local
+</code></pre>
+
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 7: Apply All Kubernetes Manifests</li>
+    <br/>
+    <ul>
+        <li>Deploy everything:</li>
+<pre><code class="language-bash line-numbers">kubectl apply -f k8s/backend-deploy.yaml
+kubectl apply -f k8s/backend-svc.yaml
+kubectl apply -f k8s/frontend-deploy.yaml
+kubectl apply -f k8s/frontend-svc.yaml
+kubectl apply -f k8s/ingress.yaml
+</code></pre>
+
+        <li>Check resources:</li>
+<pre><code class="language-bash line-numbers">kubectl get all</code></pre>
+
+        <li>Check ingress:</li>
+<pre><code class="language-bash line-numbers">kubectl get ingress</code></pre>
+
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 8: Access the Application</li>
+    <br/>
+    <ul>
+        <li>Open browser:</li>
+<pre><code class="language-plaintext line-numbers">http://myapp.local</code></pre>
+
+        <br/>
+        <li>Click button → backend API is called.</li>
+        <br/>
+        <li>You now have a full full-stack application deployed inside Minikube.</li>
+        <br/>
+        <li>This mirrors real production deployments using K8S + Ingress.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Step 9: Debugging Tips</li>
+    <br/>
+    <ul>
+        <li>Check pods:</li>
+<pre><code class="language-bash line-numbers">kubectl get pods</code></pre>
+
+        <li>Describe pod (very useful):</li>
+<pre><code class="language-bash line-numbers">kubectl describe pod backend-deploy-xxxxx</code></pre>
+
+        <li>See logs:</li>
+<pre><code class="language-bash line-numbers">kubectl logs backend-deploy-xxxxx</code></pre>
+
+        <li>Restart pods:</li>
+<pre><code class="language-bash line-numbers">kubectl rollout restart deployment backend-deploy</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
