@@ -104,11 +104,11 @@
         color: #24292e;
         background-color: #f6f8fa;
         border: 1px solid #d0d7de;
-        border-radius: .375rem;
-        padding: .15rem .35rem;
+        border-radius: .275rem;
+        padding: .15rem .15rem;
         font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-        font-size: 0.875rem;
-        line-height: 1.4;
+        font-size: 0.725rem;
+        line-height: 1.2;
     }
 
 
@@ -161,7 +161,7 @@
         <li><a href="#flask-sending-form-data-to-template">Sending Form Data to Template</a></li>
         <li><a href="#flask-cookies">Cookies</a></li>
         <li><a href="#flask-sessions">Sessions</a></li>
-        <li><a href="#flask-redirect-erros">Redirect &amp; Errors</a></li>
+        <li><a href="#flask-redirect-errors">Redirect &amp; Errors</a></li>
         <li><a href="#flask-message-flashing">Message Flashing</a></li>
         <li><a href="#flask-file-uploading">File Uploading</a></li>
         <li><a href="#flask-extensions">Extensions</a></li>
@@ -747,18 +747,9 @@ def not_found(e):
     <ul>
         <li><b>Routing</b> is the mechanism that maps a URL path to a Python function (called a <b>view function</b>).</li>
         <br/>
-        <li>The route determines:
-            <ul>
-                <li>which function handles which URL</li>
-                <li>which HTTP methods are allowed</li>
-                <li>how dynamic URL segments are parsed</li>
-                <li>how parameters are passed to the function</li>
-            </ul>
-        </li>
-        <br/>
         <li>Defined using the <code>@app.route()</code> decorator.</li>
         <br/>
-        <li>Flask uses Werkzeug’s routing system under the hood.</li>
+        <li>Flask uses <code>Werkzeug</code>’s routing system under the hood.</li>
     </ul>
     <br/><br/>
 
@@ -772,7 +763,6 @@ def home():
     return "Hello!"
 </code></pre>
         </li>
-        <br/>
         <li>Routes must return either:
             <ul>
                 <li>a string</li>
@@ -793,12 +783,7 @@ def about():
     return "About Page"
 </code></pre>
         </li>
-        <br/>
-        <li>Flask automatically handles trailing slashes:
-            <ul>
-                <li><code>/about/</code> redirects to <code>/about</code></li>
-            </ul>
-        </li>
+        <li>Flask automatically handles trailing slashes: <code>/about/</code> redirects to <code>/about</code></li>
     </ul>
     <br/><br/>
 
@@ -887,7 +872,6 @@ def submit():
     return "Form submitted"
 </code></pre>
         </li>
-        <br/>
         <li>Multiple methods:</li>
 <pre><code class="language-python line-numbers">@app.route("/api/user", methods=["GET", "POST"])
 def api_user():
@@ -912,7 +896,6 @@ def search():
     return f"Keyword: {keyword}"
 </code></pre>
         </li>
-        <br/>
         <li>Example request:
 <pre><code class="language-plaintext line-numbers">/search?q=python</code></pre>
         </li>
@@ -930,7 +913,6 @@ def page(num):
     return f"Page {num}"
 </code></pre>
         </li>
-        <br/>
         <li>Useful for pagination or optional params.</li>
     </ul>
     <br/><br/>
@@ -964,12 +946,11 @@ def not_found(e):
     return "Page not found!", 404
 </code></pre>
         </li>
-        <br/>
         <li>Common handlers:
             <ul>
-                <li>404 — Not Found</li>
-                <li>500 — Server Error</li>
-                <li>405 — Method Not Allowed</li>
+                <li><code>404</code> — Not Found</li>
+                <li><code>500</code> — Server Error</li>
+                <li><code>405</code> — Method Not Allowed</li>
             </ul>
         </li>
     </ul>
@@ -991,12 +972,10 @@ def login():
     return "Login Page"
 </code></pre>
         </li>
-        <br/>
         <li>Register blueprint:</li>
 <pre><code class="language-python line-numbers">app.register_blueprint(auth, url_prefix="/auth")
 </code></pre>
         </li>
-        <br/>
         <li>Final route becomes:</li>
 <pre><code class="language-plaintext line-numbers">/auth/login
 </code></pre>
@@ -1077,12 +1056,11 @@ app = Flask(__name__)
 def show_user_profile(username):
     return f'User: {username}'
 </code></pre>
-        <br/>
         <li>Key points:</li>
         <ul>
             <li>Everything inside <code>&lt;...&gt;</code> is treated as a variable name.</li>
             <li>The variable name becomes a parameter of the view function.</li>
-            <li>By default, the value is a <b>string</b>.</li>
+            <li>By default, the value is a <code>string</code>.</li>
         </ul>
     </ul>
     <br/><br/>
@@ -1144,7 +1122,6 @@ def show_post(post_id):
     <br/>
     <ul>
         <li>If you omit a converter, Flask uses the <code>string</code> converter by default.</li>
-        <br/>
 <pre><code class="language-python line-numbers">@app.route('/hello/&lt;name&gt;')
 def hello(name):
     # name is a string
@@ -1165,20 +1142,12 @@ def hello(name):
     <br/>
     <ul>
         <li>The <code>int</code> converter ensures that only integer values match the route.</li>
-        <br/>
 <pre><code class="language-python line-numbers">@app.route('/post/&lt;int:post_id&gt;')
 def show_post(post_id):
     # If the URL is /post/abc, this route will NOT match.
     # If the URL is /post/42, post_id == 42 (int).
     return f'Post ID is {post_id}'
 </code></pre>
-        <br/>
-        <li>Advantages:</li>
-        <ul>
-            <li>Automatic type conversion (string → int)</li>
-            <li>More precise routing</li>
-            <li>Invalid URLs (e.g. non-numeric IDs) return 404 instead of entering the view</li>
-        </ul>
     </ul>
     <br/><br/>
 
@@ -1186,13 +1155,13 @@ def show_post(post_id):
     <li>Using the float and path Converters</li>
     <br/>
     <ul>
-        <li><b>float</b> converter:</li>
+        <li><code>float</code> converter:</li>
 <pre><code class="language-python line-numbers">@app.route('/discount/&lt;float:rate&gt;')
 def show_discount(rate):
     return f'Discount rate: {rate:.2f}'
 </code></pre>
         <br/>
-        <li><b>path</b> converter (includes slashes):</li>
+        <li><code>path</code> converter (includes slashes):</li>
 <pre><code class="language-python line-numbers">@app.route('/files/&lt;path:subpath&gt;')
 def show_file(subpath):
     # Matches /files/images/logo.png
@@ -1209,7 +1178,6 @@ def show_file(subpath):
     <br/>
     <ul>
         <li>The <code>uuid</code> converter parses a standard UUID string into a Python <code>UUID</code> object.</li>
-        <br/>
 <pre><code class="language-python line-numbers">from uuid import UUID
 from flask import Flask
 
@@ -1220,7 +1188,6 @@ def get_item(item_id: UUID):
     # item_id is a UUID instance, not a plain string
     return f'Item ID: {item_id}'
 </code></pre>
-        <br/>
         <li>This is very convenient for REST APIs that use UUIDs as primary identifiers.</li>
     </ul>
     <br/><br/>
@@ -1230,7 +1197,6 @@ def get_item(item_id: UUID):
     <br/>
     <ul>
         <li>You can define multiple variables inside the same URL pattern.</li>
-        <br/>
 <pre><code class="language-python line-numbers">@app.route('/shop/&lt;category&gt;/item/&lt;int:item_id&gt;')
 def show_item(category, item_id):
     return f'Category: {category}, Item ID: {item_id}'
@@ -1243,11 +1209,10 @@ def show_item(category, item_id):
     <br/><br/>
 
 
-    <li>Variable Rules and url_for()</li>
+    <li>Variable Rules and <code>url_for()</code></li>
     <br/>
     <ul>
         <li>When using <code>url_for()</code>, route variables become keyword arguments.</li>
-        <br/>
 <pre><code class="language-python line-numbers">from flask import url_for
 
 @app.route('/user/&lt;username&gt;')
@@ -1259,13 +1224,6 @@ def where_is_junzhe():
     # Generates /user/Junzhe
     return url_for('profile', username='Junzhe')
 </code></pre>
-        <br/>
-        <li>Advantages:</li>
-        <ul>
-            <li>No hardcoding of URLs</li>
-            <li>URLs update automatically if the rule changes</li>
-            <li>Safer refactoring</li>
-        </ul>
     </ul>
     <br/><br/>
 
@@ -1274,7 +1232,6 @@ def where_is_junzhe():
     <br/>
     <ul>
         <li>Flask treats routes with and without trailing slashes differently:</li>
-        <br/>
 <pre><code class="language-python line-numbers">@app.route('/hello/&lt;name&gt;')    # no trailing slash
 def hello(name):
     ...
@@ -1283,7 +1240,6 @@ def hello(name):
 def hello2(name):
     ...
 </code></pre>
-        <br/>
         <li>Behavior:</li>
         <ul>
             <li><code>/hello/Bob</code> → works</li>
@@ -1404,7 +1360,6 @@ def index():
 def hello():
     return 'Hello!'
 </code></pre>
-        <br/>
         <li>Explanation:</li>
         <ul>
             <li><code>'hello'</code> is the endpoint name (the function name by default).</li>
@@ -1429,7 +1384,6 @@ def where_is_junzhe():
     # Generates /user/Junzhe
     return url_for('profile', username='Junzhe')
 </code></pre>
-        <br/>
         <li>Important:</li>
         <ul>
             <li>Keyword names must match the variable names in the route (<code>username</code> in this example).</li>
@@ -1450,7 +1404,7 @@ url_for('show_post', post_id=42)   # '/post/42'
     <li>Adding Query Parameters with <code>url_for()</code></li>
     <br/>
     <ul>
-        <li>Arguments that do <b>not</b> belong to the route pattern become query parameters:</li>
+        <li>Arguments that do <u>not</u> belong to the route pattern become query parameters:</li>
 <pre><code class="language-python line-numbers">@app.route('/search')
 def search():
     # Imagine we read request.args['q'] and request.args['page']
@@ -1460,7 +1414,6 @@ def search():
 url_for('search', q='flask', page=2)
 # Result: '/search?q=flask&amp;page=2'
 </code></pre>
-        <br/>
         <li>Notes:</li>
         <ul>
             <li>Flask automatically URL-encodes special characters (spaces, &amp;, etc.).</li>
@@ -1512,7 +1465,6 @@ url_for('user_posts', username='Junzhe', page=3, sort='latest')
 
 &lt;img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" /&gt;
 </code></pre>
-        <br/>
         <li>Why not write <code>/static/css/style.css</code> directly?</li>
         <ul>
             <li>URL prefix can be changed in app configuration.</li>
@@ -1534,12 +1486,6 @@ def show_dashboard():
 # URL building:
 url_for('user_dashboard')   # '/dashboard'
 </code></pre>
-        <br/>
-        <li>Use cases:</li>
-        <ul>
-            <li>multiple routes pointing to the same function but with different endpoint names</li>
-            <li>avoiding name clashes (e.g. in large applications)</li>
-        </ul>
     </ul>
     <br/><br/>
 
@@ -1561,11 +1507,9 @@ app.register_blueprint(bp)
 # Building URL:
 url_for('admin.user_list')    # '/admin/users'
 </code></pre>
-        <br/>
         <li>In templates, you use the same endpoint:</li>
 <pre><code class="language-html line-numbers">&lt;a href="{{ url_for('admin.user_list') }}"&gt;Admin users&lt;/a&gt;
 </code></pre>
-        <br/>
         <li>Blueprint-aware URL building keeps your routes nicely namespaced.</li>
     </ul>
     <br/><br/>
@@ -1581,14 +1525,12 @@ url_for('admin.user_list')    # '/admin/users'
     url_for('profile', username='Junzhe', _external=True)
     # e.g. 'http://localhost/user/Junzhe'
 </code></pre>
-        <br/>
         <li>To control the scheme (HTTP/HTTPS), use <code>_scheme</code>:</li>
 <pre><code class="language-python line-numbers">with app.test_request_context():
     url_for('profile', username='Junzhe',
             _external=True, _scheme='https')
     # 'https://localhost/user/Junzhe'
 </code></pre>
-        <br/>
         <li>Absolute URLs are useful for:</li>
         <ul>
             <li>email links</li>
@@ -1623,25 +1565,6 @@ def index():
         </ul>
     </ul>
     <br/><br/>
-
-
-    <li>Common Pitfalls and Tips</li>
-    <br/>
-    <ul>
-        <li>Mismatch between variable names and parameters:</li>
-        <ul>
-            <li>Route: <code>/user/&lt;username&gt;</code></li>
-            <li><code>url_for('profile', name='Junzhe')</code> → error, should be <code>username</code>.</li>
-        </ul>
-        <br/>
-        <li>Calling <code>url_for()</code> outside a request context: Use <code>with app.test_request_context():</code> in scripts or shell.</li>
-        <br/>
-        <li>Forgetting query parameters: Always encode filters, pagination, and sorting options via <code>url_for</code> to keep URLs consistent.</li>
-        <br/>
-        <li>General recommendation: never hardcode URLs when you can use <code>url_for()</code>.</li>
-    </ul>
-    <br/>
-
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
@@ -1704,7 +1627,6 @@ def user():
 def hello():
     return 'Hello, World!'
 </code></pre>
-        <br/>
         <li>GET requests can include query parameters such as <code>?page=2</code> via <code>request.args</code>.</li>
     </ul>
     <br/><br/>
@@ -1724,14 +1646,12 @@ def login():
     return f'Logged in as {username}'
 </code></pre>
         </li>
-        <br/>
         <li>JSON POST example:</li>
 <pre><code class="language-python line-numbers">@app.route('/api/data', methods=['POST'])
 def api_data():
     data = request.json
     return {'received': data}
 </code></pre>
-        <br/>
         <li>POST is not idempotent — each call may create new data.</li>
     </ul>
     <br/><br/>
@@ -1748,7 +1668,6 @@ def update_profile(id):
     data = request.json
     return {'id': id, 'updated_profile': data}
 </code></pre>
-        <br/>
         <li>PUT is idempotent: sending the same request multiple times results in the same final state.</li>
     </ul>
     <br/><br/>
@@ -1765,7 +1684,6 @@ def patch_profile(id):
     changes = request.json
     return {'id': id, 'changes': changes}
 </code></pre>
-        <br/>
         <li>PATCH is sometimes non-idempotent (depends on implementation).</li>
     </ul>
     <br/><br/>
@@ -1781,7 +1699,6 @@ def patch_profile(id):
 def delete_item(item_id):
     return {'status': 'deleted', 'id': item_id}
 </code></pre>
-        <br/>
         <li>DELETE is idempotent — deleting the same resource twice yields the same result.</li>
     </ul>
     <br/><br/>
@@ -1806,7 +1723,6 @@ def delete_item(item_id):
 def info():
     return 'data'
 </code></pre>
-        <br/>
         <li><code>HEAD /info</code> → same headers, empty body.</li>
     </ul>
     <br/><br/>
@@ -2349,8 +2265,6 @@ def sitemap():
         </li>
         <br/>
         <li>Flask automatically serves static files located inside the <code>static/</code> directory.</li>
-        <br/>
-        <li>The static folder is essential for building complete web applications with styles and scripts.</li>
     </ul>
     <br/><br/>
 
@@ -2371,8 +2285,7 @@ def sitemap():
     templates/
         index.html
 </code></pre>
-        <br/>
-        <li>Flask automatically maps <code>/static/... </code> to the <code>static/</code> directory.</li>
+        <li>Flask automatically maps <code>/static/...</code> to the <code>static/</code> directory.</li>
     </ul>
     <br/><br/>
 
@@ -2381,14 +2294,12 @@ def sitemap():
     <br/>
     <ul>
         <li>Never hardcode <code>/static/</code> paths manually — always use <code>url_for</code>.</li>
-        <br/>
 <pre><code class="language-html line-numbers">&lt;link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" /&gt;
 
 &lt;script src="{{ url_for('static', filename='js/app.js') }}"&gt;&lt;/script&gt;
 
 &lt;img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" /&gt;
 </code></pre>
-        <br/>
         <li><code>url_for('static', filename=...)</code> ensures URLs stay correct even if the static folder or configuration changes.</li>
     </ul>
     <br/><br/>
@@ -2400,7 +2311,6 @@ def sitemap():
         <li>Flask automatically registers a route:</li>
 <pre><code class="language-plaintext line-numbers">/static/&lt;path:filename&gt;
 </code></pre>
-        <br/>
         <li>This handles requests like:</li>
         <ul>
             <li><code>/static/css/style.css</code></li>
@@ -2473,7 +2383,6 @@ def sitemap():
 def media(filename):
     return send_from_directory('uploads', filename)
 </code></pre>
-        <br/>
         <li>Use cases:</li>
         <ul>
             <li>uploaded user files</li>
@@ -2570,31 +2479,6 @@ def favicon():
 </code></pre>
     </ul>
     <br/><br/>
-
-
-    <li>Best Practices for Static Files</li>
-    <br/>
-    <ul>
-        <li>Always use <code>url_for</code> when referencing static files.</li>
-        <br/>
-        <li>Organize static assets into folders:
-            <ul>
-                <li><code>css/</code></li>
-                <li><code>js/</code></li>
-                <li><code>images/</code></li>
-                <li><code>fonts/</code></li>
-            </ul>
-        </li>
-        <br/>
-        <li>Use blueprint static folders for modular apps.</li>
-        <br/>
-        <li>Enable caching but use versioning for updates.</li>
-        <br/>
-        <li>Serve large media/downloads using <code>send_from_directory</code>.</li>
-        <br/>
-        <li>Do not expose sensitive files inside the static directory.</li>
-    </ul>
-    <br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
@@ -2626,7 +2510,6 @@ def favicon():
         <br/>
         <li>Import it from Flask:</li>
 <pre><code class="language-python line-numbers">from flask import request</code></pre>
-        <br/>
         <li>The request object is context-aware, meaning it only exists during an active request.</li>
     </ul>
     <br/><br/>
@@ -2640,7 +2523,6 @@ def favicon():
 def submit():
     return f"Method used: {request.method}"
 </code></pre>
-        <br/>
         <li>Common values:
             <ul>
                 <li><code>GET</code></li>
@@ -2676,14 +2558,12 @@ def search():
     <br/>
     <ul>
         <li>Form data comes from POST requests with <code>application/x-www-form-urlencoded</code> or <code>multipart/form-data</code>.</li>
-        <br/>
 <pre><code class="language-python line-numbers">@app.route('/login', methods=['POST'])
 def login():
     username = request.form['username']
     password = request.form.get('password')
     return f"User: {username}"
 </code></pre>
-        <br/>
         <li><code>request.form</code> is also a MultiDict.</li>
     </ul>
     <br/><br/>
@@ -2698,7 +2578,6 @@ def api_data():
     data = request.json      # or request.get_json()
     return {'received': data}
 </code></pre>
-        <br/>
         <li>Good for RESTful APIs.</li>
     </ul>
     <br/><br/>
@@ -2713,7 +2592,6 @@ def api_data():
                 <li><code>request.args</code></li>
             </ul>
         </li>
-        <br/>
 <pre><code class="language-python line-numbers">@app.route('/combined')
 def combined():
     return request.values.get('key')
@@ -2733,7 +2611,6 @@ def agent():
     ua = request.headers.get('User-Agent')
     return f"Your browser: {ua}"
 </code></pre>
-        <br/>
         <li>Common headers:
             <ul>
                 <li><code>Content-Type</code></li>
@@ -2755,8 +2632,7 @@ def show_cookie():
     token = request.cookies.get('auth_token')
     return f"Cookie: {token}"
 </code></pre>
-        <br/>
-        <li>Cookies can be set in responses (covered in <i>Flask Responses</i> chapter).</li>
+        <li>Cookies can be set in responses.</li>
     </ul>
     <br/><br/>
 
@@ -2771,7 +2647,6 @@ def upload():
     file.save(f"uploads/{file.filename}")
     return 'Uploaded!'
 </code></pre>
-        <br/>
         <li>Form requires <code>enctype="multipart/form-data"</code>.</li>
     </ul>
     <br/><br/>
@@ -2786,7 +2661,6 @@ def profile(username):
     print(request.view_args)  # {'username': 'Junzhe'}
     return username
 </code></pre>
-        <br/>
         <li><code>view_args</code> contains the path parameters.</li>
     </ul>
     <br/><br/>
@@ -2797,12 +2671,12 @@ def profile(username):
     <ul>
         <li>You can access:</li>
         <ul>
-            <li>Full URL — <code>request.url</code></li>
-            <li>Base URL — <code>request.base_url</code></li>
-            <li>Host URL — <code>request.host_url</code></li>
-            <li>URL without query — <code>request.path</code></li>
+            <li>Full URL with <code>request.url</code></li>
+            <li>Base URL with <code>request.base_url</code></li>
+            <li>Host URL with <code>request.host_url</code></li>
+            <li>URL without query with <code>request.path</code></li>
         </ul>
-        <br/>
+    </ul>
 <pre><code class="language-python line-numbers">@app.route('/info')
 def info():
     return {
@@ -2811,7 +2685,6 @@ def info():
         "base": request.base_url,
     }
 </code></pre>
-    </ul>
     <br/><br/>
 
 
@@ -2823,14 +2696,6 @@ def info():
         <br/>
         <li>If behind a proxy, use:</li>
 <pre><code class="language-python line-numbers">ip = request.headers.get('X-Forwarded-For', request.remote_addr)</code></pre>
-        <br/>
-        <li>Often needed for:
-            <ul>
-                <li>logging</li>
-                <li>rate limiting</li>
-                <li>security</li>
-            </ul>
-        </li>
     </ul>
     <br/><br/>
 
@@ -2841,7 +2706,6 @@ def info():
         <li>Traditional AJAX requests include a header:</li>
 <pre><code class="language-python line-numbers">is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 </code></pre>
-        <br/>
         <li>Modern clients often use <code>fetch()</code> without this header, so custom headers may be needed.</li>
     </ul>
     <br/><br/>
@@ -2855,7 +2719,6 @@ def info():
 def content_type():
     return request.content_type
 </code></pre>
-        <br/>
         <li>Common MIME types:</li>
         <ul>
             <li><code>application/json</code></li>
@@ -2952,16 +2815,6 @@ def content_type():
         <br/>
         <li>To display this submitted data back to the user, you pass it from the route into <code>render_template()</code>.</li>
         <br/>
-        <li>This is common for:
-            <ul>
-                <li>login forms</li>
-                <li>registration pages</li>
-                <li>profile updates</li>
-                <li>search forms</li>
-                <li>contact or feedback forms</li>
-            </ul>
-        </li>
-        <br/>
         <li>Flask makes this very easy thanks to the <b>request object</b> and Jinja2 template rendering.</li>
     </ul>
     <br/><br/>
@@ -2969,17 +2822,13 @@ def content_type():
 
     <li>Typical Workflow for Sending Form Data</li>
     <br/>
-    <ul>
-        <li>The workflow usually looks like this:</li>
-        <br/>
-        <ol>
-            <li>User fills a form in an HTML template.</li>
-            <li>Browser sends a POST request.</li>
-            <li>Flask receives the form data via <code>request.form</code>.</li>
-            <li>Flask passes this data to another template using <code>render_template()</code>.</li>
-            <li>Template displays the submitted values.</li>
-        </ol>
-    </ul>
+    <ol>
+        <li>User fills a form in an HTML template.</li>
+        <li>Browser sends a POST request.</li>
+        <li>Flask receives the form data via <code>request.form</code>.</li>
+        <li>Flask passes this data to another template using <code>render_template()</code>.</li>
+        <li>Template displays the submitted values.</li>
+    </ol>
     <br/><br/>
 
 
@@ -3001,7 +2850,6 @@ def content_type():
     &lt;button type="submit"&gt;Submit&lt;/button&gt;
 &lt;/form&gt;
 </code></pre>
-        <br/>
         <li>The form posts data to the route named <code>result</code>.</li>
     </ul>
     <br/><br/>
@@ -3209,7 +3057,7 @@ def result():
     <li>What Are Cookies in Flask?</li>
     <br/>
     <ul>
-        <li>Cookies are small pieces of data stored on the client’s browser.</li>
+        <li>Cookies are small pieces of data stored on the <u>client</u>’s browser.</li>
         <br/>
         <li>They are sent automatically with every request to the same server, allowing Flask to:</li>
         <ul>
@@ -3234,7 +3082,6 @@ def show_cookie():
     username = request.cookies.get('username')
     return f"Hello, {username}"
 </code></pre>
-        <br/>
         <li>If the cookie doesn’t exist, <code>.get()</code> returns <code>None</code> unless a default is supplied:</li>
 <pre><code class="language-python line-numbers">username = request.cookies.get('username', 'Guest')</code></pre>
     </ul>
@@ -3253,7 +3100,6 @@ def set_cookie():
     resp.set_cookie('username', 'Junzhe')
     return resp
 </code></pre>
-        <br/>
         <li>Alternatively, using <code>redirect()</code>:</li>
 <pre><code class="language-python line-numbers">@app.route('/login')
 def login():
@@ -3279,17 +3125,46 @@ def login():
     samesite='Lax'
 )
 </code></pre>
-        <br/>
         <li>Common cookie parameters:</li>
-        <ul>
-            <li><b>max_age</b> → expiration (in seconds)</li>
-            <li><b>expires</b> → specific expiration date</li>
-            <li><b>path</b> → cookie applies only to that path</li>
-            <li><b>domain</b> → limit cookie to specific domain/subdomain</li>
-            <li><b>secure</b> → only sent over HTTPS</li>
-            <li><b>httponly</b> → JavaScript cannot access cookie</li>
-            <li><b>samesite</b> → CSRF protection ("Strict", "Lax", "None")</li>
-        </ul>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Cookie Parameter</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>max_age</code></td>
+            <td>Expiration time in seconds.</td>
+        </tr>
+        <tr>
+            <td><code>expires</code></td>
+            <td>Specific expiration date (HTTP-date format).</td>
+        </tr>
+        <tr>
+            <td><code>path</code></td>
+            <td>Cookie is sent only for this URL path.</td>
+        </tr>
+        <tr>
+            <td><code>domain</code></td>
+            <td>Limits cookie to a specific domain or subdomain.</td>
+        </tr>
+        <tr>
+            <td><code>secure</code></td>
+            <td>Cookie is sent only over HTTPS.</td>
+        </tr>
+        <tr>
+            <td><code>httponly</code></td>
+            <td>Prevents JavaScript from accessing the cookie.</td>
+        </tr>
+        <tr>
+            <td><code>samesite</code></td>
+            <td>Controls cross-site cookie behavior (helps prevent CSRF). Values: "Strict", "Lax", "None".</td>
+        </tr>
+    </tbody>
+</table>
         <br/>
         <li>Security recommendation: always use <code>httponly=True</code> when possible.</li>
     </ul>
@@ -3306,7 +3181,6 @@ def logout():
     resp.delete_cookie('username')
     return resp
 </code></pre>
-        <br/>
         <li>This sends the browser an expired cookie, effectively removing it.</li>
     </ul>
     <br/><br/>
@@ -3404,13 +3278,13 @@ def check():
     <li>Security Best Practices for Cookies</li>
     <br/>
     <ul>
-        <li>Enable <b>HttpOnly</b> to prevent JavaScript access:</li>
+        <li>Enable <code>HttpOnly</code> to prevent JavaScript access:</li>
 <pre><code class="language-python line-numbers">resp.set_cookie('token', 'abc', httponly=True)</code></pre>
         <br/>
-        <li>Use <b>Secure</b> flag to allow sending cookies only over HTTPS:</li>
+        <li>Use <code>Secure</code> flag to allow sending cookies only over HTTPS:</li>
 <pre><code class="language-python line-numbers">resp.set_cookie('token', 'abc', secure=True)</code></pre>
         <br/>
-        <li>Use <b>SameSite</b> to mitigate CSRF:</li>
+        <li>Use <code>SameSite</code> to mitigate CSRF:</li>
 <pre><code class="language-python line-numbers">resp.set_cookie('token', 'abc', samesite='Strict')</code></pre>
         <br/>
         <li>Never store sensitive info (passwords, tokens, personal data).</li>
@@ -3467,7 +3341,6 @@ def check():
 app = Flask(__name__)
 app.secret_key = 'super-secret-key'    # Use a strong random value in production
 </code></pre>
-        <br/>
         <li>Without a secret key, Flask cannot sign session cookies.</li>
         <br/>
         <li>For production, generate a secure key:</li>
@@ -3490,7 +3363,6 @@ def login():
     session['theme'] = 'dark'
     return 'Session data stored!'
 </code></pre>
-        <br/>
         <li>Data persists across requests as long as the session cookie remains valid.</li>
     </ul>
     <br/><br/>
@@ -3505,7 +3377,6 @@ def dashboard():
     user = session.get('user', 'Guest')
     return f"Welcome, {user}!"
 </code></pre>
-        <br/>
         <li>Always use <code>session.get()</code> to avoid <code>KeyError</code>.</li>
     </ul>
     <br/><br/>
@@ -3534,7 +3405,6 @@ def logout():
     session.pop('user', None)
     return 'Logged out!'
 </code></pre>
-        <br/>
         <li>Clear entire session:</li>
 <pre><code class="language-python line-numbers">session.clear()</code></pre>
     </ul>
@@ -3556,7 +3426,6 @@ def remember():
     session['user'] = 'Junzhe'
     return 'Permanent session stored for 7 days!'
 </code></pre>
-        <br/>
         <li>Permanent sessions store expiration time in the cookie.</li>
     </ul>
     <br/><br/>
@@ -3568,12 +3437,7 @@ def remember():
         <li>Flask stores session data inside a cookie in a structure like:</li>
 <pre><code class="language-text line-numbers">".eJyrVkrLz1eyUkpKLFKqBQB3DAwN.yh4Y8R5pp0pH2u9dTJAyWF6TA"</code></pre>
         <br/>
-        <li>It includes:
-            <ul>
-                <li>your session data (serialized)</li>
-                <li>a secure signature</li>
-            </ul>
-        </li>
+        <li>It includes your session data (serialized) and a secure signature</li>
         <br/>
         <li>The user cannot modify session data without breaking the signature, making sessions safe.</li>
     </ul>
@@ -3589,14 +3453,12 @@ def submit():
     session['form_data'] = request.form.to_dict()
     return redirect(url_for('show_form'))
 </code></pre>
-        <br/>
         <li>Display in template:</li>
 <pre><code class="language-python line-numbers">@app.route('/show')
 def show_form():
     data = session.get('form_data', {})
     return render_template('show.html', data=data)
 </code></pre>
-        <br/>
         <li>This pattern supports multi-step workflows.</li>
     </ul>
     <br/><br/>
@@ -3621,7 +3483,6 @@ def dashboard():
         return redirect(url_for('login'))
     return f"Welcome, {session['user']}!"
 </code></pre>
-        <br/>
         <li>Sessions make it easy to remember authenticated users.</li>
     </ul>
     <br/><br/>
@@ -3640,14 +3501,6 @@ def dashboard():
     samesite='Lax'
 )
 </code></pre>
-        <br/>
-        <li>General security tips:</li>
-        <ul>
-            <li>Use HTTPS (<code>secure=True</code>)</li>
-            <li>Enable <code>HttpOnly</code> to block JavaScript access</li>
-            <li>Use <code>SameSite</code> to mitigate CSRF</li>
-            <li>Never store passwords or sensitive data in session</li>
-        </ul>
     </ul>
     <br/><br/>
 
@@ -3724,20 +3577,6 @@ def dashboard():
 <h3 id="flask-redirect-errors">Flask Redirect &amp; Errors</h3>
 <ol>
 
-    <li>Introduction to Redirects and Error Handling in Flask</li>
-    <br/>
-    <ul>
-        <li>Redirects and error handling are essential in every real-world Flask application.</li>
-        <br/>
-        <li><b>Redirects</b> allow you to send the user from one route to another.</li>
-        <br/>
-        <li><b>Error handling</b> allows you to show custom pages when something goes wrong (404, 500, etc.).</li>
-        <br/>
-        <li>Flask provides built-in functions like <code>redirect()</code>, <code>url_for()</code>, and decorators for handling errors.</li>
-    </ul>
-    <br/><br/>
-
-
     <li>Using <code>redirect()</code> with <code>url_for()</code></li>
     <br/>
     <ul>
@@ -3768,7 +3607,6 @@ def new():
 def github():
     return redirect("https://github.com")
 </code></pre>
-        <br/>
         <li>Useful for linking to external services, documentation, or OAuth providers.</li>
     </ul>
     <br/><br/>
@@ -3782,12 +3620,11 @@ def github():
         <li>Permanent redirect (<code>301</code>):</li>
 <pre><code class="language-python line-numbers">return redirect(url_for('new'), code=301)
 </code></pre>
-        <br/>
         <li>Other redirect codes:
             <ul>
-                <li><b>303</b> — See Other</li>
-                <li><b>307</b> — Temporary redirect (same method)</li>
-                <li><b>308</b> — Permanent redirect (same method)</li>
+                <li><code>303</code> — See Other</li>
+                <li><code>307</code> — Temporary redirect (same method)</li>
+                <li><code>308</code> — Permanent redirect (same method)</li>
             </ul>
         </li>
         <br/>
@@ -3827,14 +3664,13 @@ def thank_you():
 def secret():
     abort(403)  # Forbidden
 </code></pre>
-        <br/>
         <li>Common error codes:</li>
         <ul>
-            <li>400 — Bad Request</li>
-            <li>401 — Unauthorized</li>
-            <li>403 — Forbidden</li>
-            <li>404 — Not Found</li>
-            <li>500 — Server Error</li>
+            <li><code>400</code> — Bad Request</li>
+            <li><code>401</code> — Unauthorized</li>
+            <li><code>403</code> — Forbidden</li>
+            <li><code>404</code> — Not Found</li>
+            <li><code>500</code> — Server Error</li>
         </ul>
         <br/>
         <li><code>abort()</code> stops execution immediately and raises an error response.</li>
@@ -3850,7 +3686,6 @@ def secret():
 def not_found(e):
     return render_template('404.html'), 404
 </code></pre>
-        <br/>
         <li>Custom templates improve user experience.</li>
         <br/>
         <li>Example <code>404.html</code>:</li>
@@ -3869,12 +3704,10 @@ def not_found(e):
 def server_error(e):
     return render_template('500.html'), 500
 </code></pre>
-        <br/>
         <li>You can log the error for debugging:</li>
 <pre><code class="language-python line-numbers">import logging
 logging.error(e)
 </code></pre>
-        <br/>
         <li>Custom 500 pages are vital for production apps.</li>
     </ul>
     <br/><br/>
@@ -3890,7 +3723,6 @@ logging.error(e)
 def handle_auth_errors(e):
     return render_template('auth_error.html', error=e), e.code
 </code></pre>
-        <br/>
         <li>Useful for grouping similar errors.</li>
     </ul>
     <br/><br/>
@@ -3902,7 +3734,6 @@ def handle_auth_errors(e):
         <li>You can provide a custom message:</li>
 <pre><code class="language-python line-numbers">abort(404, description="User not found")
 </code></pre>
-        <br/>
         <li>Render description inside templates:</li>
 <pre><code class="language-html line-numbers">&lt;p&gt;{{ error.description }}&lt;/p&gt;
 </code></pre>
@@ -3920,7 +3751,6 @@ def admin():
         return redirect(url_for('login'))
     return "Admin page"
 </code></pre>
-        <br/>
         <li>This avoids exposing internal logic to users.</li>
     </ul>
     <br/><br/>
@@ -3936,7 +3766,6 @@ def not_found(e):
     return render_template('404.html', path=path), 404
 </code></pre>
 
-        <br/>
         <li>Example template:</li>
 <pre><code class="language-html line-numbers">&lt;p&gt;The path &lt;b&gt;{{ path }}&lt;/b&gt; does not exist.&lt;/p&gt;
 </code></pre>
@@ -3952,7 +3781,6 @@ def not_found(e):
 def page_not_found(e):
     return render_template('errors/404.html'), 404
 </code></pre>
-        <br/>
         <li>Allows modular error management.</li>
     </ul>
     <br/><br/>
@@ -4028,7 +3856,6 @@ def page_not_found(e):
 app = Flask(__name__)
 app.secret_key = 'my-secret-key'
 </code></pre>
-        <br/>
         <li>Without a secret key, flash messages will not work because flashing uses sessions internally.</li>
     </ul>
     <br/><br/>
@@ -4045,7 +3872,6 @@ def login():
     flash("Login successful!")
     return redirect(url_for('dashboard'))
 </code></pre>
-        <br/>
         <li>You can call <code>flash()</code> multiple times to store multiple messages.</li>
     </ul>
     <br/><br/>
@@ -4065,7 +3891,6 @@ def login():
     {% endif %}
 {% endwith %}
 </code></pre>
-        <br/>
         <li><code>get_flashed_messages()</code> retrieves all flashed messages and clears them afterward.</li>
     </ul>
     <br/><br/>
@@ -4078,7 +3903,6 @@ def login():
 <pre><code class="language-python line-numbers">flash("Logged in successfully!", "success")
 flash("Invalid password!", "error")
 </code></pre>
-        <br/>
         <li>Retrieve categories in template:</li>
 <pre><code class="language-html line-numbers">{% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -4090,10 +3914,9 @@ flash("Invalid password!", "error")
     {% endif %}
 {% endwith %}
 </code></pre>
-        <br/>
         <li>Use categories for UI styling (CSS classes):</li>
-<pre><code class="language-css line-numbers">.success { color: green; }
-.error   { color: red; }
+<pre><code class="language-css line-numbers">.success { color: green;  }
+.error   { color: red;    }
 .warning { color: orange; }
 </code></pre>
     </ul>
@@ -4109,7 +3932,6 @@ def update():
     flash("Profile updated!", "success")
     return redirect(url_for('settings'))
 </code></pre>
-        <br/>
         <li>Then the <code>settings</code> page template shows the message.</li>
         <br/>
         <li>This prevents message loss during navigation.</li>
@@ -4182,7 +4004,6 @@ flash("Remember to restart the app.", "warning")
     {% endfor %}
 {% endwith %}
 </code></pre>
-        <br/>
         <li>Use categories matching Bootstrap:</li>
         <ul>
             <li><code>success</code></li>
@@ -4203,7 +4024,6 @@ def action():
     flash("Action completed!", "info")
     return redirect(url_for('bp.index'))
 </code></pre>
-        <br/>
         <li>Messages are shared across the entire app via session.</li>
     </ul>
     <br/><br/>
@@ -4214,14 +4034,12 @@ def action():
     <ul>
         <li>You can attach structured data (rarely needed):</li>
 <pre><code class="language-python line-numbers">flash(("File uploaded", {"size": "2MB"}), "info")</code></pre>
-        <br/>
         <li>Template:</li>
 <pre><code class="language-html line-numbers">{% for category, data in get_flashed_messages(with_categories=true) %}
     {% set msg, info = data %}
     &lt;p&gt;{{ msg }} ({{ info.size }})&lt;/p&gt;
 {% endfor %}
 </code></pre>
-        <br/>
         <li>Use sparingly—flash messages are meant to be simple.</li>
     </ul>
     <br/><br/>
@@ -4234,7 +4052,6 @@ def action():
         <br/>
         <li>If needed manually:</li>
 <pre><code class="language-python line-numbers">session.pop('_flashes', None)</code></pre>
-        <br/>
         <li>Not recommended unless you know what you're doing.</li>
     </ul>
     <br/>
@@ -4249,31 +4066,40 @@ def action():
 <h3 id="flask-file-uploading">Flask File Uploading</h3>
 <ol>
 
-    <li>Introduction to File Uploading in Flask</li>
-    <br/>
+    <li>Common upload use cases:</li>
     <ul>
-        <li>Flask makes it easy to accept uploaded files from users using HTML forms.</li>
         <br/>
-        <li>Common upload use cases:</li>
-        <ul>
-            <li>profile pictures</li>
-            <li>documents (PDF, Word)</li>
-            <li>CSV or Excel files for processing</li>
-            <li>image galleries</li>
-            <li>audio/video uploads</li>
-        </ul>
+        <li>profile pictures</li>
         <br/>
-        <li>File uploading requires:
-            <ul>
-                <li>an HTML form with <code>enctype="multipart/form-data"</code></li>
-                <li>a file input field</li>
-                <li>Flask reading <code>request.files</code></li>
-                <li>saving the file safely</li>
-            </ul>
-        </li>
+        <li>documents (PDF, Word)</li>
         <br/>
-        <li>Flask stores uploaded files in memory or temporary files before you save them.</li>
+        <li>CSV or Excel files for processing</li>
+        <br/>
+        <li>image galleries</li>
+        <br/>
+        <li>audio/video uploads</li>
     </ul>
+    <br/>
+    <br/>
+
+
+    <li>File uploading requires:
+    <ul>
+        <br/>
+        <li>an HTML form with <code>enctype="multipart/form-data"</code></li>
+        <br/>
+        <li>a file input field</li>
+        <br/>
+        <li>Flask reading <code>request.files</code></li>
+        <br/>
+        <li>saving the file safely</li>
+    </ul>
+    </li>
+    <br/>
+    <br/>
+
+
+    <li>Flask stores uploaded files in memory or temporary files before you save them.</li>
     <br/><br/>
 
 
@@ -4288,8 +4114,7 @@ def action():
     &lt;button type="submit"&gt;Upload&lt;/button&gt;
 &lt;/form&gt;
 </code></pre>
-        <br/>
-        <li>Important: <b>Without enctype="multipart/form-data", uploads will not work.</b></li>
+    <li>Important: Without <code>enctype="multipart/form-data"</code>, uploads will not work.</li>
     </ul>
     <br/><br/>
 
@@ -4318,7 +4143,6 @@ def upload_file():
 
     return render_template('upload.html')
 </code></pre>
-        <br/>
         <li><code>request.files</code> contains uploaded files keyed by the filename alias.</li>
         <br/>
         <li>The file is saved using <code>file.save()</code>.</li>
@@ -4335,7 +4159,6 @@ def upload_file():
     uploads/
     templates/
 </code></pre>
-        <br/>
         <li>Or create it automatically:</li>
 <pre><code class="language-python line-numbers">os.makedirs(UPLOAD_FOLDER, exist_ok=True)</code></pre>
     </ul>
@@ -4351,11 +4174,9 @@ def upload_file():
 filename = secure_filename(file.filename)
 file.save(os.path.join(UPLOAD_FOLDER, filename))
 </code></pre>
-        <br/>
         <li>This prevents dangerous names like:
 <pre><code class="language-plaintext line-numbers">../../../../etc/passwd</code></pre>
         </li>
-        <br/>
         <li><code>secure_filename()</code> removes risky characters and ensures safety.</li>
     </ul>
     <br/><br/>
@@ -4370,12 +4191,10 @@ file.save(os.path.join(UPLOAD_FOLDER, filename))
 def allowed(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED
 </code></pre>
-        <br/>
         <li>Validate before saving:</li>
 <pre><code class="language-python line-numbers">if not allowed(file.filename):
     return "File type not allowed"
 </code></pre>
-        <br/>
         <li>Prevents users from uploading unsafe files.</li>
     </ul>
     <br/><br/>
@@ -4386,14 +4205,12 @@ def allowed(filename):
     <ul>
         <li>HTML form:</li>
 <pre><code class="language-html line-numbers">&lt;input type="file" name="files" multiple /&gt;</code></pre>
-        <br/>
         <li>Flask route:</li>
 <pre><code class="language-python line-numbers">files = request.files.getlist('files')
 
 for f in files:
     f.save(os.path.join(UPLOAD_FOLDER, secure_filename(f.filename)))
 </code></pre>
-        <br/>
         <li>Useful for galleries, attachments, etc.</li>
     </ul>
     <br/><br/>
@@ -4409,7 +4226,6 @@ for f in files:
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 </code></pre>
-        <br/>
         <li>This allows users to access uploaded files safely.</li>
     </ul>
     <br/><br/>
@@ -4421,7 +4237,6 @@ def uploaded_file(filename):
         <li>Flask allows setting a maximum upload size:</li>
 <pre><code class="language-python line-numbers">app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
 </code></pre>
-        <br/>
         <li>Requests larger than this will raise a <code>413 Request Entity Too Large</code> error.</li>
     </ul>
     <br/><br/>
@@ -4435,7 +4250,6 @@ def uploaded_file(filename):
 def too_large(e):
     return "File is too large!", 413
 </code></pre>
-        <br/>
         <li>Other common upload errors:
             <ul>
                 <li>no file submitted</li>
@@ -4453,7 +4267,6 @@ def too_large(e):
     <ul>
         <li>Example:</li>
 <pre><code class="language-python line-numbers">flash("File uploaded successfully!", "success")</code></pre>
-        <br/>
         <li>This helps guide users during upload operations.</li>
     </ul>
     <br/><br/>
@@ -4469,7 +4282,6 @@ def bp_upload():
     file.save(os.path.join("bp_uploads", secure_filename(file.filename)))
     return "Uploaded!"
 </code></pre>
-        <br/>
         <li>Useful for modular applications.</li>
     </ul>
     <br/><br/>
@@ -4903,7 +4715,6 @@ def create_app():
     <ul>
         <li>Install using pip:</li>
 <pre><code class="language-bash line-numbers">pip install Flask-Mail</code></pre>
-        <br/>
         <li>Import and prepare the extension:</li>
 <pre><code class="language-python line-numbers">from flask_mail import Mail, Message
 
@@ -4925,7 +4736,6 @@ app.config['MAIL_PASSWORD'] = 'your-password'
 
 mail.init_app(app)
 </code></pre>
-        <br/>
         <li>Common mail settings:</li>
         <ul>
             <li><code>MAIL_SERVER</code></li>
@@ -4955,7 +4765,6 @@ def send_email():
     mail.send(msg)
     return "Email sent!"
 </code></pre>
-        <br/>
         <li>Flask-Mail handles the SMTP communication automatically.</li>
     </ul>
     <br/><br/>
@@ -4972,7 +4781,6 @@ def send_email():
 )
 mail.send(msg)
 </code></pre>
-        <br/>
         <li>You can combine plain text and HTML for email clients that do not support HTML.</li>
     </ul>
     <br/><br/>
@@ -5012,7 +4820,6 @@ with app.open_resource('invoice.pdf') as fp:
 
 mail.send(msg)
 </code></pre>
-        <br/>
         <li>Useful for reports, invoices, documents, logs, etc.</li>
     </ul>
     <br/><br/>
@@ -5027,7 +4834,6 @@ mail.send(msg)
               cc=['c@c.com'],
               bcc=['d@d.com'])
 </code></pre>
-        <br/>
         <li>Recipient lists must be Python lists or tuples.</li>
     </ul>
     <br/><br/>
@@ -5039,7 +4845,6 @@ mail.send(msg)
         <li>Set once in config:</li>
 <pre><code class="language-python line-numbers">app.config['MAIL_DEFAULT_SENDER'] = 'admin@example.com'
 </code></pre>
-        <br/>
         <li>Then each message can omit <code>sender</code> unless overridden.</li>
     </ul>
     <br/><br/>
@@ -5048,7 +4853,7 @@ mail.send(msg)
     <li>Asynchronous Email Sending</li>
     <br/>
     <ul>
-        <li>Sending emails can be slow—offload to a thread or Celery.</li>
+        <li>Sending emails can be slow — offload to a thread or Celery.</li>
         <br/>
         <li>Using Python threading:</li>
 <pre><code class="language-python line-numbers">import threading
@@ -5064,7 +4869,6 @@ def send_async_email():
     thread.start()
     return "Email being sent asynchronously."
 </code></pre>
-        <br/>
         <li>For heavy usage, prefer Celery workers.</li>
     </ul>
     <br/><br/>
@@ -5079,7 +4883,6 @@ def send_async_email():
 except Exception as e:
     return f"Failed to send email: {e}"
 </code></pre>
-        <br/>
         <li>Common errors:</li>
         <ul>
             <li>invalid SMTP credentials</li>
@@ -5371,7 +5174,7 @@ flask db upgrade
     <ul>
         <li>Deployment is the process of running your Flask application on a production-ready server so users can access it online.</li>
         <br/>
-        <li>Flask’s built-in development server (<code>flask run</code>) is <b>not for production</b> because it:</li>
+        <li>Flask’s built-in development server (<code>flask run</code>) is <u>not</u> for production because it:</li>
         <ul>
             <li>is single-threaded</li>
             <li>cannot handle real traffic</li>
@@ -5384,8 +5187,6 @@ flask db upgrade
             <li>a reverse proxy (NGINX, Apache)</li>
             <li>a Linux server (common), virtual environment, and proper configuration</li>
         </ul>
-        <br/>
-        <li>This chapter walks through the most common production setups.</li>
     </ul>
     <br/><br/>
 
