@@ -154,6 +154,8 @@
         <li><a href="#terraform-variable-block">Understanding the <code>variable</code> Block</a></li>
         <li><a href="#terraform-output-block">Understanding the <code>output</code> Block</a></li>
         <li><a href="#terraform-locals-block">Understanding the <code>locals</code> Block</a></li>
+        <li><a href="#terraform-import-block">Understanding the <code>import</code> Block</a></li>
+        <li><a href="#terraform-module-block">Understanding the <code>module</code> Block</a></li>
     </ol>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -3584,7 +3586,259 @@ output "name" {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="terraform-import-block">Understanding the <code>import</code> Block in Terraform</h3>
+<ol>
 
+    <li>What Is the <code>import</code> Block?</li>
+    <br/>
+    <ul>
+        <li>The <code>import</code> block is used to <b>bring existing infrastructure resources</b> (created outside Terraform) under Terraform’s management.</li>
+        <br/>
+        <li>This allows Terraform to “adopt” a resource instead of recreating it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Structure of an <code>import</code> Block</li>
+<pre><code class="language-hcl line-numbers">import {
+    to = RESOURCE_ADDRESS
+    id = PROVIDER_RESOURCE_ID
+}
+</code></pre>
+    <ul>
+        <li><code>to</code>: the Terraform resource to map to (must already exist in code)</li>
+        <li><code>id</code>: the resource identifier from the cloud provider</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Importing an AWS S3 Bucket</li>
+    <br/>
+    <ul>
+        <li>Terraform resource declared:</li>
+<pre><code class="language-hcl line-numbers">resource "aws_s3_bucket" "my_bucket" {}
+</code></pre>
+
+        <li>Add an <code>import</code> block:</li>
+<pre><code class="language-hcl line-numbers">import {
+    to = aws_s3_bucket.my_bucket
+    id = "my-existing-bucket"
+}
+</code></pre>
+
+        <li>Explanation:</li>
+        <ul>
+            <li><code>aws_s3_bucket.my_bucket</code> → the Terraform resource to link</li>
+            <li><code>my-existing-bucket</code> → the name of the actual S3 bucket</li>
+        </ul>
+
+        <br/>
+        <li>Now run:</li>
+<pre><code class="language-bash line-numbers">terraform plan</code></pre>
+
+        <li>Terraform will import the bucket state automatically during <code>apply</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Full Lifecycle of Import Using the <code>import</code> Block</li>
+    <br/>
+    <ul>
+        <li>Step 1 — Write the <code>resource</code> block:</li>
+<pre><code class="language-hcl line-numbers">resource "aws_security_group" "web" {}
+</code></pre>
+
+    <li>Step 2 — Add the <code>import</code> block:</li>
+<pre><code class="language-hcl line-numbers">import {
+    to = aws_security_group.web
+    id = "sg-0a1b2c3d4e5f6g7h"
+}
+</code></pre>
+
+        <li>Step 3 — run:</li>
+<pre><code class="language-bash line-numbers">terraform apply</code></pre>
+
+        <li>Terraform imports the SG and writes its state locally.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Terraform to Generate Configuration After Import</li>
+    <br/>
+    <ul>
+        <li>You can ask Terraform to generate resource configuration after import:</li>
+<pre><code class="language-bash line-numbers">terraform plan -generate-config-out=generated.tf
+</code></pre>
+
+        <li>This creates a file that contains the attributes of the imported resource.</li>
+        <br/>
+        <li>Useful when importing large or complex resources.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How Import Works Internally</li>
+    <br/>
+    <ul>
+        <li>Terraform does NOT modify the real resource.</li>
+        <br/>
+        <li>It simply reads the resource from the provider (AWS, Azure, GCP, etc.) and writes it to <code>terraform.tfstate</code>.</li>
+        <br/>
+        <li>After import:
+            <ul>
+                <li>Terraform manages the resource</li>
+                <li>Updates are made via Terraform</li>
+                <li>Destruction happens via Terraform</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Importing Multiple Resources</li>
+<pre><code class="language-hcl line-numbers">import {
+    to = aws_iam_role.app_role
+    id = "my-app-role"
+}
+
+import {
+    to = aws_iam_policy.read_policy
+    id = "arn:aws:iam::123456789012:policy/ReadPolicy"
+}
+
+import {
+    to = aws_s3_bucket.data
+    id = "data-bucket"
+}
+</code></pre>
+
+    <ul>
+        <li>Terraform will import all during <code>apply</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Importing Nested or Child Resources</li>
+    <br/>
+    <ul>
+        <li>If a resource exists inside a module:</li>
+    </ul>
+<pre><code class="language-hcl line-numbers">module "network" {
+    source = "./network"
+}
+
+import {
+    to = module.network.aws_vpc.main
+    id = "vpc-123456"
+}
+</code></pre>
+
+    <ul>
+        <li>Terraform supports importing resources inside modules using full resource addresses.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Importing an Azure Resource</li>
+<pre><code class="language-hcl line-numbers">resource "azurerm_resource_group" "main" {
+    name = "rg-demo"
+    location = "westeurope"
+}
+
+import {
+    to = azurerm_resource_group.main
+    id = "/subscriptions/xxx/resourceGroups/rg-demo"
+}
+</code></pre>
+    <br/><br/>
+
+
+    <li>Reference: Full Syntax Options</li>
+<pre><code class="language-hcl line-numbers">import {
+    to         = RESOURCE_ADDRESS
+    id         = IDENTIFIER
+    provider   = PROVIDER_ALIAS   # optional
+}
+</code></pre>
+    <ul>
+        <li><code>provider</code>: Only required when multiple provider aliases exist.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Import Errors</li>
+    <ul>
+        <br/>
+        <li>Error: Resource does not exist</li>
+        <ul><li>The provided <code>id</code> is wrong.</li></ul>
+
+        <br/>
+        <li>Error: Resource already managed</li>
+        <ul><li>The resource is already in the Terraform state.</li></ul>
+
+        <br/>
+        <li>Error: Missing required argument</li>
+        <ul><li>The resource block must exist before import.</li></ul>
+
+        <br/>
+        <li>Error: Provider mismatch</li>
+        <ul><li>Check provider aliases and regions.</li></ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Import vs Creating New Resources</li>
+    <ul>
+        <br/>
+        <li>Create new resource:</li>
+        <ul><li>Terraform builds the resource using the provider API.</li></ul>
+
+        <br/>
+        <li>Import existing resource:</li>
+        <ul><li>Terraform only maps state → it does NOT modify the resource.</li></ul>
+
+        <br/>
+        <li>After import, Terraform treats the resource like it created it.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>When Should You Use the <code>import</code> Block?</li>
+    <br/>
+    <ul>
+        <li>You should use an import block when:</li>
+        <ul>
+            <li>you already have cloud infrastructure created manually</li>
+            <li>you want to migrate legacy resources under Terraform</li>
+            <li>a team member created a resource outside Terraform</li>
+            <li>a CI/CD workflow needs reproducible imports</li>
+        </ul>
+
+        <br/>
+
+        <li>Import blocks make Terraform ideal for gradual adoption of IaC.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete Practical Example</li>
+    <br/>
+    <ul>
+        <li>Configuration:</li>
+<pre><code class="language-hcl line-numbers">
+resource "aws_iam_user" "admin" {}
+
+import {
+  to = aws_iam_user.admin
+  id = "existing-admin-user"
+}
+</code></pre>
+        <li>Run:</li>
+<pre><code class="language-bash line-numbers">terraform apply</code></pre>
+        <li>Terraform imports the IAM user into state automatically.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
