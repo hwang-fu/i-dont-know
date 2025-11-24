@@ -185,6 +185,7 @@
         <li><a href="#django-middleware">Middleware</a></li>
         <li><a href="#django-sessions">Sessions</a></li>
         <li><a href="#django-template">Template</a></li>
+        <li><a href="#django-url-mapping">URL Mapping</a></li>
     </ol>
 </nav>
 <hr/>
@@ -10734,7 +10735,231 @@ def shout(value):
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-url-mapping">Django URL Mapping</h3>
+<ol>
 
+    <li>What Is URL Mapping in Django?</li>
+    <br/>
+    <ul>
+        <li><b>URL Mapping</b> (also called URL routing) is the mechanism Django uses to connect incoming browser requests to the correct view function.</li>
+        <br/>
+        <li>Django uses a dedicated file named <code>urls.py</code> that defines how each URL pattern is processed.</li>
+        <br/>
+        <li>URL mappings allow developers to create clean, predictable, and SEO-friendly page addresses, such as:
+            <ul>
+                <li><code>/blog/</code></li>
+                <li><code>/users/login/</code></li>
+                <li><code>/products/42/</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Django uses the concept of:
+            <ul>
+                <li><code>project URLs</code> → global URL entry point</li>
+                <li><code>app URLs</code> → routing per functional module</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The URL Dispatcher</li>
+    <br/>
+    <ul>
+        <li>Django's URL dispatcher matches patterns using the <code>path()</code> and <code>re_path()</code> functions.</li>
+<pre><code class="language-python line-numbers">from django.urls import path
+
+urlpatterns = [
+    path('home/', views.home),
+]
+</code></pre>
+
+        <li>When a client requests <code>/home/</code>, Django calls <code>views.home</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Project-Level <code>urls.py</code></li>
+    <br/>
+    <ul>
+        <li>This file is created automatically when you create a Django project.</li>
+        <br/>
+        <li>Location:</li>
+<pre><code class="language-plaintext line-numbers">myproject/
+    myproject/
+        urls.py   &lt;--- main entry
+</code></pre>
+
+        <li>Example:</li>
+<pre><code class="language-python line-numbers">from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('blog/', include('blog.urls')),   # include app router
+]
+</code></pre>
+
+        <br/>
+        <li><code>include()</code> allows you to delegate URL handling to apps.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>App-Level <code>urls.py</code></li>
+    <br/>
+    <ul>
+        <li>Each app can have its own routing file.</li>
+        <br/>
+        <li>Location:</li>
+<pre><code class="language-plaintext line-numbers">blog/
+    urls.py
+    views.py
+</code></pre>
+
+        <li>Example:</li>
+<pre><code class="language-python line-numbers">from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.index),
+    path('post/&lt;int:id&gt;/', views.post_detail),
+]
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding <code>path()</code> Parameters</li>
+    <br/>
+    <ul>
+        <li>The <code>path()</code> function has the following signature:</li>
+<pre><code class="language-python line-numbers">path(route, view, name=None)
+</code></pre>
+
+        <li>Parameter meanings:</li>
+        <ul>
+            <li><code>route</code> → URL pattern (string)</li>
+            <li><code>view</code> → function/class to process the request</li>
+            <li><code>name</code> → optional name used for reverse URL lookup</li>
+        </ul>
+
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-python line-numbers">path('about/', views.about, name='about-page')
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using URL Parameters</li>
+    <br/>
+    <ul>
+        <li>Django supports type-constrained parameters:</li>
+
+<pre><code class="language-python line-numbers">path('user/&lt;int:id&gt;/', views.user_detail)
+path('product/&lt;slug:slug&gt;/', views.product_detail)
+path('files/&lt;path:filepath&gt;/', views.files)
+</code></pre>
+
+        <li>Supported converters:</li>
+        <ul>
+            <li><code>str</code></li>
+            <li><code>int</code></li>
+            <li><code>slug</code></li>
+            <li><code>uuid</code></li>
+            <li><code>path</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using <code>re_path()</code> for Regular Expressions</li>
+    <br/>
+    <ul>
+        <li>Advanced URL matching with regex:</li>
+<pre><code class="language-python line-numbers">from django.urls import re_path
+
+urlpatterns = [
+    re_path(r'^articles/(?P&lt;year&gt;\d{4})/$', views.articles_by_year)
+]
+</code></pre>
+        <li>If your route requires patterns like:
+            <ul>
+                <li>dates</li>
+                <li>custom formats</li>
+                <li>optional sections</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>URL Names and Reverse Lookups</li>
+    <br/>
+    <ul>
+        <li>Named routes help avoid hardcoding URLs in templates.</li>
+
+<pre><code class="language-python line-numbers">
+path('login/', views.login, name='user-login')
+</code></pre>
+
+        <li>In templates:</li>
+<pre><code class="language-django line-numbers">
+&lt;a href="{% url 'user-login' %}"&gt;Login&lt;/a&gt;
+</code></pre>
+
+        <li>In Python code:</li>
+<pre><code class="language-python line-numbers">
+from django.urls import reverse
+
+login_url = reverse('user-login')
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Organizing URL Files (Recommended Structure)</li>
+    <br/>
+    <ul>
+        <li>A good, scalable project structure:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">myproject/
+    myproject/
+        urls.py            &lt;-- main router
+    blog/
+        urls.py            &lt;-- app router
+    accounts/
+        urls.py
+    shop/
+        urls.py
+</code></pre>
+    <br/><br/>
+
+
+    <li>Including URLs Under a Common Prefix</li>
+<pre><code class="language-python line-numbers">urlpatterns = [
+    path('api/', include('api.urls')),
+    path('auth/', include('accounts.urls')),
+]
+</code></pre>
+    <ul>
+        <li>The prefix is automatically prepended to all routes inside the included module.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling 404 and Error URLs</li>
+<pre><code class="language-python line-numbers">
+handler404 = 'myproject.views.page_not_found'
+handler500 = 'myproject.views.server_error'
+</code></pre>
+    <ul>
+        <li>These run when Django cannot match a URL pattern.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
