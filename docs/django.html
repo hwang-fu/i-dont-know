@@ -187,6 +187,8 @@
         <li><a href="#django-template">Template</a></li>
         <li><a href="#django-url-mapping">URL Mapping</a></li>
         <li><a href="#django-shell">Django Shell</a></li>
+        <li><a href="#django-model-making-quries">Models Making Queries</a></li>
+        <li><a href="#django-admin-interface">Admin Interface</a></li>
     </ol>
 </nav>
 <hr/>
@@ -11022,6 +11024,213 @@ User.objects.create_user("junzhe", password="1234")</code></pre>
 <pre><code class="language-bash line-numbers">Ctrl + D</code></pre>
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-admin-interface">Django Admin Interface</h3>
+<ol>
+
+    <li>What Is the Django Admin Interface?</li>
+    <br/>
+    <ul>
+        <li>The Django admin is a built-in web-based interface for managing application data.</li>
+        <br/>
+        <li>It provides a full CRUD backend for registered models without writing custom views or templates.</li>
+        <br/>
+        <li>Features include:
+            <ul>
+                <li>model listing, filtering, and search</li>
+                <li>inline editing</li>
+                <li>relations navigation</li>
+                <li>permissions and authentication integration</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Enabling the Admin Interface</li>
+    <br/>
+    <ul>
+        <li>Ensure these apps are included in your <code>INSTALLED_APPS</code>:</li>
+<pre><code class="language-python line-numbers">INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+]</code></pre>
+        <br/>
+        <li>Include admin routes in <code>urls.py</code>:</li>
+<pre><code class="language-python line-numbers">from django.contrib import admin
+from django.urls import path
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+]</code></pre>
+        <br/>
+        <li>Run database migrations:</li>
+<pre><code class="language-bash line-numbers">python3 manage.py migrate</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating an Admin User</li>
+    <br/>
+    <ul>
+        <li>Create a superuser to access the admin panel:</li>
+<pre><code class="language-bash line-numbers">python3 manage.py createsuperuser</code></pre>
+        <li>You will be prompted to enter:
+            <ul>
+                <li>username</li>
+                <li>email</li>
+                <li>password</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Login at <code>http://localhost:8000/admin/</code></li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Registering Models in the Admin</li>
+    <br/>
+    <ul>
+        <li>To manage a model through the admin interface, register it in <code>admin.py</code>:</li>
+<pre><code class="language-python line-numbers">from django.contrib import admin
+from .models import Product
+
+admin.site.register(Product)</code></pre>
+        <li>Once registered, the model becomes accessible in the admin panel.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Customizing ModelAdmin</li>
+    <br/>
+    <ul>
+        <li>Create a custom admin class to control how data is displayed:</li>
+<pre><code class="language-python line-numbers">class ProductAdmin(admin.ModelAdmin):
+    list_display  = ('name', 'price', 'created_at')
+    search_fields = ('name',)
+    list_filter   = ('category',)
+
+admin.site.register(Product, ProductAdmin)</code></pre>
+        <li>Common options:
+            <ul>
+                <li><code>list_display</code> are columns to show in list view</li>
+                <li><code>search_fields</code> aere fields for full-text search</li>
+                <li><code>list_filter</code> are sidebar filters</li>
+                <li><code>readonly_fields</code> are display only, not editable</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Forms in Admin</li>
+    <br/>
+    <ul>
+        <li>You can override the form used in the admin:</li>
+<pre><code class="language-python line-numbers">from django import forms
+
+class ProductForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = '__all__'
+
+class ProductAdmin(admin.ModelAdmin):
+    form = ProductForm</code></pre>
+        <li>This enables custom validation, widgets, or logic in forms.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Fieldsets for Grouping Fields</li>
+    <br/>
+    <ul>
+        <li>Group related fields visually in the admin form:</li>
+<pre><code class="language-python line-numbers">class ProductAdmin(admin.ModelAdmin):
+    fieldsets = (
+        ('Basic Info', {
+            'fields': ('name', 'price')
+        }),
+        ('Advanced Options', {
+            'classes': ('collapse',),
+            'fields': ('description', 'category'),
+        }),
+    )</code></pre>
+        <li>Helpful for large models with many fields.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Admin Site Customization</li>
+    <br/>
+    <ul>
+        <li>You can customize the site branding and headers:</li>
+<pre><code class="language-python line-numbers">admin.site.site_header = "My Dashboard"
+admin.site.site_title = "My Admin"
+admin.site.index_title = "Welcome to the Admin Panel"</code></pre>
+        <li>To style the admin, override templates and static files.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Permissions and Access Control</li>
+    <br/>
+    <ul>
+        <li>The admin uses Django’s built-in permissions system.</li>
+        <br/>
+        <li>You can assign users:
+            <ul>
+                <li>add, change, delete, view model</li>
+                <li>staff status to access admin</li>
+                <li>groups for role-based access</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Check and restrict access in admin classes:</li>
+<pre><code class="language-python line-numbers">def has_change_permission(self, request, obj=None):
+    return request.user.is_superuser</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Security Recommendations</li>
+    <br/>
+    <ul>
+        <li>Always restrict admin access to trusted users.</li>
+        <br/>
+        <li>Use strong passwords and enable two-factor authentication.</li>
+        <br/>
+        <li>Consider changing the default admin URL to reduce bot scans:</li>
+<pre><code class="language-python line-numbers">path('secret-admin/', admin.site.urls)</code></pre>
+        <li>Use HTTPS and enable CSRF protection (enabled by default).</li>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
