@@ -152,6 +152,7 @@
     <ol style="line-height: 1.8;">
         <li><a href="#rabbitmq-introduction">Introduction</a></li>
         <li><a href="#rabbitmq-hello-world-java">Hello World (Using the Java Client)</a></li>
+        <li><a href="#rabbitmq-work-queues-java">Work Queues (Using the Java Client)</a></li>
     </ol>
 </nav>
 <hr/>
@@ -701,6 +702,307 @@ mvn -q exec:java -Dexec.mainClass="com.example.Recv"</code></pre>
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rabbitmq-work-queues-java">RabbitMQ &mdash; Work Queues (Using the Java Client)</h3>
+<ol>
+
+    <li>What Are Work Queues?</li>
+    <br/>
+    <ul>
+        <li>A <code>Work Queue</code> (also called <code>Task Queue</code>) is a RabbitMQ pattern where:
+            <ul>
+                <li>multiple worker processes share a queue</li>
+                <li>each worker gets some messages</li>
+                <li>tasks are distributed across workers</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Use cases:
+            <ul>
+                <li>background job processing</li>
+                <li>CPU-heavy or IO-heavy tasks</li>
+                <li>distributing long-running tasks across multiple workers</li>
+            </ul>
+        </li>
+        <br/>
+        <li>We will build three components:
+            <ul>
+                <li><code>NewTask.java</code> is producer that sends tasks</li>
+                <li><code>Worker.java</code> is worker that receives tasks</li>
+                <li>Multiple Worker instances to demonstrate load balancing</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+    <li>Project Structure</li>
+<pre><code class="language-plaintext line-numbers">rabbitmq-work-queues/
+├─ pom.xml
+└─ src/
+   └─ main/
+      └─ java/
+         └─ com/
+            └─ example/
+               ├─ NewTask.java   &lt;-- producer (sends tasks)
+               └─ Worker.java    &lt;-- worker (receives tasks)
+</code></pre>
+    <br/><br/>
+
+
+    <li>Declaring a Durable Queue</li>
+    <ul>
+        <li>Both producer and workers must declare the <u>same</u> durable queue:</li>
+    </ul>
+<pre><code class="language-java line-numbers">boolean durable = true;
+channel.queueDeclare("task_queue", durable, false, false, null);
+</code></pre>
+    <ul>
+        <li>This means:
+            <ul>
+                <li>Queue survives a RabbitMQ restart</li>
+                <li>Task messages stored on disk (when we publish persistent messages)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Producer (<code>NewTask.java</code>)</li>
+    <br/>
+    <ul>
+        <li>Create <code>NewTask.java</code> to send a message representing a task.</li>
+<pre><code class="language-java line-numbers">package com.example;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.MessageProperties;
+
+public class NewTask {
+
+    private static final String QUEUE_NAME = "task_queue";
+
+    public static void main(String[] argv) throws Exception {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+
+        try (Connection connection = factory.newConnection();
+             Channel channel = connection.createChannel()) {
+
+            // Durable queue
+            boolean durable = true;
+            channel.queueDeclare(QUEUE_NAME, durable, false, false, null);
+
+            // Create message from args
+            String message = String.join(" ", argv);
+            if (message.isEmpty()) {
+                message = "Hello..."; // default message
+            }
+
+            // Publish persistent message
+            channel.basicPublish(
+                    "",
+                    QUEUE_NAME,
+                    MessageProperties.PERSISTENT_TEXT_PLAIN, // marks message as durable
+                    message.getBytes("UTF-8")
+            );
+
+            System.out.println(" [x] Sent '" + message + "'");
+        }
+    }
+}
+</code></pre>
+        <br/>
+        <li>Example usage:</li>
+<pre><code class="language-bash line-numbers">mvn -q exec:java -Dexec.mainClass="com.example.NewTask" -Dexec.args="Task....."</code></pre>
+        <li>In the tutorials, the number of dots (<code>.</code>) represents seconds of “work”.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Worker (<code>Worker.java</code>)</li>
+    <br/>
+    <ul>
+        <li>receive tasks</li>
+        <li>simulate work based on <code>.</code> count</li>
+        <li>manually acknowledge after finishing</li>
+    </ul>
+<pre><code class="language-java line-numbers">package com.example;
+
+import com.rabbitmq.client.*;
+
+public class Worker {
+
+    private static final String QUEUE_NAME = "task_queue";
+
+    public static void main(String[] argv) throws Exception {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+
+        // Durable queue
+        boolean durable = true;
+        channel.queueDeclare(QUEUE_NAME, durable, false, false, null);
+
+        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+
+        // Fair dispatch: don't give new messages until worker is done
+        channel.basicQos(1);
+
+        // Define callback for messages
+        DeliverCallback deliverCallback = (consumerTag, delivery) -&gt; {
+            String message = new String(delivery.getBody(), "UTF-8");
+            System.out.println(" [x] Received '" + message + "'");
+
+            try {
+                doWork(message);
+            } finally {
+                System.out.println(" [x] Done");
+                channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+            }
+        };
+
+        // AutoAck = false → manual acknowledgements
+        boolean autoAck = false;
+
+        channel.basicConsume(QUEUE_NAME, autoAck, deliverCallback, consumerTag -&gt; { });
+    }
+
+    private static void doWork(String task) {
+        for (char ch : task.toCharArray()) {
+            if (ch == '.') {
+                try {
+                    Thread.sleep(1000); // one second per dot
+                } catch (InterruptedException ignored) {}
+            }
+        }
+    }
+}
+</code></pre>
+    <ul>
+        <li><code>basicAck</code> tells RabbitMQ the worker finished the task.</li>
+        <li>If a worker dies, RabbitMQ re-queues the message to another worker.</li>
+        <li>Fair dispatch using <code>basicQos(1)</code> ensures slower workers get fewer tasks.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Running Multiple Workers</li>
+    <br/>
+    <ul>
+        <li>Open two (or more) terminals and run:</li>
+<pre><code class="language-bash line-numbers"># Terminal 1
+mvn -q exec:java -Dexec.mainClass="com.example.Worker"
+
+# Terminal 2
+mvn -q exec:java -Dexec.mainClass="com.example.Worker"
+</code></pre>
+        <br/>
+        <li>Now send tasks:</li>
+<pre><code class="language-bash line-numbers">mvn -q exec:java -Dexec.mainClass="com.example.NewTask" -Dexec.args="Hello..."
+mvn -q exec:java -Dexec.mainClass="com.example.NewTask" -Dexec.args="Another....."
+mvn -q exec:java -Dexec.mainClass="com.example.NewTask" -Dexec.args="Quick."
+</code></pre>
+        <br/>
+        <li>You will see messages distributed like:</li>
+<pre><code class="language-plaintext line-numbers"># Worker 1:
+[x] Received 'Hello...'
+[x] Done
+[x] Received 'Quick.'
+[x] Done
+
+# Worker 2:
+[x] Received 'Another.....'
+[x] Done
+</code></pre>
+        <li>RabbitMQ dispatches them one by one to each worker.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How Acknowledgements Work</li>
+    <br/>
+    <ul>
+        <li>Workers manually acknowledge messages:</li>
+<pre><code class="language-java line-numbers">channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+</code></pre>
+        <li>If a worker:
+            <ul>
+                <li>crashes</li>
+                <li>disconnects</li>
+                <li>is killed</li>
+            </ul>
+            RabbitMQ will requeue the task and deliver it to another worker.
+        </li>
+        <br/>
+        <li>This guarantees no message is lost.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Message Durability</li>
+    <br/>
+    <ul>
+        <li>Two things make messages survive restarts:</li>
+        <br/>
+        <li><b>1. Durable queue</b></li>
+<pre><code class="language-java line-numbers">channel.queueDeclare("task_queue", true, false, false, null);
+</code></pre>
+        <li><b>2. Persistent messages</b></li>
+<pre><code class="language-java line-numbers">MessageProperties.PERSISTENT_TEXT_PLAIN
+</code></pre>
+<li>Even then, RabbitMQ does not guarantee <b>instant</b> disk flush, but in practice persistence is reliable.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Fair Dispatch with <code>basicQos(1)</code></li>
+    <br/>
+    <ul>
+        <li>Without QoS, RabbitMQ sends messages in round-robin style, regardless of worker speed.</li>
+        <br/>
+        <li>With: <code>channel.basicQos(1);</code> RabbitMQ will:</li>
+            <ul>
+                <li>send only one unacknowledged message at a time</li>
+                <li>wait for <code>basicAck</code> before giving that worker more tasks</li>
+            </ul>
+        <br/>
+        <li>This prevents slow workers from being overloaded.</li>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
