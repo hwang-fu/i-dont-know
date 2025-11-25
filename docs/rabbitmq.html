@@ -154,6 +154,7 @@
         <li><a href="#rabbitmq-hello-world-java">Hello World (Using the Java Client)</a></li>
         <li><a href="#rabbitmq-work-queues-java">Work Queues (Using the Java Client)</a></li>
         <li><a href="#rabbitmq-publish-subscribe-java">Publish / Subscribe (Using the Java Client)</a></li>
+        <li><a href="#rabbitmq-routing-java">Routing (Using the Java Client)</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1292,7 +1293,358 @@ channel.queueBind("logs_file", EXCHANGE_NAME, "");
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rabbitmq-routing-java">RabbitMQ &mdash; Routing (Using the Java Client)</h3>
+<ol>
 
+    <li>What Is Routing with Direct Exchanges?</li>
+    <br/>
+    <ul>
+        <li>In the Publish/Subscribe (fanout) pattern all bound queues receive <u>every</u> message.</li>
+        <br/>
+        <li>With <b>Routing</b> using a <b>direct exchange</b>:
+            <ul>
+                <li>Messages have a <b>routing key</b> (e.g. <code>info</code>, <code>warning</code>, <code>error</code>).</li>
+                <li>Each queue is bound to the exchange with specific routing keys.</li>
+                <li>Only queues whose binding key matches the routing key receive the message.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>We will implement:
+            <ul>
+                <li><code>EmitLogDirect.java</code> &mdash; producer that publishes logs with a severity key.</li>
+                <li><code>ReceiveLogsDirect.java</code> &mdash; consumer that subscribes to specific severities.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Direct Exchange and Routing Keys</li>
+    <br/>
+    <ul>
+        <li>A <u>direct exchange</u> delivers a message to queues based on an exact match between the message <code>routing key</code>, and the queue&#39;s <code>binding key</code>.</li>
+        <br/>
+        <li>Example:
+<pre><code class="language-plaintext line-numbers">Exchange: &quot;direct_logs&quot; (type: direct)
+
+Bindings:
+    queue_error  &lt;--(&quot;error&quot;)--  direct_logs
+    queue_all    &lt;--(&quot;info&quot;)---  direct_logs
+                 &lt;--(&quot;warning&quot;)  direct_logs
+                 &lt;--(&quot;error&quot;)--  direct_logs
+
+Messages:
+    routing key &quot;error&quot;   --&gt; goes to queue_error and queue_all
+    routing key &quot;info&quot;    --&gt; goes only to queue_all
+</code></pre>
+        </li>
+        <br/>
+        <li>We will use &quot;severities&quot; (<code>info</code>, <code>warning</code>, <code>error</code>) as routing keys.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Project Structure</li>
+    <br/>
+    <ul>
+        <li>Example Maven project layout:</li>
+    </ul>
+<pre><code class="language-plaintext line-numbers">rabbitmq-routing-java/
+├─ pom.xml
+└─ src/
+   └─ main/
+      └─ java/
+         └─ com/
+            └─ example/
+               ├─ EmitLogDirect.java
+               └─ ReceiveLogsDirect.java
+</code></pre>
+    <ul>
+        <li><code>pom.xml</code> needs the RabbitMQ client dependency (same as earlier chapters):</li>
+    </ul>
+<pre><code class="language-xml line-numbers">&lt;dependency&gt;
+    &lt;groupId&gt;com.rabbitmq&lt;/groupId&gt;
+    &lt;artifactId&gt;amqp-client&lt;/artifactId&gt;
+    &lt;version&gt;5.24.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+    <br/><br/>
+
+
+    <li>Declaring the Direct Exchange</li>
+    <br/>
+    <ul>
+        <li>We choose an exchange name, e.g. <code>direct_logs</code>, and type <b>direct</b>:</li>
+    </ul>
+<pre><code class="language-java line-numbers">String EXCHANGE_NAME = &quot;direct_logs&quot;;
+channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+</code></pre>
+    <ul>
+        <li>Both the producer and all consumers must declare the same exchange, this call is idempotent.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Producer &mdash; <code>EmitLogDirect.java</code></li>
+    <br/>
+    <ul>
+        <li>The producer:
+            <ul>
+                <li>Reads <b>severity</b> (routing key) from the command line.</li>
+                <li>Reads the log message text.</li>
+                <li>Publishes the message to the <code>direct_logs</code> exchange using that severity as routing key.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Create <code>EmitLogDirect.java</code>:</li>
+    </ul>
+<pre><code class="language-java line-numbers">package com.example;
+
+import com.rabbitmq.client.BuiltinExchangeType;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+
+import java.nio.charset.StandardCharsets;
+
+public class EmitLogDirect {
+
+    private static final String EXCHANGE_NAME = &quot;direct_logs&quot;;
+
+    public static void main(String[] argv) throws Exception {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost(&quot;localhost&quot;);
+
+        try (Connection connection = factory.newConnection();
+             Channel channel = connection.createChannel()) {
+
+            // Declare direct exchange
+            channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+
+            // Severity (routing key)
+            String severity = argv.length &gt; 0 ? argv[0] : &quot;info&quot;;
+
+            // Message text
+            String message;
+            if (argv.length &gt; 1) {
+                StringBuilder builder = new StringBuilder();
+                for (int i = 1; i &lt; argv.length; i++) {
+                    if (i &gt; 1) {
+                        builder.append(&quot; &quot;);
+                    }
+                    builder.append(argv[i]);
+                }
+                message = builder.toString();
+            } else {
+                message = &quot;Hello from direct routing!&quot;;
+            }
+
+            // Publish with routing key = severity
+            channel.basicPublish(
+                    EXCHANGE_NAME,
+                    severity,
+                    null,
+                    message.getBytes(StandardCharsets.UTF_8)
+            );
+
+            System.out.println(&quot; [x] Sent &#39;&quot; + severity + &quot;&#39;: &#39;&quot; + message + &quot;&#39;&quot;);
+        }
+    }
+}
+</code></pre>
+    <ul>
+        <li><code>info</code> log:</li>
+    </ul>
+<pre><code class="language-bash line-numbers">mvn -q exec:java \
+    -Dexec.mainClass=&quot;com.example.EmitLogDirect&quot; \
+    -Dexec.args=&quot;info Just an info log&quot;
+</code></pre>
+    <ul>
+        <li><code>error</code> log:</li>
+    </ul>
+<pre><code class="language-bash line-numbers">mvn -q exec:java \
+    -Dexec.mainClass=&quot;com.example.EmitLogDirect&quot; \
+    -Dexec.args=&quot;error Something went wrong&quot;
+</code></pre>
+    <br/><br/>
+
+
+    <li>Consumer &mdash; ReceiveLogsDirect.java</li>
+    <br/>
+    <ul>
+        <li>The consumer:
+            <ul>
+                <li>Declares the same direct exchange.</li>
+                <li>Creates a new, exclusive, auto-delete queue.</li>
+                <li>Binds that queue to the exchange using one or more severities given on the command line.</li>
+                <li>Prints all messages for the severities it cares about.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Create <code>ReceiveLogsDirect.java</code>:</li>
+    </ul>
+<pre><code class="language-java line-numbers">package com.example;
+
+import com.rabbitmq.client.*;
+
+import java.nio.charset.StandardCharsets;
+
+public class ReceiveLogsDirect {
+
+    private static final String EXCHANGE_NAME = &quot;direct_logs&quot;;
+
+    public static void main(String[] argv) throws Exception {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost(&quot;localhost&quot;);
+
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+
+        // Declare direct exchange
+        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+
+        // Create a fresh, exclusive, auto-delete queue
+        String queueName = channel.queueDeclare().getQueue();
+
+        if (argv.length &lt; 1) {
+            System.err.println(&quot;Usage: ReceiveLogsDirect [info] [warning] [error]&quot;);
+            System.exit(1);
+        }
+
+        // Bind the queue for each severity given
+        for (String severity : argv) {
+            channel.queueBind(queueName, EXCHANGE_NAME, severity);
+            System.out.println(&quot; [*] Bound queue &#39;&quot; + queueName +
+                               &quot;&#39; with routing key &#39;&quot; + severity + &quot;&#39;&quot;);
+        }
+
+        System.out.println(&quot; [*] Waiting for logs. To exit press CTRL+C&quot;);
+
+        // Define callback
+        DeliverCallback deliverCallback = (consumerTag, delivery) -&gt; {
+            String routingKey = delivery.getEnvelope().getRoutingKey();
+            String message = new String(delivery.getBody(), StandardCharsets.UTF_8);
+            System.out.println(&quot; [x] Received &#39;&quot; + routingKey + &quot;&#39;: &#39;&quot; + message + &quot;&#39;&quot;);
+        };
+
+        CancelCallback cancelCallback = consumerTag -&gt; {
+            System.out.println(&quot; [!] Consumer cancelled: &quot; + consumerTag);
+        };
+
+        // Start consuming (autoAck = true is fine for simple log consumers)
+        boolean autoAck = true;
+        channel.basicConsume(queueName, autoAck, deliverCallback, cancelCallback);
+    }
+}
+</code></pre>
+    <ul>
+        <li>Each consumer can choose its own subset of severities.</li>
+        <li>Each consumer creates its own queue and binds it with the keys it cares about.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Running Example Scenarios</li>
+    <br/>
+    <ul>
+        <li>Start RabbitMQ server if not running.</li>
+        <br/>
+        <li>Terminal 1 &mdash; consumer for <code>error</code> only:</li>
+<pre><code class="language-bash line-numbers">mvn -q exec:java \
+    -Dexec.mainClass=&quot;com.example.ReceiveLogsDirect&quot; \
+    -Dexec.args=&quot;error&quot;
+</code></pre>
+        <br/>
+        <li>Terminal 2 &mdash; consumer for <code>info</code> and <code>warning</code>:</li>
+<pre><code class="language-bash line-numbers">mvn -q exec:java \
+    -Dexec.mainClass=&quot;com.example.ReceiveLogsDirect&quot; \
+    -Dexec.args=&quot;info warning&quot;
+</code></pre>
+        <br/>
+        <li>Terminal 3 &mdash; send several logs:</li>
+<pre><code class="language-bash line-numbers"># Info log
+mvn -q exec:java \
+    -Dexec.mainClass=&quot;com.example.EmitLogDirect&quot; \
+    -Dexec.args=&quot;info Just some info&quot;
+
+# Warning log
+mvn -q exec:java \
+    -Dexec.mainClass=&quot;com.example.EmitLogDirect&quot; \
+    -Dexec.args=&quot;warning Disk almost full&quot;
+
+# Error log
+mvn -q exec:java \
+    -Dexec.mainClass=&quot;com.example.EmitLogDirect&quot; \
+    -Dexec.args=&quot;error System failure!&quot;
+</code></pre>
+        <br/>
+        <li>Expected distribution:
+<pre><code class="language-plaintext line-numbers"># Terminal 1 (error only):
+ [*] Bound queue &#39;amq.gen-...&#39; with routing key &#39;error&#39;
+ [*] Waiting for logs. To exit press CTRL+C
+ [x] Received &#39;error&#39;: &#39;System failure!&#39;
+
+# Terminal 2 (info + warning):
+ [*] Bound queue &#39;amq.gen-...&#39; with routing key &#39;info&#39;
+ [*] Bound queue &#39;amq.gen-...&#39; with routing key &#39;warning&#39;
+ [*] Waiting for logs. To exit press CTRL+C
+ [x] Received &#39;info&#39;: &#39;Just some info&#39;
+ [x] Received &#39;warning&#39;: &#39;Disk almost full&#39;
+</code></pre>
+        </li>
+        <li>Note that <code>error</code> logs are not seen by the info/warning consumer, and vice versa.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Routing vs Fanout vs Work Queues</li>
+    <br/>
+    <ul>
+        <li>Fanout (Publish/Subscribe):
+            <ul>
+                <li>Broadcast to all bound queues.</li>
+                <li>Ignores routing keys.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Direct (Routing):
+            <ul>
+                <li>Uses routing keys for exact matching.</li>
+                <li>Each queue chooses which messages it wants based on binding keys.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Work Queues (with default exchange or direct):
+            <ul>
+                <li>One queue, multiple workers.</li>
+                <li>Each message is processed by only one worker.</li>
+                <li>Focus: load distribution, not selective subscription.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Extending the Routing Pattern</li>
+    <br/>
+    <ul>
+        <li>You can:
+            <ul>
+                <li>Add more severities (e.g. <code>debug</code>, <code>critical</code>).</li>
+                <li>Have some consumers listen to <u>all</u> severities (bind many keys).</li>
+                <li>Use durable queues and persistent messages to store selected logs.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>In the next level (topic exchanges), routing keys can be patterns like:
+<pre><code class="language-plaintext line-numbers">kern.critical
+auth.info
+db.warning
+</code></pre>
+            where consumers can subscribe using wildcards (e.g. <code>kern.*</code> or <code>*.critical</code>).</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
