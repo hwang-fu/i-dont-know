@@ -189,6 +189,7 @@
         <li><a href="#django-url-mapping">URL Mapping</a></li>
         <li><a href="#django-shell">Django Shell</a></li>
         <li><a href="#django-admin-interface">Admin Interface</a></li>
+        <li><a href="#django-admin-create-user">Admin Create User</a></li>
     </ol>
 </nav>
 <hr/>
@@ -11687,6 +11688,141 @@ admin.site.index_title = "Welcome to the Admin Panel"</code></pre>
     </ul>
     <br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-admin-create-user">Django Admin Create User</h3>
+<ol>
+
+    <li>Creating Users via Django Admin</li>
+    <br/>
+    <ul>
+        <li>Django’s built-in <code>User</code> model can be managed directly via the admin interface.</li>
+        <br/>
+        <li>To access it, make sure:</li>
+            <ol>
+                <li><code>django.contrib.auth</code> is in <code>INSTALLED_APPS</code></li>
+                <li>You’ve run <code>python3 manage.py migrate</code></li>
+            </ol>
+        <br/>
+        <li>Login to <code>/admin</code> as a superuser, and go to:</li>
+            <ol>
+                <li><b>Users</b> under the “Authentication and Authorization” section</li>
+                <li>Click <b>+ Add</b> to create a new user</li>
+            </ol>
+        <br/>
+        <li>You'll first be prompted for:</li>
+            <ul>
+                <li>Username</li>
+                <li>Password</li>
+            </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Fields in the Admin Create User Form</li>
+    <br/>
+    <ul>
+        <li>After the initial password setup, you can set additional fields:</li>
+        <br/>
+        <ul>
+            <li><code>First name</code>, <code>Last name</code></li>
+            <li><code>Email address</code></li>
+            <li><code>Is staff</code>: can access the admin interface</li>
+            <li><code>Is superuser</code>: full permissions</li>
+            <li><code>Is active</code>: determines if the account is active</li>
+            <li><code>Groups</code>: role-based permission bundles</li>
+            <li><code>User permissions</code>: fine-grained permission settings</li>
+            <li><code>Last login</code> and <code>Date joined</code></li>
+        </ul>
+        <br/>
+        <li>Click <b>Save</b> to create the user.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Customizing the User Creation Form</li>
+    <br/>
+    <ul>
+        <li>If you are using a custom user model, the default form may not be sufficient.</li>
+        <br/>
+        <li>Create a custom admin class in <code>admin.py</code>:</li>
+<pre><code class="language-python line-numbers">from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth import get_user_model
+
+class CustomUserAdmin(UserAdmin):
+    model = get_user_model()
+    list_display = ('username', 'email', 'is_staff')
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'email', 'password1', 'password2', 'is_staff')}
+        ),
+    )
+
+admin.site.register(get_user_model(), CustomUserAdmin)
+</code></pre>
+        <li>Now the admin panel uses the custom logic and layout for creating users.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Users Programmatically (Optional)</li>
+    <br/>
+    <ul>
+        <li>Users can also be created via Django shell:</li>
+<pre><code class="language-bash line-numbers">python3 manage.py shell</code></pre>
+<pre><code class="language-python line-numbers">
+from django.contrib.auth.models import User
+user = User.objects.create_user('junzhe', password='secure123')
+user.email = 'junzhe@example.com'
+user.is_staff = True
+user.save()
+</code></pre>
+        <br/>
+        <li>For superusers:</li>
+<pre><code class="language-python line-numbers">
+User.objects.create_superuser('admin', 'admin@example.com', 'superpass')
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Important Tips</li>
+    <br/>
+    <ul>
+        <li>Always use <code>create_user()</code> or <code>create_superuser()</code> when creating users programmatically. They handle password hashing and validation.</li>
+        <br/>
+        <li>Don’t forget to assign <code>is_staff=True</code> for users that should access the admin panel.</li>
+        <br/>
+        <li>By default, <code>is_active=True</code> — set it to <code>False</code> to temporarily disable a user.</li>
+        <br/>
+        <li>Assigning users to <code>groups</code> and <code>permissions</code> helps enforce access control.</li>
+    </ul>
+    <br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
