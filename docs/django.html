@@ -191,6 +191,7 @@
         <li><a href="#django-admin-interface">Admin Interface</a></li>
         <li><a href="#django-admin-create-user">Admin Create User</a></li>
         <li><a href="#django-admin-include-models">Admin Include Models</a></li>
+        <li><a href="#django-admin-display-fields">Admin Display Fields</a></li>
     </ol>
 </nav>
 <hr/>
@@ -11952,7 +11953,143 @@ class ShopConfig(AppConfig):
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-admin-display-fields">Django Admin Set Fields to Display</h3>
+<ol>
 
+    <li>What Does "Display Fields in Django Admin" Mean?</li>
+    <br/>
+    <ul>
+        <li>In the Django admin interface, you can configure which model fields appear in:
+            <ul>
+                <li><b>List view</b> – the table of records</li>
+                <li><b>Form view</b> – the create/edit form</li>
+                <li><b>Read-only fields</b> – visible but not editable</li>
+            </ul>
+        </li>
+        <br/>
+        <li>This is done by customizing the <code>ModelAdmin</code> class for each model.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Setting Fields for List Display</li>
+    <br/>
+    <ul>
+        <li>Use <code>list_display</code> to show specific fields in the object list table:</li>
+<pre><code class="language-python line-numbers">class ProductAdmin(admin.ModelAdmin):
+    list_display = ('name', 'price', 'available')
+</code></pre>
+        <br/>
+        <li>This renders the selected fields as columns in the list view.</li>
+        <br/>
+        <li>You can also display methods or computed properties:</li>
+<pre><code class="language-python line-numbers">class Product(models.Model):
+    name = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=6, decimal_places=2)
+
+    def is_expensive(self):
+        return self.price &gt; 100
+    is_expensive.boolean = True
+
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ('name', 'price', 'is_expensive')
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Setting Fields in the Form View</li>
+    <br/>
+    <ul>
+        <li>Use <code>fields</code> to control the order and visibility of fields in the form:</li>
+<pre><code class="language-python line-numbers">class ProductAdmin(admin.ModelAdmin):
+    fields = ('name', 'price', 'description')
+</code></pre>
+        <br/>
+        <li>Only listed fields will be shown in the form.</li>
+        <br/>
+        <li>To group fields visually, use <code>fieldsets</code>:</li>
+<pre><code class="language-python line-numbers">class ProductAdmin(admin.ModelAdmin):
+    fieldsets = (
+        ('Basic Info', {'fields': ('name', 'price')}),
+        ('Details', {'fields': ('description',)}),
+    )
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Making Fields Read-Only</li>
+    <br/>
+    <ul>
+        <li>Use <code>readonly_fields</code> to show fields as uneditable:</li>
+<pre><code class="language-python line-numbers">class ProductAdmin(admin.ModelAdmin):
+    readonly_fields = ('created_at',)
+</code></pre>
+        <li>This is often used for:
+            <ul>
+                <li>timestamps</li>
+                <li>automatically generated values</li>
+                <li>fields not meant to be changed via admin</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Controlling Which Fields Are Editable in List View</li>
+    <br/>
+    <ul>
+        <li>Use <code>list_editable</code> to make columns editable directly in list view:</li>
+<pre><code class="language-python line-numbers">class ProductAdmin(admin.ModelAdmin):
+    list_display = ('name', 'price', 'available')
+    list_editable = ('price', 'available')
+</code></pre>
+        <li>Note: All <code>list_editable</code> fields must also be in <code>list_display</code>, but not the first field (usually the link).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Exclude to Hide Fields</li>
+    <br/>
+    <ul>
+        <li>Use <code>exclude</code> to prevent certain fields from appearing in the form:</li>
+<pre><code class="language-python line-numbers">class ProductAdmin(admin.ModelAdmin):
+    exclude = ('internal_note',)
+</code></pre>
+        <li>Use this if you want Django to generate the form but hide specific fields.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Dynamic Field Customization</li>
+    <br/>
+    <ul>
+        <li>You can override <code>get_fields()</code> or <code>get_readonly_fields()</code> to make decisions based on user or object:</li>
+<pre><code class="language-python line-numbers">class ProductAdmin(admin.ModelAdmin):
+    def get_readonly_fields(self, request, obj=None):
+        if not request.user.is_superuser:
+            return ('price',)
+        return ()
+</code></pre>
+        <li>This allows field display behavior to adapt dynamically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Hiding the Primary Key Field</li>
+    <br/>
+    <ul>
+        <li>The primary key (e.g. <code>id</code>) is not shown by default.</li>
+        <br/>
+        <li>To show it explicitly in list or form:</li>
+<pre><code class="language-python line-numbers">list_display = ('id', 'name')
+readonly_fields = ('id',)
+</code></pre>
+        <li>This can be useful for reference or debugging.</li>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
