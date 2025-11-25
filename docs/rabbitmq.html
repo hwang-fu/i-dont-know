@@ -94,6 +94,7 @@
     body {
         font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", "Times New Roman", Georgia, serif;
         font-variant-ligatures: none;
+        font-size: 14px;
     }
 
     ul > li {
@@ -149,7 +150,7 @@
 <nav id="toc" style="margin-bottom: 2rem;">
     <h2> <img src="resources/rabbitmq.png" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ol style="line-height: 1.8;">
-        <li><a href="#"></a></li>
+        <li><a href="#rabbitmq-introduction">Introduction</a></li>
     </ol>
 </nav>
 <hr/>
@@ -157,18 +158,233 @@
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3></h3>
+<h3 id="rabbitmq-introduction">RabbitMQ Introduction</h3>
 <ol>
-    <li></li>
+
+    <li>What Is RabbitMQ?</li>
     <br/>
+    <ul>
+        <li><b>RabbitMQ</b> is an open-source <u>message broker</u> that allows different parts of an application (or different applications) to communicate asynchronously.</li>
+        <br/>
+        <li>It implements the <b>AMQP protocol</b> (Advanced Message Queuing Protocol), which defines:
+            <ul>
+                <li>how messages are sent</li>
+                <li>how messages are routed</li>
+                <li>how queues and exchanges behave</li>
+            </ul>
+        </li>
+        <br/>
+        <li>It ensures reliable message delivery even if consumers or producers crash.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Core Concepts in RabbitMQ</li>
     <br/>
-    <li></li>
+    <ul>
+
+        <li>A <code>producer</code> is any program that sends messages to RabbitMQ.</li>
+<pre><code class="language-python line-numbers">channel.basic_publish(exchange='', routing_key='jobs', body='hello')</code></pre>
+
+        <br/>
+
+        <li>A <code>receiver</code> receives and processes messages.</li>
+<pre><code class="language-python line-numbers">channel.basic_consume(queue='jobs', on_message_callback=callback)</code></pre>
+
+        <br/>
+
+        <li>A <code>queue</code> is a buffer where messages wait until processed.</li>
+
+        <br/>
+
+        <li>An <code>exchange</code> receives messages and routes them to queues (Different routing strategies = different exchange types).</li>
+
+        <br/>
+
+        <li>A <code>binding</code> is a rule connecting a queue to an exchange.</li>
+
+        <br/>
+
+        <li>A <code>routing key</code> is a message label used by the exchange to decide where messages go.</li>
+
+        <br/>
+
+        <li>A <code>connection</code> is a TCP connection to RabbitMQ server.</li>
+
+        <br/>
+
+        <li>A <code>channel</code> is a virtual session used to perform messaging operations.</li>
+
+    </ul>
+    <br/><br/>
+
+
+    <li>RabbitMQ Exchange Types</li>
     <br/>
+    <ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>Exchange Type</th>
+                    <th>Description</th>
+                    <th>Routing Behavior</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>direct</code></td>
+                    <td>Simple mapping using routing key</td>
+                    <td>Only queues with an exact-match routing key receive messages</td>
+                </tr>
+                <tr>
+                    <td><code>fanout</code></td>
+                    <td>Broadcasting</td>
+                    <td>All queues bound to the exchange receive the message</td>
+                </tr>
+                <tr>
+                    <td><code>topic</code></td>
+                    <td>Pattern-based routing</td>
+                    <td>Routing key supports wildcards (<code>*</code> and <code>#</code>)</td>
+                </tr>
+                <tr>
+                    <td><code>headers</code></td>
+                    <td>Routing based on message headers</td>
+                    <td>Flexible but slower</td>
+                </tr>
+            </tbody>
+        </table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Message Flow in RabbitMQ</li>
     <br/>
-    <li></li>
+    <ul>
+        <li>A message travels through 3 main stages:</li>
+        <br/>
+        <ol>
+            <li>Producer → Exchange</li>
+            <li>Exchange → Queue</li>
+            <li>Queue → Consumer</li>
+        </ol>
+        <br/>
+        <li>This allows full decoupling between sender and receiver.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>RabbitMQ vs Kafka (High-Level)</li>
     <br/>
+    <ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>RabbitMQ</th>
+                    <th>Kafka</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Message broker</td>
+                    <td>Distributed log/event streaming</td>
+                </tr>
+                <tr>
+                    <td>Best for task processing</td>
+                    <td>Best for high-throughput event streams</td>
+                </tr>
+                <tr>
+                    <td>Point-to-point or pub/sub</td>
+                    <td>Pub/sub only</td>
+                </tr>
+                <tr>
+                    <td>Lightweight; low latency</td>
+                    <td>High throughput, scalable</td>
+                </tr>
+            </tbody>
+        </table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing and Running RabbitMQ</li>
+    <br/>
+    <ul>
+        <li>Local installation (OpenSUSE example):</li>
+<pre><code class="language-bash line-numbers">sudo zypper install rabbitmq-server
+sudo systemctl start rabbitmq-server</code></pre>
+
+        <br/>
+        <li>Or run via Docker:</li>
+<pre><code class="language-bash line-numbers">docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management</code></pre>
+
+        <br/>
+        <li>Management UI available at:</li>
+<pre><code class="language-plaintext line-numbers">http://localhost:15672</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Python Producer and Consumer Example</li>
+    <br/>
+    <ul>
+
+        <li><b>Producer (send message)</b></li>
+<pre><code class="language-python line-numbers">import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+channel = connection.channel()
+
+channel.queue_declare(queue='hello')
+channel.basic_publish(exchange='', routing_key='hello', body='Hello RabbitMQ!')
+connection.close()</code></pre>
+
+        <br/>
+
+        <li><b>Consumer (receive message)</b></li>
+<pre><code class="language-python line-numbers">import pika
+
+def callback(ch, method, properties, body):
+    print("Received:", body.decode())
+
+connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+channel = connection.channel()
+
+channel.queue_declare(queue='hello')
+channel.basic_consume(queue='hello', on_message_callback=callback, auto_ack=True)
+
+print("Waiting for messages...")
+channel.start_consuming()</code></pre>
+
+        <br/>
+        <li>RabbitMQ automatically delivers messages to consumers.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>RabbitMQ Acknowledgements</li>
+    <br/>
+    <ul>
+        <li>Consumers send <code>ACKs</code> after processing messages.</li>
+        <li>If a consumer crashes before an <code>ACK</code>, the message is requeued.</li>
+    </ul>
+<pre><code class="language-python line-numbers">channel.basic_consume(queue='jobs', on_message_callback=callback, auto_ack=False)</code></pre>
+    <br/><br/>
+
+
+    <li>Durable Queues &amp; Persistent Messages</li>
+    <br/>
+    <ul>
+        <li>Ensure messages survive broker restarts:</li>
+    </ul>
+<pre><code class="language-python line-numbers">channel.queue_declare(queue='jobs', durable=True)
+channel.basic_publish(exchange='', routing_key='jobs',
+                      body='hello',
+                      properties=pika.BasicProperties(delivery_mode=2))</code></pre>
+    <ul>
+        <li><code>delivery_mode=2</code> makes the message persistent.</li>
+    </ul>
+    <br/><br/>
 </ol>
-<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
