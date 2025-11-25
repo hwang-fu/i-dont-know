@@ -159,7 +159,8 @@
         <li><a href="#django-file-structure">File Structures</a></li>
         <li><a href="#django-models">Models</a></li>
         <li><a href="#django-orm">Object–Relational Mapper (ORM)</a></li>
-        <li><a href="#django-model-queries">Models Making Queries</a></li>
+        <li><a href="#django-model-making-quries">Models Making Queries</a></li>
+        <li><a href="#django-model-filter-pattern">Model Filter Pattern</a></li>
         <li><a href="#django-model-aggregation">Models Aggregation</a></li>
         <li><a href="#django-model-research">Models Research</a></li>
         <li><a href="#django-model-managers">Models Managers</a></li>
@@ -187,7 +188,6 @@
         <li><a href="#django-template">Template</a></li>
         <li><a href="#django-url-mapping">URL Mapping</a></li>
         <li><a href="#django-shell">Django Shell</a></li>
-        <li><a href="#django-model-making-quries">Models Making Queries</a></li>
         <li><a href="#django-admin-interface">Admin Interface</a></li>
     </ol>
 </nav>
@@ -3055,319 +3055,791 @@ Post.objects.create(title="New", body="Hello ORM!")
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="django-model-queries">Models Making Queries in Django (The Django QuerySet API)</h3>
+<h3 id="django-model-making-quries">Django ORM &mdash; Querying Models</h3>
 <ol>
 
-    <li>Introduction</li>
+    <li>Context &amp; Basic Setup</li>
     <br/>
     <ul>
-        <li>In Django, every model class comes with a powerful built-in interface called the <u>QuerySet API</u>.</li>
+        <li>You have a Django project already set up.</li>
+        <li>You have at least one app with some models.</li>
+        <li>You are running commands in a virtual environment created via:</li>
+    </ul>
+<pre><code class="language-bash line-numbers">python3 -m venv .venv
+source .venv/bin/activate  # on macOS/Linux
+# .venv\Scripts\activate   # on Windows (PowerShell/cmd)</code></pre>
+    <ul>
+        <li>You use the Django shell to experiment with queries:</li>
+    </ul>
+<pre><code class="language-bash line-numbers">python3 manage.py shell</code></pre>
+    <br/>
+    <br/>
+
+
+    <li>Example model used in this chapter (simplified):</li>
+<pre><code class="language-python line-numbers">from django.db import models
+
+
+class Author(models.Model):
+    name = models.CharField(max_length=100)
+
+
+class Book(models.Model):
+    title = models.CharField(max_length=200)
+    rating = models.IntegerField(default=0)
+    published_at = models.DateField(null=True, blank=True)
+    author = models.ForeignKey(
+        Author,
+        on_delete=models.CASCADE,
+        related_name=&quot;books&quot;,
+    )
+
+    def __str__(self):
+        return f&quot;{self.title} ({self.rating})&quot;
+</code></pre>
+        <ul><li>All queries in this chapter are based on:</li></ul>
+<pre><code class="language-python line-numbers">from books.models import Book, Author</code></pre>
+    <br/><br/>
+
+
+    <li>Managers &amp; QuerySets</li>
+    <br/>
+    <ul>
+        <li>Each model has a <b>manager</b>, by default called <code>objects</code>:
+<pre><code class="language-python line-numbers">Book.objects</code></pre>
+        </li>
         <br/>
-        <li>This lets you perform:
+        <li>Calling most methods on a manager returns a <code>QuerySet</code>:
+<pre><code class="language-python line-numbers">qs = Book.objects.all()
+type(qs)  # &lt;class &#39;django.db.models.query.QuerySet&#39;&gt;</code></pre>
+        </li>
+        <br/>
+        <li><code>QuerySet</code>s are lazy:
             <ul>
-                <li>SELECT</li>
-                <li>INSERT</li>
-                <li>UPDATE</li>
-                <li>DELETE</li>
+                <li>No SQL is executed until the <code>QuerySet</code> is actually evaluated.</li>
+                <li>Evaluation happens when you:
+                    <ul>
+                        <li>iterate over it: <code>for book in qs: ...</code></li>
+                        <li>cast to list: <code>list(qs)</code></li>
+                        <li>call methods like <code>len(qs)</code>, <code>bool(qs)</code>, <code>list(qs)</code></li>
+                        <li>use aggregation methods: <code>count()</code>, <code>exists()</code>, etc.</li>
+                    </ul>
+                </li>
             </ul>
-           operations without writing SQL.</li>
+        </li>
         <br/>
-        <li>You "make queries" using:
+        <li>Chaining QuerySets builds up SQL:
+<pre><code class="language-python line-numbers">qs = Book.objects.filter(rating__gte=4).order_by(&quot;-published_at&quot;)</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Retrieval: <code>all()</code>, <code>get()</code>, <code>first()</code>, <code>last()</code></li>
+    <br/>
+    <ul>
+        <li><code>all()</code> selects all rows:</li>
+<pre><code class="language-python line-numbers">Book.objects.all()  # SELECT * FROM book;</code></pre>
+        <br/>
+        <br/>
+        <li><code>get()</code> selects exactly one row, or raise an exception:</li>
+<pre><code class="language-python line-numbers">book = Book.objects.get(pk=1)
+book = Book.objects.get(title=&quot;Django Tutorial&quot;)</code></pre>
             <ul>
-                <li><code>YourModel.objects</code></li>
-                <li>or QuerySet methods → <code>.all()</code>, <code>.filter()</code>, <code>.get()</code>, etc.</li>
+                <li>Raises <code>Book.DoesNotExist</code> if no match.</li>
+                <li>Raises <code>Book.MultipleObjectsReturned</code> if more than one match.</li>
+            </ul>
+        <br/>
+        <br/>
+        <li><code>first()</code> / <code>last()</code> are convenient helpers:</li>
+<pre><code class="language-python line-numbers">first_book = Book.objects.order_by(&quot;published_at&quot;).first()
+last_book  = Book.objects.order_by(&quot;published_at&quot;).last()</code></pre>
+            <ul>
+                <li>Return a single object or <code>None</code> (no exceptions).</li>
+            </ul>
+        <br/>
+        <br/>
+        <li><code>latest()</code> / <code>earliest()</code> use a date field:
+<pre><code class="language-python line-numbers">latest_book   = Book.objects.latest(&quot;published_at&quot;)
+earliest_book = Book.objects.earliest(&quot;published_at&quot;)</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Filtering: <code>filter()</code>, <code>exclude()</code>, field lookups</li>
+    <br/>
+    <ul>
+        <li><code>filter()</code> keeps rows that match:</li>
+<pre><code class="language-python line-numbers">Book.objects.filter(rating__gte=4)
+Book.objects.filter(title__icontains=&quot;django&quot;)</code></pre>
+        <br/>
+        <li><code>exclude()</code> removes rows that match:</li>
+<pre><code class="language-python line-numbers">Book.objects.exclude(rating__lt=3)</code></pre>
+        <br/>
+        <li>Field lookup syntax: <code>field__lookup=value</code>
+<pre><code class="language-python line-numbers">Book.objects.filter(rating__gte=4)          # &gt;= 4
+Book.objects.filter(rating__gt=4)           # &gt; 4
+Book.objects.filter(rating__lte=2)          # &lt;= 2
+Book.objects.filter(title__icontains=&quot;py&quot;) # case-insensitive substring
+Book.objects.filter(published_at__isnull=True)
+Book.objects.filter(pk__in=[1, 2, 3])
+Book.objects.filter(rating__range=(3, 5))</code></pre>
+        </li>
+        <br/>
+        <li>Some useful lookup types:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Lookup</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>exact</code>, <code>iexact</code></td>
+            <td>Exact match (case-sensitive / case-insensitive)</td>
+            <td><code>name__iexact="john"</code></td>
+        </tr>
+        <tr>
+            <td><code>contains</code>, <code>icontains</code></td>
+            <td>Substring match (case-sensitive / insensitive)</td>
+            <td><code>title__icontains="django"</code></td>
+        </tr>
+        <tr>
+            <td>
+                <code>startswith</code>, <code>istartswith</code><br/>
+                <code>endswith</code>, <code>iendswith</code>
+            </td>
+            <td>Prefix / suffix search (case-sensitive / insensitive)</td>
+            <td><code>email__startswith="admin"</code></td>
+        </tr>
+        <tr>
+            <td>
+                <code>lt</code>, <code>lte</code><br/>
+                <code>gt</code>, <code>gte</code>
+            </td>
+            <td>Less-than / greater-than comparisons</td>
+            <td><code>price__gt=50</code></td>
+        </tr>
+        <tr>
+            <td><code>in</code></td>
+            <td>Membership in a list or queryset</td>
+            <td><code>id__in=[1, 2, 3]</code></td>
+        </tr>
+        <tr>
+            <td><code>range</code></td>
+            <td>Value between two values (inclusive)</td>
+            <td><code>created_at__range=("2024-01-01", "2024-12-31")</code></td>
+        </tr>
+        <tr>
+            <td><code>isnull</code></td>
+            <td>Field is NULL / NOT NULL</td>
+            <td><code>deleted_at__isnull=True</code></td>
+        </tr>
+        <tr>
+            <td><code>regex</code>, <code>iregex</code></td>
+            <td>Regular expression match (DB backend dependent)</td>
+            <td><code>username__iregex="^[a-z0-9_]+$"</code></td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Combining Conditions: <code>Q</code> Objects (OR / complex logic)</li>
+    <br/>
+    <ul>
+        <li>By default, multiple arguments to <code>filter()</code> are combined with <b>AND</b>:</li>
+<pre><code class="language-python line-numbers">Book.objects.filter(rating__gte=4, title__icontains=&quot;django&quot;)</code></pre>
+        <br/>
+        <li>For more complex logic (OR, NOT, nested) use <code>Q</code> objects:</li>
+<pre><code class="language-python line-numbers">from django.db.models import Q
+
+# rating &gt;= 4 OR title contains &quot;django&quot;
+Book.objects.filter(
+    Q(rating__gte=4) | Q(title__icontains=&quot;django&quot;)
+)
+
+# rating &gt;= 4 AND NOT published_at IS NULL
+Book.objects.filter(
+    Q(rating__gte=4) &amp; ~Q(published_at__isnull=True)
+)</code></pre>
+        <li>Complex queries are usually a combination of <code>Q()</code> with <code>&amp;</code>, <code>|</code>, and <code>~</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sorting &amp; Limiting Results: <code>order_by()</code>, slicing</li>
+    <br/>
+    <ul>
+        <li>Sort results with <code>order_by()</code>:</li>
+<pre><code class="language-python line-numbers"># ascending
+Book.objects.order_by(&quot;title&quot;)
+
+# descending
+Book.objects.order_by(&quot;-rating&quot;, &quot;title&quot;)</code></pre>
+        <br/>
+        <li>Limit results using slicing (translated to <code>LIMIT</code> / <code>OFFSET</code>):</li>
+<pre><code class="language-python line-numbers">top_5 = Book.objects.order_by(&quot;-rating&quot;)[:5]
+second_page = Book.objects.order_by(&quot;title&quot;)[5:10]</code></pre>
+        <li><b>Important:</b> slicing returns a new <code>QuerySet</code>, it is still lazy until evaluated.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Only Certain Fields: <code>values()</code>, <code>values_list()</code>, <code>only()</code>, <code>defer()</code></li>
+    <br/>
+    <ul>
+        <li><code>values()</code> returns dictionaries:</li>
+<pre><code class="language-python line-numbers">qs = Book.objects.filter(rating__gte=4).values(&quot;title&quot;, &quot;rating&quot;)
+list(qs)
+# [&quot;{&#39;title&#39;: &#39;Django Guide&#39;, &#39;rating&#39;: 5}&quot;, ...]</code></pre>
+        <br/>
+        <li><code>values_list()</code> returns tuples (or flat list):</li>
+<pre><code class="language-python line-numbers"># list of (title, rating)
+Book.objects.values_list(&quot;title&quot;, &quot;rating&quot;)
+
+# flat list of titles
+Book.objects.values_list(&quot;title&quot;, flat=True)</code></pre>
+        <br/>
+        <li><code>only()</code> &amp; <code>defer()</code> controls which fields are loaded (useful for large models):</li>
+<pre><code class="language-python line-numbers"># Only load title and rating, other fields deferred until accessed
+qs = Book.objects.only(&quot;title&quot;, &quot;rating&quot;)
+
+# Load everything except big_text_field
+qs = Book.objects.defer(&quot;big_text_field&quot;)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Relations: ForeignKey &amp; Reverse Relations</li>
+    <br/>
+    <ul>
+        <li>Forward relation: from <code>Book</code> to <code>Author</code>:</li>
+<pre><code class="language-python line-numbers">book = Book.objects.get(pk=1)
+author = book.author              # follow ForeignKey</code></pre>
+        <br/>
+        <li>Reverse relation: from <code>Author</code> to <code>Book</code>:</li>
+<pre><code class="language-python line-numbers">author = Author.objects.get(pk=1)
+
+# default is author.book_set, but we used related_name=&quot;books&quot;
+books = author.books.all()</code></pre>
+        <br/>
+        <li>Filter across relations using double underscores:</li>
+<pre><code class="language-python line-numbers"># Books with author name &quot;Alice&quot;
+Book.objects.filter(author__name=&quot;Alice&quot;)
+
+# Authors who have at least one book with rating &gt;= 4
+Author.objects.filter(books__rating__gte=4).distinct()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Performance Helpers: <code>select_related()</code> &amp; <code>prefetch_related()</code></li>
+    <br/>
+    <ul>
+        <li><b>Problem:</b> N+1 queries when accessing related objects in a loop.</li>
+        <br/>
+        <li><code>select_related()</code> performs <b>JOIN</b>
+            and loads related <b>single-valued</b> objects in one query. Used for <code>ForeignKey</code>, <code>OneToOneField</code>.</li>
+<pre><code class="language-python line-numbers"># Without select_related: 1 query for books, +1 per book for author
+books = Book.objects.all()
+
+# With select_related: 1 query total
+books = Book.objects.select_related(&quot;author&quot;)
+
+for book in books:
+    print(book.title, book.author.name)</code></pre>
+        <br/>
+        <li><code>prefetch_related()</code> runs additional queries and joins results in Python. Used for <b>many-valued</b> relations: <code>ManyToManyField</code>, reverse <code>ForeignKey</code>, etc.</li>
+<pre><code class="language-python line-numbers">authors = Author.objects.prefetch_related(&quot;books&quot;)
+
+for author in authors:
+    # does not hit DB per loop; books prefetched
+    print(author.name, [b.title for b in author.books.all()])</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Aggregations &amp; Annotations: <code>aggregate()</code>, <code>annotate()</code>, <code>F</code></li>
+    <br/>
+    <ul>
+        <li>Aggregations return a single result (dictionary):</li>
+<pre><code class="language-python line-numbers">from django.db.models import Count, Avg, Max, Min
+
+stats = Book.objects.aggregate(
+    total=Count(&quot;id&quot;),
+    avg_rating=Avg(&quot;rating&quot;),
+    max_rating=Max(&quot;rating&quot;),
+)
+# {&quot;total&quot;: 42, &quot;avg_rating&quot;: 4.2, &quot;max_rating&quot;: 5}</code></pre>
+        <br/>
+        <li><code>annotate()</code> adds calculated fields to each row:</li>
+<pre><code class="language-python line-numbers"># Number of books per author
+authors = Author.objects.annotate(book_count=Count(&quot;books&quot;))
+
+for a in authors:
+    print(a.name, a.book_count)</code></pre>
+        <br/>
+        <li><code>F</code> expressions let you refer to field values in updates or filters:</li>
+<pre><code class="language-python line-numbers">from django.db.models import F
+
+# Books where rating is greater than the author id (nonsense, but as example)
+Book.objects.filter(rating__gt=F(&quot;author__id&quot;))
+
+# Increase rating by 1 for all books
+Book.objects.update(rating=F(&quot;rating&quot;) + 1)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating, Updating, Deleting: <code>create()</code>, <code>update()</code>, <code>delete()</code></li>
+    <br/>
+    <ul>
+        <li>Create:</li>
+<pre><code class="language-python line-numbers"># 1. Using .create()
+book = Book.objects.create(
+    title=&quot;New Django Book&quot;,
+    rating=5,
+    author=some_author,
+)
+
+# 2. Instance + .save()
+book = Book(title=&quot;Another Book&quot;, rating=3, author=some_author)
+book.save()</code></pre>
+        <br/>
+        <li>Bulk create for performance:</li>
+<pre><code class="language-python line-numbers">Book.objects.bulk_create([
+    Book(title=&quot;Book 1&quot;, rating=4, author=some_author),
+    Book(title=&quot;Book 2&quot;, rating=5, author=some_author),
+])</code></pre>
+        <br/>
+        <li>Update a set of rows in one query:</li>
+<pre><code class="language-python line-numbers"># Set rating to 0 for all books without rating
+Book.objects.filter(rating__isnull=True).update(rating=0)</code></pre>
+        <br/>
+        <li>Delete:</li>
+<pre><code class="language-python line-numbers"># Delete one instance
+book = Book.objects.get(pk=1)
+book.delete()
+
+# Delete many at once
+Book.objects.filter(rating__lt=2).delete()</code></pre>
+        <br/>
+        <li><b>Important:</b> <code>bulk_create()</code> or <code>QuerySet.update()</code> do not call model <code>save()</code> or signals.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Special Helpers: <code>get_or_create()</code>, <code>update_or_create()</code></li>
+    <br/>
+    <ul>
+        <li><code>get_or_create()</code> tries to <code>get()</code> an object; if not found, <code>create()</code> it, and returns a tuple <code>(obj, created)</code>.</li>
+<pre><code class="language-python line-numbers">author, created = Author.objects.get_or_create(
+    name=&quot;Alice&quot;,
+)
+
+if created:
+    print(&quot;New author created&quot;)
+else:
+    print(&quot;Existing author reused&quot;)</code></pre>
+        <br/>
+        <li><code>update_or_create()</code>
+            tries to find by lookup fields; if found, update fields, else creates new object. Also returns <code>(obj, created)</code>.</li>
+<pre><code class="language-python line-numbers">book, created = Book.objects.update_or_create(
+    title=&quot;Versioned Django&quot;,
+    defaults={&quot;rating&quot;: 5, &quot;author&quot;: some_author},
+)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>QuerySet Utility Methods: <code>count()</code>, <code>exists()</code>, <code>distinct()</code>, <code>reverse()</code></li>
+    <br/>
+    <ul>
+        <li><code>count()</code> is efficient <code>SELECT COUNT(*)</code>:</li>
+<pre><code class="language-python line-numbers">Book.objects.filter(rating__gte=4).count()</code></pre>
+        <br/>
+        <li><code>exists()</code> checks if any rows match, using <code>SELECT (1)</code> and <code>LIMIT 1</code>:</li>
+<pre><code class="language-python line-numbers">Book.objects.filter(rating=5).exists()  # True / False</code></pre>
+        <br/>
+        <li><code>distinct()</code> removes duplicates:</li>
+<pre><code class="language-python line-numbers"># all distinct ratings
+ratings = Book.objects.values_list(&quot;rating&quot;, flat=True).distinct()</code></pre>
+        <br/>
+        <li><code>reverse()</code> reverses the ordering (useful after an <code>order_by()</code>):</li>
+<pre><code class="language-python line-numbers">qs = Book.objects.order_by(&quot;title&quot;)
+reversed_qs = qs.reverse()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Managers &amp; Custom QuerySet Methods</li>
+    <br/>
+    <ul>
+        <li>You can add your own helper methods to make queries reusable and expressive.</li>
+        <br/>
+        <li>Custom <code>QuerySet</code>:</li>
+<pre><code class="language-python line-numbers">from django.db import models
+
+
+class BookQuerySet(models.QuerySet):
+    def high_rated(self):
+        return self.filter(rating__gte=4)
+
+    def published(self):
+        return self.filter(published_at__isnull=False)</code></pre>
+        <br/>
+        <li>Attach to a custom manager:</li>
+<pre><code class="language-python line-numbers">class BookManager(models.Manager):
+    def get_queryset(self):
+        return BookQuerySet(self.model, using=self._db)
+
+    def high_rated(self):
+        return self.get_queryset().high_rated()</code></pre>
+        <br/>
+        <li>Use in your model:</li>
+<pre><code class="language-python line-numbers">class Book(models.Model):
+    # fields...
+    objects = BookManager()</code></pre>
+        <br/>
+        <li>Now you can do:</li>
+<pre><code class="language-python line-numbers">Book.objects.high_rated().published()</code></pre>
+        <br/>
+        <li>Pattern:
+            <ul>
+                <li>Put reusable filters into <code>QuerySet</code> methods.</li>
+                <li>Use a manager returning that <code>QuerySet</code> so you can chain methods nicely.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="django-model-filter-pattern">Django Model Filter Pattern</h3>
+<ol>
+
+    <li>What Is the Django Model Filter Pattern?</li>
+    <br/>
+    <ul>
+        <li>The Django ORM allows querying model objects using a powerful “lookup expression” system based on double-underscore (<code>__</code>) syntax.</li>
+        <br/>
+        <li>This pattern is used in methods such as:
+            <ul>
+                <li><code>filter()</code></li>
+                <li><code>exclude()</code></li>
+                <li><code>get()</code></li>
+                <li><code>update()</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Example of filtering users older than 18:</li>
+<pre><code class="language-python line-numbers">User.objects.filter(age__gt=18)</code></pre>
+        <br/>
+        <li>The lookup expression (<code>age__gt</code>) tells Django how to construct SQL behind the scenes.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Lookup Expressions</li>
+    <br/>
+    <ul>
+        <li>Django supports many built-in lookups. Here are the most commonly used:</li>
+        <br/>
+        <table>
+            <thead>
+                <tr>
+                    <th>Lookup</th>
+                    <th>Meaning</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>field__exact</code></td>
+                    <td>Exact match</td>
+                </tr>
+                <tr>
+                    <td><code>field__iexact</code></td>
+                    <td>Case‑insensitive exact match</td>
+                </tr>
+                <tr>
+                    <td><code>field__contains</code></td>
+                    <td>Substring match</td>
+                </tr>
+                <tr>
+                    <td><code>field__icontains</code></td>
+                    <td>Case‑insensitive substring</td>
+                </tr>
+                <tr>
+                    <td><code>field__startswith</code></td>
+                    <td>Starts-with substring</td>
+                </tr>
+                <tr>
+                    <td><code>field__istartswith</code></td>
+                    <td>Case-insensitive version</td>
+                </tr>
+                <tr>
+                    <td><code>field__endswith</code></td>
+                    <td>Ends-with substring</td>
+                </tr>
+                <tr>
+                    <td><code>field__iendswith</code></td>
+                    <td>Case-insensitive version</td>
+                </tr>
+            </tbody>
+        </table>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-python line-numbers">Book.objects.filter(title__icontains="django")
+User.objects.filter(email__endswith="@gmail.com")
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Numeric and Comparison Lookups</li>
+    <br/>
+    <ul>
+        <li>Django supports many SQL comparison operators:</li>
+        <br/>
+        <table>
+            <thead>
+                <tr>
+                    <th>Lookup</th>
+                    <th>Meaning</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>field__gt</code></td>
+                    <td>Greater than</td>
+                </tr>
+                <tr>
+                    <td><code>field__gte</code></td>
+                    <td>Greater than or equal</td>
+                </tr>
+                <tr>
+                    <td><code>field__lt</code></td>
+                    <td>Less than</td>
+                </tr>
+                <tr>
+                    <td><code>field__lte</code></td>
+                    <td>Less than or equal</td>
+                </tr>
+                <tr>
+                    <td><code>field__range</code></td>
+                    <td>Between two values (inclusive)</td>
+                </tr>
+            </tbody>
+        </table>
+        <br/>
+<pre><code class="language-python line-numbers">Product.objects.filter(price__gt=100)
+Order.objects.filter(total__range=(50, 100))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Date and Time Lookups</li>
+    <br/>
+    <ul>
+        <li>Special lookups for <code>DateField</code> and <code>DateTimeField</code>:</li>
+        <br/>
+        <table>
+            <thead>
+                <tr>
+                    <th>Lookup</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>field__date</code></td>
+                    <td>Extract date component</td>
+                </tr>
+                <tr>
+                    <td><code>field__year</code></td>
+                    <td>Matches by year</td>
+                </tr>
+                <tr>
+                    <td><code>field__month</code></td>
+                    <td>Matches by month</td>
+                </tr>
+                <tr>
+                    <td><code>field__day</code></td>
+                    <td>Matches by day</td>
+                </tr>
+                <tr>
+                    <td><code>field__week_day</code></td>
+                    <td>Matches by week day (1 = Sunday)</td>
+                </tr>
+                <tr>
+                    <td><code>field__hour</code></td>
+                    <td>Matches by hour</td>
+                </tr>
+                <tr>
+                    <td><code>field__minute</code></td>
+                    <td>Matches by minute</td>
+                </tr>
+            </tbody>
+        </table>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-python line-numbers">Event.objects.filter(timestamp__year=2025)
+Log.objects.filter(timestamp__date="2025-05-01")
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Null and Boolean Lookups</li>
+    <br/>
+    <ul>
+        <li>Check if a value is NULL:</li>
+<pre><code class="language-python line-numbers">User.objects.filter(last_login__isnull=True)</code></pre>
+        <br/>
+        <li>Boolean fields can be filtered directly:</li>
+<pre><code class="language-python line-numbers">Order.objects.filter(is_paid=True)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Membership Lookups (IN, NOT IN)</li>
+    <br/>
+    <ul>
+        <li>Check if a field is one of several values:</li>
+<pre><code class="language-python line-numbers">Book.objects.filter(id__in=[1, 2, 3])
+User.objects.exclude(role__in=["admin", "moderator"])
+</code></pre>
+        <br/>
+        <li>Translates to SQL <code>IN (...)</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Relational Lookups (Foreign Keys)</li>
+    <br/>
+    <ul>
+        <li>Filters can traverse relationships using double underscores:</li>
+<pre><code class="language-python line-numbers">Order.objects.filter(customer__email__icontains="gmail.com")
+Book.objects.filter(author__age__gt=40)
+</code></pre>
+        <br/>
+        <li>This performs SQL JOINs automatically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reverse Relationship Lookups</li>
+    <br/>
+    <ul>
+        <li>Use the related name or modelname_set to filter backwards:</li>
+<pre><code class="language-python line-numbers">Author.objects.filter(book__title__icontains="python")
+# or using related_name="books"
+Author.objects.filter(books__title__icontains="python")
+</code></pre>
+        <br/>
+        <li>Reverse lookups return authors who have at least one matching book.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Advanced Lookups (Regex, F, Q)</li>
+    <br/>
+    <ul>
+        <li>Django supports regular expressions:</li>
+<pre><code class="language-python line-numbers">User.objects.filter(username__regex=r'^[A-Z].*')
+</code></pre>
+        <br/>
+        <li>Case-insensitive regex:</li>
+<pre><code class="language-python line-numbers">User.objects.filter(username__iregex=r'^admin')
+</code></pre>
+        <br/>
+        <li>Using <code>Q</code> objects (OR queries):</li>
+<pre><code class="language-python line-numbers">from django.db.models import Q
+
+User.objects.filter(Q(age__gt=18) | Q(is_staff=True))
+</code></pre>
+        <br/>
+        <li>Using <code>F</code> expressions (field-to-field comparisons):</li>
+<pre><code class="language-python line-numbers">Product.objects.filter(stock__lt=F('min_stock'))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Chaining Filters</li>
+    <br/>
+    <ul>
+        <li>You can chain multiple filters:</li>
+<pre><code class="language-python line-numbers">Product.objects.filter(price__gt=10).filter(price__lt=100)
+</code></pre>
+        <br/>
+        <li>This is equivalent to:</li>
+<pre><code class="language-python line-numbers">Product.objects.filter(price__gt=10, price__lt=100)
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Lookups (Extending the Pattern)</li>
+    <br/>
+    <ul>
+        <li>Django allows you to extend the lookup system by creating custom lookup classes.</li>
+        <br/>
+        <li>Example: create a <code>contains_number</code> lookup:</li>
+<pre><code class="language-python line-numbers">from django.db.models import Lookup, CharField
+from django.db.models.expressions import RawSQL
+
+class ContainsNumber(Lookup):
+    lookup_name = 'contains_number'
+
+    def as_sql(self, compiler, connection):
+        lhs, params = self.process_lhs(compiler, connection)
+        return f"{lhs} ~ '[0-9]'", params
+
+CharField.register_lookup(ContainsNumber)
+</code></pre>
+        <br/>
+        <li>Usage:</li>
+<pre><code class="language-python line-numbers">User.objects.filter(username__contains_number=True)
+</code></pre>
+        <br/>
+        <li>You can register lookups globally for:
+            <ul>
+                <li><code>CharField</code></li>
+                <li><code>IntegerField</code></li>
+                <li><code>DateField</code></li>
+                <li>any Django field type</li>
             </ul>
         </li>
     </ul>
     <br/><br/>
 
 
-    <li>Prerequisite: Example Model</li>
+    <li>Filter vs Exclude vs Get</li>
     <br/>
     <ul>
-        <li>We use this simple model for examples:</li>
-    </ul>
-
-<pre><code class="language-py line-numbers"># blog/models.py
-
-from django.db import models
-
-class Post(models.Model):
-    title = models.CharField(max_length=200)
-    body = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.title
+        <li><code>filter()</code> returns a queryset (0..n records)</li>
+        <br/>
+        <li><code>exclude()</code> is the opposite of filter</li>
+        <br/>
+        <li><code>get()</code> returns exactly one object, raises error if not 1</li>
+<pre><code class="language-python line-numbers">User.objects.get(id=1)
+# Raises MultipleObjectsReturned or DoesNotExist
 </code></pre>
-
-    <ul>
-        <li>Don't forget to run migrations inside a virtual environment:</li>
     </ul>
-
-<pre><code class="language-bash line-numbers">python3 manage.py makemigrations
-python3 manage.py migrate
-</code></pre>
-
-    <br/><br/>
-
-
-    <li>Using the Django Shell for Testing Queries</li>
     <br/>
-    <ul>
-        <li>Querying is easiest to learn by experimenting inside the interactive shell:</li>
-    </ul>
-
-<pre><code class="language-bash line-numbers">python3 manage.py shell
-</code></pre>
-
-    <br/><br/>
-
-
-    <li>Creating Objects (INSERT)</li>
-    <br/>
-    <ul>
-        <li>You can create objects with <code>.create()</code>:</li>
-    </ul>
-
-<pre><code class="language-py line-numbers">Post.objects.create(title="Hello", body="First post!")
-</code></pre>
-
-    <br/>
-
-    <ul>
-        <li>Or manually instantiate then save:</li>
-    </ul>
-
-<pre><code class="language-py line-numbers">post = Post(title="My Title", body="Some text")
-post.save()
-</code></pre>
-
-    <br/><br/>
-
-
-    <li>Retrieve all objects</li>
-
-<pre><code class="language-py line-numbers">Post.objects.all()
-</code></pre>
-
-    <ul>
-        <li>Returns a QuerySet of all posts.</li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li>Retrieve one object (must match exactly one row):</li>
-
-<pre><code class="language-py line-numbers">Post.objects.get(id=1)
-</code></pre>
-
-    <ul>
-        <li>Raises <code>DoesNotExist</code> if not found.</li>
-        <li>Raises <code>MultipleObjectsReturned</code> if more than one result matches.</li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li>Filtering Results (WHERE Conditions)</li>
-    <br/>
-    <ul>
-        <li>Use <code>.filter()</code> for flexible queries (returns QuerySet):</li>
-    </ul>
-
-<pre><code class="language-py line-numbers">Post.objects.filter(title="Hello")
-Post.objects.filter(title__icontains="hello")
-Post.objects.filter(id__gt=3)     # greater than
-Post.objects.filter(id__lte=10)   # less or equal
-Post.objects.filter(title__startswith="Django")
-Post.objects.filter(title__in=["Hello", "Hi"])
-</code></pre>
-
-    <ul>
-        <li>The pattern <code>field__lookup=value</code> implements SQL-like conditions.</li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li>Excluding Results</li>
-    <br/>
-    <ul>
-        <li>Use <code>.exclude()</code> for NOT queries:</li>
-    </ul>
-
-<pre><code class="language-py line-numbers">Post.objects.exclude(title__icontains="draft")
-</code></pre>
-
-    <br/><br/>
-
-
-    <li>Ordering Results (ORDER BY)</li>
-<pre><code class="language-py line-numbers">Post.objects.order_by("created_at")     # ascending
-Post.objects.order_by("-created_at")    # descending
-</code></pre>
-
-    <br/><br/>
-
-
-    <li>Updating Objects (UPDATE)</li>
-    <br/>
-    <ul>
-        <li>Option 1: update a single object:</li>
-    </ul>
-
-<pre><code class="language-py line-numbers">post = Post.objects.get(id=1)
-post.title = "Updated Title"
-post.save()
-</code></pre>
-
-    <br/>
-
-    <ul>
-        <li>Option 2: bulk update:</li>
-    </ul>
-
-<pre><code class="language-py line-numbers">Post.objects.filter(title__icontains="hello").update(body="Updated text")
-</code></pre>
-
-    <ul>
-        <li>Executes a single SQL UPDATE statement.</li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li>Deleting Objects (DELETE)</li>
-    <br/>
-
-<pre><code class="language-py line-numbers">post = Post.objects.get(id=1)
-post.delete()
-</code></pre>
-
-    <ul>
-        <li>Delete multiple:</li>
-    </ul>
-
-<pre><code class="language-py line-numbers">Post.objects.filter(title__icontains="old").delete()
-</code></pre>
-
-    <br/><br/>
-
-
-    <li>Useful QuerySet Methods</li>
-    <br/>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Method</th>
-                <th>Example</th>
-                <th>Description</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><code>.first()</code></td>
-                <td><code>Post.objects.first()</code></td>
-                <td>First object or None</td>
-            </tr>
-            <tr>
-                <td><code>.last()</code></td>
-                <td><code>Post.objects.last()</code></td>
-                <td>Last object or None</td>
-            </tr>
-            <tr>
-                <td><code>.count()</code></td>
-                <td><code>Post.objects.count()</code></td>
-                <td>Fast COUNT(*) query</td>
-            </tr>
-            <tr>
-                <td><code>.exists()</code></td>
-                <td><code>Post.objects.filter(...).exists()</code></td>
-                <td>Returns True/False if results exist</td>
-            </tr>
-            <tr>
-                <td><code>.values()</code></td>
-                <td><code>Post.objects.values("title")</code></td>
-                <td>Returns dictionaries instead of model instances</td>
-            </tr>
-            <tr>
-                <td><code>.values_list()</code></td>
-                <td><code>Post.objects.values_list("id", "title")</code></td>
-                <td>Returns tuples</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <br/><br/>
-
-
-    <li>Relationships and Related Queries</li>
-    <br/>
-    <ul>
-        <li>If your app has relationships, Django simplifies queries across them.</li>
-    </ul>
-
-<pre><code class="language-py line-numbers">class Comment(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    text = models.TextField()
-</code></pre>
-
-    <ul>
-        <li>Query comments of a post:</li>
-    </ul>
-
-<pre><code class="language-py line-numbers">post = Post.objects.get(id=1)
-post.comment_set.all()
-</code></pre>
-
-    <ul>
-        <li>Reverse lookup for many-to-many and one-to-one relationships works similarly.</li>
-    </ul>
-
-    <br/><br/>
-
-
-    <li>AND logic: (default behavior)</li>
-
-<pre><code class="language-py line-numbers">Post.objects.filter(title__icontains="django", id__gt=5)
-</code></pre>
-
-    <br/>
-
-    <li>OR logic: using <code>Q</code> objects</li>
-
-<pre><code class="language-py line-numbers">from django.db.models import Q
-
-Post.objects.filter(
-    Q(title__icontains="django") | Q(body__icontains="django")
-)
-</code></pre>
-
-    <br/><br/>
-
-
-    <li>Aggregation (SUM, AVG, COUNT)</li>
-<pre><code class="language-py line-numbers">from django.db.models import Count
-
-Post.objects.aggregate(total_posts=Count("id"))
-</code></pre>
-
-    <br/><br/>
-
-
-    <li>Prefetching Related Data (Performance Optimization)</li>
-<pre><code class="language-py line-numbers">Post.objects.select_related()      # for ForeignKey/OneToOne
-Post.objects.prefetch_related("comment_set")  # for reverse/M2M
-</code></pre>
-
-    <ul>
-        <li>These avoid unnecessary database queries.</li>
-    </ul>
-
-    <br/><br/>
 
 </ol>
 <!-- * * * * * * * * * * * * * * -->
@@ -11031,454 +11503,6 @@ User.objects.create_user("junzhe", password="1234")</code></pre>
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="django-model-making-quries">Django ORM &mdash; Querying Models</h3>
-<ol>
-
-    <li>Context &amp; Basic Setup</li>
-    <br/>
-    <ul>
-        <li>This chapter assumes:
-            <ul>
-                <li>You have a Django project already set up.</li>
-                <li>You have at least one app with some models.</li>
-                <li>You are running commands in a virtual environment created via:
-<pre><code class="language-bash line-numbers">python3 -m venv .venv
-source .venv/bin/activate  # on macOS/Linux
-# .venv\Scripts\activate   # on Windows (PowerShell/cmd)</code></pre>
-                </li>
-                <li>You use the Django shell to experiment with queries:
-<pre><code class="language-bash line-numbers">python3 manage.py shell</code></pre>
-                </li>
-            </ul>
-        </li>
-        <br/>
-        <li>Example model used in this chapter (simplified):</li>
-<pre><code class="language-python line-numbers">from django.db import models
-
-
-class Author(models.Model):
-    name = models.CharField(max_length=100)
-
-
-class Book(models.Model):
-    title = models.CharField(max_length=200)
-    rating = models.IntegerField(default=0)
-    published_at = models.DateField(null=True, blank=True)
-    author = models.ForeignKey(
-        Author,
-        on_delete=models.CASCADE,
-        related_name=&quot;books&quot;,
-    )
-
-    def __str__(self):
-        return f&quot;{self.title} ({self.rating})&quot;</code></pre>
-        <br/>
-        <li>All queries in this chapter are based on:
-<pre><code class="language-python line-numbers">from books.models import Book, Author</code></pre>
-        </li>
-    </ul>
-    <br/><br/>
-
-
-    <li>Managers &amp; QuerySets</li>
-    <br/>
-    <ul>
-        <li>Each model has a <b>manager</b>, by default called <code>objects</code>:
-<pre><code class="language-python line-numbers">Book.objects</code></pre>
-        </li>
-        <br/>
-        <li>Calling most methods on a manager returns a <code>QuerySet</code>:
-<pre><code class="language-python line-numbers">qs = Book.objects.all()
-type(qs)  # &lt;class &#39;django.db.models.query.QuerySet&#39;&gt;</code></pre>
-        </li>
-        <br/>
-        <li><code>QuerySet</code>s are lazy:
-            <ul>
-                <li>No SQL is executed until the <code>QuerySet</code> is actually evaluated.</li>
-                <li>Evaluation happens when you:
-                    <ul>
-                        <li>iterate over it: <code>for book in qs: ...</code></li>
-                        <li>cast to list: <code>list(qs)</code></li>
-                        <li>call methods like <code>len(qs)</code>, <code>bool(qs)</code>, <code>list(qs)</code></li>
-                        <li>use aggregation methods: <code>count()</code>, <code>exists()</code>, etc.</li>
-                    </ul>
-                </li>
-            </ul>
-        </li>
-        <br/>
-        <li>Chaining QuerySets builds up SQL:
-<pre><code class="language-python line-numbers">qs = Book.objects.filter(rating__gte=4).order_by(&quot;-published_at&quot;)</code></pre>
-        </li>
-    </ul>
-    <br/><br/>
-
-
-    <li>Basic Retrieval: <code>all()</code>, <code>get()</code>, <code>first()</code>, <code>last()</code></li>
-    <br/>
-    <ul>
-        <li><code>all()</code> &mdash; all rows:</li>
-<pre><code class="language-python line-numbers">Book.objects.all()  # SELECT * FROM book;</code></pre>
-        <br/>
-        <li><code>get()</code> &mdash; exactly one row, or raise:
-<pre><code class="language-python line-numbers">book = Book.objects.get(pk=1)
-book = Book.objects.get(title=&quot;Django Tutorial&quot;)</code></pre>
-            <ul>
-                <li>Raises <code>Book.DoesNotExist</code> if no match.</li>
-                <li>Raises <code>Book.MultipleObjectsReturned</code> if more than one match.</li>
-            </ul>
-        </li>
-        <br/>
-        <li><code>first()</code> / <code>last()</code> &mdash; convenient helpers:
-<pre><code class="language-python line-numbers">first_book = Book.objects.order_by(&quot;published_at&quot;).first()
-last_book = Book.objects.order_by(&quot;published_at&quot;).last()</code></pre>
-            <ul>
-                <li>Return a single object or <code>None</code> (no exceptions).</li>
-            </ul>
-        </li>
-        <br/>
-        <li><code>latest()</code> / <code>earliest()</code> &mdash; use a date field:
-<pre><code class="language-python line-numbers">latest_book = Book.objects.latest(&quot;published_at&quot;)
-earliest_book = Book.objects.earliest(&quot;published_at&quot;)</code></pre>
-        </li>
-    </ul>
-    <br/><br/>
-
-
-    <li>Filtering: <code>filter()</code>, <code>exclude()</code>, field lookups</li>
-    <br/>
-    <ul>
-        <li><code>filter()</code> &mdash; keep rows that match:</li>
-<pre><code class="language-python line-numbers">Book.objects.filter(rating__gte=4)
-Book.objects.filter(title__icontains=&quot;django&quot;)</code></pre>
-        <br/>
-        <li><code>exclude()</code> &mdash; remove rows that match:</li>
-<pre><code class="language-python line-numbers">Book.objects.exclude(rating__lt=3)</code></pre>
-        <br/>
-        <li>Field lookup syntax:
-<pre><code class="language-plaintext line-numbers">field__lookup=value</code></pre>
-            <ul>
-                <li>Common lookups:</li>
-            </ul>
-<pre><code class="language-python line-numbers">Book.objects.filter(rating__gte=4)          # &gt;= 4
-Book.objects.filter(rating__gt=4)           # &gt; 4
-Book.objects.filter(rating__lte=2)          # &lt;= 2
-Book.objects.filter(title__icontains=&quot;py&quot;) # case-insensitive substring
-Book.objects.filter(published_at__isnull=True)
-Book.objects.filter(pk__in=[1, 2, 3])
-Book.objects.filter(rating__range=(3, 5))</code></pre>
-        </li>
-        <br/>
-        <li>Some useful lookup types:
-            <ul>
-                <li><code>exact</code>, <code>iexact</code></li>
-                <li><code>contains</code>, <code>icontains</code></li>
-                <li><code>startswith</code>, <code>istartswith</code>, <code>endswith</code>, <code>iendswith</code></li>
-                <li><code>lt</code>, <code>lte</code>, <code>gt</code>, <code>gte</code></li>
-                <li><code>in</code>, <code>range</code></li>
-                <li><code>isnull</code></li>
-                <li><code>regex</code>, <code>iregex</code> (database-dependent)</li>
-            </ul>
-        </li>
-    </ul>
-    <br/><br/>
-
-
-    <li>Combining Conditions: <code>Q</code> Objects (OR / complex logic)</li>
-    <br/>
-    <ul>
-        <li>By default, multiple arguments to <code>filter()</code> are combined with <b>AND</b>:</li>
-<pre><code class="language-python line-numbers">Book.objects.filter(rating__gte=4, title__icontains=&quot;django&quot;)</code></pre>
-        <br/>
-        <li>For more complex logic (OR, NOT, nested) use <code>Q</code> objects:</li>
-<pre><code class="language-python line-numbers">from django.db.models import Q
-
-# rating &gt;= 4 OR title contains &quot;django&quot;
-Book.objects.filter(
-    Q(rating__gte=4) | Q(title__icontains=&quot;django&quot;)
-)
-
-# rating &gt;= 4 AND NOT published_at IS NULL
-Book.objects.filter(
-    Q(rating__gte=4) &amp; ~Q(published_at__isnull=True)
-)</code></pre>
-        <br/>
-        <li>Complex queries are usually a combination of <code>Q()</code> with <code>&amp;</code>, <code>|</code>, and <code>~</code>.</li>
-    </ul>
-    <br/><br/>
-
-
-    <li>Sorting &amp; Limiting Results: <code>order_by()</code>, slicing</li>
-    <br/>
-    <ul>
-        <li>Sort results with <code>order_by()</code>:</li>
-<pre><code class="language-python line-numbers"># ascending
-Book.objects.order_by(&quot;title&quot;)
-
-# descending
-Book.objects.order_by(&quot;-rating&quot;, &quot;title&quot;)</code></pre>
-        <br/>
-        <li>Limit results using slicing (translated to <code>LIMIT</code> / <code>OFFSET</code>):</li>
-<pre><code class="language-python line-numbers">top_5 = Book.objects.order_by(&quot;-rating&quot;)[:5]
-second_page = Book.objects.order_by(&quot;title&quot;)[5:10]</code></pre>
-        <br/>
-        <li><b>Important:</b> slicing returns a new QuerySet; it is still lazy until evaluated.</li>
-    </ul>
-    <br/><br/>
-
-
-    <li>Only Certain Fields: <code>values()</code>, <code>values_list()</code>, <code>only()</code>, <code>defer()</code></li>
-    <br/>
-    <ul>
-        <li><code>values()</code> &mdash; returns dictionaries:</li>
-<pre><code class="language-python line-numbers">qs = Book.objects.filter(rating__gte=4).values(&quot;title&quot;, &quot;rating&quot;)
-list(qs)
-# [&quot;{&#39;title&#39;: &#39;Django Guide&#39;, &#39;rating&#39;: 5}&quot;, ...]</code></pre>
-        <br/>
-        <li><code>values_list()</code> &mdash; returns tuples (or flat list):</li>
-<pre><code class="language-python line-numbers"># list of (title, rating)
-Book.objects.values_list(&quot;title&quot;, &quot;rating&quot;)
-
-# flat list of titles
-Book.objects.values_list(&quot;title&quot;, flat=True)</code></pre>
-        <br/>
-        <li><code>only()</code> &amp; <code>defer()</code> &mdash; control which fields are loaded (useful for large models):</li>
-<pre><code class="language-python line-numbers"># Only load title and rating; other fields deferred until accessed
-qs = Book.objects.only(&quot;title&quot;, &quot;rating&quot;)
-
-# Load everything except big_text_field
-qs = Book.objects.defer(&quot;big_text_field&quot;)</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Relations: ForeignKey &amp; Reverse Relations</li>
-    <br/>
-    <ul>
-        <li>Forward relation: from <code>Book</code> to <code>Author</code>:</li>
-<pre><code class="language-python line-numbers">book = Book.objects.get(pk=1)
-author = book.author              # follow ForeignKey</code></pre>
-        <br/>
-        <li>Reverse relation: from <code>Author</code> to <code>Book</code>:</li>
-<pre><code class="language-python line-numbers">author = Author.objects.get(pk=1)
-
-# default is author.book_set, but we used related_name=&quot;books&quot;
-books = author.books.all()</code></pre>
-        <br/>
-        <li>Filter across relations using double underscores:</li>
-<pre><code class="language-python line-numbers"># Books with author name &quot;Alice&quot;
-Book.objects.filter(author__name=&quot;Alice&quot;)
-
-# Authors who have at least one book with rating &gt;= 4
-Author.objects.filter(books__rating__gte=4).distinct()</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Performance Helpers: <code>select_related()</code> &amp; <code>prefetch_related()</code></li>
-    <br/>
-    <ul>
-        <li><b>Problem:</b> N+1 queries when accessing related objects in a loop.</li>
-        <br/>
-        <li><code>select_related()</code>:
-            <ul>
-                <li>Performs <b>JOIN</b> and loads related <b>single-valued</b> objects in one query.</li>
-                <li>Use for <code>ForeignKey</code>, <code>OneToOneField</code>.</li>
-            </ul>
-        </li>
-<pre><code class="language-python line-numbers"># Without select_related: 1 query for books, +1 per book for author
-books = Book.objects.all()
-
-# With select_related: 1 query total
-books = Book.objects.select_related(&quot;author&quot;)
-
-for book in books:
-    print(book.title, book.author.name)</code></pre>
-        <br/>
-        <li><code>prefetch_related()</code>:
-            <ul>
-                <li>Runs additional queries and joins results in Python.</li>
-                <li>Use for <b>many-valued</b> relations: <code>ManyToManyField</code>, reverse <code>ForeignKey</code>, etc.</li>
-            </ul>
-        </li>
-<pre><code class="language-python line-numbers">authors = Author.objects.prefetch_related(&quot;books&quot;)
-
-for author in authors:
-    # does not hit DB per loop; books prefetched
-    print(author.name, [b.title for b in author.books.all()])</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Aggregations &amp; Annotations: <code>aggregate()</code>, <code>annotate()</code>, <code>F</code></li>
-    <br/>
-    <ul>
-        <li>Aggregations return a single result (dictionary):</li>
-<pre><code class="language-python line-numbers">from django.db.models import Count, Avg, Max, Min
-
-stats = Book.objects.aggregate(
-    total=Count(&quot;id&quot;),
-    avg_rating=Avg(&quot;rating&quot;),
-    max_rating=Max(&quot;rating&quot;),
-)
-# {&quot;total&quot;: 42, &quot;avg_rating&quot;: 4.2, &quot;max_rating&quot;: 5}</code></pre>
-        <br/>
-        <li><code>annotate()</code> adds calculated fields to each row:</li>
-<pre><code class="language-python line-numbers"># Number of books per author
-authors = Author.objects.annotate(book_count=Count(&quot;books&quot;))
-
-for a in authors:
-    print(a.name, a.book_count)</code></pre>
-        <br/>
-        <li><code>F</code> expressions let you refer to field values in updates or filters:</li>
-<pre><code class="language-python line-numbers">from django.db.models import F
-
-# Books where rating is greater than the author id (nonsense, but as example)
-Book.objects.filter(rating__gt=F(&quot;author__id&quot;))
-
-# Increase rating by 1 for all books
-Book.objects.update(rating=F(&quot;rating&quot;) + 1)</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Creating, Updating, Deleting: <code>create()</code>, <code>update()</code>, <code>delete()</code></li>
-    <br/>
-    <ul>
-        <li>Create:</li>
-<pre><code class="language-python line-numbers"># 1. Using .create()
-book = Book.objects.create(
-    title=&quot;New Django Book&quot;,
-    rating=5,
-    author=some_author,
-)
-
-# 2. Instance + .save()
-book = Book(title=&quot;Another Book&quot;, rating=3, author=some_author)
-book.save()</code></pre>
-        <br/>
-        <li>Bulk create for performance:</li>
-<pre><code class="language-python line-numbers">Book.objects.bulk_create([
-    Book(title=&quot;Book 1&quot;, rating=4, author=some_author),
-    Book(title=&quot;Book 2&quot;, rating=5, author=some_author),
-])</code></pre>
-        <br/>
-        <li>Update a set of rows in one query:</li>
-<pre><code class="language-python line-numbers"># Set rating to 0 for all books without rating
-Book.objects.filter(rating__isnull=True).update(rating=0)</code></pre>
-        <br/>
-        <li>Delete:</li>
-<pre><code class="language-python line-numbers"># Delete one instance
-book = Book.objects.get(pk=1)
-book.delete()
-
-# Delete many at once
-Book.objects.filter(rating__lt=2).delete()</code></pre>
-        <br/>
-        <li><b>Important:</b> <code>bulk_create()</code> or <code>QuerySet.update()</code> do not call model <code>save()</code> or signals.</li>
-    </ul>
-    <br/><br/>
-
-
-    <li>Special Helpers: <code>get_or_create()</code>, <code>update_or_create()</code></li>
-    <br/>
-    <ul>
-        <li><code>get_or_create()</code>:
-            <ul>
-                <li>Tries to <code>get()</code> an object; if not found, <code>create()</code> it.</li>
-                <li>Returns a tuple <code>(obj, created)</code>.</li>
-            </ul>
-        </li>
-<pre><code class="language-python line-numbers">author, created = Author.objects.get_or_create(
-    name=&quot;Alice&quot;,
-)
-
-if created:
-    print(&quot;New author created&quot;)
-else:
-    print(&quot;Existing author reused&quot;)</code></pre>
-        <br/>
-        <li><code>update_or_create()</code>:
-            <ul>
-                <li>Find by lookup fields; if found, update fields; else create new object.</li>
-                <li>Also returns <code>(obj, created)</code>.</li>
-            </ul>
-        </li>
-<pre><code class="language-python line-numbers">book, created = Book.objects.update_or_create(
-    title=&quot;Versioned Django&quot;,
-    defaults={&quot;rating&quot;: 5, &quot;author&quot;: some_author},
-)</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>QuerySet Utility Methods: <code>count()</code>, <code>exists()</code>, <code>distinct()</code>, <code>reverse()</code></li>
-    <br/>
-    <ul>
-        <li><code>count()</code> &mdash; efficient <code>SELECT COUNT(*)</code>:</li>
-<pre><code class="language-python line-numbers">Book.objects.filter(rating__gte=4).count()</code></pre>
-        <br/>
-        <li><code>exists()</code> &mdash; checks if any rows match, using <code>SELECT (1)</code> and <code>LIMIT 1</code>:</li>
-<pre><code class="language-python line-numbers">Book.objects.filter(rating=5).exists()  # True / False</code></pre>
-        <br/>
-        <li><code>distinct()</code> &mdash; remove duplicates:</li>
-<pre><code class="language-python line-numbers"># all distinct ratings
-ratings = Book.objects.values_list(&quot;rating&quot;, flat=True).distinct()</code></pre>
-        <br/>
-        <li><code>reverse()</code> &mdash; reverse the ordering (useful after an <code>order_by()</code>):</li>
-<pre><code class="language-python line-numbers">qs = Book.objects.order_by(&quot;title&quot;)
-reversed_qs = qs.reverse()</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Custom Managers &amp; Custom QuerySet Methods</li>
-    <br/>
-    <ul>
-        <li>You can add your own helper methods to make queries reusable and expressive.</li>
-        <br/>
-        <li>Custom <code>QuerySet</code>:</li>
-<pre><code class="language-python line-numbers">from django.db import models
-
-
-class BookQuerySet(models.QuerySet):
-    def high_rated(self):
-        return self.filter(rating__gte=4)
-
-    def published(self):
-        return self.filter(published_at__isnull=False)</code></pre>
-        <br/>
-        <li>Attach to a custom manager:</li>
-<pre><code class="language-python line-numbers">class BookManager(models.Manager):
-    def get_queryset(self):
-        return BookQuerySet(self.model, using=self._db)
-
-    def high_rated(self):
-        return self.get_queryset().high_rated()</code></pre>
-        <br/>
-        <li>Use in your model:</li>
-<pre><code class="language-python line-numbers">class Book(models.Model):
-    # fields...
-    objects = BookManager()</code></pre>
-        <br/>
-        <li>Now you can do:</li>
-<pre><code class="language-python line-numbers">Book.objects.high_rated().published()</code></pre>
-        <br/>
-        <li>Pattern:
-            <ul>
-                <li>Put reusable filters into <code>QuerySet</code> methods.</li>
-                <li>Use a manager returning that <code>QuerySet</code> so you can chain methods nicely.</li>
-            </ul>
-        </li>
-    </ul>
-    <br/><br/>
-</ol>
-<!-- * * * * * * * * * * * * * * -->
-
-
-<hr/>
-
-
-<!-- * * * * * * * * * * * * * * -->
 <h3 id="django-admin-interface">Django Admin Interface</h3>
 <ol>
 
@@ -11663,14 +11687,6 @@ admin.site.index_title = "Welcome to the Admin Panel"</code></pre>
     </ul>
     <br/>
 </ol>
-<!-- * * * * * * * * * * * * * * -->
-
-
-<hr/>
-
-
-<!-- * * * * * * * * * * * * * * -->
-
 <!-- * * * * * * * * * * * * * * -->
 
 
