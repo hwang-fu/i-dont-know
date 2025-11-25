@@ -153,6 +153,7 @@
         <li><a href="#rabbitmq-introduction">Introduction</a></li>
         <li><a href="#rabbitmq-hello-world-java">Hello World (Using the Java Client)</a></li>
         <li><a href="#rabbitmq-work-queues-java">Work Queues (Using the Java Client)</a></li>
+        <li><a href="#rabbitmq-publish-subscribe-java">Publish / Subscribe (Using the Java Client)</a></li>
     </ol>
 </nav>
 <hr/>
@@ -986,7 +987,304 @@ mvn -q exec:java -Dexec.mainClass="com.example.NewTask" -Dexec.args="Quick."
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rabbitmq-publish-subscribe-java">RabbitMQ &mdash; Publish/Subscribe (Using the Java Client)</h3>
+<ol>
 
+    <li>What Is Publish/Subscribe?</li>
+    <br/>
+    <ul>
+        <li>Publish/Subscribe (pub/sub) is a messaging pattern where:
+            <ul>
+                <li>Producers <b>publish</b> messages to an <b>exchange</b></li>
+                <li>Multiple queues are <b>bound</b> to that exchange</li>
+                <li>Each consumer receives a <b>copy</b> of each message</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Typical use cases:
+            <ul>
+                <li>Broadcasting logs to multiple receivers (e.g. console + file + monitoring)</li>
+                <li>Sending notifications to multiple services</li>
+                <li>Fan-out events to several independent consumers</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Core Concepts: Exchange &amp; Fanout</li>
+    <br/>
+    <ul>
+        <li>Previously, we published directly to a queue (using the default exchange <code>""</code>).</li>
+        <br/>
+        <li>In pub/sub:
+            <ul>
+                <li>We publish to a <b>named exchange</b> (e.g. <code>logs</code>)</li>
+                <li>The exchange forwards messages to all bound queues</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Fanout exchange</b>:
+            <ul>
+                <li>Ignores routing keys</li>
+                <li>Broadcasts messages to <b>every</b> queue that is bound to it</li>
+            </ul>
+        </li>
+<pre><code class="language-plaintext line-numbers">Producer --&gt; [fanout exchange "logs"] --&gt; [queue A] --&gt; Consumer 1
+                                          [queue B] --&gt; Consumer 2
+                                          [queue C] --&gt; Consumer 3
+</code></pre>
+        <li>Each consumer gets its own copy of the message.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Project Structure</li>
+<pre><code class="language-plaintext line-numbers">rabbitmq-pubsub-java/
+├─ pom.xml
+└─ src/
+   └─ main/
+      └─ java/
+         └─ com/
+            └─ example/
+               ├─ EmitLog.java       &lt;-- producer (publishes logs)
+               └─ ReceiveLogs.java   &lt;-- consumer (subscribes to logs)
+</code></pre>
+    <ul>
+        <li>We reuse the same RabbitMQ Java client dependency as before (in <code>pom.xml</code>):</li>
+    </ul>
+<pre><code class="language-xml line-numbers">&lt;dependency&gt;
+    &lt;groupId&gt;com.rabbitmq&lt;/groupId&gt;
+    &lt;artifactId&gt;amqp-client&lt;/artifactId&gt;
+    &lt;version&gt;5.24.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+    <br/><br/>
+
+
+    <li>Declaring the Fanout Exchange</li>
+    <br/>
+    <ul>
+        <li>Both producer and consumers will use the same exchange:</li>
+    </ul>
+<pre><code class="language-java line-numbers">String EXCHANGE_NAME = "logs";
+channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.FANOUT);
+</code></pre>
+    <ul>
+        <li><code>exchangeDeclare</code> is idempotent (safe to call multiple times) and creates the exchange if it does not exist</li>
+        <br/>
+        <li><code>BuiltinExchangeType.FANOUT</code> means broadcast to all bound queues.</li>
+    </ul>
+    <br/><br/><br/>
+
+
+    <li>Producer &mdash; <code>EmitLog.java</code></li>
+    <br/>
+    <ul>
+        <li><code>EmitLog</code> sends a log message to the <code>logs</code> exchange.</li>
+    </ul>
+<pre><code class="language-java line-numbers">package com.example;
+
+import com.rabbitmq.client.BuiltinExchangeType;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+
+import java.nio.charset.StandardCharsets;
+
+public class EmitLog {
+
+    private static final String EXCHANGE_NAME = "logs";
+
+    public static void main(String[] argv) throws Exception {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+
+        try (Connection connection = factory.newConnection();
+             Channel channel = connection.createChannel()) {
+
+            // Declare fanout exchange
+            channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.FANOUT);
+
+            // Build message from command-line arguments
+            String message = String.join(" ", argv);
+            if (message.isEmpty()) {
+                message = "info: Hello RabbitMQ Publish/Subscribe!";
+            }
+
+            // Publish to exchange (routing key is ignored by fanout)
+            channel.basicPublish(
+                    EXCHANGE_NAME,
+                    "",
+                    null,
+                    message.getBytes(StandardCharsets.UTF_8)
+            );
+
+            System.out.println(" [x] Sent '" + message + "'");
+        }
+    }
+}
+</code></pre>
+    <ul>
+        <li>We publish to <code>exchange</code> <code>"logs"</code>, not to a specific queue.</li>
+        <li>Routing key is empty (<code>""</code>) because fanout ignores it anyway.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Consumer &mdash; <code>ReceiveLogs.java</code> (Ephemeral Queues)</li>
+    <br/>
+    <ul>
+        <li>Each consumer will:
+            <ul>
+                <li>create its own <b>exclusive, auto-delete queue</b></li>
+                <li>bind that queue to the <code>logs</code> exchange</li>
+                <li>receive all messages published to the exchange</li>
+            </ul>
+        </li>
+    </ul>
+<pre><code class="language-java line-numbers">package com.example;
+
+import com.rabbitmq.client.*;
+
+import java.nio.charset.StandardCharsets;
+
+public class ReceiveLogs {
+
+    private static final String EXCHANGE_NAME = "logs";
+
+    public static void main(String[] argv) throws Exception {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+
+        // Declare fanout exchange
+        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.FANOUT);
+
+        // Create a non-durable, exclusive, auto-delete queue with a generated name
+        String queueName = channel.queueDeclare().getQueue();
+
+        // Bind the queue to the exchange
+        channel.queueBind(queueName, EXCHANGE_NAME, "");
+
+        System.out.println(" [*] Waiting for logs in queue '" + queueName +
+                           "'. To exit press CTRL+C");
+
+        // Define callback
+        DeliverCallback deliverCallback = (consumerTag, delivery) -&gt; {
+            String message = new String(
+                    delivery.getBody(),
+                    StandardCharsets.UTF_8
+            );
+            System.out.println(" [x] Received '" + message + "'");
+        };
+
+        CancelCallback cancelCallback = consumerTag -&gt; {
+            System.out.println(" [!] Consumer cancelled: " + consumerTag);
+        };
+
+        // Start consuming (autoAck = true)
+        boolean autoAck = true;
+        channel.basicConsume(queueName, autoAck, deliverCallback, cancelCallback);
+    }
+}
+</code></pre>
+    <ul>
+        <li><code>queueDeclare()</code> with no arguments creates a fresh, server-named queue.</li>
+        <li>It is:
+            <ul>
+                <li>non-durable</li>
+                <li>exclusive (only this connection can use it)</li>
+                <li>auto-delete (deleted when connection closes)</li>
+            </ul>
+        </li>
+        <li>Each <code>ReceiveLogs</code> instance gets its <u>own</u> queue bound to <code>"logs"</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Running Multiple Subscribers</li>
+    <br/>
+    <ul>
+        <li>Start RabbitMQ server, then open three terminals.</li>
+        <br/>
+        <li>Terminal 1 &mdash; first subscriber:</li>
+<pre><code class="language-bash line-numbers">mvn -q exec:java -Dexec.mainClass="com.example.ReceiveLogs"
+</code></pre>
+        <br/>
+        <li>Terminal 2 &mdash; second subscriber:</li>
+<pre><code class="language-bash line-numbers">mvn -q exec:java -Dexec.mainClass="com.example.ReceiveLogs"
+</code></pre>
+        <br/>
+        <li>Terminal 3 &mdash; producer:</li>
+<pre><code class="language-bash line-numbers">mvn -q exec:java -Dexec.mainClass="com.example.EmitLog" \
+    -Dexec.args="info: Hello from pub/sub!"
+</code></pre>
+        <br/>
+        <li>Expected result: Each <code>ReceiveLogs</code> terminal prints the <u>same</u> message.</li>
+<pre><code class="language-plaintext line-numbers"># Terminal 1:
+ [*] Waiting for logs in queue 'amq.gen-...'
+ [x] Received 'info: Hello from pub/sub!'
+
+# Terminal 2:
+ [*] Waiting for logs in queue 'amq.gen-...'
+ [x] Received 'info: Hello from pub/sub!'
+</code></pre>
+        <li>This demonstrates that pub/sub delivers a copy of each message to <u>every active subscriber</u>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Temporary vs Persistent Subscribers</li>
+    <br/>
+    <ul>
+        <li>The basic tutorial uses <u>temporary queues</u>:
+            <ul>
+                <li>Queue disappears when the consumer disconnects</li>
+                <li>Messages are not kept for future subscribers</li>
+                <li>Good for real-time log viewing</li>
+            </ul>
+        </li>
+        <br/>
+        <li>For persistent log storage you could:
+            <ul>
+                <li>Declare a named, durable queue (e.g. <code>"logs_file"</code>)</li>
+                <li>Bind it to the exchange</li>
+                <li>Run a consumer that writes all messages to a file or DB</li>
+            </ul>
+        </li>
+<pre><code class="language-java line-numbers">// Example: named durable log queue
+channel.queueDeclare("logs_file", true, false, false, null);
+channel.queueBind("logs_file", EXCHANGE_NAME, "");
+</code></pre>
+        <li>Then, even if no subscribers are currently running, messages can be stored in that durable queue.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How Publish/Subscribe Differs from Work Queues</li>
+    <br/>
+    <ul>
+        <li><b>Work Queues</b>:
+            <ul>
+                <li>One queue, many workers</li>
+                <li>Each message goes to <u>only one</u> worker</li>
+                <li>Goal: distribute load</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Publish/Subscribe</b>:
+            <ul>
+                <li>One exchange, many queues</li>
+                <li>Each message goes to <u>all</u> queues (and thus all subscribers)</li>
+                <li>Goal: broadcast the same message to multiple consumers</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
