@@ -155,6 +155,7 @@
         <li><a href="#rabbitmq-work-queues-java">Work Queues (Using the Java Client)</a></li>
         <li><a href="#rabbitmq-publish-subscribe-java">Publish / Subscribe (Using the Java Client)</a></li>
         <li><a href="#rabbitmq-routing-java">Routing (Using the Java Client)</a></li>
+        <li><a href="#rabbitmq-stream-java">Streams (Using the Java Client)</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1652,7 +1653,299 @@ db.warning
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rabbitmq-stream-java">RabbitMQ &mdash; Streams in Java</h3>
+<ol>
+    <br/>
+    <li>RabbitMQ Streams are an append-only log data structure built into RabbitMQ</li>
+    <ul>
+        <br/>
+        <li>Messages are stored in a log-like stream and identified by offset.</li>
+        <br/>
+        <li>Designed for high throughput and long message retention.</li>
+        <br/>
+        <li>Consumers can replay messages from any offset (not only &quot;latest&quot;).</li>
+    </ul>
+    <br/><br/>
 
+
+    <li>Prerequisites &amp; Starting RabbitMQ with Streams</li>
+    <ul>
+        <br/>
+        <li>Example: start RabbitMQ with Streams via Docker (exposes port <code>5552</code> for the stream protocol):</li>
+<pre><code class="language-bash line-numbers">docker run -it --rm --name rabbitmq-stream \
+    -p 5672:5672 -p 15672:15672 -p 5552:5552 \
+    -e RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=&apos;-rabbitmq_stream advertised_host localhost&apos; \
+    rabbitmq:3.13</code></pre>
+        <br/>
+        <li>Enable the <code>rabbitmq_stream</code> plugin (if not already):</li>
+<pre><code class="language-bash line-numbers">docker exec rabbitmq-stream rabbitmq-plugins enable rabbitmq_stream</code></pre>
+        <br/>
+        <li>Management UI (optional) is available at <code>http://localhost:15672/</code> (default user: <code>guest</code>, password: <code>guest</code>)</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Project Layout</li>
+    <br/>
+    <ul>
+        <li>Example Maven project structure:</li>
+    </ul>
+<pre><code class="language-plaintext line-numbers">rabbitmq-stream-java/
+├─ pom.xml
+└─ src/
+   └─ main/
+      └─ java/
+         └─ com/
+            └─ example/
+               ├─ StreamProducer.java
+               └─ StreamConsumer.java
+</code></pre>
+    <ul>
+        <li>You can adjust the package name as you like, keep producer and consumer separate for clarity.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Adding the RabbitMQ Stream Java Client Dependency</li>
+    <br/>
+    <ul>
+        <li>In <code>pom.xml</code> add the Stream client dependency (artifact name may evolve, check Maven Central if needed):</li>
+    </ul>
+<pre><code class="language-xml line-numbers">&lt;project xmlns=&quot;http://maven.apache.org/POM/4.0.0&quot;
+         xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+         xsi:schemaLocation=&quot;http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;com.example&lt;/groupId&gt;
+    &lt;artifactId&gt;rabbitmq-stream-java&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.rabbitmq&lt;/groupId&gt;
+            &lt;artifactId&gt;stream-client&lt;/artifactId&gt;
+            &lt;version&gt;0.16.0&lt;/version&gt; &lt;!-- example version --&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/project&gt;</code></pre>
+    <ul>
+        <li>Download dependencies:</li>
+    </ul>
+<pre><code class="language-bash line-numbers">mvn dependency:resolve</code></pre>
+    <br/><br/>
+
+
+    <li>Understanding the Stream Java Client Basics</li>
+    <br/>
+    <ul>
+        <li>The main entry point is <code>Environment</code>:
+            <ul>
+                <li>Handles the connection to the Streams node (port <code>5552</code>).</li>
+                <li>Creates streams, producers, and consumers.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The basic flow:
+            <ul>
+                <li>Create an <code>Environment</code> with the stream URI (<code>rabbitmq-stream://...</code>).</li>
+                <li>Create a <code>stream</code> (if it does not exist).</li>
+                <li>Create a <code>Producer</code> bound to that stream.</li>
+                <li>Create a <code>Consumer</code> bound to that stream.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Producer &mdash; <code>StreamProducer.java</code></li>
+    <ul>
+        <br/>
+        <li><code>StreamProducer</code>:</li>
+        <ul>
+            <li>Connects to RabbitMQ Streams.</li>
+            <li>Creates a stream named <code>hello-stream</code>.</li>
+            <li>Sends one <code>&quot;Hello Stream&quot;</code> message.</li>
+        </ul>
+        <br/>
+        <li>Create <code>StreamProducer.java</code>:</li>
+    </ul>
+<pre><code class="language-java line-numbers">package com.example;
+
+import com.rabbitmq.stream.Environment;
+import com.rabbitmq.stream.Producer;
+import com.rabbitmq.stream.Message;
+import com.rabbitmq.stream.MessageBuilder;
+
+public class StreamProducer {
+
+    private static final String STREAM_NAME = &quot;hello-stream&quot;;
+
+    public static void main(String[] args) throws Exception {
+        // 1. Create environment (connects to stream port 5552 by default in the URI)
+        try (Environment environment = Environment.builder()
+                .uri(&quot;rabbitmq-stream://localhost:5552&quot;)
+                .build()) {
+
+            // 2. Create the stream if it does not exist
+            environment.streamCreator()
+                    .stream(STREAM_NAME)
+                    .create();
+
+            // 3. Create a producer for that stream
+            Producer producer = environment.producerBuilder()
+                    .stream(STREAM_NAME)
+                    .build();
+
+            // 4. Build a simple message
+            MessageBuilder messageBuilder = producer.messageBuilder();
+            Message message = messageBuilder
+                    .addData(&quot;Hello Stream from Java!&quot;.getBytes())
+                    .build();
+
+            // 5. Send the message (asynchronously)
+            producer.send(message);
+
+            System.out.println(&quot; [x] Sent &#39;Hello Stream from Java!&#39; to stream &#39;&quot; + STREAM_NAME + &quot;&#39;&quot;);
+
+            // 6. Close producer explicitly
+            producer.close();
+        }
+    }
+}
+</code></pre>
+    <ul>
+        <li>The URI uses the <b>stream protocol</b>: <code>rabbitmq-stream://host:5552</code>, not AMQP <code>amqp://</code>.</li>
+        <li><code>streamCreator()</code> is idempotent: it creates the stream if needed.</li>
+        <li><code>send</code> is asynchronous; for high-volume producers you might want to handle confirms and errors.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Consumer &mdash; <code>StreamConsumer.java</code></li>
+    <br/>
+    <ul>
+        <li><code>StreamConsumer</code>:
+            <ul>
+                <li>Connects to the same stream.</li>
+                <li>Starts consuming from the <b>beginning</b> of the stream.</li>
+                <li>Prints each message payload as text.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Create <code>StreamConsumer.java</code>:</li>
+    </ul>
+<pre><code class="language-java line-numbers">package com.example;
+
+import com.rabbitmq.stream.Environment;
+import com.rabbitmq.stream.Consumer;
+import com.rabbitmq.stream.OffsetSpecification;
+import com.rabbitmq.stream.MessageHandler;
+
+import java.nio.charset.StandardCharsets;
+
+public class StreamConsumer {
+
+    private static final String STREAM_NAME = &quot;hello-stream&quot;;
+
+    public static void main(String[] args) throws Exception {
+        Environment environment = Environment.builder()
+                .uri(&quot;rabbitmq-stream://localhost:5552&quot;)
+                .build();
+
+        // Define how to handle messages
+        MessageHandler handler = (context, message) -&gt; {
+            byte[] body = message.getBodyAsBinary();
+            String text = new String(body, StandardCharsets.UTF_8);
+            System.out.println(&quot; [x] Received: &quot; + text +
+                               &quot; (offset: &quot; + context.getOffset() + &quot;)&quot;);
+        };
+
+        // Start consumer from the beginning of the stream
+        Consumer consumer = environment.consumerBuilder()
+                .stream(STREAM_NAME)
+                .offset(OffsetSpecification.first())
+                .messageHandler(handler)
+                .build();
+
+        System.out.println(&quot; [*] Consuming from stream &#39;&quot; + STREAM_NAME +
+                           &quot;&#39; starting at the first message. Press CTRL+C to exit.&quot;);
+
+        // Keep process alive (simple way)
+        Thread.currentThread().join();
+
+        // (Unreachable in this simple example, but good practice for structured shutdown)
+        // consumer.close();
+        // environment.close();
+    }
+}</code></pre>
+    <ul>
+        <li><code>OffsetSpecification.first()</code> means &quot;start from the very first stored message&quot;.</li>
+        <br/>
+        <li>Other specifications:
+            <ul>
+                <li><code>OffsetSpecification.last()</code> &mdash; only new messages.</li>
+                <li><code>OffsetSpecification.offset(n)</code> &mdash; start from a specific offset.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>We call <code>Thread.currentThread().join()</code> to keep the main thread alive so the consumer can receive messages.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Building and Running the Example</li>
+    <br/>
+    <ul>
+        <li>Build once:</li>
+<pre><code class="language-bash line-numbers">cd rabbitmq-stream-java
+mvn package</code></pre>
+        <br/>
+        <li>Run consumer first in one terminal:</li>
+<pre><code class="language-bash line-numbers">mvn -q exec:java -Dexec.mainClass=&quot;com.example.StreamConsumer&quot;</code></pre>
+        <br/>
+        <li>Run producer in another terminal:</li>
+<pre><code class="language-bash line-numbers">mvn -q exec:java -Dexec.mainClass=&quot;com.example.StreamProducer&quot;</code></pre>
+        <br/>
+        <li>Expected output:
+            <br/>
+            <br/>
+            <ul>
+                <li><b>Producer</b>:</li>
+            </ul>
+<pre><code class="language-plaintext line-numbers"> [x] Sent &apos;Hello Stream from Java!&apos; to stream &apos;hello-stream&apos;</code></pre>
+            <ul>
+                <li><b>Consumer</b>:</li>
+            </ul>
+<pre><code class="language-plaintext line-numbers"> [*] Consuming from stream &apos;hello-stream&apos; starting at the first message. Press CTRL+C to exit.
+ [x] Received: Hello Stream from Java! (offset: 0)</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Streams vs Classic Queues</li>
+    <br/>
+    <ul>
+        <li><b>Classic Queues</b>:
+            <ul>
+                <li>Messages are typically removed once acknowledged.</li>
+                <li>Consumers usually get each message at most once.</li>
+                <li>Replay requires extra patterns (dead letter, requeue, etc.).</li>
+            </ul>
+        </li>
+        <br/>
+        <li><b>Streams</b>:
+            <ul>
+                <li>Messages stay on disk for a long time (according to retention policy).</li>
+                <li>Multiple consumers can read the same message at different times.</li>
+                <li>Consumers track their <u>offset</u> in the stream and can replay.</li>
+                <li>Designed for very high throughput and sequential disk access.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
