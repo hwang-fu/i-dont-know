@@ -151,6 +151,7 @@
     <h2> <img src="resources/rabbitmq.png" alt="Logo" class="nav-icon"/> Documentation Index</h2>
     <ol style="line-height: 1.8;">
         <li><a href="#rabbitmq-introduction">Introduction</a></li>
+        <li><a href="#rabbitmq-hello-world-java">Hello World (Using the Java Client)</a></li>
     </ol>
 </nav>
 <hr/>
@@ -392,7 +393,314 @@ channel.basic_publish(exchange='', routing_key='jobs',
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="rabbitmq-hello-world-java">RabbitMQ &mdash; Hello World with the Java Client</h3>
+<ol>
 
+    <li>This chapter explains how to build a minimal <b>Hello World</b> message queue using:</li>
+    <ul>
+        <br/>
+        <li>A RabbitMQ Server running locally (default: <code>localhost:5672</code>)</li>
+        <br/>
+        <li>A Java Client using the official RabbitMQ Java library</li>
+        <br/>
+        <li>Two small programs:
+            <ul>
+                <li><code>Sender</code> sends <code>"Hello World"</code> messages to a queue</li>
+                <li><code>Receiver</code> receives and prints those messages</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Prerequisites</li>
+    <br/>
+    <ul>
+        <li>RabbitMQ default credentials:
+            <ul>
+                <li>Host: <code>localhost</code></li>
+                <li>Port: <code>5672</code></li>
+                <li>Username: <code>guest</code></li>
+                <li>Password: <code>guest</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>RabbitMQ server running:
+<pre><code class="language-bash line-numbers"># Example on Linux/macOS if installed via system packages
+sudo service rabbitmq-server start
+
+# Or via Homebrew on macOS
+brew services start rabbitmq</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Project Structure</li>
+    <br/>
+    <ul>
+        <li>We will create a very small Maven project with two Java classes.</li>
+        <br/>
+        <li>Example structure:</li>
+<pre><code class="language-plaintext line-numbers">rabbitmq-hello-world-java/
+├─ pom.xml
+└─ src/
+   └─ main/
+      └─ java/
+         └─ com/
+            └─ example/
+               ├─ Send.java   &lt;-- sender (producer)
+               └─ Recv.java   &lt;-- receiver (consumer)</code></pre>
+        <br/>
+        <li>You can adjust the package name as you like, just keep sender and receiver separate.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Adding the RabbitMQ Java Client Dependency (Maven)</li>
+    <br/>
+    <ul>
+        <li>In your <code>pom.xml</code> add the RabbitMQ Java client dependency:</li>
+<pre><code class="language-xml line-numbers">&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;com.example&lt;/groupId&gt;
+    &lt;artifactId&gt;rabbitmq-hello-world-java&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.rabbitmq&lt;/groupId&gt;
+            &lt;artifactId&gt;amqp-client&lt;/artifactId&gt;
+            &lt;version&gt;5.24.0&lt;/version&gt; &lt;!-- Example version --&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/project&gt;</code></pre>
+        <br/>
+        <li>After editing <code>pom.xml</code>, download dependencies:</li>
+<pre><code class="language-bash line-numbers">mvn dependency:resolve</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding the Connection to RabbitMQ</li>
+    <br/>
+    <ul>
+        <li>Both sender and receiver will:
+            <ul>
+                <li>Create a <code>ConnectionFactory</code></li>
+                <li>Set the host (and optionally username/password)</li>
+                <li>Open a <code>Connection</code></li>
+                <li>Create a <code>Channel</code> from that connection</li>
+            </ul>
+        </li>
+        <br/>
+        <li>The queue name will be something simple, e.g.:</li>
+<pre><code class="language-plaintext line-numbers">QUEUE_NAME = "hello";</code></pre>
+        <li>Both sender and receiver must <b>declare</b> the same queue so that:
+            <ul>
+                <li>Sender publishes messages to that queue.</li>
+                <li>Receiver consumes messages from that queue.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sender &mdash; <code>Send.java</code></li>
+    <br/>
+    <ul>
+        <li>Create the file <code>src/main/java/com/example/Send.java</code> with the following content:</li>
+    </ul>
+<pre><code class="language-java line-numbers">package com.example;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+
+import java.nio.charset.StandardCharsets;
+
+public class Send {
+
+    private static final String QUEUE_NAME = "hello";
+
+    public static void main(String[] args) throws Exception {
+        // 1. Create a connection factory and configure it
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+        // factory.setUsername("guest");
+        // factory.setPassword("guest");
+
+        // 2. Create connection and channel using try-with-resources
+        try (Connection connection = factory.newConnection();
+             Channel channel = connection.createChannel()) {
+
+            // 3. Declare the queue (idempotent &mdash; only created if it does not exist)
+            channel.queueDeclare(
+                    QUEUE_NAME,
+                    false,  // durable
+                    false,  // exclusive
+                    false,  // autoDelete
+                    null    // arguments
+            );
+
+            // 4. Message to send
+            String message = "Hello World from Java!";
+
+            // 5. Publish the message to the default exchange ("") with routing key = queue name
+            channel.basicPublish(
+                    "",
+                    QUEUE_NAME,
+                    null,
+                    message.getBytes(StandardCharsets.UTF_8)
+            );
+
+            System.out.println(" [x] Sent '" + message + "'");
+        } // END try
+    }
+}</code></pre>
+    <ul>
+        <li><code>queueDeclare</code> is safe to call multiple times, it just ensures the queue exists.</li>
+        <li><code>basicPublish("", QUEUE_NAME, ...)</code> uses the <b>default exchange</b> with routing key equal to the queue name.</li>
+        <li><code>try (Connection ...)</code> auto-closes the connection and channel.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Receiver &mdash; <code>Recv.java</code></li>
+    <br/>
+    <ul>
+        <li>Create the file <code>src/main/java/com/example/Recv.java</code> with the following content:</li>
+    </ul>
+<pre><code class="language-java line-numbers">package com.example;
+
+import com.rabbitmq.client.*;
+
+import java.nio.charset.StandardCharsets;
+
+public class Recv {
+
+    private static final String QUEUE_NAME = "hello";
+
+    public static void main(String[] args) throws Exception {
+        // 1. Create connection factory
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+        // factory.setUsername("guest");
+        // factory.setPassword("guest");
+
+        // 2. Create connection and channel
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+
+        // 3. Ensure the same queue exists
+        channel.queueDeclare(
+                QUEUE_NAME,
+                false,
+                false,
+                false,
+                null
+        );
+
+        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+
+        // 4. Define how to process delivered messages (callback)
+        DeliverCallback deliverCallback = (consumerTag, delivery) -&gt; {
+            String message = new String(
+                    delivery.getBody(),
+                    StandardCharsets.UTF_8
+            );
+            System.out.println(" [x] Received '" + message + "'");
+        };
+
+        CancelCallback cancelCallback = consumerTag -&gt; {
+            System.out.println(" [!] Consumer was cancelled: " + consumerTag);
+        };
+
+        // 5. Start consuming messages (autoAck = true)
+        channel.basicConsume(
+                QUEUE_NAME,
+                true,            // autoAck
+                deliverCallback,
+                cancelCallback
+        );
+    }
+}</code></pre>
+    <ul>
+        <li>The receiver also calls <code>queueDeclare</code> to ensure the queue exists.</li>
+        <li><code>basicConsume</code> registers an asynchronous consumer, the program keeps running.</li>
+        <li><code>autoAck = true</code> means messages are automatically acknowledged as soon as they are delivered.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Building and Running the Example</li>
+    <br/>
+    <ul>
+        <li>First, build the project with Maven:</li>
+<pre><code class="language-bash line-numbers">cd rabbitmq-hello-world-java
+mvn package</code></pre>
+        <br/>
+        <li>Run the receiver (consumer) in one terminal:</li>
+<pre><code class="language-bash line-numbers"># From the project root
+mvn -q exec:java -Dexec.mainClass="com.example.Recv"</code></pre>
+        <br/>
+        <li>In another terminal, run the sender (producer):</li>
+<pre><code class="language-bash line-numbers">mvn -q exec:java -Dexec.mainClass="com.example.Send"</code></pre>
+        <br/>
+        <li>Expected output:
+        <br/>
+        <br/>
+            <ul>
+                <li>Sender terminal:</li>
+            </ul>
+<pre><code class="language-plaintext line-numbers"> [x] Sent 'Hello World from Java!'</code></pre>
+            <ul>
+                <li>Receiver terminal:</li>
+            </ul>
+<pre><code class="language-plaintext line-numbers"> [*] Waiting for messages. To exit press CTRL+C
+ [x] Received 'Hello World from Java!'</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How the Visually Message Flow Works</li>
+<pre><code class="language-plaintext line-numbers">[Send.java] --basicPublish--&gt; [""] default exchange --&gt; [queue "hello"] --&gt; [Recv.java]</code></pre>
+    <br/><br/>
+
+
+    <li>Common Troubleshooting Tips</li>
+    <br/>
+    <ul>
+        <li>Problem: <code>java.net.ConnectException: Connection refused</code>
+            <ul>
+                <li>Check if RabbitMQ is running.</li>
+                <li>Verify host and port: <code>localhost:5672</code>.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Problem: Authentication failure
+            <ul>
+                <li>Ensure username/password <code>guest/guest</code> are correct.</li>
+                <li>Note: by default, <code>guest/guest</code> might be restricted to localhost.</li>
+                <li>For remote hosts, create a dedicated user in RabbitMQ if necessary.</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Problem: Receiver doesn&#39;t print anything
+            <ul>
+                <li>Ensure the receiver is running <u>before</u> you send messages (for this simple example).</li>
+                <li>Check that both sender and receiver use the <u>same queue name</u> and <u>same virtual host</u>.</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
