@@ -1,0 +1,346 @@
+<!-- * * * * * * * * * * * * * * -->
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Cross-Site Request Forgery</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/autoloader/prism-autoloader.min.js"
+            data-prismjs-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs/components/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.js"></script>
+
+<style>
+    html {
+        scroll-behavior: smooth;
+    }
+
+    .back-to-top {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #333;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 22px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        opacity: 0.75;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        z-index: 999;
+    }
+
+    .back-to-top:hover {
+        opacity: 1;
+        transform: translateY(-2px);
+    }
+
+    .nav-icon {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+        vertical-align: middle;
+        margin-left: 0.3rem;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", "Times New Roman", Georgia, serif;
+        font-size: 14px;
+    }
+
+    th {
+        background-color: #f5f5f5;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px 12px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #fafafa;
+    }
+
+    tr:hover {
+        background-color: #f0f8ff;
+    }
+
+    .comment {
+        color: grey;
+    }
+
+    .token.keyword {
+        font-weight: 500;
+    }
+
+    .red-underline {
+        text-decoration-line: underline;
+        text-decoration-color: red;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 2px;
+    }
+
+    body {
+        font-family: "KaiTi", "楷体", "STKaiti", "Kaiti SC", "Times New Roman", Georgia, serif;
+        font-variant-ligatures: none;
+    }
+
+    ul > li {
+        list-style-type: disc;
+    }
+
+    code {
+        color: #24292e;
+        background-color: #f6f8fa;
+        border: 1px solid #d0d7de;
+        border-radius: .375rem;
+        padding: .05rem .35rem;
+        font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 0.775rem;
+        line-height: 1.1;
+    }
+
+
+    pre {
+        margin: 1rem 0;
+        padding: .8rem 1rem;
+        background-color: #f6f8fa;
+        border: 1px solid #d0d7de;
+        border-radius: .5rem;
+        overflow: auto;
+        tab-size: 4;
+    }
+
+
+    pre code {
+        display: block;
+        padding: 0;
+        background: transparent;
+        border: 0;
+        color: #24292e;
+        font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        white-space: pre;
+    }
+</style>
+</head>
+<!-- * * * * * * * * * * * * * * -->
+<body>
+<a href="#" class="back-to-top" aria-label="Back to top">
+    &#8593;
+</a>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="security-csrf">CSRF (Cross-Site Request Forgery)</h3>
+<ol>
+
+    <li>What Is CSRF?</li>
+    <br/>
+    <ul>
+        <li>CSRF stands for <b>Cross-Site Request Forgery</b>.</li>
+        <br/>
+        <li>It is a type of security vulnerability where an attacker tricks a victim’s browser into submitting unintended requests to a trusted website where the user is authenticated.</li>
+        <br/>
+        <li>Example:
+            <ul>
+                <li>User is logged into <code>bank.com</code></li>
+                <li>User visits a malicious website that makes a <code>POST</code> request to <code>bank.com/transfer</code></li>
+                <li>The browser includes session cookies automatically — and the bank thinks the user intended it!</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Why CSRF Works (Origin &amp; Exploit Mechanism)</li>
+    <br/>
+    <ul>
+        <li>Browsers <i>automatically</i> include session cookies with every request to a site — regardless of the source.</li>
+        <br/>
+        <li>Common attack vectors:
+            <ul>
+                <li>Auto-submitted hidden forms</li>
+                <li>Image tags: <code>&lt;img src="https://target.com/delete?id=5"&gt;</code></li>
+                <li>JavaScript-based cross-domain fetches (if CORS not properly restricted)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Because the server uses the session cookie to identify the user, it cannot distinguish a legitimate request from a forged one — unless CSRF protection is applied.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How CSRF Tokens Work</li>
+    <br/>
+    <ul>
+        <li>The main prevention strategy is the use of <code>CSRF tokens</code>.</li>
+        <br/>
+        <li>A CSRF token is:
+            <ul>
+                <li>a random, cryptographically secure string</li>
+                <li>generated by the server per session or per request</li>
+                <li>embedded into HTML forms or headers</li>
+            </ul>
+        </li>
+        <br/>
+        <li>How it works:
+            <ul>
+                <li>User loads a form → receives a CSRF token</li>
+                <li>User submits the form → token is sent back to server</li>
+                <li>Server verifies the token is valid for this session</li>
+            </ul>
+        </li>
+        <br/>
+        <li>If the token is missing or incorrect, the request is blocked.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: How Django Prevents CSRF</li>
+    <br/>
+    <ul>
+        <li>Django has built-in CSRF protection enabled by default.</li>
+        <br/>
+        <li>It uses:
+            <ul>
+                <li>a middleware: <code>django.middleware.csrf.CsrfViewMiddleware</code></li>
+                <li>a per-session token stored in the user's session or cookie</li>
+                <li>a validation check for every <code>POST</code> / <code>PUT</code> / <code>PATCH</code> / <code>DELETE</code> request</li>
+            </ul>
+        </li>
+        <br/>
+        <li>You must include a CSRF token in every <code>POST</code> form:</li>
+<pre><code class="language-django line-numbers">&lt;form method="post"&gt;
+    {% csrf_token %}
+    &lt;input name="name" /&gt;
+&lt;/form&gt;
+</code></pre>
+        <li>This generates:
+<pre><code class="language-html line-numbers">&lt;input type="hidden" name="csrfmiddlewaretoken" value="AbCd123..." /&gt;
+</code></pre>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>CSRF Protection in Django Views and APIs</li>
+    <br/>
+    <ul>
+        <li><b>Template-based views</b> are protected automatically if you use <code>{% csrf_token %}</code>.</li>
+        <br/>
+        <li><b>Function-based views</b> require no special action unless CSRF checks are manually disabled.</li>
+        <br/>
+        <li><b>AJAX/Fetch</b> requests must send the token in a header:</li>
+<pre><code class="language-javascript line-numbers">fetch('/api/update/', {
+    method: 'POST',
+    headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+});
+</code></pre>
+        <li>Set the token from the cookie:</li>
+<pre><code class="language-javascript line-numbers">function getCookie(name) {
+    const match = document.cookie.match(new RegExp(name + '=([^;]+)'));
+    return match ? match[1] : null;
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Disabling CSRF in Django (Not Recommended)</li>
+    <br/>
+    <ul>
+        <li>You can disable CSRF checks using decorators:</li>
+<pre><code class="language-python line-numbers">from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def public_webhook(request):
+    ...
+</code></pre>
+        <br/>
+        <li>This should be used with caution — only for trusted endpoints (e.g. webhooks or internal APIs).</li>
+        <br/>
+        <li>Never disable CSRF for forms or authenticated user endpoints.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common CSRF Protection Strategies</li>
+    <br/>
+    <ul>
+        <li>Always use POST for state-changing operations</li>
+        <br/>
+        <li>Include CSRF tokens in all non-idempotent requests</li>
+        <br/>
+        <li>Use <code>SameSite=Lax</code> or <code>Strict</code> cookie policies</li>
+        <br/>
+        <li>Validate HTTP Referer headers (optional extra check)</li>
+        <br/>
+        <li>Enable HTTPS to avoid token interception</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>CSRF vs XSS</li>
+    <br/>
+    <ul>
+        <li>CSRF exploits <b>trust in the user's browser</b></li>
+        <li>XSS exploits <b>trust in user-supplied content</b></li>
+        <br/>
+        <li>They are different but often combined:
+            <ul>
+                <li>XSS can be used to steal a CSRF token</li>
+                <li>CSRF can be used to abuse XSS-injected sessions</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Verifying CSRF Protection Works</li>
+    <br/>
+    <ul>
+        <li>Try submitting a POST form without <code>{% csrf_token %}</code> → should be blocked</li>
+        <br/>
+        <li>Django will raise:
+<pre><code class="language-plaintext line-numbers">403 Forbidden - CSRF verification failed
+</code></pre>
+        </li>
+        <br/>
+        <li>Check the CSRF cookie and form token match</li>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+<!-- * * * * * * * * * * * * * * -->
+
+<footer>
+    <p>&copy; 2025 Hwangfucius. All rights reserved.</p>
+</footer>
+</body>
+<!-- * * * * * * * * * * * * * * -->
+</html>
+<!-- * * * * * * * * * * * * * * -->
