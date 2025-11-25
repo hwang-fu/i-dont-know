@@ -190,6 +190,7 @@
         <li><a href="#django-shell">Django Shell</a></li>
         <li><a href="#django-admin-interface">Admin Interface</a></li>
         <li><a href="#django-admin-create-user">Admin Create User</a></li>
+        <li><a href="#django-admin-include-models">Admin Include Models</a></li>
     </ol>
 </nav>
 <hr/>
@@ -11814,7 +11815,136 @@ User.objects.create_superuser('admin', 'admin@example.com', 'superpass')
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="django-admin-include-models">Django Admin Include Models</h3>
+<ol>
 
+    <li>What Does "Including Models in Django Admin" Mean?</li>
+    <br/>
+    <ul>
+        <li>By default, Django admin only shows models that you explicitly register.</li>
+        <br/>
+        <li>“Including a model” means registering it in the <code>admin.py</code> file of your app so it appears in the admin panel.</li>
+        <br/>
+        <li>Once registered, you can create, edit, filter, and delete records from the admin dashboard.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Model Registration</li>
+    <br/>
+    <ul>
+        <li>To make a model appear in the admin interface:</li>
+<pre><code class="language-python line-numbers"># admin.py
+from django.contrib import admin
+from .models import Product
+
+admin.site.register(Product)</code></pre>
+        <li>Now <code>Product</code> will show up in the admin panel automatically.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Registering Multiple Models</li>
+    <br/>
+    <ul>
+        <li>You can register multiple models in the same file:</li>
+<pre><code class="language-python line-numbers">from django.contrib import admin
+from .models import Product, Category, Order
+
+admin.site.register(Product)
+admin.site.register(Category)
+admin.site.register(Order)</code></pre>
+        <li>Alternatively, use a loop (not commonly used):</li>
+<pre><code class="language-python line-numbers">models = [Product, Category, Order]
+for model in models:
+    admin.site.register(model)
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using ModelAdmin for Custom Admin Behavior</li>
+    <br/>
+    <ul>
+        <li>You can pass a custom admin class with display/editing configuration:</li>
+<pre><code class="language-python line-numbers">class ProductAdmin(admin.ModelAdmin):
+    list_display = ('name', 'price', 'available')
+    search_fields = ('name',)
+
+admin.site.register(Product, ProductAdmin)
+</code></pre>
+        <li>This allows:</li>
+        <ul>
+            <li>Column selection</li>
+            <li>Search indexing</li>
+            <li>List filtering</li>
+            <li>Custom forms or field layouts</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Grouping Models Under an App Label</li>
+    <br/>
+    <ul>
+        <li>Django automatically groups models by app in the admin sidebar.</li>
+        <br/>
+        <li>You can override the label with <code>verbose_name</code> in your <code>AppConfig</code>:</li>
+<pre><code class="language-python line-numbers"># apps.py
+class ShopConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'shop'
+    verbose_name = 'My Shop Backend'</code></pre>
+        <li>This changes the heading in the admin UI.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Customizing Display Names of Models</li>
+    <br/>
+    <ul>
+        <li>Each model name shown in the admin is based on its class name.</li>
+        <br/>
+        <li>You can override it via the model's <code>Meta</code> class:</li>
+<pre><code class="language-python line-numbers">class Product(models.Model):
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        verbose_name = "Product"
+        verbose_name_plural = "Products"
+</code></pre>
+        <li>This is especially useful for:
+            <ul>
+                <li>Changing pluralization (e.g. “People” instead of “Persons”)</li>
+                <li>Localization</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Unregistering a Model</li>
+    <br/>
+    <ul>
+        <li>If you don’t want a model to appear in admin:</li>
+<pre><code class="language-python line-numbers">admin.site.unregister(MyModel)</code></pre>
+        <li>Useful when overriding or hiding default models such as <code>Group</code> or <code>User</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Auto-Discovery of Admin Files</li>
+    <br/>
+    <ul>
+        <li>Django auto-discovers and loads <code>admin.py</code> from each app listed in <code>INSTALLED_APPS</code>.</li>
+        <br/>
+        <li>This happens when you open the admin site or call <code>admin.autodiscover()</code> manually.</li>
+        <br/>
+        <li>No extra setup is needed for discovery if the file is named <code>admin.py</code>.</li>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
