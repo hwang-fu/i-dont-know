@@ -153,6 +153,7 @@
         <li><a href="#prisma-database-connections">Database Connection Configuration</a></li>
         <li><a href="#prisma-connection-pooling">Connection Pooling vs Direct Connection</a></li>
         <li><a href="#prisma-shadow-database">Shadow Database</a></li>
+        <li><a href="#prisma-read-replicas">Read Replicas</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1881,6 +1882,560 @@ npx prisma migrate dev</code></pre>
     </ul>
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="prisma-read-replicas">Read Replicas</h3>
+<ol>
+
+    <li>What Are Read Replicas?</li>
+    <br/>
+    <ul>
+        <li>A <b>read replica</b> is a copy of your primary database that handles read operations only.</li>
+        <br/>
+        <li>Characteristics:</li>
+        <ul>
+            <li>primary handles all writes (<code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>)</li>
+            <li>replicas handle reads (<code>SELECT</code>)</li>
+            <li>data replicates from primary to replicas (asynchronous)</li>
+            <li>replicas are eventually consistent</li>
+        </ul>
+        <br/>
+        <li>Prisma 5.0+ includes native read replica support.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Typical read/write ratios that benefit from replicas:</li>
+    <ul>
+        <br/>
+        <li>80/20 reads to writes - moderate benefit</li>
+        <br/>
+        <li>90/10 reads to writes - significant benefit</li>
+        <br/>
+        <li>95/5+ reads to writes - major benefit</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Configuration</li>
+    <br/>
+    <ul>
+        <li>Configure read replicas in Prisma schema:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [prismaClientExtension()]
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["readReplicas"]
+}</code></pre>
+        <br/>
+        <li>Environment variables:</li>
+<pre><code class="language-plaintext line-numbers"># Primary database (writes)
+DATABASE_URL="postgresql://user:pass@primary.example.com:5432/mydb"
+
+# Read replicas
+DATABASE_REPLICA_1="postgresql://user:pass@replica-1.example.com:5432/mydb"
+DATABASE_REPLICA_2="postgresql://user:pass@replica-2.example.com:5432/mydb"</code></pre>
+        <br/>
+        <li>Initialize Prisma Client with replicas:</li>
+<pre><code class="language-typescript line-numbers">import { PrismaClient } from '@prisma/client'
+import { readReplicas } from '@prisma/extension-read-replicas'
+
+const prisma = new PrismaClient().$extends(
+  readReplicas({
+    url: [
+      process.env.DATABASE_REPLICA_1!,
+      process.env.DATABASE_REPLICA_2!
+    ]
+  })
+)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Read Replicas</li>
+    <br/>
+    <ul>
+        <li>Explicit replica reads with <code>$replica()</code>:</li>
+<pre><code class="language-typescript line-numbers">// Read from replica
+const users = await prisma.user.findMany().$replica()
+
+// Write to primary (default)
+await prisma.user.create({
+  data: { email: 'user@example.com' }
+})</code></pre>
+        <br/>
+        <li>All writes automatically go to primary:</li>
+<pre><code class="language-typescript line-numbers">// These ALWAYS use primary, no matter what
+await prisma.user.create({ data: { email: 'new@example.com' } })
+await prisma.user.update({ where: { id: 1 }, data: { name: 'Updated' } })
+await prisma.user.delete({ where: { id: 1 } })
+await prisma.user.upsert({ where: { id: 1 }, create: {...}, update: {...} })</code></pre>
+        <br/>
+        <li>Read operations default to primary unless using <code>$replica()</code>:</li>
+<pre><code class="language-typescript line-numbers">// Uses primary (default)
+const users = await prisma.user.findMany()
+
+// Uses replica (explicit)
+const users = await prisma.user.findMany().$replica()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Load Balancing Strategies</li>
+    <br/>
+    <ul>
+        <li>Prisma uses round-robin load balancing by default:</li>
+<pre><code class="language-typescript line-numbers">const prisma = new PrismaClient().$extends(
+  readReplicas({
+    url: [
+      process.env.DATABASE_REPLICA_1!,  // Request 1, 3, 5...
+      process.env.DATABASE_REPLICA_2!   // Request 2, 4, 6...
+    ]
+  })
+)</code></pre>
+        <br/>
+        <li>Custom load balancing:</li>
+<pre><code class="language-typescript line-numbers">const prisma = new PrismaClient().$extends(
+  readReplicas({
+    url: async () =&gt; {
+      // Custom logic: geography-based routing
+      const userRegion = await getUserRegion()
+
+      if (userRegion === 'us-east') {
+        return process.env.DATABASE_REPLICA_US_EAST!
+      } else if (userRegion === 'eu-west') {
+        return process.env.DATABASE_REPLICA_EU_WEST!
+      }
+
+      return process.env.DATABASE_REPLICA_1!
+    }
+  })
+)</code></pre>
+        <br/>
+        <li>Random selection strategy:</li>
+<pre><code class="language-typescript line-numbers">const replicas = [
+  process.env.DATABASE_REPLICA_1!,
+  process.env.DATABASE_REPLICA_2!,
+  process.env.DATABASE_REPLICA_3!
+]
+
+const prisma = new PrismaClient().$extends(
+  readReplicas({
+    url: () => {
+      const random = Math.floor(Math.random() * replicas.length)
+      return replicas[random]
+    }
+  })
+)</code></pre>
+        <br/>
+        <li>Weighted load balancing:</li>
+<pre><code class="language-typescript line-numbers">const replicaWeights = [
+  { url: process.env.DATABASE_REPLICA_1!, weight: 50 },  // 50%
+  { url: process.env.DATABASE_REPLICA_2!, weight: 30 },  // 30%
+  { url: process.env.DATABASE_REPLICA_3!, weight: 20 }   // 20%
+]
+
+const prisma = new PrismaClient().$extends(
+  readReplicas({
+    url: () => {
+      const total = replicaWeights.reduce((sum, r) => sum + r.weight, 0)
+      let random = Math.random() * total
+
+      for (const replica of replicaWeights) {
+        random -= replica.weight
+        if (random <= 0) return replica.url
+      }
+
+      return replicaWeights[0].url
+    }
+  })
+)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Replication Lag and Consistency</li>
+    <br/>
+    <ul>
+        <li>Read replicas use <b>asynchronous replication</b> - data isn't immediately consistent.</li>
+        <br/>
+        <li>Typical replication lag:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Scenario</th>
+            <th>Typical Lag</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Same datacenter</td>
+            <td>10-100ms</td>
+        </tr>
+        <tr>
+            <td>Same region</td>
+            <td>100-500ms</td>
+        </tr>
+        <tr>
+            <td>Cross-region</td>
+            <td>500ms-5s</td>
+        </tr>
+        <tr>
+            <td>Heavy load</td>
+            <td>Can increase significantly</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Problem scenario:</li>
+<pre><code class="language-typescript line-numbers">// Write to primary
+await prisma.user.create({
+  data: { id: 1, email: 'new@example.com' }
+})
+
+// Immediately read from replica - may not exist yet!
+const user = await prisma.user.findUnique({
+  where: { id: 1 }
+}).$replica()
+
+console.log(user) // Might be null due to replication lag</code></pre>
+        <br/>
+        <li>Solution: Read from primary after writes:</li>
+<pre><code class="language-typescript line-numbers">// Write to primary
+await prisma.user.create({
+  data: { id: 1, email: 'new@example.com' }
+})
+
+// Read from primary (not replica) to ensure consistency
+const user = await prisma.user.findUnique({
+  where: { id: 1 }
+})
+
+console.log(user) // Always exists</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Read-After-Write Consistency Pattern</li>
+    <br/>
+    <ul>
+        <li>Ensure users see their own writes immediately:</li>
+<pre><code class="language-typescript line-numbers">async function createAndReturnUser(email: string) {
+  // Write to primary
+  const newUser = await prisma.user.create({
+    data: { email }
+  })
+
+  // Return from primary, not replica
+  return newUser
+}
+
+async function updateAndReturnUser(id: number, data: any) {
+  // Update on primary
+  const updated = await prisma.user.update({
+    where: { id },
+    data
+  })
+
+  // Return from primary
+  return updated
+}</code></pre>
+        <br/>
+        <li>Session-based routing:</li>
+<pre><code class="language-typescript line-numbers">// Track recent writes per session
+const recentWrites = new Map<string, number>()
+
+async function getUserWithConsistency(userId: number, sessionId: string) {
+  const lastWrite = recentWrites.get(sessionId) || 0
+  const timeSinceWrite = Date.now() - lastWrite
+
+  // If wrote within last 5 seconds, use primary
+  if (timeSinceWrite < 5000) {
+    return prisma.user.findUnique({ where: { id: userId } })
+  }
+
+  // Otherwise use replica
+  return prisma.user.findUnique({ where: { id: userId } }).$replica()
+}
+
+async function updateUser(userId: number, data: any, sessionId: string) {
+  recentWrites.set(sessionId, Date.now())
+  return prisma.user.update({ where: { id: userId }, data })
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Transactions and Read Replicas</li>
+    <br/>
+    <ul>
+        <li>Transactions always use primary database:</li>
+<pre><code class="language-typescript line-numbers">// All operations in transaction use primary
+await prisma.$transaction(async (tx) => {
+  const user = await tx.user.findUnique({ where: { id: 1 } })  // Primary
+  await tx.post.create({ data: { userId: 1, title: 'Post' } }) // Primary
+
+  // Cannot use $replica() inside transactions
+  // This would throw an error:
+  // await tx.user.findMany().$replica()
+})</code></pre>
+        <br/>
+        <li>Sequential transactions:</li>
+<pre><code class="language-typescript line-numbers">const [user, posts] = await prisma.$transaction([
+  prisma.user.findUnique({ where: { id: 1 } }),     // Primary
+  prisma.post.findMany({ where: { userId: 1 } })    // Primary
+  // All queries in $transaction use primary
+])</code></pre>
+        <br/>
+        <li>Mix transactions with replica reads:</li>
+<pre><code class="language-typescript line-numbers">// Write operation in transaction
+await prisma.$transaction(async (tx) => {
+  await tx.user.update({
+    where: { id: 1 },
+    data: { credits: { increment: 100 } }
+  })
+})
+
+// Later, read from replica if consistency not critical
+const allUsers = await prisma.user.findMany().$replica()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Geographic Distribution</li>
+    <br/>
+    <ul>
+        <li>Deploy replicas close to users for lower latency:</li>
+<pre><code class="language-plaintext line-numbers">Primary: us-east-1 (Virginia)
+Replica 1: us-west-2 (Oregon)
+Replica 2: eu-west-1 (Ireland)
+Replica 3: ap-southeast-1 (Singapore)</code></pre>
+        <br/>
+        <li>Region-based routing:</li>
+<pre><code class="language-typescript line-numbers">const REPLICA_BY_REGION: Record<string, string> = {
+  'us-east': process.env.DATABASE_REPLICA_US_EAST!,
+  'us-west': process.env.DATABASE_REPLICA_US_WEST!,
+  'eu': process.env.DATABASE_REPLICA_EU!,
+  'asia': process.env.DATABASE_REPLICA_ASIA!
+}
+
+const prisma = new PrismaClient().$extends(
+  readReplicas({
+    url: async () => {
+      const region = await detectUserRegion()
+      return REPLICA_BY_REGION[region] || process.env.DATABASE_URL!
+    }
+  })
+)
+
+async function detectUserRegion(): Promise<string> {
+  // Detect from request headers, IP geolocation, etc.
+  const cloudflareCountry = request.headers.get('cf-ipcountry')
+
+  if (['US', 'CA', 'MX'].includes(cloudflareCountry)) {
+    return 'us-east'
+  } else if (['GB', 'FR', 'DE'].includes(cloudflareCountry)) {
+    return 'eu'
+  } else if (['JP', 'SG', 'AU'].includes(cloudflareCountry)) {
+    return 'asia'
+  }
+
+  return 'us-east'
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Monitoring and Observability</li>
+    <br/>
+    <ul>
+        <li>Track which database handles each query:</li>
+<pre><code class="language-typescript line-numbers">const prisma = new PrismaClient({
+  log: [
+    { level: 'query', emit: 'event' }
+  ]
+}).$extends(
+  readReplicas({
+    url: [
+      process.env.DATABASE_REPLICA_1!,
+      process.env.DATABASE_REPLICA_2!
+    ]
+  })
+)
+
+prisma.$on('query', (e) => {
+  console.log({
+    query: e.query,
+    duration: e.duration,
+    target: e.target // 'primary' or replica URL
+  })
+})</code></pre>
+        <br/>
+        <li>Count queries per database:</li>
+<pre><code class="language-typescript line-numbers">const queryStats = {
+  primary: 0,
+  replica: 0
+}
+
+prisma.$on('query', (e) => {
+  if (e.target === process.env.DATABASE_URL) {
+    queryStats.primary++
+  } else {
+    queryStats.replica++
+  }
+})
+
+// Expose metrics endpoint
+app.get('/metrics', (req, res) => {
+  res.json({
+    queries: queryStats,
+    ratio: {
+      reads: queryStats.replica,
+      writes: queryStats.primary
+    }
+  })
+})</code></pre>
+        <br/>
+        <li>Alert on replica failures:</li>
+<pre><code class="language-typescript line-numbers">prisma.$on('error', (e) => {
+  if (e.message.includes('replica')) {
+    // Alert: replica unavailable
+    notifyOps('Replica database unavailable', e)
+
+    // Prisma automatically falls back to primary
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Testing with Read Replicas</li>
+    <br/>
+    <ul>
+        <li>Test environment without replicas:</li>
+<pre><code class="language-typescript line-numbers">// lib/prisma.ts
+const prisma = new PrismaClient()
+
+// Only add read replicas in production
+const client = process.env.NODE_ENV === 'production'
+  ? prisma.$extends(
+      readReplicas({
+        url: [
+          process.env.DATABASE_REPLICA_1!,
+          process.env.DATABASE_REPLICA_2!
+        ]
+      })
+    )
+  : prisma
+
+export { client as prisma }</code></pre>
+        <br/>
+        <li>Simulate replication lag in tests:</li>
+<pre><code class="language-typescript line-numbers">async function testReplicationLag() {
+  // Write to primary
+  await prisma.user.create({
+    data: { id: 999, email: 'test@example.com' }
+  })
+
+  // Simulate replication lag
+  await new Promise(resolve => setTimeout(resolve, 100))
+
+  // Try reading from replica
+  const user = await prisma.user.findUnique({
+    where: { id: 999 }
+  }).$replica()
+
+  // May be null due to lag
+  if (!user) {
+    console.log('Replication lag detected')
+  }
+}</code></pre>
+        <br/>
+        <li>Mock replica for unit tests:</li>
+<pre><code class="language-typescript line-numbers">// test/setup.ts
+jest.mock('@prisma/extension-read-replicas', () => ({
+  readReplicas: () => ({
+    // All replica reads use primary in tests
+    $replica: () => prisma
+  })
+}))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Pitfalls</li>
+    <br/>
+    <ul>
+        <li><b>Reading immediately after write:</b></li>
+<pre><code class="language-typescript line-numbers">// ❌ Bad - may not see new data
+await prisma.user.create({ data: { email: 'new@example.com' } })
+const user = await prisma.user.findFirst({
+  where: { email: 'new@example.com' }
+}).$replica() // May return null
+
+// ✓ Good - read from primary
+await prisma.user.create({ data: { email: 'new@example.com' } })
+const user = await prisma.user.findFirst({
+  where: { email: 'new@example.com' }
+}) // Uses primary</code></pre>
+        <br/>
+        <li><b>Using replicas for financial data:</b></li>
+<pre><code class="language-typescript line-numbers">// ❌ Bad - account balance must be accurate
+const balance = await prisma.account.findUnique({
+  where: { userId }
+}).$replica() // Could show stale balance
+
+// ✓ Good - always use primary for critical data
+const balance = await prisma.account.findUnique({
+  where: { userId }
+})</code></pre>
+        <br/>
+        <li><b>Not handling replica failures:</b></li>
+<pre><code class="language-typescript line-numbers">// ❌ Bad - no error handling
+const users = await prisma.user.findMany().$replica()
+
+// ✓ Good - Prisma handles failover automatically
+// But monitor and alert on failures
+const users = await prisma.user.findMany().$replica()
+// Automatically falls back to primary if replica fails</code></pre>
+        <br/>
+        <li><b>Over-using replicas:</b></li>
+<pre><code class="language-typescript line-numbers">// ❌ Bad - using replica for everything
+const session = await prisma.session.findUnique({
+  where: { token }
+}).$replica() // Session data should be fresh
+
+const notification = await prisma.notification.findFirst({
+  where: { userId, read: false }
+}).$replica() // Real-time data needs consistency
+
+// ✓ Good - use primary for real-time/critical data
+const session = await prisma.session.findUnique({ where: { token } })
+const notification = await prisma.notification.findFirst({
+  where: { userId, read: false }
+})</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
