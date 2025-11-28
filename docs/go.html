@@ -154,6 +154,7 @@
         <li><a href="#go-variables">Variables and Data Types</a></li>
         <li><a href="#go-functions">Functions</a></li>
         <li><a href="#go-packages">Packages</a></li>
+        <li><a href="#go-control-flow">Control Flow</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2660,8 +2661,6 @@ func main() {
 
     stdSQL "database/sql"  // If needed
 )</code></pre>
-        <br/>
-        <li>Choose meaningful aliases that indicate the package's purpose.</li>
     </ul>
     <br/><br/>
 </ol>
@@ -2672,7 +2671,656 @@ func main() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-control-flow">Control Flow in Go</h3>
+<ol>
 
+    <li>Go provides several control flow structures:</li>
+    <ul>
+        <br/>
+        <li><code>if</code> statements for conditional execution</li>
+        <br/>
+        <li><code>switch</code> statements for multi-way branching</li>
+        <br/>
+        <li><code>for</code> loops for iteration (the only loop in Go)</li>
+        <br/>
+        <li><code>break</code> and <code>continue</code> for loop control</li>
+        <br/>
+        <li><code>goto</code> for unconditional jumps (rarely used)</li>
+        <br/>
+        <li><code>defer</code> for deferred execution</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>If Statements</li>
+    <br/>
+    <ul>
+        <li>Basic <code>if</code> statement:</li>
+<pre><code class="language-go line-numbers">if condition {
+    // code to execute if condition is true
+}</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">age := 18
+
+if age >= 18 {
+    fmt.Println("You are an adult")
+}</code></pre>
+        <br/>
+        <li>Important notes:</li>
+        <ul>
+            <li>parentheses around the condition are optional (and discouraged)</li>
+            <li>curly braces are required, even for single-line blocks</li>
+            <li>opening brace must be on the same line as <code>if</code></li>
+        </ul>
+        <br/>
+        <li>Invalid syntax:</li>
+<pre><code class="language-go line-numbers">// ✗ ERROR - missing braces
+if age >= 18
+    fmt.Println("Adult")
+
+// ✗ ERROR - brace on wrong line
+if age >= 18
+{
+    fmt.Println("Adult")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>If-Else Statements</li>
+    <br/>
+    <ul>
+        <li>Execute different code blocks based on condition:</li>
+<pre><code class="language-go line-numbers">if condition {
+    // code if true
+} else {
+    // code if false
+}</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">temperature := 25
+
+if temperature > 30 {
+    fmt.Println("It's hot")
+} else {
+    fmt.Println("It's not too hot")
+}</code></pre>
+        <br/>
+        <li>If-else-if chain:</li>
+<pre><code class="language-go line-numbers">score := 85
+
+if score >= 90 {
+    fmt.Println("Grade: A")
+} else if score >= 80 {
+    fmt.Println("Grade: B")
+} else if score >= 70 {
+    fmt.Println("Grade: C")
+} else if score >= 60 {
+    fmt.Println("Grade: D")
+} else {
+    fmt.Println("Grade: F")
+}</code></pre>
+        <br/>
+        <li>The <code>else</code> keyword must be on the same line as the closing brace of the previous block.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>If With Initialization Statement</li>
+    <br/>
+    <ul>
+        <li>Go allows a short statement before the condition:</li>
+<pre><code class="language-go line-numbers">if statement; condition {
+    // code
+}</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">if age := getAge(); age >= 18 {
+    fmt.Println("Adult, age:", age)
+} else {
+    fmt.Println("Minor, age:", age)
+}
+// age is not accessible here</code></pre>
+        <br/>
+        <li>The variable declared in the initialization is scoped to the <code>if</code> block.</li>
+        <br/>
+        <li>Common pattern with error checking:</li>
+<pre><code class="language-go line-numbers">if err := doSomething(); err != nil {
+    fmt.Println("Error:", err)
+    return
+}
+// err is not accessible here</code></pre>
+        <br/>
+        <li>Another example:</li>
+<pre><code class="language-go line-numbers">if value, ok := myMap[key]; ok {
+    fmt.Println("Found:", value)
+} else {
+    fmt.Println("Key not found")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Switch Statements</li>
+    <br/>
+    <ul>
+        <li>Switch provides multi-way branching based on value:</li>
+<pre><code class="language-go line-numbers">switch variable {
+    case value1:
+        // code
+    case value2:
+        // code
+    default:
+        // code if no case matches
+}</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">day := "Monday"
+
+switch day {
+    case "Monday":
+        fmt.Println("Start of the work week")
+    case "Friday":
+        fmt.Println("End of the work week")
+    case "Saturday", "Sunday":
+        fmt.Println("Weekend!")
+    default:
+        fmt.Println("Midweek")
+}</code></pre>
+        <br/>
+        <li>Key differences from other languages:</li>
+        <ul>
+            <li>no automatic fall-through (no <code>break</code> needed)</li>
+            <li>cases don't need to be constants</li>
+            <li>multiple values in one case (comma-separated)</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Switch Without Expression</li>
+    <br/>
+    <ul>
+        <li>Switch can work like an if-else chain:</li>
+<pre><code class="language-go line-numbers">switch {
+    case condition1:
+        // code
+    case condition2:
+        // code
+    default:
+        // code
+}</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">hour := 14
+
+switch {
+    case hour < 12:
+        fmt.Println("Good morning")
+    case hour < 18:
+        fmt.Println("Good afternoon")
+    default:
+        fmt.Println("Good evening")
+}</code></pre>
+        <br/>
+        <li>Often cleaner than long if-else chains.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Switch With Initialization</li>
+    <br/>
+    <ul>
+        <li>Like <code>if</code>, switch can have an initialization statement:</li>
+<pre><code class="language-go line-numbers">switch statement; expression {
+case value1:
+    // code
+case value2:
+    // code
+}</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">switch num := getRandom(); num {
+case 1, 2, 3:
+    fmt.Println("Low number:", num)
+case 4, 5, 6:
+    fmt.Println("Medium number:", num)
+default:
+    fmt.Println("High number:", num)
+}</code></pre>
+        <br/>
+        <li>The variable is scoped to the switch block.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Switch</li>
+    <br/>
+    <ul>
+        <li>Switch can determine the type of an interface value:</li>
+<pre><code class="language-go line-numbers">switch v := value.(type) {
+case Type1:
+    // v is of Type1
+case Type2:
+    // v is of Type2
+default:
+    // v is of unknown type
+}</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">func describe(i interface{}) {
+    switch v := i.(type) {
+    case int:
+        fmt.Printf("Integer: %d\n", v)
+    case string:
+        fmt.Printf("String: %s\n", v)
+    case bool:
+        fmt.Printf("Boolean: %t\n", v)
+    default:
+        fmt.Printf("Unknown type: %T\n", v)
+    }
+}
+
+func main() {
+    describe(42)      // Integer: 42
+    describe("hello") // String: hello
+    describe(true)    // Boolean: true
+    describe(3.14)    // Unknown type: float64
+}</code></pre>
+        <br/>
+        <li>The <code>type</code> keyword is special and only works in type switches.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Fallthrough in Switch</li>
+    <br/>
+    <ul>
+        <li>Use <code>fallthrough</code> to explicitly continue to the next case:</li>
+<pre><code class="language-go line-numbers">switch num := 2; num {
+case 1:
+    fmt.Println("One")
+case 2:
+    fmt.Println("Two")
+    fallthrough
+case 3:
+    fmt.Println("Three")
+default:
+    fmt.Println("Other")
+}
+// Output:
+// Two
+// Three</code></pre>
+        <br/>
+        <li><code>fallthrough</code> must be the last statement in a case.</li>
+        <br/>
+        <li>It transfers control to the next case unconditionally (doesn't check the condition).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>For Loop - Basic Form</li>
+    <br/>
+    <ul>
+        <li>The <code>for</code> loop is Go's only looping construct:</li>
+<pre><code class="language-go line-numbers">for initialization; condition; post {
+    // code
+}</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">for i := 0; i < 5; i++ {
+    fmt.Println(i)
+}
+// Output: 0 1 2 3 4</code></pre>
+        <br/>
+        <li>Components:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Component</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>initialization</code></td>
+            <td>Executed once before the loop starts</td>
+        </tr>
+        <tr>
+            <td><code>condition</code></td>
+            <td>Evaluated before each iteration</td>
+        </tr>
+        <tr>
+            <td><code>post</code></td>
+            <td>Executed after each iteration</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>All three components are optional:</li>
+<pre><code class="language-go line-numbers">i := 0
+for ; i < 5; i++ {
+    fmt.Println(i)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>For Loop - While Style</li>
+    <br/>
+    <ul>
+        <li>Omit initialization and post to create a while-style loop:</li>
+<pre><code class="language-go line-numbers">for condition {
+    // code
+}</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">count := 0
+for count < 5 {
+    fmt.Println(count)
+    count++
+}</code></pre>
+        <br/>
+        <li>This is Go's equivalent of <code>while</code> in other languages.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Infinite Loop</li>
+    <br/>
+    <ul>
+        <li>Omit all components for an infinite loop:</li>
+<pre><code class="language-go line-numbers">for {
+    // code runs forever
+}</code></pre>
+        <br/>
+        <li>Example with break condition:</li>
+<pre><code class="language-go line-numbers">count := 0
+for {
+    fmt.Println(count)
+    count++
+    if count >= 5 {
+        break
+    }
+}
+// Output: 0 1 2 3 4</code></pre>
+        <br/>
+        <li>Common in server applications:</li>
+<pre><code class="language-go line-numbers">for {
+    conn, err := listener.Accept()
+    if err != nil {
+        continue
+    }
+    go handleConnection(conn)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Range-Based For Loop</li>
+    <br/>
+    <ul>
+        <li>Use <code>range</code> to iterate over slices, arrays, maps, strings, and channels:</li>
+<pre><code class="language-go line-numbers">for index, value := range collection {
+    // code
+}</code></pre>
+        <br/>
+        <li>Iterating over a slice:</li>
+<pre><code class="language-go line-numbers">numbers := []int{10, 20, 30, 40, 50}
+
+for index, value := range numbers {
+    fmt.Printf("Index: %d, Value: %d\n", index, value)
+}</code></pre>
+        <br/>
+        <li>Iterating over a map:</li>
+<pre><code class="language-go line-numbers">ages := map[string]int{
+    "Alice": 25,
+    "Bob":   30,
+    "Charlie": 35,
+}
+
+for name, age := range ages {
+    fmt.Printf("%s is %d years old\n", name, age)
+}</code></pre>
+        <br/>
+        <li>Iterating over a string (returns runes):</li>
+<pre><code class="language-go line-numbers">for index, char := range "Hello" {
+    fmt.Printf("%d: %c\n", index, char)
+}</code></pre>
+        <br/>
+        <li>Ignoring index or value with <code>_</code>:</li>
+<pre><code class="language-go line-numbers">// Only value
+for _, value := range numbers {
+    fmt.Println(value)
+}
+
+// Only index
+for index := range numbers {
+    fmt.Println(index)
+}
+
+// Just iterate (no variables)
+for range numbers {
+    fmt.Println("Iterating...")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Break Statement</li>
+    <br/>
+    <ul>
+        <li>The <code>break</code> statement exits the innermost loop:</li>
+<pre><code class="language-go line-numbers">for i := 0; i < 10; i++ {
+    if i == 5 {
+        break  // Exit loop when i is 5
+    }
+    fmt.Println(i)
+}
+// Output: 0 1 2 3 4</code></pre>
+        <br/>
+        <li>Break with nested loops (exits only the inner loop):</li>
+<pre><code class="language-go line-numbers">for i := 0; i < 3; i++ {
+    for j := 0; j < 3; j++ {
+        if j == 1 {
+            break  // Only breaks inner loop
+        }
+        fmt.Printf("i=%d, j=%d\n", i, j)
+    }
+}</code></pre>
+        <br/>
+        <li>Break in switch statements:</li>
+<pre><code class="language-go line-numbers">switch value {
+case 1:
+    fmt.Println("One")
+    break  // Optional - cases don't fall through by default
+case 2:
+    fmt.Println("Two")
+}</code></pre>
+        <br/>
+        <li>Note: <code>break</code> is implicit in switch cases unless <code>fallthrough</code> is used.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Continue Statement</li>
+    <br/>
+    <ul>
+        <li>The <code>continue</code> statement skips the rest of the current iteration:</li>
+<pre><code class="language-go line-numbers">for i := 0; i < 10; i++ {
+    if i%2 == 0 {
+        continue  // Skip even numbers
+    }
+    fmt.Println(i)
+}
+// Output: 1 3 5 7 9</code></pre>
+        <br/>
+        <li>Example with validation:</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, -3, 4, -5, 6}
+
+for _, num := range numbers {
+    if num < 0 {
+        continue  // Skip negative numbers
+    }
+    fmt.Println(num)
+}
+// Output: 1 2 4 6</code></pre>
+        <br/>
+        <li>Continue in nested loops (continues the innermost loop):</li>
+<pre><code class="language-go line-numbers">for i := 0; i < 3; i++ {
+    for j := 0; j < 3; j++ {
+        if j == 1 {
+            continue  // Skip to next j
+        }
+        fmt.Printf("i=%d, j=%d\n", i, j)
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Labels With Break and Continue</li>
+    <br/>
+    <ul>
+        <li>Use labels to break or continue outer loops:</li>
+<pre><code class="language-go line-numbers">OuterLoop:
+for i := 0; i < 3; i++ {
+    for j := 0; j < 3; j++ {
+        if i == 1 && j == 1 {
+            break OuterLoop  // Break outer loop
+        }
+        fmt.Printf("i=%d, j=%d\n", i, j)
+    }
+}
+// Output:
+// i=0, j=0
+// i=0, j=1
+// i=0, j=2
+// i=1, j=0</code></pre>
+        <br/>
+        <li>Continue with labels:</li>
+<pre><code class="language-go line-numbers">OuterLoop:
+for i := 0; i < 3; i++ {
+    for j := 0; j < 3; j++ {
+        if j == 1 {
+            continue OuterLoop  // Continue outer loop
+        }
+        fmt.Printf("i=%d, j=%d\n", i, j)
+    }
+}</code></pre>
+        <br/>
+        <li>Labels must be <u>immediately</u> before a <code>for</code> statement.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Goto Statement</li>
+    <br/>
+    <ul>
+        <li>The <code>goto</code> statement jumps to a labeled statement:</li>
+<pre><code class="language-go line-numbers">func main() {
+    i := 0
+
+Loop:
+    fmt.Println(i)
+    i++
+
+    if i < 5 {
+        goto Loop
+    }
+
+    fmt.Println("Done")
+}</code></pre>
+        <br/>
+        <li>Restrictions:</li>
+        <ul>
+            <li>cannot jump into a block from outside</li>
+            <li>cannot jump over variable declarations</li>
+            <li>label must be in the same function</li>
+        </ul>
+        <br/>
+        <li>Valid use case - error handling cleanup:</li>
+<pre><code class="language-go line-numbers">func process() error {
+    if err := step1(); err != nil {
+        goto cleanup
+    }
+    if err := step2(); err != nil {
+        goto cleanup
+    }
+    if err := step3(); err != nil {
+        goto cleanup
+    }
+    return nil
+
+cleanup:
+    // Cleanup code
+    return err
+}</code></pre>
+        <br/>
+        <li><code>goto</code> is rarely used in Go - prefer structured control flow.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defer in Control Flow</li>
+    <br/>
+    <ul>
+        <li>The <code>defer</code> statement schedules a function to run when the surrounding function returns:</li>
+<pre><code class="language-go line-numbers">func readFile(filename string) {
+    file, err := os.Open(filename)
+    if err != nil {
+        return
+    }
+    defer file.Close()  // Always executes before function returns
+
+    // Read file...
+}</code></pre>
+        <br/>
+        <li>Multiple defers execute in LIFO order:</li>
+<pre><code class="language-go line-numbers">func example() {
+    defer fmt.Println("First")
+    defer fmt.Println("Second")
+    defer fmt.Println("Third")
+    fmt.Println("Main")
+}
+// Output:
+// Main
+// Third
+// Second
+// First</code></pre>
+        <br/>
+        <li>Defer with loops:</li>
+<pre><code class="language-go line-numbers">func processFiles(files []string) {
+    for _, filename := range files {
+        file, err := os.Open(filename)
+        if err != nil {
+            continue
+        }
+        defer file.Close()  // All defers execute at function end!
+
+        // Process file...
+    }
+    // All files closed here
+}</code></pre>
+        <br/>
+        <li>Better pattern - use a closure:</li>
+<pre><code class="language-go line-numbers">func processFiles(files []string) {
+    for _, filename := range files {
+        func() {
+            file, err := os.Open(filename)
+            if err != nil {
+                return
+            }
+            defer file.Close()  // Closes at end of this iteration
+
+            // Process file...
+        }()
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
