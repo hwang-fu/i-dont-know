@@ -149,7 +149,7 @@
 <nav id="toc" style="margin-bottom: 2rem;">
     <h2> <img src="resources/prisma.png" alt="Logo" class="nav-icon"/> </h2>
     <ol style="line-height: 1.8;">
-        <li><a href="#"></a></li>
+        <li><a href="#prisma-introduction">Introduction</a></li>
     </ol>
 </nav>
 <hr/>
@@ -157,18 +157,465 @@
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3></h3>
+<h3 id="prisma-introduction">Introduction to Prisma ORM</h3>
 <ol>
-    <li></li>
+
+    <li>What Is Prisma?</li>
     <br/>
+    <ul>
+        <li><b>Prisma</b> is a modern, type-safe ORM (Object-Relational Mapping) for Node.js and TypeScript.</li>
+        <br/>
+        <li>Prisma is not just an ORM - it's a complete database toolkit that includes:</li>
+        <ul>
+            <li><code>Prisma Client</code>: auto-generated query builder</li>
+            <li><code>Prisma Migrate</code>: declarative database migrations</li>
+            <li><code>Prisma Studio</code>: visual database editor</li>
+        </ul>
+        <br/>
+        <li>Official website: <code>https://www.prisma.io</code></li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Why Use Prisma?</li>
     <br/>
-    <li></li>
+    <ul>
+        <li>Prisma solves common problems with traditional ORMs:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Traditional ORMs</th>
+            <th>Prisma</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Complex entity classes</td>
+            <td>Simple schema definition</td>
+        </tr>
+        <tr>
+            <td>Runtime type safety issues</td>
+            <td>Compile-time type safety</td>
+        </tr>
+        <tr>
+            <td>Poor TypeScript support</td>
+            <td>First-class TypeScript support</td>
+        </tr>
+        <tr>
+            <td>N+1 query problems</td>
+            <td>Optimized query generation</td>
+        </tr>
+        <tr>
+            <td>Manual migration scripts</td>
+            <td>Declarative migrations</td>
+        </tr>
+        <tr>
+            <td>Complex query builder APIs</td>
+            <td>Intuitive, readable API</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Supported Databases</li>
     <br/>
+    <ul>
+        <li>Prisma supports major relational and NoSQL databases:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Database</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>PostgreSQL</td>
+            <td>✓ Fully supported</td>
+        </tr>
+        <tr>
+            <td>MySQL</td>
+            <td>✓ Fully supported</td>
+        </tr>
+        <tr>
+            <td>SQLite</td>
+            <td>✓ Fully supported</td>
+        </tr>
+        <tr>
+            <td>SQL Server</td>
+            <td>✓ Fully supported</td>
+        </tr>
+        <tr>
+            <td>MongoDB</td>
+            <td>✓ Fully supported</td>
+        </tr>
+        <tr>
+            <td>CockroachDB</td>
+            <td>✓ Fully supported</td>
+        </tr>
+        <tr>
+            <td>PlanetScale</td>
+            <td>✓ Fully supported</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Database-specific features are supported where available (enums, JSON types, etc.).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Core Concepts</li>
     <br/>
-    <li></li>
+    <ul>
+        <li><b>Prisma Schema:</b> A single source of truth for your database structure.</li>
+<pre><code class="language-prisma line-numbers">// schema.prisma
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  posts     Post[]
+  createdAt DateTime @default(now())
+}</code></pre>
+        <br/>
+        <li><b>Prisma Client:</b> Auto-generated, type-safe database client.</li>
+<pre><code class="language-typescript line-numbers">import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+// Type-safe query
+const user = await prisma.user.findUnique({
+  where: { email: 'alice@example.com' }
+})</code></pre>
+        <br/>
+        <li><b>Migrations:</b> Version-controlled database schema changes.</li>
+<pre><code class="language-bash line-numbers">npx prisma migrate dev --name add_user_model</code></pre>
+        <br/>
+        <li><b>Prisma Studio:</b> Visual database browser and editor.</li>
+<pre><code class="language-bash line-numbers">npx prisma studio</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installation and Setup</li>
     <br/>
+    <ul>
+        <li>Install Prisma in your Node.js project:</li>
+<pre><code class="language-bash line-numbers">npm install prisma --save-dev
+npm install @prisma/client</code></pre>
+        <br/>
+        <li>Initialize Prisma in your project:</li>
+<pre><code class="language-bash line-numbers">npx prisma init</code></pre>
+        <br/>
+        <li>This creates:</li>
+<pre><code class="language-plaintext line-numbers">project/
+├── prisma/
+│   └── schema.prisma
+└── .env</code></pre>
+        <br/>
+        <li>Configure database connection in <code>.env</code>:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:password@localhost:5432/mydb"</code></pre>
+        <br/>
+        <li>Example for different databases:</li>
+<pre><code class="language-plaintext line-numbers"># PostgreSQL
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb?schema=public"
+
+# MySQL
+DATABASE_URL="mysql://user:password@localhost:3306/mydb"
+
+# SQLite
+DATABASE_URL="file:./dev.db"
+
+# SQL Server
+DATABASE_URL="sqlserver://localhost:1433;database=mydb;user=sa;password=Password123"
+
+# MongoDB
+DATABASE_URL="mongodb://user:password@localhost:27017/mydb"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Prisma Schema File</li>
+    <br/>
+    <ul>
+        <li>The <code>schema.prisma</code> file defines your database structure:</li>
+<pre><code class="language-prisma line-numbers">// Data source configuration
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Generator configuration
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Data model
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+  posts Post[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+}</code></pre>
+        <br/>
+        <li>Schema components:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Component</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>datasource</code></td>
+            <td>Database connection configuration</td>
+        </tr>
+        <tr>
+            <td><code>generator</code></td>
+            <td>Specifies what to generate (Prisma Client, etc.)</td>
+        </tr>
+        <tr>
+            <td><code>model</code></td>
+            <td>Defines database tables/collections</td>
+        </tr>
+        <tr>
+            <td><code>enum</code></td>
+            <td>Defines enumeration types</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Your First Model</li>
+    <br/>
+    <ul>
+        <li>Define a simple User model:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}</code></pre>
+        <br/>
+        <li>Field type modifiers:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Modifier</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>@id</code></td>
+            <td>Defines primary key</td>
+        </tr>
+        <tr>
+            <td><code>@unique</code></td>
+            <td>Ensures field values are unique</td>
+        </tr>
+        <tr>
+            <td><code>@default()</code></td>
+            <td>Sets default value</td>
+        </tr>
+        <tr>
+            <td><code>@updatedAt</code></td>
+            <td>Automatically updates on record modification</td>
+        </tr>
+        <tr>
+            <td><code>?</code></td>
+            <td>Makes field optional (nullable)</td>
+        </tr>
+        <tr>
+            <td><code>[]</code></td>
+            <td>Defines array/list type</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Common field types:</li>
+<pre><code class="language-prisma line-numbers">model Example {
+  id        Int      @id
+  text      String
+  number    Int
+  decimal   Float
+  boolean   Boolean
+  date      DateTime
+  json      Json
+  bytes     Bytes
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Generating Prisma Client</li>
+    <br/>
+    <ul>
+        <li>After defining your schema, generate the Prisma Client:</li>
+<pre><code class="language-bash line-numbers">npx prisma generate</code></pre>
+        <br/>
+        <li>This generates a type-safe client in <code>node_modules/@prisma/client</code>.</li>
+        <br/>
+        <li>The client is automatically regenerated when you run migrations.</li>
+        <br/>
+        <li>Import and use the client in your code:</li>
+<pre><code class="language-typescript line-numbers">import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+async function main() {
+  const user = await prisma.user.create({
+    data: {
+      email: 'alice@example.com',
+      name: 'Alice'
+    }
+  })
+  console.log(user)
+}
+
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect())</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Database Migrations</li>
+    <br/>
+    <ul>
+        <li>Create and apply migrations during development:</li>
+<pre><code class="language-bash line-numbers">npx prisma migrate dev --name init</code></pre>
+        <br/>
+        <li>This command:</li>
+        <ul>
+            <li>creates a new migration file</li>
+            <li>applies the migration to the database</li>
+            <li>regenerates Prisma Client</li>
+        </ul>
+        <br/>
+        <li>Migration files are stored in:</li>
+<pre><code class="language-plaintext line-numbers">prisma/
+└── migrations/
+    └── 20240101000000_init/
+        └── migration.sql</code></pre>
+        <br/>
+        <li>Apply migrations in production:</li>
+<pre><code class="language-bash line-numbers">npx prisma migrate deploy</code></pre>
+        <br/>
+        <li>View migration status:</li>
+<pre><code class="language-bash line-numbers">npx prisma migrate status</code></pre>
+        <br/>
+        <li>Reset database (caution - deletes all data):</li>
+<pre><code class="language-bash line-numbers">npx prisma migrate reset</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic CRUD Operations</li>
+    <br/>
+    <ul>
+        <li><b>Create:</b> Insert new records</li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.create({
+  data: {
+    email: 'alice@example.com',
+    name: 'Alice'
+  }
+})</code></pre>
+        <br/>
+        <li><b>Read:</b> Query records</li>
+<pre><code class="language-typescript line-numbers">// Find unique record
+const user = await prisma.user.findUnique({
+  where: { email: 'alice@example.com' }
+})
+
+// Find many records
+const users = await prisma.user.findMany({
+  where: { name: { contains: 'Alice' } }
+})
+
+// Find first matching record
+const user = await prisma.user.findFirst({
+  where: { email: 'alice@example.com' }
+})</code></pre>
+        <br/>
+        <li><b>Update:</b> Modify existing records</li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.update({
+  where: { id: 1 },
+  data: { name: 'Alice Updated' }
+})</code></pre>
+        <br/>
+        <li><b>Delete:</b> Remove records</li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.delete({
+  where: { id: 1 }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Prisma Studio</li>
+    <br/>
+    <ul>
+        <li>Prisma Studio is a visual database browser and editor.</li>
+        <br/>
+        <li>Start Prisma Studio:</li>
+<pre><code class="language-bash line-numbers">npx prisma studio</code></pre>
+        <br/>
+        <li>This opens a web interface (usually at <code>http://localhost:5555</code>).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Introspection</li>
+    <br/>
+    <ul>
+        <li>Prisma can introspect existing databases to generate a schema:</li>
+<pre><code class="language-bash line-numbers">npx prisma db pull</code></pre>
+        <br/>
+        <li>This command:</li>
+        <ul>
+            <li>connects to your database</li>
+            <li>analyzes the database schema</li>
+            <li>generates corresponding Prisma models</li>
+        </ul>
+        <br/>
+        <li>Useful when:</li>
+        <ul>
+            <li>adding Prisma to an existing project</li>
+            <li>working with a legacy database</li>
+            <li>synchronizing schema after manual database changes</li>
+        </ul>
+        <br/>
+        <li>Example workflow with existing database:</li>
+<pre><code class="language-bash line-numbers"># 1. Initialize Prisma
+npx prisma init
+
+# 2. Configure DATABASE_URL in .env
+
+# 3. Introspect database
+npx prisma db pull
+
+# 4. Generate Prisma Client
+npx prisma generate</code></pre>
+    </ul>
+    <br/><br/>
 </ol>
-<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
