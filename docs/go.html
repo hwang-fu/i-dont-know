@@ -155,6 +155,7 @@
         <li><a href="#go-functions">Functions</a></li>
         <li><a href="#go-packages">Packages</a></li>
         <li><a href="#go-control-flow">Control Flow</a></li>
+        <li><a href="#go-arrays-slices">Arrays and Slices</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3328,7 +3329,638 @@ cleanup:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-arrays-slices">Arrays and Slices in Go</h3>
+<ol>
 
+    <li>Understanding Arrays</li>
+    <br/>
+    <ul>
+        <li>An <b>array</b> is a fixed-size sequence of elements of the same type.</li>
+        <br/>
+        <li>Key characteristics:</li>
+        <ul>
+            <li>fixed length (cannot be resized)</li>
+            <li>value type (copying creates a new array)</li>
+            <li>zero-indexed (first element at index 0)</li>
+            <li>elements are stored contiguously in memory</li>
+        </ul>
+        <br/>
+        <li>Array declaration syntax:</li>
+<pre><code class="language-go line-numbers">var arrayName [size]Type</code></pre>
+        <li>The size is part of the array's type - <code>[5]int</code> and <code>[10]int</code> are different types.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Declaring and Initializing Arrays</li>
+    <br/>
+    <ul>
+        <li>Declaration without initialization (elements set to zero values):</li>
+<pre><code class="language-go line-numbers">var numbers [5]int  // [0, 0, 0, 0, 0]
+var names [3]string // ["", "", ""]</code></pre>
+        <br/>
+        <li>Declaration with initialization:</li>
+<pre><code class="language-go line-numbers">var numbers = [5]int{1, 2, 3, 4, 5}
+names := [3]string{"Alice", "Bob", "Charlie"}</code></pre>
+        <br/>
+        <li>Partial initialization (remaining elements are zero values):</li>
+<pre><code class="language-go line-numbers">numbers := [5]int{1, 2, 3}  // [1, 2, 3, 0, 0]</code></pre>
+        <br/>
+        <li>Let compiler count the length:</li>
+<pre><code class="language-go line-numbers">numbers := [...]int{1, 2, 3, 4, 5}  // Length is 5</code></pre>
+        <br/>
+        <li>Initialize specific indices:</li>
+<pre><code class="language-go line-numbers">numbers := [5]int{0: 10, 2: 30, 4: 50}  // [10, 0, 30, 0, 50]</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing and Modifying Array Elements</li>
+    <br/>
+    <ul>
+        <li>Access elements using index notation:</li>
+<pre><code class="language-go line-numbers">numbers := [5]int{10, 20, 30, 40, 50}
+
+fmt.Println(numbers[0])  // 10
+fmt.Println(numbers[2])  // 30</code></pre>
+        <br/>
+        <li>Modify elements:</li>
+<pre><code class="language-go line-numbers">numbers[1] = 25
+fmt.Println(numbers)  // [10, 25, 30, 40, 50]</code></pre>
+        <br/>
+        <li>Get array length:</li>
+<pre><code class="language-go line-numbers">length := len(numbers)
+fmt.Println(length)  // 5</code></pre>
+        <br/>
+        <li>Accessing out-of-bounds indices causes a panic:</li>
+<pre><code class="language-go line-numbers">numbers[10] = 100  // panic: index out of range</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Arrays Are Value Types</li>
+    <br/>
+    <ul>
+        <li>Assigning an array to another variable creates a copy:</li>
+<pre><code class="language-go line-numbers">original := [3]int{1, 2, 3}
+copy := original
+
+copy[0] = 10
+
+fmt.Println(original)  // [1, 2, 3] - unchanged
+fmt.Println(copy)      // [10, 2, 3] - modified</code></pre>
+        <br/>
+        <li>Passing arrays to functions creates a copy:</li>
+<pre><code class="language-go line-numbers">func modify(arr [3]int) {
+    arr[0] = 100  // Modifies the copy
+}
+
+func main() {
+    numbers := [3]int{1, 2, 3}
+    modify(numbers)
+    fmt.Println(numbers)  // [1, 2, 3] - unchanged
+}</code></pre>
+        <br/>
+        <li>To modify the original array, pass a pointer:</li>
+<pre><code class="language-go line-numbers">func modify(arr *[3]int) {
+    arr[0] = 100  // Modifies the original
+}
+
+func main() {
+    numbers := [3]int{1, 2, 3}
+    modify(&amp;numbers)
+    fmt.Println(numbers)  // [100, 2, 3] - modified
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding Slices</li>
+    <br/>
+    <ul>
+        <li>A <code>slice</code> is a flexible, dynamic view into an array.</li>
+        <br/>
+        <li>Key differences from arrays:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Feature</th>
+            <th>Array</th>
+            <th>Slice</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><b>Size</b></td>
+            <td>Fixed</td>
+            <td>Dynamic (can grow/shrink)</td>
+        </tr>
+        <tr>
+            <td><b>Type</b></td>
+            <td>Value type</td>
+            <td>Reference type</td>
+        </tr>
+        <tr>
+            <td><b>Declaration</b></td>
+            <td><code>[n]Type</code></td>
+            <td><code>[]Type</code></td>
+        </tr>
+        <tr>
+            <td><b>Memory</b></td>
+            <td>Stores actual values</td>
+            <td>Stores pointer to underlying array</td>
+        </tr>
+        <tr>
+            <td><b>Usage</b></td>
+            <td>Rare in practice</td>
+            <td>Very common</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>A slice consists of three components:</li>
+        <ul>
+            <li>pointer to the underlying array</li>
+            <li>length (number of elements)</li>
+            <li>capacity (maximum length without reallocation)</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Declaring and Initializing Slices</li>
+    <br/>
+    <ul>
+        <li>Declare a nil slice:</li>
+<pre><code class="language-go line-numbers">var numbers []int  // nil slice
+fmt.Println(numbers == nil)  // true
+fmt.Println(len(numbers))    // 0</code></pre>
+        <br/>
+        <li>Initialize with values (slice literal):</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
+names := []string{"Alice", "Bob", "Charlie"}</code></pre>
+        <br/>
+        <li>Create a slice using <code>make</code>:</li>
+<pre><code class="language-go line-numbers">// make([]Type, length, capacity)
+numbers := make([]int, 5)       // Length 5, capacity 5
+numbers := make([]int, 5, 10)   // Length 5, capacity 10</code></pre>
+        <br/>
+        <li>Create a slice from an array:</li>
+<pre><code class="language-go line-numbers">array := [5]int{1, 2, 3, 4, 5}
+slice := array[1:4]  // [2, 3, 4]</code></pre>
+        <br/>
+        <li>Empty slice vs nil slice:</li>
+<pre><code class="language-go line-numbers">var nilSlice []int           // nil
+emptySlice := []int{}        // not nil, but length 0
+emptySlice2 := make([]int, 0) // not nil, but length 0
+
+fmt.Println(nilSlice == nil)    // true
+fmt.Println(emptySlice == nil)  // false</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Slice Length and Capacity</li>
+    <br/>
+    <ul>
+        <li><b>Length</b> - number of elements in the slice:</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
+fmt.Println(len(numbers))  // 5</code></pre>
+        <br/>
+        <li><b>Capacity</b> - number of elements in the underlying array (from the first element of the slice):</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
+fmt.Println(cap(numbers))  // 5</code></pre>
+        <br/>
+        <li>Example showing length vs capacity:</li>
+<pre><code class="language-go line-numbers">numbers := make([]int, 3, 10)
+fmt.Println(len(numbers))  // 3 (current elements)
+fmt.Println(cap(numbers))  // 10 (available space)</code></pre>
+        <br/>
+        <li>When slicing, capacity is from the start of the slice to the end of the underlying array:</li>
+<pre><code class="language-go line-numbers">original := []int{1, 2, 3, 4, 5}
+slice := original[1:3]  // [2, 3]
+
+fmt.Println(len(slice))  // 2
+fmt.Println(cap(slice))  // 4 (from index 1 to end of original)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Slicing Operations</li>
+    <br/>
+    <ul>
+        <li>Basic slicing syntax:</li>
+<pre><code class="language-go line-numbers">slice[low:high]  // Elements from low to high-1</code></pre>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-go line-numbers">numbers := []int{0, 1, 2, 3, 4, 5}
+
+fmt.Println(numbers[1:4])   // [1, 2, 3]
+fmt.Println(numbers[:3])    // [0, 1, 2] - from start
+fmt.Println(numbers[3:])    // [3, 4, 5] - to end
+fmt.Println(numbers[:])     // [0, 1, 2, 3, 4, 5] - entire slice</code></pre>
+        <br/>
+        <li>Full slice expression with capacity:</li>
+<pre><code class="language-go line-numbers">slice[low:high:max]  // Capacity is max - low</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">numbers := []int{0, 1, 2, 3, 4, 5}
+slice := numbers[1:3:4]  // [1, 2] with capacity 3
+
+fmt.Println(slice)       // [1, 2]
+fmt.Println(len(slice))  // 2
+fmt.Println(cap(slice))  // 3 (4 - 1)</code></pre>
+        <br/>
+        <li>Slices share the same underlying array:</li>
+<pre><code class="language-go line-numbers">original := []int{1, 2, 3, 4, 5}
+slice1 := original[1:4]
+slice2 := original[2:5]
+
+slice1[1] = 100
+
+fmt.Println(original)  // [1, 2, 100, 4, 5]
+fmt.Println(slice1)    // [2, 100, 4]
+fmt.Println(slice2)    // [100, 4, 5]</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Appending to Slices</li>
+    <br/>
+    <ul>
+        <li>Use the <code>append</code> function to add elements:</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3}
+numbers = append(numbers, 4)
+fmt.Println(numbers)  // [1, 2, 3, 4]</code></pre>
+        <br/>
+        <li>Append multiple elements:</li>
+<pre><code class="language-go line-numbers">numbers = append(numbers, 5, 6, 7)
+fmt.Println(numbers)  // [1, 2, 3, 4, 5, 6, 7]</code></pre>
+        <br/>
+        <li>Append another slice (use <code>...</code> to spread):</li>
+<pre><code class="language-go line-numbers">slice1 := []int{1, 2, 3}
+slice2 := []int{4, 5, 6}
+
+result := append(slice1, slice2...)
+fmt.Println(result)  // [1, 2, 3, 4, 5, 6]</code></pre>
+        <br/>
+        <li>Capacity growth behavior:</li>
+<pre><code class="language-go line-numbers">numbers := make([]int, 0, 2)
+fmt.Printf("Len: %d, Cap: %d\n", len(numbers), cap(numbers))  // Len: 0, Cap: 2
+
+numbers = append(numbers, 1)
+fmt.Printf("Len: %d, Cap: %d\n", len(numbers), cap(numbers))  // Len: 1, Cap: 2
+
+numbers = append(numbers, 2)
+fmt.Printf("Len: %d, Cap: %d\n", len(numbers), cap(numbers))  // Len: 2, Cap: 2
+
+numbers = append(numbers, 3)  // Triggers reallocation
+fmt.Printf("Len: %d, Cap: %d\n", len(numbers), cap(numbers))  // Len: 3, Cap: 4</code></pre>
+        <br/>
+        <li>When capacity is exceeded, Go allocates a new underlying array (typically double the size).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Copying Slices</li>
+    <br/>
+    <ul>
+        <li>Use the <code>copy</code> function to copy slice elements:</li>
+<pre><code class="language-go line-numbers">copy(destination, source)</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">source := []int{1, 2, 3, 4, 5}
+destination := make([]int, len(source))
+
+n := copy(destination, source)
+fmt.Println(destination)  // [1, 2, 3, 4, 5]
+fmt.Println(n)            // 5 (number of elements copied)</code></pre>
+        <br/>
+        <li>Copy only copies the minimum of the two lengths:</li>
+<pre><code class="language-go line-numbers">source := []int{1, 2, 3, 4, 5}
+destination := make([]int, 3)
+
+copy(destination, source)
+fmt.Println(destination)  // [1, 2, 3]</code></pre>
+        <br/>
+        <li>Partial copy:</li>
+<pre><code class="language-go line-numbers">source := []int{1, 2, 3, 4, 5}
+destination := make([]int, 5)
+
+copy(destination[1:4], source[2:5])
+fmt.Println(destination)  // [0, 3, 4, 5, 0]</code></pre>
+        <br/>
+        <li>After copying, slices have independent underlying arrays:</li>
+<pre><code class="language-go line-numbers">original := []int{1, 2, 3}
+copied := make([]int, len(original))
+copy(copied, original)
+
+copied[0] = 100
+fmt.Println(original)  // [1, 2, 3] - unchanged
+fmt.Println(copied)    // [100, 2, 3] - modified</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Removing Elements From Slices</li>
+    <br/>
+    <ul>
+        <li>Go has no built-in function to remove elements - use slicing and append:</li>
+        <br/>
+        <li>Remove element at index:</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
+index := 2
+
+// Remove element at index 2
+numbers = append(numbers[:index], numbers[index+1:]...)
+fmt.Println(numbers)  // [1, 2, 4, 5]</code></pre>
+        <br/>
+        <li>Remove first element:</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
+numbers = numbers[1:]
+fmt.Println(numbers)  // [2, 3, 4, 5]</code></pre>
+        <br/>
+        <li>Remove last element:</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
+numbers = numbers[:len(numbers)-1]
+fmt.Println(numbers)  // [1, 2, 3, 4]</code></pre>
+        <br/>
+        <li>Remove multiple elements:</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5, 6, 7}
+start := 2
+end := 5
+
+numbers = append(numbers[:start], numbers[end:]...)
+fmt.Println(numbers)  // [1, 2, 6, 7]</code></pre>
+        <br/>
+        <li>Filter slice (keep elements matching condition):</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5, 6}
+result := numbers[:0]  // Reuse backing array
+
+for _, num := range numbers {
+    if num%2 == 0 {  // Keep even numbers
+        result = append(result, num)
+    }
+}
+fmt.Println(result)  // [2, 4, 6]</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multi-Dimensional Arrays and Slices</li>
+    <br/>
+    <ul>
+        <li>Multi-dimensional arrays:</li>
+<pre><code class="language-go line-numbers">// 2D array
+var matrix [3][4]int
+
+// Initialize 2D array
+matrix := [3][4]int{
+    {1, 2, 3, 4},
+    {5, 6, 7, 8},
+    {9, 10, 11, 12},
+}
+
+fmt.Println(matrix[1][2])  // 7</code></pre>
+        <br/>
+        <li>Multi-dimensional slices:</li>
+<pre><code class="language-go line-numbers">// Slice of slices
+matrix := [][]int{
+    {1, 2, 3},
+    {4, 5, 6},
+    {7, 8, 9},
+}
+
+fmt.Println(matrix[1][1])  // 5</code></pre>
+        <br/>
+        <li>Create 2D slice with make:</li>
+<pre><code class="language-go line-numbers">rows := 3
+cols := 4
+
+matrix := make([][]int, rows)
+for i := range matrix {
+    matrix[i] = make([]int, cols)
+}
+
+matrix[1][2] = 100
+fmt.Println(matrix[1][2])  // 100</code></pre>
+        <br/>
+        <li>Jagged slices (rows with different lengths):</li>
+<pre><code class="language-go line-numbers">jagged := [][]int{
+    {1},
+    {2, 3},
+    {4, 5, 6},
+    {7, 8, 9, 10},
+}
+
+for i, row := range jagged {
+    fmt.Printf("Row %d: %v\n", i, row)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Iterating Over Arrays and Slices</li>
+    <br/>
+    <ul>
+        <li>Using <code>for</code> loop with index:</li>
+<pre><code class="language-go line-numbers">numbers := []int{10, 20, 30, 40, 50}
+
+for i := 0; i < len(numbers); i++ {
+    fmt.Println(numbers[i])
+}</code></pre>
+        <br/>
+        <li>Using <code>range</code> (recommended):</li>
+<pre><code class="language-go line-numbers">numbers := []int{10, 20, 30, 40, 50}
+
+for index, value := range numbers {
+    fmt.Printf("Index: %d, Value: %d\n", index, value)
+}</code></pre>
+        <br/>
+        <li>Iterate with values only:</li>
+<pre><code class="language-go line-numbers">for _, value := range numbers {
+    fmt.Println(value)
+}</code></pre>
+        <br/>
+        <li>Iterate with indices only:</li>
+<pre><code class="language-go line-numbers">for index := range numbers {
+    fmt.Println(index)
+}</code></pre>
+        <br/>
+        <li>Iterating backwards:</li>
+<pre><code class="language-go line-numbers">for i := len(numbers) - 1; i >= 0; i-- {
+    fmt.Println(numbers[i])
+}</code></pre>
+        <br/>
+        <li>Iterate 2D slice:</li>
+<pre><code class="language-go line-numbers">matrix := [][]int{
+    {1, 2, 3},
+    {4, 5, 6},
+    {7, 8, 9},
+}
+
+for i, row := range matrix {
+    for j, value := range row {
+        fmt.Printf("matrix[%d][%d] = %d\n", i, j, value)
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Slice Operations</li>
+    <br/>
+    <ul>
+        <li>Check if slice is empty:</li>
+<pre><code class="language-go line-numbers">if len(slice) == 0 {
+    fmt.Println("Slice is empty")
+}</code></pre>
+        <br/>
+        <li>Reverse a slice:</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
+
+for i, j := 0, len(numbers)-1; i < j; i, j = i+1, j-1 {
+    numbers[i], numbers[j] = numbers[j], numbers[i]
+}
+
+fmt.Println(numbers)  // [5, 4, 3, 2, 1]</code></pre>
+        <br/>
+        <li>Find element in slice:</li>
+<pre><code class="language-go line-numbers">numbers := []int{10, 20, 30, 40, 50}
+target := 30
+found := false
+
+for _, num := range numbers {
+    if num == target {
+        found = true
+        break
+    }
+}
+
+fmt.Println(found)  // true</code></pre>
+        <br/>
+        <li>Sum all elements:</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
+sum := 0
+
+for _, num := range numbers {
+    sum += num
+}
+
+fmt.Println(sum)  // 15</code></pre>
+        <br/>
+        <li>Find minimum and maximum:</li>
+<pre><code class="language-go line-numbers">numbers := []int{34, 12, 56, 23, 89, 5}
+min := numbers[0]
+max := numbers[0]
+
+for _, num := range numbers {
+    if num < min {
+        min = num
+    }
+    if num > max {
+        max = num
+    }
+}
+
+fmt.Printf("Min: %d, Max: %d\n", min, max)  // Min: 5, Max: 89</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Slice Tricks and Patterns</li>
+    <br/>
+    <ul>
+        <li>Pre-allocate slice when size is known:</li>
+<pre><code class="language-go line-numbers">// Instead of:
+var numbers []int
+for i := 0; i < 1000; i++ {
+    numbers = append(numbers, i)  // Multiple reallocations
+}
+
+// Better:
+numbers := make([]int, 0, 1000)
+for i := 0; i < 1000; i++ {
+    numbers = append(numbers, i)  // No reallocations
+}</code></pre>
+        <br/>
+        <li>Insert element at index:</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 4, 5}
+index := 2
+value := 3
+
+numbers = append(numbers[:index], append([]int{value}, numbers[index:]...)...)
+fmt.Println(numbers)  // [1, 2, 3, 4, 5]</code></pre>
+        <br/>
+        <li>Clear slice (keep capacity):</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
+numbers = numbers[:0]  // Length 0, capacity unchanged</code></pre>
+        <br/>
+        <li>Clone a slice:</li>
+<pre><code class="language-go line-numbers">original := []int{1, 2, 3, 4, 5}
+clone := append([]int{}, original...)
+// Or:
+clone := make([]int, len(original))
+copy(clone, original)</code></pre>
+        <br/>
+        <li>Deduplicate slice (remove duplicates):</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 2, 3, 3, 3, 4, 5, 5}
+seen := make(map[int]bool)
+result := []int{}
+
+for _, num := range numbers {
+    if !seen[num] {
+        seen[num] = true
+        result = append(result, num)
+    }
+}
+
+fmt.Println(result)  // [1, 2, 3, 4, 5]</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Slice Internals and Memory</li>
+    <br/>
+    <ul>
+        <li>A slice header contains:</li>
+<pre><code class="language-go line-numbers">type slice struct {
+    ptr *Elem  // Pointer to array
+    len int    // Length
+    cap int    // Capacity
+}</code></pre>
+        <br/>
+        <li>Visualizing slice memory:</li>
+<pre><code class="language-go line-numbers">array := [6]int{1, 2, 3, 4, 5, 6}
+slice := array[1:4]
+
+// slice points to: [2, 3, 4]
+// len(slice) = 3
+// cap(slice) = 5 (from index 1 to end of array)</code></pre>
+        <br/>
+        <li>Memory leak risk with large arrays:</li>
+<pre><code class="language-go line-numbers">// Bad - keeps entire array in memory
+func getFirstTwo(data []int) []int {
+    return data[:2]  // Still references original array
+}
+
+// Good - copy to new slice
+func getFirstTwo(data []int) []int {
+    result := make([]int, 2)
+    copy(result, data[:2])
+    return result  // Original array can be garbage collected
+}</code></pre>
+        <br/>
+        <li>Capacity doubling strategy:</li>
+        <ul>
+            <li>When capacity is exceeded, Go typically doubles the capacity</li>
+            <li>For very large slices, growth rate may be less than 2x</li>
+            <li>This ensures append operations are amortized O(1)</li>
+        </ul>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
