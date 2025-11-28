@@ -150,6 +150,7 @@
     <h2> <img src="resources/prisma.png" alt="Logo" class="nav-icon"/> </h2>
     <ol style="line-height: 1.8;">
         <li><a href="#prisma-introduction">Introduction</a></li>
+        <li><a href="#prisma-database-connections">Database Connection Configuration</a></li>
     </ol>
 </nav>
 <hr/>
@@ -615,6 +616,577 @@ npx prisma db pull
 npx prisma generate</code></pre>
     </ul>
     <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="prisma-database-connections">Database Connection Configuration</h3>
+<ol>
+
+    <li>Basic Connection String</li>
+    <br/>
+    <ul>
+        <li>Database connection is configured in <code>.env</code> file:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="provider://user:password@host:port/database?options"</code></pre>
+        <br/>
+        <li>Referenced in <code>schema.prisma</code>:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Connection Strings by Database</li>
+    <br/>
+    <ul>
+        <li><b>PostgreSQL:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:password@localhost:5432/mydb?schema=public"</code></pre>
+        <br/>
+        <li><b>MySQL:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="mysql://user:password@localhost:3306/mydb"</code></pre>
+        <br/>
+        <li><b>SQLite:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="file:./dev.db"</code></pre>
+        <br/>
+        <li><b>SQL Server:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="sqlserver://localhost:1433;database=mydb;user=sa;password=Pass123;encrypt=true"</code></pre>
+        <br/>
+        <li><b>MongoDB:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="mongodb+srv://user:password@cluster.mongodb.net/mydb?retryWrites=true"</code></pre>
+        <br/>
+        <li><b>CockroachDB:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:password@host:26257/mydb?sslmode=verify-full"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Connection Parameters</li>
+    <br/>
+    <ul>
+        <li>PostgreSQL parameters:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:pass@localhost:5432/db?schema=public&connection_limit=10&pool_timeout=20&sslmode=require"</code></pre>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>schema</code></td>
+            <td>PostgreSQL schema name (default: <code>public</code>)</td>
+        </tr>
+        <tr>
+            <td><code>connection_limit</code></td>
+            <td>Max number of connections in pool</td>
+        </tr>
+        <tr>
+            <td><code>pool_timeout</code></td>
+            <td>Seconds to wait for connection (default: 10)</td>
+        </tr>
+        <tr>
+            <td><code>sslmode</code></td>
+            <td><code>disable</code>, <code>prefer</code>, <code>require</code></td>
+        </tr>
+        <tr>
+            <td><code>sslcert</code></td>
+            <td>Path to SSL certificate</td>
+        </tr>
+        <tr>
+            <td><code>connect_timeout</code></td>
+            <td>Seconds to wait for initial connection</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>MySQL parameters:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="mysql://user:pass@localhost:3306/db?connection_limit=10&socket_timeout=10&ssl=true"</code></pre>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>connection_limit</code></td>
+            <td>Max connections in pool</td>
+        </tr>
+        <tr>
+            <td><code>socket_timeout</code></td>
+            <td>Seconds before socket timeout</td>
+        </tr>
+        <tr>
+            <td><code>ssl</code></td>
+            <td>SSL/TLS configuration</td>
+        </tr>
+        <tr>
+            <td><code>sslcert</code></td>
+            <td>Path to SSL certificate</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Connection Pooling</li>
+    <br/>
+    <ul>
+        <li>Set connection pool size:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:pass@localhost:5432/db?connection_limit=20"</code></pre>
+        <br/>
+        <li>Default pool sizes by database:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Database</th>
+            <th>Default Pool Size</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>PostgreSQL</td>
+            <td>num_cpus * 2 + 1</td>
+        </tr>
+        <tr>
+            <td>MySQL</td>
+            <td>num_cpus * 2 + 1</td>
+        </tr>
+        <tr>
+            <td>SQL Server</td>
+            <td>num_cpus * 2 + 1</td>
+        </tr>
+        <tr>
+            <td>SQLite</td>
+            <td>1 (no pooling)</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Configure pool behavior:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:pass@localhost:5432/db?connection_limit=50&pool_timeout=30"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>SSL/TLS Configuration</li>
+    <br/>
+    <ul>
+        <li>PostgreSQL SSL modes:</li>
+<pre><code class="language-plaintext line-numbers"># Disable SSL
+DATABASE_URL="postgresql://user:pass@localhost:5432/db?sslmode=disable"
+
+# Prefer SSL but allow non-SSL
+DATABASE_URL="postgresql://user:pass@localhost:5432/db?sslmode=prefer"
+
+# Require SSL
+DATABASE_URL="postgresql://user:pass@localhost:5432/db?sslmode=require"
+
+# Require SSL with certificate verification
+DATABASE_URL="postgresql://user:pass@localhost:5432/db?sslmode=verify-full&sslcert=./cert.pem&sslidentity=./identity.p12&sslpassword=password"</code></pre>
+        <br/>
+        <li>MySQL SSL:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="mysql://user:pass@localhost:3306/db?ssl=true&sslcert=./cert.pem"</code></pre>
+        <br/>
+        <li>Certificate-based authentication:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user@localhost:5432/db?sslmode=require&sslcert=/path/to/client-cert.pem&sslkey=/path/to/client-key.pem&sslrootcert=/path/to/ca-cert.pem"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Environment-Specific Configuration</li>
+    <br/>
+    <ul>
+        <li>Use different URLs per environment:</li>
+<pre><code class="language-plaintext line-numbers"># .env.development
+DATABASE_URL="postgresql://localhost:5432/mydb_dev"
+
+# .env.test
+DATABASE_URL="postgresql://localhost:5432/mydb_test"
+
+# .env.production
+DATABASE_URL="postgresql://prod-host:5432/mydb?connection_limit=100&sslmode=require"</code></pre>
+        <br/>
+        <li>Runtime environment variable:</li>
+<pre><code class="language-typescript line-numbers">import { PrismaClient } from '@prisma/client'
+
+const databaseUrl = process.env.NODE_ENV === 'test'
+  ? process.env.TEST_DATABASE_URL
+  : process.env.DATABASE_URL
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: databaseUrl
+    }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Connection URL from Multiple Sources</li>
+    <br/>
+    <ul>
+        <li>Override in schema:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Optional: direct URL for migrations
+  directUrl = env("DIRECT_DATABASE_URL")
+}</code></pre>
+        <br/>
+        <li>Override at runtime:</li>
+<pre><code class="language-typescript line-numbers">const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.CUSTOM_DATABASE_URL
+    }
+  }
+})</code></pre>
+        <br/>
+        <li>Build connection URL dynamically:</li>
+<pre><code class="language-typescript line-numbers">const host = process.env.DB_HOST
+const port = process.env.DB_PORT
+const user = process.env.DB_USER
+const password = process.env.DB_PASSWORD
+const database = process.env.DB_NAME
+
+const url = `postgresql://${user}:${password}@${host}:${port}/${database}?schema=public`
+
+const prisma = new PrismaClient({
+  datasources: { db: { url } }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Connection Pooling vs Direct Connection</li>
+    <br/>
+    <ul>
+        <li>Use <code>directUrl</code> for migrations with connection poolers:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")        // Pooled connection
+  directUrl = env("DIRECT_DATABASE_URL") // Direct connection for migrations
+}</code></pre>
+        <br/>
+        <li>Example with PgBouncer:</li>
+<pre><code class="language-plaintext line-numbers"># Pooled connection (application queries)
+DATABASE_URL="postgresql://user:pass@pgbouncer:6432/db?pgbouncer=true"
+
+# Direct connection (migrations)
+DIRECT_DATABASE_URL="postgresql://user:pass@postgres:5432/db"</code></pre>
+        <br/>
+        <li>PlanetScale example:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma" // Required for PlanetScale
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Shadow Database</li>
+    <br/>
+    <ul>
+        <li>Configure shadow database for development migrations:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}</code></pre>
+        <br/>
+        <li>Environment variables:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:pass@localhost:5432/mydb"
+SHADOW_DATABASE_URL="postgresql://user:pass@localhost:5432/mydb_shadow"</code></pre>
+        <br/>
+        <li>Required when:</li>
+        <ul>
+            <li>database provider doesn't support automatic shadow database creation</li>
+            <li>insufficient permissions to create databases</li>
+            <li>using managed database services with restrictions</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Read Replicas</li>
+    <br/>
+    <ul>
+        <li>Configure read replicas (Prisma 5.0+):</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [
+    {
+      name = "read_replicas"
+      url  = env("READ_REPLICA_URL")
+    }
+  ]
+}</code></pre>
+        <br/>
+        <li>Use read replicas in code:</li>
+<pre><code class="language-typescript line-numbers">// Write to primary
+await prisma.user.create({
+  data: { email: 'user@example.com' }
+})
+
+// Read from replica
+const users = await prisma.user.findMany().$replica()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Connection Timeouts</li>
+    <br/>
+    <ul>
+        <li>Configure various timeout values:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:pass@localhost:5432/db?connect_timeout=10&pool_timeout=20&socket_timeout=30"</code></pre>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Timeout Type</th>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Connect</td>
+            <td><code>connect_timeout</code></td>
+            <td>Seconds to wait for initial connection</td>
+        </tr>
+        <tr>
+            <td>Pool</td>
+            <td><code>pool_timeout</code></td>
+            <td>Seconds to wait for connection from pool</td>
+        </tr>
+        <tr>
+            <td>Socket</td>
+            <td><code>socket_timeout</code></td>
+            <td>Seconds to wait for query response</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Special Characters in Connection String</li>
+    <br/>
+    <ul>
+        <li>URL-encode special characters in passwords:</li>
+<pre><code class="language-typescript line-numbers">// Password: p@ss:word/123
+// Encoded: p%40ss%3Aword%2F123
+DATABASE_URL="postgresql://user:p%40ss%3Aword%2F123@localhost:5432/db"</code></pre>
+        <br/>
+        <li>Common encodings:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Character</th>
+            <th>Encoded</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>@</code></td>
+            <td><code>%40</code></td>
+        </tr>
+        <tr>
+            <td><code>:</code></td>
+            <td><code>%3A</code></td>
+        </tr>
+        <tr>
+            <td><code>/</code></td>
+            <td><code>%2F</code></td>
+        </tr>
+        <tr>
+            <td><code>?</code></td>
+            <td><code>%3F</code></td>
+        </tr>
+        <tr>
+            <td><code>#</code></td>
+            <td><code>%23</code></td>
+        </tr>
+        <tr>
+            <td><code>&</code></td>
+            <td><code>%26</code></td>
+        </tr>
+        <tr>
+            <td><code>=</code></td>
+            <td><code>%3D</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Encode programmatically:</li>
+<pre><code class="language-typescript line-numbers">const password = "p@ss:word"
+const encoded = encodeURIComponent(password)
+const url = `postgresql://user:${encoded}@localhost:5432/db`</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Connection String Templates</li>
+    <br/>
+    <ul>
+        <li><b>Local development:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mydb?schema=public"</code></pre>
+        <br/>
+        <li><b>Docker Compose:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://postgres:postgres@db:5432/mydb?schema=public"</code></pre>
+        <br/>
+        <li><b>Heroku:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:pass@ec2-host.compute-1.amazonaws.com:5432/db?sslmode=require"</code></pre>
+        <br/>
+        <li><b>AWS RDS:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:pass@mydb.123456.us-east-1.rds.amazonaws.com:5432/mydb?sslmode=require"</code></pre>
+        <br/>
+        <li><b>Supabase:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://postgres:pass@db.project.supabase.co:5432/postgres?pgbouncer=true"
+DIRECT_DATABASE_URL="postgresql://postgres:pass@db.project.supabase.co:5432/postgres"</code></pre>
+        <br/>
+        <li><b>Railway:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:pass@containers-us-west-123.railway.app:5432/railway"</code></pre>
+        <br/>
+        <li><b>Neon:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:pass@ep-cool-name-123456.us-east-2.aws.neon.tech/neondb?sslmode=require"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Testing Connection</li>
+    <br/>
+    <ul>
+        <li>Test database connection:</li>
+<pre><code class="language-typescript line-numbers">import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+async function testConnection() {
+  try {
+    await prisma.$connect()
+    console.log('Database connection successful')
+  } catch (error) {
+    console.error('Database connection failed:', error)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+testConnection()</code></pre>
+        <br/>
+        <li>Execute raw query to test:</li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.$queryRaw`SELECT 1`
+console.log('Connection test:', result)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Connection Issues</li>
+    <br/>
+    <ul>
+        <li>Connection refused:</li>
+<pre><code class="language-plaintext line-numbers">Error: Can't reach database server at `localhost:5432`
+
+Solutions:
+- Check if database is running
+- Verify host and port
+- Check firewall rules</code></pre>
+        <br/>
+        <li>Authentication failed:</li>
+<pre><code class="language-plaintext line-numbers">Error: Authentication failed against database server
+
+Solutions:
+- Verify username and password
+- Check user permissions
+- Ensure URL encoding for special characters</code></pre>
+        <br/>
+        <li>Database does not exist:</li>
+<pre><code class="language-plaintext line-numbers">Error: Database `mydb` does not exist
+
+Solutions:
+- Create database manually
+- Check database name in connection string
+- Run migrations to create schema</code></pre>
+        <br/>
+        <li>SSL required:</li>
+<pre><code class="language-plaintext line-numbers">Error: SSL connection is required
+
+Solution:
+DATABASE_URL="postgresql://user:pass@host:5432/db?sslmode=require"</code></pre>
+        <br/>
+        <li>Connection pool exhausted:</li>
+<pre><code class="language-plaintext line-numbers">Error: Timed out fetching a connection from the pool
+
+Solutions:
+- Increase connection_limit
+- Ensure connections are properly closed
+- Check for connection leaks</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multiple Database Connections</li>
+    <br/>
+    <ul>
+        <li>Multiple Prisma instances for different databases:</li>
+<pre><code class="language-typescript line-numbers">// lib/prisma-main.ts
+import { PrismaClient } from '@prisma/client'
+
+export const prismaMain = new PrismaClient({
+  datasources: {
+    db: { url: process.env.MAIN_DATABASE_URL }
+  }
+})
+
+// lib/prisma-analytics.ts
+import { PrismaClient } from '@prisma/client'
+
+export const prismaAnalytics = new PrismaClient({
+  datasources: {
+    db: { url: process.env.ANALYTICS_DATABASE_URL }
+  }
+})</code></pre>
+        <br/>
+        <li>Multiple schemas (PostgreSQL):</li>
+<pre><code class="language-prisma line-numbers">// schema1.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public", "auth"]
+}
+
+model User {
+  id    Int    @id
+  email String
+
+  @@schema("auth")
+}
+
+model Post {
+  id    Int    @id
+  title String
+
+  @@schema("public")
+}</code></pre>
+    </ul>
+    <br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
