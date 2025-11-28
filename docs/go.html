@@ -153,6 +153,7 @@
         <li><a href="#go-hello-world">Hello World</a></li>
         <li><a href="#go-variables">Variables and Data Types</a></li>
         <li><a href="#go-functions">Functions</a></li>
+        <li><a href="#go-packages">Packages</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2035,7 +2036,635 @@ func main() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-packages">Packages in Go</h3>
+<ol>
 
+    <li>What Are Packages?</li>
+    <br/>
+    <ul>
+        <li>A <code>package</code> is a collection of Go source files in the same directory that are compiled together.</li>
+        <br/>
+        <li>Every Go file must belong to a package:</li>
+<pre><code class="language-go line-numbers">package main  // First line of every .go file</code></pre>
+        <li>Go's standard library consists of many packages like <code>fmt</code>, <code>os</code>, <code>net/http</code>, etc.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Package Declaration</li>
+    <br/>
+    <ul>
+        <li>Every Go file starts with a package declaration:</li>
+<pre><code class="language-go line-numbers">package &lt;packagename&gt;</code></pre>
+        <br/>
+        <li>Package naming rules:</li>
+        <ul>
+            <li>must be lowercase</li>
+            <li>should be short and concise</li>
+            <li>no underscores or mixed caps</li>
+            <li>by convention, matches the directory name</li>
+        </ul>
+        <br/>
+        <li>Examples of good package names:</li>
+<pre><code class="language-go line-numbers">package math
+package strings
+package http
+package json</code></pre>
+        <br/>
+        <li>Examples of bad package names:</li>
+<pre><code class="language-go line-numbers">package Math          // Uppercase
+package string_utils  // Underscore
+package myPackage     // Mixed caps</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Main Package</li>
+    <br/>
+    <ul>
+        <li>The <code>main</code> package is special -- it creates an executable program:</li>
+<pre><code class="language-go line-numbers">package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("This is an executable")
+}</code></pre>
+        <br/>
+        <li>Requirements for an executable:</li>
+        <ul>
+            <li>must be named <code>main</code></li>
+            <li>must contain a <code>main()</code> function</li>
+            <li>the <code>main()</code> function takes no arguments and returns nothing</li>
+        </ul>
+        <br/>
+        <li>Non-main packages create reusable libraries, not executables.</li>
+        <br/>
+        <li>You can have multiple <code>main</code> packages in different directories of a project.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Custom Package</li>
+    <br/>
+    <ul>
+        <li>Project structure example:</li>
+<pre><code class="language-plaintext line-numbers">myproject/
+├── main.go
+├── go.mod
+└── calculator/
+    ├── add.go
+    └── multiply.go</code></pre>
+        <br/>
+        <li>File: <code>calculator/add.go</code></li>
+<pre><code class="language-go line-numbers">package calculator
+
+func Add(x, y int) int {
+    return x + y
+}</code></pre>
+        <br/>
+        <li>File: <code>calculator/multiply.go</code></li>
+<pre><code class="language-go line-numbers">package calculator
+
+func Multiply(x, y int) int {
+    return x * y
+}</code></pre>
+        <br/>
+        <li>File: <code>main.go</code></li>
+<pre><code class="language-go line-numbers">package main
+
+import (
+    "fmt"
+    "myproject/calculator"
+)
+
+func main() {
+    sum := calculator.Add(5, 3)
+    product := calculator.Multiply(5, 3)
+
+    fmt.Println("Sum:", sum)         // Sum: 8
+    fmt.Println("Product:", product) // Product: 15
+}</code></pre>
+        <li>All files in the same directory MUST have the same package name.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Importing Packages</li>
+    <br/>
+    <ul>
+        <li>Use the <code>import</code> keyword to include packages:</li>
+<pre><code class="language-go line-numbers">import "fmt"</code></pre>
+        <br/>
+        <li>Multiple imports:</li>
+<pre><code class="language-go line-numbers">import (
+    "fmt"
+    "os"
+    "strings"
+    "time"
+)</code></pre>
+        <br/>
+        <li>Importing with alias:</li>
+<pre><code class="language-go line-numbers">import (
+    f "fmt"              // Alias as 'f'
+    "math/rand"
+)
+
+func main() {
+    f.Println("Hello")   // Using alias
+}</code></pre>
+        <br/>
+        <li>Import for side effects only (runs <code>init()</code> functions):</li>
+<pre><code class="language-go line-numbers">import _ "github.com/lib/pq"  // Register PostgreSQL driver</code></pre>
+        <br/>
+        <li>Dot import (imports into current namespace - not recommended):</li>
+<pre><code class="language-go line-numbers">import . "fmt"
+
+func main() {
+    Println("No prefix needed")  // Not recommended
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Package Visibility Rules</li>
+    <br/>
+    <ul>
+        <li>Go uses capitalization to control visibility:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Case</th>
+            <th>Visibility</th>
+            <th>Accessible From</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Uppercase (exported)</td>
+            <td>Public</td>
+            <td>Any package</td>
+        </tr>
+        <tr>
+            <td>Lowercase (unexported)</td>
+            <td>Private</td>
+            <td>Same package only</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-go line-numbers">package calculator
+
+// Exported (public) - can be used by other packages
+func Add(x, y int) int {
+    return x + y
+}
+
+// Unexported (private) - only accessible within calculator package
+func validate(x int) bool {
+    return x &gt;= 0
+}</code></pre>
+        <li>Example with struct:</li>
+<pre><code class="language-go line-numbers">package user
+
+type User struct {
+    Name    string  // Exported field
+    Email   string  // Exported field
+    age     int     // Unexported field (private)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Package Organization</li>
+    <br/>
+    <ul>
+        <li>Common project structure:</li>
+<pre><code class="language-bash line-numbers">myproject/
+├── go.mod
+├── go.sum
+├── main.go
+├── README.md
+├── cmd/               # Command-line applications
+│   └── server/
+│       └── main.go
+├── pkg/               # Reusable packages
+│   ├── database/
+│   │   └── db.go
+│   └── models/
+│       └── user.go
+├── internal/          # Private packages (Go convention)
+│   └── config/
+│       └── config.go
+└── test/              # Test files
+    └── integration/</code></pre>
+        <br/>
+        <li>Directory purposes:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Directory</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>cmd/</code></td>
+            <td>Contains main applications (each subdirectory is a separate executable)</td>
+        </tr>
+        <tr>
+            <td><code>pkg/</code></td>
+            <td>Contains reusable library code</td>
+        </tr>
+        <tr>
+            <td><code>internal/</code></td>
+            <td>Private application code (cannot be imported by other projects)</td>
+        </tr>
+        <tr>
+            <td><code>api/</code></td>
+            <td>API definitions (OpenAPI, Protocol Buffers)</td>
+        </tr>
+        <tr>
+            <td><code>web/</code></td>
+            <td>Web application assets</td>
+        </tr>
+        <tr>
+            <td><code>scripts/</code></td>
+            <td>Build and deployment scripts</td>
+        </tr>
+        <tr>
+            <td><code>test/</code></td>
+            <td>Additional test files</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Internal Package</li>
+    <br/>
+    <ul>
+        <li>The <code>internal/</code> directory has special meaning in Go:</li>
+<pre><code class="language-plaintext line-numbers">myproject/
+└── internal/
+    └── auth/
+        └── auth.go</code></pre>
+        <br/>
+        <li>Packages in <code>internal/</code> can only be imported by code in the parent tree.</li>
+        <br/>
+        <li>Example structure:</li>
+<pre><code class="language-plaintext line-numbers">github.com/user/myproject/
+├── internal/
+│   └── helper/         # Only importable by myproject
+│       └── helper.go
+├── pkg/
+│   └── public/         # Can be imported by anyone
+│       └── public.go
+└── cmd/
+    └── app/
+        └── main.go     # Can import internal/helper</code></pre>
+        <br/>
+        <li>Import path restrictions:</li>
+<pre><code class="language-go line-numbers">// ✓ OK - same project
+import "github.com/user/myproject/internal/helper"
+
+// ✗ ERROR - external project cannot import internal
+import "github.com/other/theirproject/internal/something"</code></pre>
+        <li>Use <code>internal/</code> to prevent external projects from depending on unstable APIs.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Go Modules</li>
+    <br/>
+    <ul>
+        <li>Go modules are the standard dependency management system (since Go 1.11).</li>
+        <br/>
+        <li>Initialize a module:</li>
+<pre><code class="language-bash line-numbers">go mod init github.com/username/projectname</code></pre>
+        <br/>
+        <li>This creates a <code>go.mod</code> file:</li>
+<pre><code class="language-plaintext line-numbers">module github.com/username/projectname
+
+go 1.21
+
+require (
+    github.com/gin-gonic/gin v1.9.1
+    github.com/lib/pq v1.10.9
+)</code></pre>
+        <br/>
+        <li>Common module commands:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Command</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>go mod init</code></td>
+            <td>Initialize a new module</td>
+        </tr>
+        <tr>
+            <td><code>go mod tidy</code></td>
+            <td>Add missing and remove unused dependencies</td>
+        </tr>
+        <tr>
+            <td><code>go mod download</code></td>
+            <td>Download dependencies to local cache</td>
+        </tr>
+        <tr>
+            <td><code>go mod verify</code></td>
+            <td>Verify dependencies have expected content</td>
+        </tr>
+        <tr>
+            <td><code>go mod vendor</code></td>
+            <td>Copy dependencies to vendor directory</td>
+        </tr>
+        <tr>
+            <td><code>go get</code></td>
+            <td>Add or update dependencies</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>The <code>go.sum</code> file stores checksums for dependency verification.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Installing Third-Party Packages</li>
+    <br/>
+    <ul>
+        <li>Add a dependency using <code>go get</code>:</li>
+<pre><code class="language-bash line-numbers">go get github.com/gin-gonic/gin</code></pre>
+        <br/>
+        <li>Install specific version:</li>
+<pre><code class="language-bash line-numbers">go get github.com/gin-gonic/gin@v1.9.1</code></pre>
+        <br/>
+        <li>Import and use in code:</li>
+<pre><code class="language-go line-numbers">package main
+
+import (
+    "github.com/gin-gonic/gin"
+)
+
+func main() {
+    router := gin.Default()
+    router.GET("/", func(c *gin.Context) {
+        c.JSON(200, gin.H{"message": "Hello"})
+    })
+    router.Run(":8080")
+}</code></pre>
+        <br/>
+        <li>Go automatically downloads dependencies when you build:</li>
+<pre><code class="language-bash line-numbers">go build</code></pre>
+        <br/>
+        <li>Update all dependencies:</li>
+<pre><code class="language-bash line-numbers">go get -u ./...</code></pre>
+        <br/>
+        <li>Remove unused dependencies:</li>
+<pre><code class="language-bash line-numbers">go mod tidy</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Standard Library Packages</li>
+    <br/>
+    <ul>
+        <li>Go's standard library provides many useful packages:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Package</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>fmt</code></td>
+            <td>Formatted I/O operations</td>
+        </tr>
+        <tr>
+            <td><code>os</code></td>
+            <td>Operating system functionality</td>
+        </tr>
+        <tr>
+            <td><code>io</code></td>
+            <td>Basic I/O primitives</td>
+        </tr>
+        <tr>
+            <td><code>net/http</code></td>
+            <td>HTTP client and server</td>
+        </tr>
+        <tr>
+            <td><code>encoding/json</code></td>
+            <td>JSON encoding and decoding</td>
+        </tr>
+        <tr>
+            <td><code>database/sql</code></td>
+            <td>Generic SQL database interface</td>
+        </tr>
+        <tr>
+            <td><code>time</code></td>
+            <td>Time and duration operations</td>
+        </tr>
+        <tr>
+            <td><code>strings</code></td>
+            <td>String manipulation</td>
+        </tr>
+        <tr>
+            <td><code>strconv</code></td>
+            <td>String conversions</td>
+        </tr>
+        <tr>
+            <td><code>math</code></td>
+            <td>Mathematical functions</td>
+        </tr>
+        <tr>
+            <td><code>regexp</code></td>
+            <td>Regular expressions</td>
+        </tr>
+        <tr>
+            <td><code>context</code></td>
+            <td>Request scoping and cancellation</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Example using multiple standard packages:</li>
+<pre><code class="language-go line-numbers">package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "time"
+)
+
+type Response struct {
+    Message   string    `json:"message"`
+    Timestamp time.Time `json:"timestamp"`
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+    response := Response{
+        Message:   "Hello, World!",
+        Timestamp: time.Now(),
+    }
+
+    json.NewEncoder(w).Encode(response)
+}
+
+func main() {
+    http.HandleFunc("/", handler)
+    fmt.Println("Server starting on :8080")
+    http.ListenAndServe(":8080", nil)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Package Documentation</li>
+    <br/>
+    <ul>
+        <li>Document packages with comments before the package declaration:</li>
+<pre><code class="language-go line-numbers">// Package calculator provides basic arithmetic operations.
+// It supports addition, subtraction, multiplication, and division.
+package calculator</code></pre>
+        <br/>
+        <li>Document exported functions:</li>
+<pre><code class="language-go line-numbers">// Add returns the sum of x and y.
+func Add(x, y int) int {
+    return x + y
+}
+
+// Divide returns the quotient of x divided by y.
+// It returns an error if y is zero.
+func Divide(x, y float64) (float64, error) {
+    if y == 0 {
+        return 0, errors.New("division by zero")
+    }
+    return x / y, nil
+}</code></pre>
+        <br/>
+        <li>View documentation locally:</li>
+<pre><code class="language-bash line-numbers">go doc calculator
+go doc calculator.Add</code></pre>
+        <br/>
+        <li>Generate HTML documentation:</li>
+<pre><code class="language-bash line-numbers">godoc -http=:6060</code></pre>
+        <br/>
+        <li>Documentation is automatically published on <code>pkg.go.dev</code> for public packages.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Package Initialization</li>
+    <br/>
+    <ul>
+        <li>Packages are initialized in the following order:</li>
+        <ol>
+            <li>Import dependencies</li>
+            <li>Initialize package-level variables</li>
+            <li>Run <code>init()</code> functions</li>
+        </ol>
+        <br/>
+        <li>Example with <code>init()</code>:</li>
+<pre><code class="language-go line-numbers">package database
+
+import "database/sql"
+
+var db *sql.DB
+
+func init() {
+    var err error
+    db, err = sql.Open("postgres", "connection_string")
+    if err != nil {
+        panic(err)
+    }
+}
+
+func GetDB() *sql.DB {
+    return db
+}</code></pre>
+        <br/>
+        <li>Multiple <code>init()</code> functions are executed in declaration order.</li>
+        <br/>
+        <li>Each imported package's <code>init()</code> runs before the importing package.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Vendor Directory</li>
+    <br/>
+    <ul>
+        <li>The <code>vendor/</code> directory stores a copy of dependencies:</li>
+<pre><code class="language-bash line-numbers">go mod vendor</code></pre>
+        <br/>
+        <li>Creates structure:</li>
+<pre><code class="language-plaintext line-numbers">myproject/
+├── go.mod
+├── go.sum
+├── main.go
+└── vendor/
+    ├── github.com/
+    │   └── gin-gonic/
+    │       └── gin/
+    └── modules.txt</code></pre>
+        <br/>
+        <li>Benefits of vendoring:</li>
+        <ul>
+            <li>guaranteed reproducible builds</li>
+            <li>works without internet access</li>
+            <li>complete control over dependencies</li>
+        </ul>
+        <br/>
+        <li>Build using vendor directory:</li>
+<pre><code class="language-bash line-numbers">go build -mod=vendor</code></pre>
+        <br/>
+        <li>Most projects don't need vendoring anymore due to Go's module cache.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Package Aliases and Naming Conflicts</li>
+    <br/>
+    <ul>
+        <li>Resolve naming conflicts with aliases:</li>
+<pre><code class="language-go line-numbers">import (
+    "crypto/rand"
+    mrand "math/rand"  // Alias to avoid conflict
+)
+
+func main() {
+    // Use crypto/rand
+    bytes := make([]byte, 32)
+    rand.Read(bytes)
+
+    // Use math/rand with alias
+    num := mrand.Intn(100)
+}</code></pre>
+        <br/>
+        <li>Another example:</li>
+<pre><code class="language-go line-numbers">import (
+    "database/sql"
+    "github.com/jmoiron/sqlx"
+
+    stdSQL "database/sql"  // If needed
+)</code></pre>
+        <br/>
+        <li>Choose meaningful aliases that indicate the package's purpose.</li>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
