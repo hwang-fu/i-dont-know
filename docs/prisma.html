@@ -155,6 +155,7 @@
         <li><a href="#prisma-shadow-database">Shadow Database</a></li>
         <li><a href="#prisma-read-replicas">Read Replicas</a></li>
         <li><a href="#prisma-schema-overview">Schema Overview</a></li>
+        <li><a href="#prisma-relationships">Understanding Relationships</a></li>
     </ol>
 </nav>
 <hr/>
@@ -497,7 +498,7 @@ async function main() {
 
 main()
   .catch(console.error)
-  .finally(() => prisma.$disconnect())</code></pre>
+  .finally(() =&gt; prisma.$disconnect())</code></pre>
     </ul>
     <br/><br/>
 
@@ -3587,7 +3588,1037 @@ model Tag {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="prisma-relationships">Understanding Relationships in Prisma</h3>
+<ol>
 
+    <li>What Are Foreign Keys and Relationships?</li>
+    <br/>
+    <ul>
+        <li>A <b>foreign key</b> is a field that references the primary key of another table.</li>
+        <br/>
+        <li>In traditional SQL:</li>
+<pre><code class="language-sql line-numbers">CREATE TABLE users (
+  id INT PRIMARY KEY,
+  name VARCHAR(100)
+);
+
+CREATE TABLE posts (
+  id INT PRIMARY KEY,
+  title VARCHAR(200),
+  author_id INT,  -- This is the foreign key
+  FOREIGN KEY (author_id) REFERENCES users(id)
+);</code></pre>
+        <li>Prisma on the other hand, represents this relationship in the schema file, not with raw SQL.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Two Sides of Every Relationship</li>
+    <br/>
+    <ul>
+        <li>Every relationship in Prisma has <u>two</u> sides:</li>
+        <br/>
+        <li><b>Side 1: The field that stores the foreign key (the ID)</b></li>
+        <ul>
+            <li>This is a regular field that exists in the database</li>
+            <li>Example: <code>authorId Int</code></li>
+            <li>This actually stores a number in the database</li>
+        </ul>
+        <br/>
+        <li><b>Side 2: The relation field (the connection)</b></li>
+        <ul>
+            <li>This does NOT exist in the database as a column</li>
+            <li>Example: <code>author User</code></li>
+            <li>This is virtual - Prisma uses it to navigate relationships</li>
+        </ul>
+        <br/>
+        <li>Think of it like this:</li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id       Int    @id @default(autoincrement())
+  title    String
+  authorId Int    // Real column in database: stores user ID
+  author   User   @relation(fields: [authorId], references: [id])
+                  // Virtual: lets you access the User object
+}</code></pre>
+        <br/>
+        <li>The database table <code>posts</code> has columns: <code>id</code>, <code>title</code>, <code>authorId</code></li>
+        <br/>
+        <li>It does NOT have a column called <code>author</code> - that's just for Prisma to use.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>One-to-Many: The Most Common Relationship</li>
+    <br/>
+    <ul>
+        <li><b>Scenario:</b> One user can have many posts, but each post belongs to one user.</li>
+        <br/>
+        <li>Complete example:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id    Int    @id @default(autoincrement())
+  name  String
+  email String @unique
+  posts Post[]  // Array because one user has MANY posts
+}
+
+model Post {
+  id       Int    @id @default(autoincrement())
+  title    String
+  content  String
+  authorId Int    // Foreign key: stores which user owns this post
+  author   User   @relation(fields: [authorId], references: [id])
+}</code></pre>
+        <br/>
+        <li>Breaking down the <code>@relation</code> attribute:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Part</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>fields: [authorId]</code></td>
+            <td>This model's field that stores the foreign key</td>
+        </tr>
+        <tr>
+            <td><code>references: [id]</code></td>
+            <td>The field in the User model being referenced</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>"The <code>authorId</code> field references the <code>id</code> field in User"</li>
+        <br/>
+        <li>Database structure created:</li>
+<pre><code class="language-sql line-numbers">-- users table
+id   | name      | email
+-----|-----------|------------------
+1    | Alice     | alice@example.com
+2    | Bob       | bob@example.com
+
+-- posts table
+id   | title          | content        | authorId
+-----|----------------|----------------|----------
+1    | First Post     | Hello world    | 1
+2    | Second Post    | More content   | 1
+3    | Bob's Post     | Hi there       | 2</code></pre>
+        <br/>
+        <li>Using in code:</li>
+<pre><code class="language-typescript line-numbers">// Get posts WITH their author information
+const posts = await prisma.post.findMany({
+  include: {
+    author: true  // Include the related User
+  }
+})
+
+// Result:
+// [
+//   {
+//     id: 1,
+//     title: "First Post",
+//     authorId: 1,
+//     author: { id: 1, name: "Alice", email: "alice@example.com" }
+//   },
+//   ...
+// ]
+
+// Get user WITH all their posts
+const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  include: {
+    posts: true  // Include all related Posts
+  }
+})
+
+// Result:
+// {
+//   id: 1,
+//   name: "Alice",
+//   posts: [
+//     { id: 1, title: "First Post", ... },
+//     { id: 2, title: "Second Post", ... }
+//   ]
+// }</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Which Side Gets the Foreign Key?</li>
+    <br/>
+    <ul>
+        <li><b>Rule:</b> The "many" side stores the foreign key.</li>
+        <br/>
+        <li>Visualizing the relationship:</li>
+<pre><code class="language-plaintext line-numbers">User (ONE)                    Post (MANY)
+-----------                   -----------
+id                            id
+name                          title
+email                         authorId ← Foreign key here!
+posts [] ← Virtual            author ← Virtual</code></pre>
+        <br/>
+        <li>Why? Because many posts can point to one user.</li>
+        <br/>
+        <li>If we put it on User, we could only store ONE post ID (not many).</li>
+        <br/>
+        <li>Another example:</li>
+<pre><code class="language-prisma line-numbers">// One category can have many products
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  products Product[] // Virtual: "this category has many products"
+}
+
+model Product {
+  id         Int      @id @default(autoincrement())
+  name       String
+  categoryId Int      // Real: stores the category ID
+  category   Category @relation(fields: [categoryId], references: [id])
+                      // Virtual: "this product belongs to a category"
+}</code></pre>
+        <br/>
+        <li>Remember: Foreign key goes on the <u>many</u> side, array goes on the <u>one</u> side.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>One-to-One Relationships</li>
+    <br/>
+    <ul>
+        <li><b>Scenario:</b> One user has exactly one profile.</li>
+        <br/>
+        <li>Complete example:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id      Int      @id @default(autoincrement())
+  email   String   @unique
+  profile Profile? // Optional (?) because user might not have profile yet
+}
+
+model Profile {
+  id     Int    @id @default(autoincrement())
+  bio    String
+  avatar String?
+  userId Int    @unique  // Must be @unique for one-to-one!
+  user   User   @relation(fields: [userId], references: [id])
+}</code></pre>
+        <br/>
+        <li>Key difference from one-to-many:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>One-to-Many</th>
+            <th>One-to-One</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Foreign key</td>
+            <td><code>authorId Int</code></td>
+            <td><code>userId Int @unique</code></td>
+        </tr>
+        <tr>
+            <td>Other side</td>
+            <td><code>posts Post[]</code> (array)</td>
+            <td><code>profile Profile?</code> (single, optional)</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>The <code>@unique</code> constraint ensures one user can have only one profile.</li>
+        <br/>
+        <li>Database structure:</li>
+<pre><code class="language-sql line-numbers">-- users table
+id   | email
+-----|------------------
+1    | alice@example.com
+2    | bob@example.com
+
+-- profiles table
+id   | bio              | avatar       | userId (UNIQUE)
+-----|------------------|--------------|----------------
+1    | I love coding    | pic1.jpg     | 1
+2    | Hello world      | pic2.jpg     | 2</code></pre>
+        <br/>
+        <li>Using in code:</li>
+<pre><code class="language-typescript line-numbers">// Create user with profile
+const user = await prisma.user.create({
+  data: {
+    email: 'alice@example.com',
+    profile: {
+      create: {
+        bio: 'I love coding',
+        avatar: 'pic1.jpg'
+      }
+    }
+  }
+})
+
+// Get user with profile
+const userWithProfile = await prisma.user.findUnique({
+  where: { id: 1 },
+  include: { profile: true }
+})
+
+// Result:
+// {
+//   id: 1,
+//   email: "alice@example.com",
+//   profile: {
+//     id: 1,
+//     bio: "I love coding",
+//     avatar: "pic1.jpg",
+//     userId: 1
+//   }
+// }</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Why Use <code>?</code> (Optional) on Relations?</li>
+    <br/>
+    <ul>
+        <li>The <code>?</code> makes a relation optional:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id      Int      @id
+  profile Profile? // User might not have a profile
+}
+
+model Profile {
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+}</code></pre>
+        <br/>
+        <li><b>With</b> <code>?</code>: User can exist without a profile</li>
+<pre><code class="language-typescript line-numbers">// Valid: user without profile
+await prisma.user.create({
+  data: { email: 'test@example.com' }
+})</code></pre>
+        <br/>
+        <li><b>Without</b> <code>?</code>: Every user MUST have a profile immediately</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id      Int     @id
+  profile Profile // Required! Must provide profile when creating user
+}</code></pre>
+<pre><code class="language-typescript line-numbers">// Must create profile with user
+await prisma.user.create({
+  data: {
+    email: 'test@example.com',
+    profile: {
+      create: { bio: 'Required!' }
+    }
+  }
+})</code></pre>
+        <br/>
+        <li>Common pattern: Make optional on the side without the foreign key.</li>
+<pre><code class="language-prisma line-numbers">model User {
+  profile Profile? // Optional here
+}
+
+model Profile {
+  userId Int  // Required here (no ?)
+  user   User @relation(fields: [userId], references: [id])
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Many-to-Many: Implicit (Simple)</li>
+    <br/>
+    <ul>
+        <li><b>Scenario:</b> Posts can have many tags, tags can be on many posts.</li>
+        <br/>
+        <li>Implicit many-to-many (Prisma creates join table automatically):</li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id    Int     @id @default(autoincrement())
+  title String
+  tags  Tag[]   // Array of tags
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String
+  posts Post[] // Array of posts
+}</code></pre>
+        <br/>
+        <li>Notice: NO foreign keys defined explicitly!</li>
+        <br/>
+        <li>Prisma automatically creates a join table named <code>_PostToTag</code>:</li>
+<pre><code class="language-sql line-numbers">-- posts table
+id   | title
+-----|------------------
+1    | First Post
+2    | Second Post
+
+-- tags table
+id   | name
+-----|-------------
+1    | JavaScript
+2    | Tutorial
+
+-- _PostToTag (created automatically by Prisma)
+A (postId) | B (tagId)
+-----------|----------
+1          | 1
+1          | 2
+2          | 1</code></pre>
+        <br/>
+        <li>Using in code:</li>
+<pre><code class="language-typescript line-numbers">// Create post with tags
+await prisma.post.create({
+  data: {
+    title: 'First Post',
+    tags: {
+      create: [
+        { name: 'JavaScript' },
+        { name: 'Tutorial' }
+      ]
+    }
+  }
+})
+
+// Connect existing tags
+await prisma.post.create({
+  data: {
+    title: 'Second Post',
+    tags: {
+      connect: [
+        { id: 1 }, // Connect to JavaScript tag
+      ]
+    }
+  }
+})
+
+// Get post with all tags
+const post = await prisma.post.findUnique({
+  where: { id: 1 },
+  include: { tags: true }
+})
+
+// Result:
+// {
+//   id: 1,
+//   title: "First Post",
+//   tags: [
+//     { id: 1, name: "JavaScript" },
+//     { id: 2, name: "Tutorial" }
+//   ]
+// }</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Many-to-Many: Explicit (With Extra Fields)</li>
+    <br/>
+    <ul>
+        <li><b>Scenario:</b> Track WHEN a tag was added to a post.</li>
+        <br/>
+        <li>You need the join table to store extra data:</li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id       Int              @id @default(autoincrement())
+  title    String
+  postTags PostTag[]        // Connection to join table
+}
+
+model Tag {
+  id       Int              @id @default(autoincrement())
+  name     String
+  postTags PostTag[]        // Connection to join table
+}
+
+// Explicit join table with extra fields
+model PostTag {
+  postId     Int
+  tagId      Int
+  assignedAt DateTime @default(now()) // Extra field!
+
+  post       Post     @relation(fields: [postId], references: [id])
+  tag        Tag      @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId]) // Composite primary key
+}</code></pre>
+        <br/>
+        <li>Database structure:</li>
+<pre><code class="language-sql line-numbers">-- posts table
+id   | title
+-----|------------------
+1    | First Post
+
+-- tags table
+id   | name
+-----|-------------
+1    | JavaScript
+
+-- post_tags table (explicit join table)
+postId | tagId | assignedAt
+-------|-------|------------------------
+1      | 1     | 2024-01-15 10:30:00</code></pre>
+        <br/>
+        <li>Using in code:</li>
+<pre><code class="language-typescript line-numbers">// Create relationship with timestamp
+await prisma.postTag.create({
+  data: {
+    postId: 1,
+    tagId: 1,
+    assignedAt: new Date()
+  }
+})
+
+// Get post with tags AND assignment timestamps
+const post = await prisma.post.findUnique({
+  where: { id: 1 },
+  include: {
+    postTags: {
+      include: {
+        tag: true // Include the actual tag data
+      }
+    }
+  }
+})
+
+// Result:
+// {
+//   id: 1,
+//   title: "First Post",
+//   postTags: [
+//     {
+//       postId: 1,
+//       tagId: 1,
+//       assignedAt: "2024-01-15T10:30:00Z",
+//       tag: { id: 1, name: "JavaScript" }
+//     }
+//   ]
+// }</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>When to Use Implicit vs Explicit Many-to-Many</li>
+    <br/>
+    <ul>
+        <li><b>Use implicit (simple) when:</b></li>
+        <ul>
+            <li>you only need to connect two models</li>
+            <li>no extra data needed on the relationship</li>
+            <li>simpler API is preferred</li>
+        </ul>
+<pre><code class="language-prisma line-numbers">// Simple: just connect posts and categories
+model Post {
+  categories Category[]
+}
+
+model Category {
+  posts Post[]
+}</code></pre>
+        <br/>
+        <li><b>Use explicit when:</b></li>
+        <ul>
+            <li>need to store when relationship was created</li>
+            <li>need to track who created the relationship</li>
+            <li>need any extra metadata about the connection</li>
+        </ul>
+<pre><code class="language-prisma line-numbers">// Complex: track when user joined team and their role
+model UserTeam {
+  userId    Int
+  teamId    Int
+  role      String   // Extra field
+  joinedAt  DateTime @default(now()) // Extra field
+
+  user      User     @relation(fields: [userId], references: [id])
+  team      Team     @relation(fields: [teamId], references: [id])
+
+  @@id([userId, teamId])
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Self-Relations: Model Relating to Itself</li>
+    <br/>
+    <ul>
+        <li><b>Scenario:</b> Users can follow other users.</li>
+        <br/>
+        <li>Self-relation example:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id         Int    @id @default(autoincrement())
+  name       String
+
+  // Users I follow
+  following  User[] @relation("UserFollows")
+
+  // Users who follow me
+  followers  User[] @relation("UserFollows")
+}</code></pre>
+        <br/>
+        <li>Prisma creates implicit join table <code>_UserFollows</code>:</li>
+<pre><code class="language-sql line-numbers">-- users table
+id   | name
+-----|-------
+1    | Alice
+2    | Bob
+3    | Carol
+
+-- _UserFollows (A follows B)
+A    | B
+-----|-----
+1    | 2    -- Alice follows Bob
+1    | 3    -- Alice follows Carol
+2    | 1    -- Bob follows Alice</code></pre>
+        <br/>
+        <li>The <code>"UserFollows"</code> name is a label - you can name it anything:</li>
+<pre><code class="language-prisma line-numbers">following User[] @relation("UserFollows")
+followers User[] @relation("UserFollows")
+// Both must have the SAME name to connect them</code></pre>
+        <br/>
+        <li>Explicit self-relation with extra data:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id         Int       @id @default(autoincrement())
+  name       String
+  following  Follow[]  @relation("Follower")
+  followers  Follow[]  @relation("Following")
+}
+
+model Follow {
+  followerId  Int
+  followingId Int
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("Follower", fields: [followerId], references: [id])
+  following   User     @relation("Following", fields: [followingId], references: [id])
+
+  @@id([followerId, followingId])
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding Relation Names</li>
+    <br/>
+    <ul>
+        <li>Relation names are needed when you have <b>multiple relations</b> between same models.</li>
+        <br/>
+        <li>Example: Posts have an author AND an editor:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id            Int    @id @default(autoincrement())
+  name          String
+  authoredPosts Post[] @relation("PostAuthor")
+  editedPosts   Post[] @relation("PostEditor")
+}
+
+model Post {
+  id        Int    @id @default(autoincrement())
+  title     String
+
+  authorId  Int
+  author    User   @relation("PostAuthor", fields: [authorId], references: [id])
+
+  editorId  Int?
+  editor    User?  @relation("PostEditor", fields: [editorId], references: [id])
+}</code></pre>
+        <br/>
+        <li>Without names, Prisma can't tell which foreign key connects to which relation.</li>
+        <br/>
+        <li>The name can be anything descriptive:</li>
+<pre><code class="language-prisma line-numbers">@relation("PostAuthor")    // Good
+@relation("AuthorPosts")   // Good
+@relation("WrittenBy")     // Good
+@relation("abc123")        // Valid but unclear</code></pre>
+        <br/>
+        <li>Both sides must use the <b>exact same name</b>:</li>
+<pre><code class="language-prisma line-numbers">// ✓ Correct - same name on both sides
+author User @relation("PostAuthor", fields: [...])
+authoredPosts Post[] @relation("PostAuthor")
+
+// ✗ Wrong - different names
+author User @relation("PostAuthor", fields: [...])
+authoredPosts Post[] @relation("AuthoredPosts") // Mismatch!</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Optional vs Required Relations</li>
+    <br/>
+    <ul>
+        <li>Relations can be optional or required:</li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id       Int   @id
+
+  // Required: every post MUST have an author
+  authorId Int   // No ?
+  author   User  @relation(fields: [authorId], references: [id])
+
+  // Optional: post MAY have an editor
+  editorId Int?  // With ?
+  editor   User? @relation(fields: [editorId], references: [id])
+}</code></pre>
+        <br/>
+        <li>Rule: If foreign key is optional (<code>Int?</code>), relation must be too (<code>User?</code>):</li>
+<table>
+    <thead>
+        <tr>
+            <th>Foreign Key</th>
+            <th>Relation Field</th>
+            <th>Valid?</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>authorId Int</code></td>
+            <td><code>author User</code></td>
+            <td>✓ Both required</td>
+        </tr>
+        <tr>
+            <td><code>editorId Int?</code></td>
+            <td><code>editor User?</code></td>
+            <td>✓ Both optional</td>
+        </tr>
+        <tr>
+            <td><code>authorId Int</code></td>
+            <td><code>author User?</code></td>
+            <td>✗ Mismatch</td>
+        </tr>
+        <tr>
+            <td><code>editorId Int?</code></td>
+            <td><code>editor User</code></td>
+            <td>✗ Mismatch</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>For arrays, never use <code>?</code>:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  posts Post[]  // ✓ Correct: array is never optional
+  // posts Post[]? // ✗ Wrong: syntax error
+}</code></pre>
+        <br/>
+        <li>An empty array <code>[]</code> represents "no posts" - no need for <code>?</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Cascade Delete and Update Actions</li>
+    <br/>
+    <ul>
+        <li>Control what happens when related record is deleted/updated:</li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id       Int  @id
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id    Int    @id
+  posts Post[]
+}</code></pre>
+        <br/>
+        <li>Available actions:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Action</th>
+            <th>What Happens</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>Cascade</code></td>
+            <td>Delete user → delete all their posts</td>
+        </tr>
+        <tr>
+            <td><code>SetNull</code></td>
+            <td>Delete user → set posts.authorId to NULL</td>
+        </tr>
+        <tr>
+            <td><code>Restrict</code></td>
+            <td>Cannot delete user if they have posts</td>
+        </tr>
+        <tr>
+            <td><code>NoAction</code></td>
+            <td>Database decides (usually same as Restrict)</td>
+        </tr>
+        <tr>
+            <td><code>SetDefault</code></td>
+            <td>Set to default value (if defined)</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Example behaviors:</li>
+<pre><code class="language-prisma line-numbers">// Delete user → delete their posts
+author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+// Delete user → set authorId to NULL (requires authorId to be Int?)
+author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+// Prevent user deletion if they have posts
+author User @relation(fields: [authorId], references: [id], onDelete: Restrict)</code></pre>
+        <br/>
+        <li><code>onUpdate</code> works similarly but for ID changes (less common):</li>
+<pre><code class="language-prisma line-numbers">author User @relation(
+  fields: [authorId],
+  references: [id],
+  onDelete: Cascade,
+  onUpdate: Cascade
+)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Relationship Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Blog system:</b></li>
+<pre><code class="language-prisma line-numbers">model User {
+  id       Int       @id @default(autoincrement())
+  email    String    @unique
+  posts    Post[]
+  comments Comment[]
+}
+
+model Post {
+  id       Int       @id @default(autoincrement())
+  title    String
+  authorId Int
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  tags     Tag[]
+}
+
+model Comment {
+  id      Int    @id @default(autoincrement())
+  text    String
+  postId  Int
+  post    Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId  Int
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[]
+}</code></pre>
+        <br/>
+        <li><b>E-commerce:</b></li>
+<pre><code class="language-prisma line-numbers">model Customer {
+  id     Int     @id @default(autoincrement())
+  email  String  @unique
+  orders Order[]
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  customerId Int
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  items      OrderItem[]
+  total      Decimal
+}
+
+model Product {
+  id         Int         @id @default(autoincrement())
+  name       String
+  price      Decimal
+  orderItems OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Decimal
+}</code></pre>
+        <br/>
+        <li><b>Organization hierarchy:</b></li>
+<pre><code class="language-prisma line-numbers">model User {
+  id           Int            @id @default(autoincrement())
+  email        String         @unique
+  memberships  Membership[]
+}
+
+model Organization {
+  id          Int            @id @default(autoincrement())
+  name        String
+  memberships Membership[]
+}
+
+model Membership {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  organizationId Int
+  role           String
+  joinedAt       DateTime     @default(now())
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Mistakes and How to Fix Them</li>
+    <br/>
+    <ul>
+        <li><b>Mistake 1: Forgetting @unique on one-to-one</b></li>
+<pre><code class="language-prisma line-numbers">// ✗ Wrong - missing @unique
+model Profile {
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}
+
+// ✓ Correct - has @unique
+model Profile {
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+}</code></pre>
+        <br/>
+        <li><b>Mistake 2: Mismatched optional markers</b></li>
+<pre><code class="language-prisma line-numbers">// ✗ Wrong - foreign key required but relation optional
+model Post {
+  editorId Int   // Required
+  editor   User? // Optional - mismatch!
+}
+
+// ✓ Correct - both match
+model Post {
+  editorId Int?  // Optional
+  editor   User? // Optional
+}</code></pre>
+        <br/>
+        <li><b>Mistake 3: Wrong side has foreign key</b></li>
+<pre><code class="language-prisma line-numbers">// ✗ Wrong - foreign key on "one" side
+model User {
+  id     Int   @id
+  postId Int   // Wrong! Can only reference ONE post
+  post   Post  @relation(fields: [postId], references: [id])
+}
+
+// ✓ Correct - foreign key on "many" side
+model Post {
+  id       Int  @id
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id])
+}
+
+model User {
+  id    Int    @id
+  posts Post[] // One user has many posts
+}</code></pre>
+        <br/>
+        <li><b>Mistake 4: Not using arrays on one-to-many</b></li>
+<pre><code class="language-prisma line-numbers">// ✗ Wrong - not an array
+model User {
+  posts Post  // Wrong! Should be Post[]
+}
+
+// ✓ Correct - array for multiple posts
+model User {
+  posts Post[]
+}</code></pre>
+        <br/>
+        <li><b>Mistake 5: Ambiguous relations without names</b></li>
+<pre><code class="language-prisma line-numbers">// ✗ Wrong - Prisma can't tell which is which
+model Post {
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id])
+
+  editorId Int
+  editor   User @relation(fields: [editorId], references: [id])
+}
+
+// ✓ Correct - use relation names
+model Post {
+  authorId Int
+  author   User @relation("PostAuthor", fields: [authorId], references: [id])
+
+  editorId Int
+  editor   User @relation("PostEditor", fields: [editorId], references: [id])
+}
+
+model User {
+  authoredPosts Post[] @relation("PostAuthor")
+  editedPosts   Post[] @relation("PostEditor")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Practice Examples</li>
+    <br/>
+    <ul>
+        <li><b>Exercise 1:</b> Movies and directors (one-to-many)</li>
+<pre><code class="language-prisma line-numbers">model Director {
+  id     Int     @id @default(autoincrement())
+  name   String
+  movies Movie[]
+}
+
+model Movie {
+  id         Int      @id @default(autoincrement())
+  title      String
+  directorId Int
+  director   Director @relation(fields: [directorId], references: [id])
+}</code></pre>
+        <br/>
+        <li><b>Exercise 2:</b> Student and student card (one-to-one)</li>
+<pre><code class="language-prisma line-numbers">model Student {
+  id          Int           @id @default(autoincrement())
+  name        String
+  studentCard StudentCard?
+}
+
+model StudentCard {
+  id        Int     @id @default(autoincrement())
+  cardNumber String @unique
+  studentId Int     @unique
+  student   Student @relation(fields: [studentId], references: [id])
+}</code></pre>
+        <br/>
+        <li><b>Exercise 3:</b> Students and courses (many-to-many)</li>
+<pre><code class="language-prisma line-numbers">model Student {
+  id      Int      @id @default(autoincrement())
+  name    String
+  courses Course[]
+}
+
+model Course {
+  id       Int       @id @default(autoincrement())
+  name     String
+  students Student[]
+}</code></pre>
+        <br/>
+        <li><b>Exercise 4:</b> Students and courses with enrollment date (explicit many-to-many)</li>
+<pre><code class="language-prisma line-numbers">model Student {
+  id          Int          @id @default(autoincrement())
+  name        String
+  enrollments Enrollment[]
+}
+
+model Course {
+  id          Int          @id @default(autoincrement())
+  name        String
+  enrollments Enrollment[]
+}
+
+model Enrollment {
+  studentId  Int
+  courseId   Int
+  enrolledAt DateTime @default(now())
+  grade      String?
+
+  student    Student  @relation(fields: [studentId], references: [id])
+  course     Course   @relation(fields: [courseId], references: [id])
+
+  @@id([studentId, courseId])
+}</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
