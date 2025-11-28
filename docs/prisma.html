@@ -154,6 +154,7 @@
         <li><a href="#prisma-connection-pooling">Connection Pooling vs Direct Connection</a></li>
         <li><a href="#prisma-shadow-database">Shadow Database</a></li>
         <li><a href="#prisma-read-replicas">Read Replicas</a></li>
+        <li><a href="#prisma-schema-overview">Schema Overview</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2435,7 +2436,1150 @@ const notification = await prisma.notification.findFirst({
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="prisma-schema-overview">Prisma Schema Overview</h3>
+<ol>
 
+    <li>What Is the Prisma Schema?</li>
+    <br/>
+    <ul>
+        <li>The Prisma schema is a declarative configuration file that defines:</li>
+        <ul>
+            <li>database connection</li>
+            <li>Prisma Client generator</li>
+            <li>data models (tables/collections)</li>
+            <li>relationships between models</li>
+            <li>field types and constraints</li>
+        </ul>
+        <br/>
+        <li>Single source of truth for database structure.</li>
+        <br/>
+        <li>File location: <code>prisma/schema.prisma</code></li>
+        <br/>
+        <li>Uses Prisma Schema Language (PSL), not SQL or a programming language.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Schema File Structure</li>
+    <br/>
+    <ul>
+        <li>A complete schema has three main blocks:</li>
+<pre><code class="language-prisma line-numbers">// 1. Data source - database connection
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 2. Generator - what to generate
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 3. Data models - your tables/collections
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+  posts Post[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+}</code></pre>
+        <br/>
+        <li>Order of blocks doesn't matter, but conventionally it is datasource → generator → models.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Data Source Configuration</li>
+    <br/>
+    <ul>
+        <li>Defines database connection:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}</code></pre>
+        <br/>
+        <li>Supported providers:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Provider</th>
+            <th>Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>PostgreSQL</td>
+            <td><code>"postgresql"</code></td>
+        </tr>
+        <tr>
+            <td>MySQL</td>
+            <td><code>"mysql"</code></td>
+        </tr>
+        <tr>
+            <td>SQLite</td>
+            <td><code>"sqlite"</code></td>
+        </tr>
+        <tr>
+            <td>SQL Server</td>
+            <td><code>"sqlserver"</code></td>
+        </tr>
+        <tr>
+            <td>MongoDB</td>
+            <td><code>"mongodb"</code></td>
+        </tr>
+        <tr>
+            <td>CockroachDB</td>
+            <td><code>"cockroachdb"</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Additional datasource options:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  directUrl         = env("DIRECT_DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  schemas           = ["public", "auth"]
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Generator Configuration</li>
+    <br/>
+    <ul>
+        <li>Defines what Prisma generates:</li>
+<pre><code class="language-prisma line-numbers">generator client {
+  provider = "prisma-client-js"
+}</code></pre>
+        <br/>
+        <li>Common generator options:</li>
+<pre><code class="language-prisma line-numbers">generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma-client"
+  previewFeatures = ["readReplicas", "fullTextSearch"]
+  binaryTargets   = ["native", "rhel-openssl-1.0.x"]
+  engineType      = "binary"
+}</code></pre>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Option</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>provider</code></td>
+            <td>Generator to use (usually <code>prisma-client-js</code>)</td>
+        </tr>
+        <tr>
+            <td><code>output</code></td>
+            <td>Custom output location for generated client</td>
+        </tr>
+        <tr>
+            <td><code>previewFeatures</code></td>
+            <td>Array of preview features to enable</td>
+        </tr>
+        <tr>
+            <td><code>binaryTargets</code></td>
+            <td>Target platforms for Prisma engines</td>
+        </tr>
+        <tr>
+            <td><code>engineType</code></td>
+            <td><code>"binary"</code> or <code>"library"</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Multiple generators:</li>
+<pre><code class="language-prisma line-numbers">generator client {
+  provider = "prisma-client-js"
+}
+
+generator docs {
+  provider = "prisma-docs-generator"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Model Definition</li>
+    <br/>
+    <ul>
+        <li>Models represent database tables (SQL) or collections (MongoDB):</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  age       Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}</code></pre>
+        <br/>
+        <li>Model naming conventions:</li>
+        <ul>
+            <li>singular PascalCase (e.g., <code>User</code>, not <code>users</code>)</li>
+            <li>Prisma automatically pluralizes for database table names</li>
+            <li>use <code>@@map</code> to override table name</li>
+        </ul>
+        <br/>
+        <li>Custom table name:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id    Int    @id
+  email String
+
+  @@map("custom_users_table")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Field Types</li>
+    <ul>
+    <br/>
+        <li>Scalar types:</li>
+    <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Prisma Type</th>
+            <th>PostgreSQL</th>
+            <th>MySQL</th>
+            <th>SQLite</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>String</code></td>
+            <td>text, varchar</td>
+            <td>varchar, text</td>
+            <td>text</td>
+        </tr>
+        <tr>
+            <td><code>Int</code></td>
+            <td>integer</td>
+            <td>int</td>
+            <td>integer</td>
+        </tr>
+        <tr>
+            <td><code>BigInt</code></td>
+            <td>bigint</td>
+            <td>bigint</td>
+            <td>integer</td>
+        </tr>
+        <tr>
+            <td><code>Float</code></td>
+            <td>double precision</td>
+            <td>double</td>
+            <td>real</td>
+        </tr>
+        <tr>
+            <td><code>Decimal</code></td>
+            <td>decimal</td>
+            <td>decimal</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td><code>Boolean</code></td>
+            <td>boolean</td>
+            <td>tinyint(1)</td>
+            <td>integer</td>
+        </tr>
+        <tr>
+            <td><code>DateTime</code></td>
+            <td>timestamp</td>
+            <td>datetime</td>
+            <td>numeric</td>
+        </tr>
+        <tr>
+            <td><code>Json</code></td>
+            <td>jsonb</td>
+            <td>json</td>
+            <td>text</td>
+        </tr>
+        <tr>
+            <td><code>Bytes</code></td>
+            <td>bytea</td>
+            <td>longblob</td>
+            <td>blob</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Example with different types:</li>
+<pre><code class="language-prisma line-numbers">model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  price       Decimal  @db.Decimal(10, 2)
+  quantity    Int
+  inStock     Boolean  @default(true)
+  metadata    Json?
+  image       Bytes?
+  releaseDate DateTime
+  views       BigInt   @default(0)
+  rating      Float?
+}</code></pre>
+        <br/>
+        <li>Field modifiers:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Modifier</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>?</code></td>
+            <td>Optional (nullable)</td>
+            <td><code>name String?</code></td>
+        </tr>
+        <tr>
+            <td><code>[]</code></td>
+            <td>Array/List</td>
+            <td><code>tags String[]</code></td>
+        </tr>
+        <tr>
+            <td>none</td>
+            <td>Required</td>
+            <td><code>email String</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Arrays example:</li>
+<pre><code class="language-prisma line-numbers">model Article {
+  id        Int      @id @default(autoincrement())
+  title     String
+  tags      String[]
+  viewCount Int[]
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Field Attributes</li>
+    <br/>
+    <ul>
+        <li>Attributes modify field behavior using <code>@</code>:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  username  String   @db.VarChar(50)
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@unique([username, email])
+}</code></pre>
+        <br/>
+        <li>Common field attributes:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Attribute</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>@id</code></td>
+            <td>Primary key</td>
+        </tr>
+        <tr>
+            <td><code>@default()</code></td>
+            <td>Default value</td>
+        </tr>
+        <tr>
+            <td><code>@unique</code></td>
+            <td>Unique constraint</td>
+        </tr>
+        <tr>
+            <td><code>@relation()</code></td>
+            <td>Define relationship</td>
+        </tr>
+        <tr>
+            <td><code>@map()</code></td>
+            <td>Custom column name</td>
+        </tr>
+        <tr>
+            <td><code>@db.</code></td>
+            <td>Native database type</td>
+        </tr>
+        <tr>
+            <td><code>@updatedAt</code></td>
+            <td>Auto-update timestamp</td>
+        </tr>
+        <tr>
+            <td><code>@ignore</code></td>
+            <td>Exclude from Prisma Client</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Default value functions:</li>
+<pre><code class="language-prisma line-numbers">model Example {
+  id         String   @id @default(uuid())
+  autoId     Int      @default(autoincrement())
+  timestamp  DateTime @default(now())
+  randomNum  Int      @default(dbgenerated("floor(random() * 100)"))
+  constant   String   @default("PENDING")
+  boolean    Boolean  @default(true)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Block Attributes</li>
+    <br/>
+    <ul>
+        <li>Block attributes apply to entire model using <code>@@</code>:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id        Int      @id @default(autoincrement())
+  email     String
+  firstName String
+  lastName  String
+  age       Int
+  city      String
+
+  @@unique([email, firstName])
+  @@index([city])
+  @@index([lastName, firstName])
+  @@map("users_table")
+}</code></pre>
+        <br/>
+        <li>Common block attributes:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Attribute</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>@@id([])</code></td>
+            <td>Composite primary key</td>
+        </tr>
+        <tr>
+            <td><code>@@unique([])</code></td>
+            <td>Composite unique constraint</td>
+        </tr>
+        <tr>
+            <td><code>@@index([])</code></td>
+            <td>Database index</td>
+        </tr>
+        <tr>
+            <td><code>@@map()</code></td>
+            <td>Custom table name</td>
+        </tr>
+        <tr>
+            <td><code>@@schema()</code></td>
+            <td>PostgreSQL schema</td>
+        </tr>
+        <tr>
+            <td><code>@@ignore</code></td>
+            <td>Exclude model from Prisma Client</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Composite primary key:</li>
+<pre><code class="language-prisma line-numbers">model UserRole {
+  userId Int
+  roleId Int
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+}</code></pre>
+        <br/>
+        <li>Multiple indexes:</li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  published Boolean
+  authorId  Int
+
+  @@index([authorId])
+  @@index([published, authorId])
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Relations</li>
+    <br/>
+    <ul>
+        <li><b>One-to-Many:</b></li>
+<pre><code class="language-prisma line-numbers">model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  posts Post[]  // Relation field (not in database)
+}
+
+model Post {
+  id       Int    @id @default(autoincrement())
+  title    String
+  authorId Int    // Foreign key
+  author   User   @relation(fields: [authorId], references: [id])
+}</code></pre>
+        <br/>
+        <li><b>One-to-One:</b></li>
+<pre><code class="language-prisma line-numbers">model User {
+  id      Int      @id @default(autoincrement())
+  email   String   @unique
+  profile Profile?
+}
+
+model Profile {
+  id     Int    @id @default(autoincrement())
+  bio    String
+  userId Int    @unique
+  user   User   @relation(fields: [userId], references: [id])
+}</code></pre>
+        <br/>
+        <li><b>Many-to-Many (implicit):</b></li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id         Int        @id @default(autoincrement())
+  title      String
+  categories Category[]
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String
+  posts Post[]
+}
+
+// Prisma creates join table automatically: _CategoryToPost</code></pre>
+        <br/>
+        <li><b>Many-to-Many (explicit):</b></li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id                 Int                  @id @default(autoincrement())
+  title              String
+  postCategories     PostCategory[]
+}
+
+model Category {
+  id                 Int                  @id @default(autoincrement())
+  name               String
+  postCategories     PostCategory[]
+}
+
+model PostCategory {
+  postId     Int
+  categoryId Int
+  assignedAt DateTime @default(now())
+
+  post       Post     @relation(fields: [postId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@id([postId, categoryId])
+}</code></pre>
+        <br/>
+        <li><b>Self-relations:</b></li>
+<pre><code class="language-prisma line-numbers">model User {
+  id         Int    @id @default(autoincrement())
+  name       String
+  invitedBy  Int?
+  inviter    User?  @relation("UserInvites", fields: [invitedBy], references: [id])
+  invitees   User[] @relation("UserInvites")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Relation Actions</li>
+    <br/>
+    <ul>
+        <li>Define behavior when referenced record is deleted/updated:</li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id       Int    @id @default(autoincrement())
+  title    String
+  authorId Int
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model User {
+  id    Int    @id @default(autoincrement())
+  posts Post[]
+}</code></pre>
+        <br/>
+        <li>Available actions:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Action</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>Cascade</code></td>
+            <td>Delete/update related records</td>
+        </tr>
+        <tr>
+            <td><code>Restrict</code></td>
+            <td>Prevent if related records exist</td>
+        </tr>
+        <tr>
+            <td><code>NoAction</code></td>
+            <td>Database default behavior</td>
+        </tr>
+        <tr>
+            <td><code>SetNull</code></td>
+            <td>Set foreign key to NULL</td>
+        </tr>
+        <tr>
+            <td><code>SetDefault</code></td>
+            <td>Set foreign key to default value</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-prisma line-numbers">// Delete user → delete all their posts
+author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+// Delete user → set posts.authorId to NULL
+author User @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+// Prevent user deletion if posts exist
+author User @relation(fields: [authorId], references: [id], onDelete: Restrict)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Enums</li>
+    <br/>
+    <ul>
+        <li>Define enumeration types:</li>
+<pre><code class="language-prisma line-numbers">enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  role  Role   @default(USER)
+}</code></pre>
+        <br/>
+        <li>With custom database values:</li>
+<pre><code class="language-prisma line-numbers">enum Status {
+  PENDING   @map("pending")
+  APPROVED  @map("approved")
+  REJECTED  @map("rejected")
+}
+
+model Application {
+  id     Int    @id
+  status Status @default(PENDING)
+}</code></pre>
+        <br/>
+        <li>Array of enums:</li>
+<pre><code class="language-prisma line-numbers">enum Permission {
+  READ
+  WRITE
+  DELETE
+}
+
+model User {
+  id          Int          @id
+  permissions Permission[]
+}</code></pre>
+        <br/>
+        <li>Note: Not supported in SQLite (use String instead).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Native Database Types</li>
+    <br/>
+    <ul>
+        <li>Specify exact database column type using <code>@db.</code>:</li>
+        <br/>
+        <li><b>PostgreSQL:</b></li>
+<pre><code class="language-prisma line-numbers">model Product {
+  id          Int      @id
+  name        String   @db.VarChar(255)
+  description String   @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  metadata    Json     @db.JsonB
+  tags        String[] @db.VarChar(100)
+  count       BigInt   @db.BigInt
+}</code></pre>
+        <br/>
+        <li><b>MySQL:</b></li>
+<pre><code class="language-prisma line-numbers">model Product {
+  id          Int     @id
+  name        String  @db.VarChar(255)
+  description String  @db.Text
+  price       Decimal @db.Decimal(10, 2)
+  metadata    Json
+  tiny        Int     @db.TinyInt
+  medium      String  @db.MediumText
+}</code></pre>
+        <br/>
+        <li><b>Common native types:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>PostgreSQL</th>
+            <th>MySQL</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Variable string</td>
+            <td><code>@db.VarChar(n)</code></td>
+            <td><code>@db.VarChar(n)</code></td>
+        </tr>
+        <tr>
+            <td>Long text</td>
+            <td><code>@db.Text</code></td>
+            <td><code>@db.Text</code></td>
+        </tr>
+        <tr>
+            <td>Decimal</td>
+            <td><code>@db.Decimal(p,s)</code></td>
+            <td><code>@db.Decimal(p,s)</code></td>
+        </tr>
+        <tr>
+            <td>Timestamp</td>
+            <td><code>@db.Timestamp(p)</code></td>
+            <td><code>@db.DateTime(p)</code></td>
+        </tr>
+        <tr>
+            <td>JSON</td>
+            <td><code>@db.JsonB</code></td>
+            <td><code>@db.Json</code></td>
+        </tr>
+        <tr>
+            <td>UUID</td>
+            <td><code>@db.Uuid</code></td>
+            <td>N/A</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Comments and Documentation</li>
+    <br/>
+    <ul>
+        <li>Single-line comments:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  // Primary identifier
+  id    Int    @id @default(autoincrement())
+
+  // Unique email for authentication
+  email String @unique
+
+  name  String? // Optional display name
+}</code></pre>
+        <br/>
+        <li>Multi-line comments:</li>
+<pre><code class="language-prisma line-numbers">/*
+ * User model represents application users
+ * Supports authentication and profile management
+ */
+model User {
+  id    Int    @id
+  email String @unique
+}</code></pre>
+        <br/>
+        <li>Documentation comments (appear in generated types):</li>
+<pre><code class="language-prisma line-numbers">/// User account information
+model User {
+  id    Int    @id @default(autoincrement())
+
+  /// User's email address (used for login)
+  email String @unique
+
+  /// Optional display name
+  name  String?
+}
+
+/// User role enumeration
+enum Role {
+  /// Standard user permissions
+  USER
+
+  /// Administrator with full access
+  ADMIN
+}</code></pre>
+        <br/>
+        <li>Documentation comments use <code>///</code> and show in IDE tooltips and generated code.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Unsupported Features</li>
+    <br/>
+    <ul>
+        <li>Mark models/fields to ignore:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id    Int    @id
+  email String
+
+  /// @ignore: deprecated field
+  oldField String @ignore
+}
+
+/// @ignore: legacy table not used by application
+model LegacyData {
+  id Int @id
+
+  @@ignore
+}</code></pre>
+        <br/>
+        <li>Ignored models/fields:</li>
+        <ul>
+            <li>excluded from Prisma Client</li>
+            <li>not validated by Prisma</li>
+            <li>preserved in database</li>
+            <li>useful for gradual migration</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multi-Schema Support</li>
+    <br/>
+    <ul>
+        <li>PostgreSQL supports multiple schemas:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public", "auth", "analytics"]
+}
+
+model User {
+  id    Int    @id
+  email String
+
+  @@schema("auth")
+}
+
+model Post {
+  id    Int    @id
+  title String
+
+  @@schema("public")
+}
+
+model Event {
+  id   Int      @id
+  data Json
+
+  @@schema("analytics")
+}</code></pre>
+        <br/>
+        <li>Models can reference across schemas:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id    Int    @id
+  posts Post[]
+
+  @@schema("auth")
+}
+
+model Post {
+  id       Int  @id
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id])
+
+  @@schema("public")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Views</li>
+    <br/>
+    <ul>
+        <li>Define database views as models:</li>
+<pre><code class="language-prisma line-numbers">/// Database view for user statistics
+view UserStats {
+  userId     Int    @unique
+  postCount  Int
+  totalViews BigInt
+
+  @@map("user_stats_view")
+}</code></pre>
+        <br/>
+        <li>Views are read-only:</li>
+<pre><code class="language-typescript line-numbers">// ✓ Can read from views
+const stats = await prisma.userStats.findMany()
+
+// ✗ Cannot write to views
+await prisma.userStats.create({ data: {} }) // Error</code></pre>
+        <br/>
+        <li>Create view manually in database:</li>
+<pre><code class="language-sql line-numbers">CREATE VIEW user_stats_view AS
+SELECT
+  u.id as userId,
+  COUNT(p.id) as postCount,
+  SUM(p.views) as totalViews
+FROM users u
+LEFT JOIN posts p ON p.author_id = u.id
+GROUP BY u.id;</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Schema Organization</li>
+    <br/>
+    <ul>
+        <li>Organize large schemas with comments:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============================================
+// Authentication Models
+// ============================================
+
+model User {
+  id       Int       @id @default(autoincrement())
+  email    String    @unique
+  password String
+  sessions Session[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    Int
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// ============================================
+// Content Models
+// ============================================
+
+model Post {
+  id       Int      @id @default(autoincrement())
+  title    String
+  content  String
+  authorId Int
+}
+
+model Comment {
+  id      Int    @id @default(autoincrement())
+  text    String
+  postId  Int
+  userId  Int
+}
+
+// ============================================
+// E-commerce Models
+// ============================================
+
+model Product {
+  id    Int     @id @default(autoincrement())
+  name  String
+  price Decimal
+}
+
+model Order {
+  id     Int      @id @default(autoincrement())
+  total  Decimal
+  userId Int
+}</code></pre>
+        <br/>
+        <li>Consider splitting very large schemas:</li>
+<pre><code class="language-plaintext line-numbers">prisma/
+├── schema.prisma           # Main schema (datasource + generator)
+├── schema/
+│   ├── auth.prisma        # Authentication models
+│   ├── content.prisma     # Content models
+│   └── ecommerce.prisma   # E-commerce models</code></pre>
+        <br/>
+        <li>Note: Prisma doesn't officially support multiple schema files yet, but tools like <code>prisma-merge</code> can help.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Schema Validation</li>
+    <br/>
+    <ul>
+        <li>Validate schema without database connection:</li>
+<pre><code class="language-bash line-numbers">npx prisma validate</code></pre>
+        <br/>
+        <li>Format schema file:</li>
+<pre><code class="language-bash line-numbers">npx prisma format</code></pre>
+        <br/>
+        <li>Common validation errors:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Error</th>
+            <th>Cause</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Missing <code>@relation</code></td>
+            <td>Ambiguous relation, needs explicit definition</td>
+        </tr>
+        <tr>
+            <td>Invalid field type</td>
+            <td>Unsupported type for database provider</td>
+        </tr>
+        <tr>
+            <td>Missing required field</td>
+            <td>Non-optional field without default value</td>
+        </tr>
+        <tr>
+            <td>Duplicate model name</td>
+            <td>Two models with same name</td>
+        </tr>
+        <tr>
+            <td>Invalid attribute</td>
+            <td>Attribute not supported for field type</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete Schema Example</li>
+    <br/>
+    <ul>
+        <li>Real-world blog application schema:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  AUTHOR
+  ADMIN
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  username      String    @unique @db.VarChar(30)
+  passwordHash  String
+  role          Role      @default(USER)
+  posts         Post[]
+  comments      Comment[]
+  profile       Profile?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@map("users")
+}
+
+model Profile {
+  id       Int     @id @default(autoincrement())
+  bio      String? @db.Text
+  avatar   String?
+  website  String?
+  userId   Int     @unique
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Post {
+  id          Int        @id @default(autoincrement())
+  title       String     @db.VarChar(200)
+  slug        String     @unique
+  content     String     @db.Text
+  excerpt     String?    @db.VarChar(500)
+  coverImage  String?
+  status      PostStatus @default(DRAFT)
+  published   Boolean    @default(false)
+  publishedAt DateTime?
+  views       Int        @default(0)
+  authorId    Int
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments    Comment[]
+  tags        Tag[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([slug])
+  @@index([authorId])
+  @@index([published, publishedAt])
+  @@map("posts")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.Text
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  Int?
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique @db.VarChar(50)
+  slug  String @unique
+  posts Post[]
+
+  @@map("tags")
+}</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
