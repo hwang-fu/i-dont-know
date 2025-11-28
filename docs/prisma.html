@@ -152,6 +152,7 @@
         <li><a href="#prisma-introduction">Introduction</a></li>
         <li><a href="#prisma-database-connections">Database Connection Configuration</a></li>
         <li><a href="#prisma-connection-pooling">Connection Pooling vs Direct Connection</a></li>
+        <li><a href="#prisma-shadow-database">Shadow Database</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1515,6 +1516,379 @@ DATABASE_URL="postgresql://user:pass@postgres:5432/db" npx prisma migrate deploy
     </ul>
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="prisma-shadow-database">Shadow Database</h3>
+<ol>
+
+    <li>What Is a Shadow Database?</li>
+    <br/>
+    <ul>
+        <li>A <b>shadow database</b> is a temporary database used by Prisma Migrate during development to detect schema drift and generate migrations.</li>
+        <br/>
+        <li>Purpose:</li>
+        <ul>
+            <li>validates migration files are correct</li>
+            <li>detects manual schema changes</li>
+            <li>ensures migrations can be applied cleanly</li>
+            <li>generates accurate migration SQL</li>
+        </ul>
+        <br/>
+        <li>Lifecycle:</li>
+<pre><code class="language-plaintext line-numbers">1. Prisma creates shadow database
+2. Applies all existing migrations
+3. Compares result with your schema.prisma
+4. Generates new migration if differences found
+5. Drops shadow database</code></pre>
+        <br/>
+        <li>Only used during <code>prisma migrate dev</code>, not in production.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Automatic vs Manual Configuration</li>
+    <br/>
+    <ul>
+        <li>Prisma automatically creates shadow databases when possible:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Database</th>
+            <th>Automatic Shadow DB</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>PostgreSQL</td>
+            <td>✓ Yes (if user has <code>CREATE DATABASE</code> permission)</td>
+        </tr>
+        <tr>
+            <td>MySQL</td>
+            <td>✓ Yes (if user has <code>CREATE DATABASE</code> permission)</td>
+        </tr>
+        <tr>
+            <td>SQLite</td>
+            <td>✓ Yes (creates temporary file)</td>
+        </tr>
+        <tr>
+            <td>SQL Server</td>
+            <td>✓ Yes (if user has <code>CREATE DATABASE</code> permission)</td>
+        </tr>
+        <tr>
+            <td>CockroachDB</td>
+            <td>✓ Yes (if user has <code>CREATE DATABASE</code> permission)</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Manual configuration required when:</li>
+        <ul>
+            <li>user lacks <code>CREATE DATABASE</code> permission</li>
+            <li>using managed database services with restrictions</li>
+            <li>cloud providers with strict permission models</li>
+            <li>database connection via pooler</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Configuring Shadow Database</li>
+    <br/>
+    <ul>
+        <li>Add <code>shadowDatabaseUrl</code> to schema:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}</code></pre>
+        <br/>
+        <li>Environment variables:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:pass@localhost:5432/mydb"
+SHADOW_DATABASE_URL="postgresql://user:pass@localhost:5432/mydb_shadow"</code></pre>
+        <br/>
+        <li>Create shadow database manually:</li>
+<pre><code class="language-sql line-numbers">-- PostgreSQL
+CREATE DATABASE mydb_shadow;
+
+-- MySQL
+CREATE DATABASE mydb_shadow;</code></pre>
+        <br/>
+        <li>Shadow database must be empty - Prisma will manage its schema.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>How Shadow Database Works</li>
+    <br/>
+    <ul>
+        <li>Step-by-step process during <code>prisma migrate dev</code>:</li>
+        <br/>
+        <li><b>Step 1: Create or connect to shadow database</b></li>
+<pre><code class="language-plaintext line-numbers">Connecting to shadow database...</code></pre>
+        <br/>
+        <li><b>Step 2: Apply all existing migrations to shadow database</b></li>
+<pre><code class="language-plaintext line-numbers">Applying migration `20240101_init`
+Applying migration `20240102_add_users`
+...</code></pre>
+        <br/>
+        <li><b>Step 3: Compare shadow database schema with schema.prisma</b></li>
+<pre><code class="language-plaintext line-numbers">Detecting schema drift...
+Found differences:
+  + Added table: posts
+  + Added column: users.email</code></pre>
+        <br/>
+        <li><b>Step 4: Generate migration SQL for differences</b></li>
+<pre><code class="language-sql line-numbers">-- CreateTable
+CREATE TABLE "posts" (
+  "id" SERIAL PRIMARY KEY,
+  "title" TEXT NOT NULL
+);
+
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN "email" TEXT;</code></pre>
+        <br/>
+        <li><b>Step 5: Apply new migration to main database</b></li>
+<pre><code class="language-plaintext line-numbers">Applying migration `20240103_add_posts`</code></pre>
+        <br/>
+        <li><b>Step 6: Drop shadow database (or keep for next run)</b></li>
+<pre><code class="language-plaintext line-numbers">Cleaning up shadow database...</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Schema Drift Detection</li>
+    <br/>
+    <ul>
+        <li>Shadow database enables detection of manual schema changes:</li>
+        <br/>
+        <li>Scenario: Developer manually adds column to database:</li>
+<pre><code class="language-sql line-numbers">-- Manual change (NOT via Prisma)
+ALTER TABLE users ADD COLUMN phone VARCHAR(20);</code></pre>
+        <br/>
+        <li>Running <code>prisma migrate dev</code> detects drift:</li>
+<pre><code class="language-plaintext line-numbers">⚠️ We found changes that cannot be executed:
+
+  • Added column `phone` on table `users`
+
+These changes were made outside of Prisma Migrate.
+Do you want to:
+  1. Mark as applied (skip)
+  2. Reset database
+  3. Cancel</code></pre>
+        <br/>
+        <li>Without shadow database, Prisma couldn't detect these changes reliably.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Messages and Solutions</li>
+    <br/>
+    <ul>
+        <li><b>Error: Cannot create shadow database</b></li>
+<pre><code class="language-plaintext line-numbers">Error: A migration failed when applied to the shadow database
+Database error: permission denied to create database</code></pre>
+        <li>Solution: Configure <code>shadowDatabaseUrl</code> manually:</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}</code></pre>
+        <br/>
+        <li><b>Error: Shadow database not empty</b></li>
+<pre><code class="language-plaintext line-numbers">Error: The shadow database contains tables that are not tracked by migrations</code></pre>
+        <li>Solution: Drop all tables or recreate shadow database:</li>
+<pre><code class="language-sql line-numbers">DROP DATABASE mydb_shadow;
+CREATE DATABASE mydb_shadow;</code></pre>
+        <br/>
+        <li><b>Error: Cannot connect to shadow database</b></li>
+<pre><code class="language-plaintext line-numbers">Error: Can't reach shadow database server</code></pre>
+        <li>Solution: Verify shadow database URL and ensure database exists:</li>
+<pre><code class="language-bash line-numbers">psql postgresql://user:pass@localhost:5432/mydb_shadow -c "SELECT 1"</code></pre>
+        <br/>
+        <li><b>Error: Shadow database URL same as main database</b></li>
+<pre><code class="language-plaintext line-numbers">Error: The shadow database and main database cannot be the same</code></pre>
+        <li>Solution: Use different database name:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://user:pass@localhost:5432/mydb"
+SHADOW_DATABASE_URL="postgresql://user:pass@localhost:5432/mydb_shadow"  # Different name</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Shadow Database with Docker</li>
+    <br/>
+    <ul>
+        <li>Docker Compose example with shadow database:</li>
+<pre><code class="language-yaml line-numbers">services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Create shadow database on startup
+      - ./init-shadow-db.sh:/docker-entrypoint-initdb.d/init-shadow-db.sh
+
+volumes:
+  postgres_data:</code></pre>
+        <br/>
+        <li>Initialization script:</li>
+<pre><code class="language-bash line-numbers">#!/bin/bash
+# init-shadow-db.sh
+set -e
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    CREATE DATABASE mydb_shadow;
+EOSQL</code></pre>
+        <br/>
+        <li>Environment variables:</li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mydb"
+SHADOW_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mydb_shadow"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>CI/CD Pipeline Configuration</li>
+    <br/>
+    <ul>
+        <li>GitHub Actions example:</li>
+<pre><code class="language-yaml line-numbers">name: Database Migrations
+
+on: [push]
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create shadow database
+        run: |
+          psql postgresql://postgres:postgres@localhost:5432/test_db \
+            -c "CREATE DATABASE test_db_shadow;"
+        env:
+          PGPASSWORD: postgres
+
+      - name: Run migrations
+        run: npx prisma migrate dev
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db_shadow</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Different Databases for Main and Shadow</li>
+    <br/>
+    <ul>
+        <li>Shadow database can be on different server:</li>
+<pre><code class="language-plaintext line-numbers"># Main database on production server
+DATABASE_URL="postgresql://user:pass@prod-server.com:5432/mydb"
+
+# Shadow database on local machine
+SHADOW_DATABASE_URL="postgresql://user:pass@localhost:5432/mydb_shadow"</code></pre>
+        <br/>
+        <li>Useful when:</li>
+        <ul>
+            <li>production database has strict permissions</li>
+            <li>want to avoid any impact on production</li>
+            <li>testing migrations locally before production</li>
+        </ul>
+        <br/>
+        <li>Requirements:</li>
+        <ul>
+            <li>both databases must be same type (PostgreSQL, MySQL, etc.)</li>
+            <li>both must be accessible from development machine</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Disabling Shadow Database</li>
+    <br/>
+    <ul>
+        <li>Some scenarios don't require shadow database:</li>
+        <br/>
+        <li><b>MongoDB:</b> Schema-less, shadow database not applicable</li>
+<pre><code class="language-prisma line-numbers">datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Use: prisma db push
+// Migrations not supported for MongoDB</code></pre>
+        <br/>
+        <li>Use <code>--skip-seed</code> and <code>--skip-generate</code> flags if needed:</li>
+<pre><code class="language-bash line-numbers">npx prisma migrate dev --skip-seed --skip-generate</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Testing Migrations with Shadow Database</li>
+    <br/>
+    <ul>
+        <li>Verify migration before applying to production:</li>
+<pre><code class="language-bash line-numbers"># 1. Create migration using shadow database
+npx prisma migrate dev --name add_users
+
+# 2. Review generated SQL
+cat prisma/migrations/*/migration.sql
+
+# 3. Test on separate staging database
+DATABASE_URL=$STAGING_URL npx prisma migrate deploy
+
+# 4. If successful, deploy to production
+DATABASE_URL=$PRODUCTION_URL npx prisma migrate deploy</code></pre>
+        <br/>
+        <li>Dry run with shadow database:</li>
+<pre><code class="language-bash line-numbers"># Create migration without applying to main database
+npx prisma migrate dev --create-only
+
+# Review and edit migration.sql if needed
+
+# Apply when ready
+npx prisma migrate dev</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
