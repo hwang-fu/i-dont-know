@@ -152,6 +152,7 @@
         <li><a href="#go-introduction">Introduction to Golang</a></li>
         <li><a href="#go-hello-world">Hello World</a></li>
         <li><a href="#go-variables">Variables and Data Types</a></li>
+        <li><a href="#go-functions">Functions</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1358,7 +1359,7 @@ func main() {
     <ul>
         <li>Go supports pointers, which store memory addresses:</li>
 <pre><code class="language-go line-numbers">var x int = 42
-var p *int = &x  // p holds the address of x
+var p *int = &amp;x  // p holds the address of x
 
 fmt.Println(x)   // 42
 fmt.Println(p)   // 0xc0000b4008 (memory address)
@@ -1374,7 +1375,7 @@ fmt.Println(*p)  // 42 (dereference to get value)</code></pre>
     </thead>
     <tbody>
         <tr>
-            <td><code>&</code></td>
+            <td><code>&amp;</code></td>
             <td>Address-of operator (gets memory address)</td>
         </tr>
         <tr>
@@ -1386,7 +1387,7 @@ fmt.Println(*p)  // 42 (dereference to get value)</code></pre>
         <br/>
         <li>Modifying through pointers:</li>
 <pre><code class="language-go line-numbers">var x int = 10
-var p *int = &x
+var p *int = &amp;x
 
 *p = 20          // Modify x through pointer
 fmt.Println(x)   // 20</code></pre>
@@ -1402,7 +1403,631 @@ fmt.Println(x)   // 20</code></pre>
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-functions">Functions in Go</h3>
+<ol>
 
+    <li>What Are Functions?</li>
+    <br/>
+    <ul>
+        <li>A <b>function</b> is a reusable block of code that performs a specific task.</li>
+        <br/>
+        <li>Functions in Go:</li>
+        <ul>
+            <li>are first-class citizens (can be assigned to variables, passed as arguments)</li>
+            <li>can return multiple values</li>
+            <li>support named return values</li>
+            <li>can be anonymous (function literals)</li>
+            <li>can form closures</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Function Syntax</li>
+    <br/>
+    <ul>
+        <li>The basic syntax for declaring a function:</li>
+<pre><code class="language-go line-numbers">func functionName(parameter1 type1, parameter2 type2) returnType {
+    // function body
+    return value
+}</code></pre>
+        <br/>
+        <li>Simple example:</li>
+<pre><code class="language-go line-numbers">func greet(name string) string {
+    return "Hello, " + name
+}
+
+func main() {
+    message := greet("Alice")
+    fmt.Println(message)  // Hello, Alice
+}</code></pre>
+        <br/>
+        <li>Function components:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Component</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>func</code></td>
+            <td>Keyword to declare a function</td>
+        </tr>
+        <tr>
+            <td><code>functionName</code></td>
+            <td>Name of the function (must start with letter)</td>
+        </tr>
+        <tr>
+            <td><code>(parameters)</code></td>
+            <td>Input parameters (optional)</td>
+        </tr>
+        <tr>
+            <td><code>returnType</code></td>
+            <td>Type of value returned (optional)</td>
+        </tr>
+        <tr>
+            <td><code>return</code></td>
+            <td>Statement to return a value (if return type specified)</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Functions Without Return Values</li>
+    <br/>
+    <ul>
+        <li>Functions can execute code without returning a value:</li>
+<pre><code class="language-go line-numbers">func printMessage(message string) {
+    fmt.Println(message)
+}
+
+func main() {
+    printMessage("Hello, World!")
+}</code></pre>
+        <br/>
+        <li>No return type is specified.</li>
+        <br/>
+        <li>The <code>return</code> keyword can be used to exit early:</li>
+<pre><code class="language-go line-numbers">func process(value int) {
+    if value < 0 {
+        return  // Exit early
+    }
+    fmt.Println("Processing:", value)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Functions With Parameters</li>
+    <br/>
+    <ul>
+        <li>Functions can accept zero or more parameters:</li>
+<pre><code class="language-go line-numbers">// No parameters
+func sayHello() {
+    fmt.Println("Hello!")
+}
+
+// One parameter
+func square(x int) int {
+    return x * x
+}
+
+// Multiple parameters
+func add(x int, y int) int {
+    return x + y
+}</code></pre>
+        <br/>
+        <li>When consecutive parameters have the same type, you can omit the type for all but the last:</li>
+<pre><code class="language-go line-numbers">// Both are equivalent
+func add(x int, y int) int
+func add(x, y int) int</code></pre>
+        <br/>
+        <li>Mixed parameter types:</li>
+<pre><code class="language-go line-numbers">func describe(name string, age int, height float64) {
+    fmt.Printf("%s is %d years old and %.2f meters tall\n", name, age, height)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multiple Return Values</li>
+    <br/>
+    <ul>
+        <li>Go functions can return multiple values:</li>
+<pre><code class="language-go line-numbers">func divide(a, b float64) (float64, error) {
+    if b == 0 {
+        return 0, errors.New("division by zero")
+    }
+    return a / b, nil
+}
+
+func main() {
+    result, err := divide(10, 2)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    fmt.Println("Result:", result)  // Result: 5
+}</code></pre>
+        <br/>
+        <li>Common pattern: returning a value and an error:</li>
+<pre><code class="language-go line-numbers">func readFile(filename string) ([]byte, error) {
+    data, err := os.ReadFile(filename)
+    if err != nil {
+        return nil, err
+    }
+    return data, nil
+}</code></pre>
+        <br/>
+        <li>Multiple return values are specified in parentheses:</li>
+<pre><code class="language-go line-numbers">func swap(x, y string) (string, string) {
+    return y, x
+}
+
+a, b := swap("hello", "world")
+fmt.Println(a, b)  // world hello</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Named Return Values (it somehow reminds me of Pascal)</li>
+    <br/>
+    <ul>
+        <li>Return values can be named in the function signature:</li>
+<pre><code class="language-go line-numbers">func calculate(x, y int) (sum int, product int) {
+    sum = x + y
+    product = x * y
+    return  // Naked return
+}
+
+func main() {
+    s, p := calculate(3, 4)
+    fmt.Println(s, p)  // 7 12
+}</code></pre>
+        <br/>
+        <li>Named return values are automatically initialized to their zero values.</li>
+        <br/>
+        <li>A <b>naked return</b> returns the named values without explicitly specifying them.</li>
+        <br/>
+        <li>Named returns improve documentation but can reduce clarity in complex functions:</li>
+<pre><code class="language-go line-numbers">func divide(a, b float64) (result float64, err error) {
+    if b == 0 {
+        err = errors.New("division by zero")
+        return  // result will be 0.0 (zero value)
+    }
+    result = a / b
+    return
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Variadic Functions</li>
+    <br/>
+    <ul>
+        <li>A <b>variadic function</b> accepts a variable number of arguments:</li>
+<pre><code class="language-go line-numbers">func sum(numbers ...int) int {
+    total := 0
+    for _, num := range numbers {
+        total += num
+    }
+    return total
+}
+
+func main() {
+    fmt.Println(sum(1, 2, 3))        // 6
+    fmt.Println(sum(10, 20, 30, 40)) // 100
+    fmt.Println(sum())               // 0
+}</code></pre>
+        <br/>
+        <li>The <code>...</code> before the type indicates a variadic parameter.</li>
+        <br/>
+        <li>Inside the function, the variadic parameter is treated as a slice.</li>
+        <br/>
+        <li>Variadic parameter must be the last parameter:</li>
+<pre><code class="language-go line-numbers">func printf(format string, args ...interface{}) {
+    fmt.Printf(format, args...)
+}</code></pre>
+        <br/>
+        <li>Passing a slice to a variadic function:</li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
+total := sum(numbers...)  // Spread operator</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Anonymous Functions</li>
+    <br/>
+    <ul>
+        <li>Functions can be defined without a name (function literals):</li>
+<pre><code class="language-go line-numbers">func main() {
+    // Define and call immediately
+    func() {
+        fmt.Println("Anonymous function")
+    }()
+
+    // Assign to variable
+    greet := func(name string) {
+        fmt.Println("Hello,", name)
+    }
+    greet("Alice")
+}</code></pre>
+        <br/>
+        <li>Anonymous functions with parameters and return values:</li>
+<pre><code class="language-go line-numbers">add := func(x, y int) int {
+    return x + y
+}
+
+result := add(5, 3)
+fmt.Println(result)  // 8</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Functions as Values</li>
+    <br/>
+    <ul>
+        <li>Functions are first-class values and can be:</li>
+        <ul>
+            <li>assigned to variables</li>
+            <li>passed as arguments</li>
+            <li>returned from functions</li>
+        </ul>
+        <br/>
+        <li>Assigning functions to variables:</li>
+<pre><code class="language-go line-numbers">func add(x, y int) int {
+    return x + y
+}
+
+func main() {
+    var operation func(int, int) int
+    operation = add
+
+    result := operation(3, 4)
+    fmt.Println(result)  // 7
+}</code></pre>
+        <br/>
+        <li>Passing functions as arguments:</li>
+<pre><code class="language-go line-numbers">func apply(f func(int, int) int, x, y int) int {
+    return f(x, y)
+}
+
+func multiply(x, y int) int {
+    return x * y
+}
+
+func main() {
+    result := apply(multiply, 5, 6)
+    fmt.Println(result)  // 30
+}</code></pre>
+        <br/>
+        <li>Returning functions from functions:</li>
+<pre><code class="language-go line-numbers">func makeAdder(x int) func(int) int {
+    return func(y int) int {
+        return x + y
+    }
+}
+
+func main() {
+    add5 := makeAdder(5)
+    fmt.Println(add5(3))  // 8
+    fmt.Println(add5(10)) // 15
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Closures</li>
+    <br/>
+    <ul>
+        <li>A <b>closure</b> is a function that references variables from outside its body:</li>
+<pre><code class="language-go line-numbers">func counter() func() int {
+    count := 0
+    return func() int {
+        count++
+        return count
+    }
+}
+
+func main() {
+    next := counter()
+    fmt.Println(next())  // 1
+    fmt.Println(next())  // 2
+    fmt.Println(next())  // 3
+}</code></pre>
+        <br/>
+        <li>Each closure maintains its own state:</li>
+<pre><code class="language-go line-numbers">counter1 := counter()
+counter2 := counter()
+
+fmt.Println(counter1())  // 1
+fmt.Println(counter1())  // 2
+fmt.Println(counter2())  // 1 (separate state)</code></pre>
+        <br/>
+        <li>Common use case: creating private state:</li>
+<pre><code class="language-go line-numbers">func makeMultiplier(factor int) func(int) int {
+    return func(x int) int {
+        return x * factor
+    }
+}
+
+double := makeMultiplier(2)
+triple := makeMultiplier(3)
+
+fmt.Println(double(5))  // 10
+fmt.Println(triple(5))  // 15</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Defer Statement</li>
+    <br/>
+    <ul>
+        <li>The <code>defer</code> keyword postpones function execution until the surrounding function returns:</li>
+<pre><code class="language-go line-numbers">func main() {
+    defer fmt.Println("World")
+    fmt.Println("Hello")
+}
+// Output:
+// Hello
+// World</code></pre>
+        <br/>
+        <li>Multiple defers execute in LIFO (Last In, First Out) order:</li>
+<pre><code class="language-go line-numbers">func main() {
+    defer fmt.Println("First")
+    defer fmt.Println("Second")
+    defer fmt.Println("Third")
+    fmt.Println("Main")
+}
+// Output:
+// Main
+// Third
+// Second
+// First</code></pre>
+        <br/>
+        <li>Common use cases:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Use Case</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Closing files</td>
+            <td><code>defer file.Close()</code></td>
+        </tr>
+        <tr>
+            <td>Unlocking mutexes</td>
+            <td><code>defer mutex.Unlock()</code></td>
+        </tr>
+        <tr>
+            <td>Closing database connections</td>
+            <td><code>defer db.Close()</code></td>
+        </tr>
+        <tr>
+            <td>Cleanup operations</td>
+            <td><code>defer cleanup()</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Practical example with file handling:</li>
+<pre><code class="language-go line-numbers">func readFile(filename string) error {
+    file, err := os.Open(filename)
+    if err != nil {
+        return err
+    }
+    defer file.Close()  // Ensures file is closed
+
+    // Read file contents
+    // Even if an error occurs, file.Close() will be called
+    return nil
+}</code></pre>
+        <br/>
+        <li>Deferred function arguments are evaluated immediately:</li>
+<pre><code class="language-go line-numbers">func main() {
+    x := 10
+    defer fmt.Println(x)  // x is evaluated now (10)
+    x = 20
+    fmt.Println(x)
+}
+// Output:
+// 20
+// 10</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Recursive Functions</li>
+    <br/>
+    <ul>
+        <li>A function can call itself (recursion):</li>
+<pre><code class="language-go line-numbers">func factorial(n int) int {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n-1)
+}
+
+func main() {
+    fmt.Println(factorial(5))  // 120
+}</code></pre>
+        <br/>
+        <li>Fibonacci sequence using recursion:</li>
+<pre><code class="language-go line-numbers">func fibonacci(n int) int {
+    if n <= 1 {
+        return n
+    }
+    return fibonacci(n-1) + fibonacci(n-2)
+}
+
+func main() {
+    for i := 0; i < 10; i++ {
+        fmt.Print(fibonacci(i), " ")
+    }
+    // Output: 0 1 1 2 3 5 8 13 21 34
+}</code></pre>
+        <br/>
+        <li>Always include a base case to prevent infinite recursion.</li>
+        <br/>
+        <li>Recursive tree traversal:</li>
+<pre><code class="language-go line-numbers">type TreeNode struct {
+    Value int
+    Left  *TreeNode
+    Right *TreeNode
+}
+
+func traverse(node *TreeNode) {
+    if node == nil {
+        return
+    }
+    fmt.Println(node.Value)
+    traverse(node.Left)
+    traverse(node.Right)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Methods</li>
+    <br/>
+    <ul>
+        <li>Go doesn't have classes, but you can define methods on types:</li>
+<pre><code class="language-go line-numbers">type Rectangle struct {
+    Width  float64
+    Height float64
+}
+
+// Method with value receiver
+func (r Rectangle) Area() float64 {
+    return r.Width * r.Height
+}
+
+func main() {
+    rect := Rectangle{Width: 10, Height: 5}
+    fmt.Println(rect.Area())  // 50
+}</code></pre>
+        <br/>
+        <li>Methods can have pointer receivers to modify the receiver:</li>
+<pre><code class="language-go line-numbers">// Method with pointer receiver
+func (r *Rectangle) Scale(factor float64) {
+    r.Width *= factor
+    r.Height *= factor
+}
+
+func main() {
+    rect := Rectangle{Width: 10, Height: 5}
+    rect.Scale(2)
+    fmt.Println(rect.Area())  // 200
+}</code></pre>
+        <br/>
+        <li>Value receiver vs pointer receiver:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Receiver Type</th>
+            <th>When to Use</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Value <code>(r Type)</code></td>
+            <td>When method doesn't modify the receiver, small structs</td>
+        </tr>
+        <tr>
+            <td>Pointer <code>(r *Type)</code></td>
+            <td>When method modifies the receiver, large structs, or consistency</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Methods can be defined on any type in the same package:</li>
+<pre><code class="language-go line-numbers">type MyInt int
+
+func (m MyInt) Double() MyInt {
+    return m * 2
+}
+
+func main() {
+    num := MyInt(5)
+    fmt.Println(num.Double())  // 10
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Function Type Declarations</li>
+    <br/>
+    <ul>
+        <li>You can create custom function types:</li>
+<pre><code class="language-go line-numbers">type Operation func(int, int) int
+
+func add(x, y int) int {
+    return x + y
+}
+
+func multiply(x, y int) int {
+    return x * y
+}
+
+func apply(op Operation, x, y int) int {
+    return op(x, y)
+}
+
+func main() {
+    fmt.Println(apply(add, 5, 3))      // 8
+    fmt.Println(apply(multiply, 5, 3)) // 15
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Init Function</li>
+    <br/>
+    <ul>
+        <li>The <code>init()</code> function runs automatically before <code>main()</code>:</li>
+<pre><code class="language-go line-numbers">package main
+
+import "fmt"
+
+func init() {
+    fmt.Println("Initialization")
+}
+
+func main() {
+    fmt.Println("Main function")
+}
+// Output:
+// Initialization
+// Main function</code></pre>
+        <br/>
+        <li>Multiple <code>init()</code> functions can exist in the same package.</li>
+        <br/>
+        <li>They execute in the order they appear in the file.</li>
+        <br/>
+        <li>Common uses:</li>
+        <ul>
+            <li>initializing package-level variables</li>
+            <li>registering drivers or plugins</li>
+            <li>setting up configuration</li>
+            <li>validating state</li>
+        </ul>
+        <br/>
+        <li>Example with database driver:</li>
+<pre><code class="language-go line-numbers">import (
+    "database/sql"
+    _ "github.com/lib/pq"  // init() registers PostgreSQL driver
+)</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
