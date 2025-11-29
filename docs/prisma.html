@@ -160,6 +160,7 @@
         <li><a href="#prisma-create-operations">Creating Data</a></li>
         <li><a href="#prisma-update-operations">Upadting Data</a></li>
         <li><a href="#prisma-delete-operations">Deleting Data</a></li>
+        <li><a href="#prisma-cli-commands">CLI Commands</a></li>
     </ol>
 </nav>
 <hr/>
@@ -9615,6 +9616,1246 @@ await prisma.user.deleteMany({
 })</code></pre>
     </ul>
     <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="prisma-cli-commands">Prisma CLI Commands</h3>
+<ol>
+
+    <li>Understanding the Prisma CLI</li>
+    <br/>
+    <ul>
+        <li>The Prisma CLI (Command Line Interface) is a tool for managing your Prisma setup.</li>
+        <br/>
+        <li>All commands start with <code>npx prisma</code> (or <code>prisma</code> if installed globally).</li>
+        <br/>
+        <li>Common command categories:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th>Purpose</th>
+            <th>Commands</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Setup</td>
+            <td>Initialize Prisma</td>
+            <td><code>init</code></td>
+        </tr>
+        <tr>
+            <td>Client</td>
+            <td>Generate Prisma Client</td>
+            <td><code>generate</code></td>
+        </tr>
+        <tr>
+            <td>Migrations</td>
+            <td>Manage database schema changes</td>
+            <td><code>migrate dev</code>, <code>migrate deploy</code>, <code>migrate reset</code></td>
+        </tr>
+        <tr>
+            <td>Database</td>
+            <td>Direct database operations</td>
+            <td><code>db push</code>, <code>db pull</code>, <code>db seed</code></td>
+        </tr>
+        <tr>
+            <td>Studio</td>
+            <td>Visual database editor</td>
+            <td><code>studio</code></td>
+        </tr>
+        <tr>
+            <td>Utilities</td>
+            <td>Validation and formatting</td>
+            <td><code>format</code>, <code>validate</code>, <code>version</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Get help for any command:</li>
+<pre><code class="language-bash line-numbers"># General help
+npx prisma --help
+
+# Help for specific command
+npx prisma migrate --help
+npx prisma migrate dev --help</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma init: Initialize Prisma</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Set up Prisma in a new or existing project.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma init</code></pre>
+        <br/>
+        <li><b>What it does:</b></li>
+        <ul>
+            <li>Creates <code>prisma/</code> directory</li>
+            <li>Creates <code>prisma/schema.prisma</code> with basic template</li>
+            <li>Creates <code>.env</code> file with <code>DATABASE_URL</code> placeholder</li>
+            <li>Adds <code>.env</code> to <code>.gitignore</code> (if exists)</li>
+        </ul>
+        <br/>
+        <li><b>Created files:</b></li>
+<pre><code class="language-plaintext line-numbers">your-project/
+├── prisma/
+│   └── schema.prisma
+└── .env</code></pre>
+        <br/>
+        <li><b>Default schema.prisma content:</b></li>
+<pre><code class="language-prisma line-numbers">// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}</code></pre>
+        <br/>
+        <li><b>Default .env content:</b></li>
+<pre><code class="language-plaintext line-numbers">DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"</code></pre>
+        <br/>
+        <li><b>Specify database provider:</b></li>
+<pre><code class="language-bash line-numbers"># Initialize with PostgreSQL (default)
+npx prisma init
+
+# Initialize with MySQL
+npx prisma init --datasource-provider mysql
+
+# Initialize with SQLite
+npx prisma init --datasource-provider sqlite
+
+# Initialize with SQL Server
+npx prisma init --datasource-provider sqlserver
+
+# Initialize with MongoDB
+npx prisma init --datasource-provider mongodb</code></pre>
+        <br/>
+        <li><b>Specify custom URL:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma init --url "postgresql://user:pass@localhost:5432/mydb"</code></pre>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>Starting a new project with Prisma</li>
+            <li>Adding Prisma to existing project</li>
+            <li>First command you run when setting up Prisma</li>
+        </ul>
+        <br/>
+        <li><b>After init, you should:</b></li>
+        <ol>
+            <li>Update <code>DATABASE_URL</code> in <code>.env</code></li>
+            <li>Define your models in <code>schema.prisma</code></li>
+            <li>Run <code>prisma migrate dev</code> or <code>prisma db push</code></li>
+        </ol>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma generate: Generate Prisma Client</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Generate or update Prisma Client based on your schema.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma generate</code></pre>
+        <br/>
+        <li><b>What it does:</b></li>
+        <ul>
+            <li>Reads <code>prisma/schema.prisma</code></li>
+            <li>Generates TypeScript types for your models</li>
+            <li>Creates type-safe client API</li>
+            <li>Outputs to <code>node_modules/@prisma/client</code> (by default)</li>
+        </ul>
+        <br/>
+        <li><b>Generated structure:</b></li>
+<pre><code class="language-plaintext line-numbers">node_modules/
+└── @prisma/
+    └── client/
+        ├── index.d.ts      # TypeScript types
+        ├── index.js        # JavaScript client
+        └── runtime/        # Prisma engine files</code></pre>
+        <br/>
+        <li><b>When to run:</b></li>
+        <ul>
+            <li>After creating or modifying models in <code>schema.prisma</code></li>
+            <li>After pulling changes from version control</li>
+            <li>When Prisma Client types seem out of sync</li>
+            <li><b>Automatically runs</b> after <code>prisma migrate dev</code></li>
+            <li><b>Automatically runs</b> after <code>prisma db push</code></li>
+        </ul>
+        <br/>
+        <li><b>Watch mode (regenerate on schema changes):</b></li>
+<pre><code class="language-bash line-numbers">npx prisma generate --watch
+
+# Watches schema.prisma and regenerates on changes
+# Useful during development</code></pre>
+        <br/>
+        <li><b>Example workflow:</b></li>
+<pre><code class="language-bash line-numbers"># 1. Add a model to schema.prisma
+# model User {
+#   id    Int    @id @default(autoincrement())
+#   email String @unique
+# }
+
+# 2. Generate client
+npx prisma generate
+
+# 3. Now you can use it in code
+# const user = await prisma.user.create({ ... })</code></pre>
+        <br/>
+        <li><b>Custom output location:</b></li>
+<pre><code class="language-prisma line-numbers">generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}</code></pre>
+<pre><code class="language-bash line-numbers">npx prisma generate
+
+# Generates to src/generated/client instead of node_modules</code></pre>
+        <br/>
+        <li><b>Common issues:</b></li>
+<pre><code class="language-plaintext line-numbers"># Error: "Cannot find module '@prisma/client'"
+# Solution: Run npx prisma generate
+
+# Error: "Type 'X' does not exist on PrismaClient"
+# Solution: You added a model but didn't regenerate
+# Run: npx prisma generate</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma migrate dev: Development Migrations</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Create and apply migrations during development.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma migrate dev</code></pre>
+        <br/>
+        <li><b>What it does (in order):</b></li>
+        <ol>
+            <li>Detects schema changes</li>
+            <li>Creates a new migration file (SQL)</li>
+            <li>Prompts you to name the migration</li>
+            <li>Applies migration to database</li>
+            <li>Runs <code>prisma generate</code> automatically</li>
+            <li>Runs seed script (if configured)</li>
+        </ol>
+        <br/>
+        <li><b>Example workflow:</b></li>
+<pre><code class="language-bash line-numbers"># 1. Add User model to schema.prisma
+# 2. Run migrate dev
+npx prisma migrate dev
+
+# Output:
+# Prisma schema loaded from prisma/schema.prisma
+# Datasource "db": PostgreSQL database "mydb"
+#
+# ✔ Enter a name for the new migration: … add_user_model
+#
+# The following migration(s) have been created and applied:
+#
+# migrations/
+#   └─ 20250115120000_add_user_model/
+#       └─ migration.sql
+#
+# Your database is now in sync with your schema.
+#
+# ✔ Generated Prisma Client</code></pre>
+        <br/>
+        <li><b>Migration file created:</b></li>
+<pre><code class="language-plaintext line-numbers">prisma/
+└── migrations/
+    └── 20250115120000_add_user_model/
+        └── migration.sql</code></pre>
+        <br/>
+        <li><b>migration.sql content:</b></li>
+<pre><code class="language-sql line-numbers">-- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "email" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");</code></pre>
+        <br/>
+        <li><b>Name the migration:</b></li>
+<pre><code class="language-bash line-numbers"># Interactive (prompts for name)
+npx prisma migrate dev
+
+# With name flag
+npx prisma migrate dev --name add_user_model</code></pre>
+        <br/>
+        <li><b>Skip seed:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma migrate dev --skip-seed</code></pre>
+        <br/>
+        <li><b>Skip generate:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma migrate dev --skip-generate</code></pre>
+        <br/>
+        <li><b>Create migration without applying:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma migrate dev --create-only
+
+# Creates migration file but doesn't apply it
+# Useful for reviewing/editing SQL before applying</code></pre>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>Development environment only</li>
+            <li>After modifying <code>schema.prisma</code></li>
+            <li>Creates migration history</li>
+            <li>Safe for team collaboration (commit migrations to git)</li>
+        </ul>
+        <br/>
+        <li><b>Do NOT use in production</b> - use <code>prisma migrate deploy</code> instead.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma migrate deploy: Production Migrations</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Apply pending migrations in production/staging.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma migrate deploy</code></pre>
+        <br/>
+        <li><b>What it does:</b></li>
+        <ul>
+            <li>Checks which migrations have been applied</li>
+            <li>Applies any pending migrations</li>
+            <li>Does NOT create new migrations</li>
+            <li>Does NOT prompt for input (non-interactive)</li>
+            <li>Does NOT run generate or seed</li>
+        </ul>
+        <br/>
+        <li><b>Difference from migrate dev:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>migrate dev</th>
+            <th>migrate deploy</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Environment</td>
+            <td>Development</td>
+            <td>Production/Staging</td>
+        </tr>
+        <tr>
+            <td>Creates migrations</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Applies migrations</td>
+            <td>Yes</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td>Interactive</td>
+            <td>Yes (prompts for name)</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Runs generate</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Runs seed</td>
+            <td>Yes (optional)</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Uses shadow DB</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Typical production workflow:</b></li>
+<pre><code class="language-bash line-numbers"># In CI/CD pipeline or deployment script
+
+# 1. Install dependencies
+npm ci
+
+# 2. Apply migrations
+npx prisma migrate deploy
+
+# 3. Generate client
+npx prisma generate
+
+# 4. Start application
+npm start</code></pre>
+        <br/>
+        <li><b>Example output:</b></li>
+<pre><code class="language-plaintext line-numbers">Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "production_db"
+
+2 migrations found in prisma/migrations
+
+Applying migration `20250115120000_add_user_model`
+Applying migration `20240116080000_add_posts`
+
+The following migrations have been applied:
+
+migrations/
+  └─ 20250115120000_add_user_model/
+      └─ migration.sql
+  └─ 20240116080000_add_posts/
+      └─ migration.sql
+
+All migrations have been successfully applied.</code></pre>
+        <br/>
+        <li><b>Docker example:</b></li>
+<pre><code class="language-dockerfile line-numbers">FROM node:18
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+
+COPY prisma ./prisma
+COPY . .
+
+# Run migrations on container start
+CMD npx prisma migrate deploy && npm start</code></pre>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>Production deployments</li>
+            <li>Staging environments</li>
+            <li>CI/CD pipelines</li>
+            <li>After pulling migrations from git</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma migrate reset: Reset Database</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Drop database, recreate it, and apply all migrations.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma migrate reset</code></pre>
+        <br/>
+        <li><b>What it does (in order):</b></li>
+        <ol>
+            <li>Drops the database</li>
+            <li>Creates a new database</li>
+            <li>Applies all migrations from <code>prisma/migrations/</code></li>
+            <li>Runs <code>prisma generate</code></li>
+            <li>Runs seed script (if configured)</li>
+        </ol>
+        <br/>
+        <li><b>⚠️ WARNING: Destroys all data!</b></li>
+<pre><code class="language-plaintext line-numbers"># Prompts for confirmation:
+# ? Are you sure you want to reset your database?
+# All data will be lost. › (y/N)</code></pre>
+        <br/>
+        <li><b>Skip confirmation:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma migrate reset --force
+
+# Dangerous! Resets without asking
+# Use in automated scripts only</code></pre>
+        <br/>
+        <li><b>Skip seed:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma migrate reset --skip-seed</code></pre>
+        <br/>
+        <li><b>Skip generate:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma migrate reset --skip-generate</code></pre>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>Development environment only</li>
+            <li>When database is in inconsistent state</li>
+            <li>To start fresh with clean data</li>
+            <li>After major schema changes</li>
+            <li>For testing purposes</li>
+        </ul>
+        <br/>
+        <li><b>NEVER use in production!</b></li>
+        <br/>
+        <li><b>Example workflow:</b></li>
+<pre><code class="language-bash line-numbers"># Made a mistake in migration, want to start over
+
+# 1. Delete bad migration file
+rm -rf prisma/migrations/20250115120000_bad_migration
+
+# 2. Reset database
+npx prisma migrate reset
+
+# 3. Fix schema.prisma
+
+# 4. Create correct migration
+npx prisma migrate dev --name correct_migration</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma migrate status: Check Migration Status</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Check which migrations have been applied.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma migrate status</code></pre>
+        <br/>
+        <li><b>Example output (all applied):</b></li>
+<pre><code class="language-plaintext line-numbers">Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "mydb"
+
+Status
+- 3 migrations applied
+- No pending migrations
+
+Database schema is up to date!</code></pre>
+        <br/>
+        <li><b>Example output (pending migrations):</b></li>
+<pre><code class="language-plaintext line-numbers">Status
+- 2 migrations applied
+- 1 pending migration
+
+Pending migrations:
+
+migrations/
+  └─ 20240116080000_add_posts/
+      └─ migration.sql
+
+To apply pending migrations, run:
+  npx prisma migrate deploy</code></pre>
+        <br/>
+        <li><b>Example output (drift detected):</b></li>
+<pre><code class="language-plaintext line-numbers">Status
+- 3 migrations applied
+- Database schema drift detected
+
+The database schema is not in sync with your Prisma schema.
+Run `npx prisma migrate dev` to update your database.</code></pre>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>Before deploying to production</li>
+            <li>Debugging migration issues</li>
+            <li>Checking if database is in sync</li>
+            <li>In CI/CD to verify migrations</li>
+        </ul>
+        <br/>
+        <li><b>CI/CD example:</b></li>
+<pre><code class="language-yaml line-numbers"># GitHub Actions
+- name: Check migration status
+  run: npx prisma migrate status
+
+- name: Apply migrations if needed
+  run: npx prisma migrate deploy</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma db push: Push Schema Without Migrations</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Sync database with schema without creating migration files.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma db push</code></pre>
+        <br/>
+        <li><b>What it does:</b></li>
+        <ul>
+            <li>Reads <code>schema.prisma</code></li>
+            <li>Compares with current database schema</li>
+            <li>Applies changes directly to database</li>
+            <li>Does NOT create migration files</li>
+            <li>Runs <code>prisma generate</code> automatically</li>
+        </ul>
+        <br/>
+        <li><b>Difference from migrate dev:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>migrate dev</th>
+            <th>db push</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Creates migrations</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Migration history</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Can rollback</td>
+            <td>Yes (delete migration)</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Production ready</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Speed</td>
+            <td>Slower</td>
+            <td>Faster</td>
+        </tr>
+        <tr>
+            <td>Best for</td>
+            <td>Production workflow</td>
+            <td>Prototyping</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Example workflow:</b></li>
+<pre><code class="language-bash line-numbers"># 1. Add model to schema.prisma
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+}
+
+# 2. Push to database
+npx prisma db push
+
+# Output:
+# The following changes will be applied:
+#
+# [+] Table: User
+# [+] Column: User.id
+# [+] Column: User.email
+# [+] Index: User.email (unique)
+#
+# ✔ Database synchronized with Prisma schema.
+# ✔ Generated Prisma Client</code></pre>
+        <br/>
+        <li><b>Accept data loss:</b></li>
+<pre><code class="language-bash line-numbers"># If schema change would lose data, Prisma warns you
+npx prisma db push --accept-data-loss
+
+# Forces changes even if data will be lost</code></pre>
+        <br/>
+        <li><b>Skip generate:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma db push --skip-generate</code></pre>
+        <br/>
+        <li><b>Force reset:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma db push --force-reset
+
+# Drops and recreates database before pushing
+# Like migrate reset but without migrations</code></pre>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>Rapid prototyping</li>
+            <li>Early development (schema still changing frequently)</li>
+            <li>Personal projects</li>
+            <li>When you don't need migration history</li>
+        </ul>
+        <br/>
+        <li><b>When NOT to use:</b></li>
+        <ul>
+            <li>Production databases</li>
+            <li>Team projects (others need migrations)</li>
+            <li>When you need to rollback changes</li>
+            <li>When you need migration history</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma db pull: Introspect Existing Database</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Generate Prisma schema from existing database.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma db pull</code></pre>
+        <br/>
+        <li><b>What it does:</b></li>
+        <ul>
+            <li>Connects to database</li>
+            <li>Reads database schema (tables, columns, relations)</li>
+            <li>Generates or updates <code>schema.prisma</code></li>
+            <li>Does NOT modify database</li>
+        </ul>
+        <br/>
+        <li><b>Use case: Adding Prisma to existing project</b></li>
+<pre><code class="language-bash line-numbers"># 1. You have existing database with tables
+
+# 2. Initialize Prisma
+npx prisma init
+
+# 3. Update DATABASE_URL in .env
+
+# 4. Pull schema from database
+npx prisma db pull
+
+# 5. schema.prisma now has your models!
+
+# 6. Generate client
+npx prisma generate</code></pre>
+        <br/>
+        <li><b>Example: Before db pull</b></li>
+<pre><code class="language-prisma line-numbers">// schema.prisma (empty)
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}</code></pre>
+        <br/>
+        <li><b>Database has:</b></li>
+<pre><code class="language-sql line-numbers">-- users table
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(255) NOT NULL
+);
+
+-- posts table
+CREATE TABLE posts (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  user_id INTEGER REFERENCES users(id)
+);</code></pre>
+        <br/>
+        <li><b>After db pull:</b></li>
+<pre><code class="language-prisma line-numbers">// schema.prisma (generated)
+model users {
+  id    Int     @id @default(autoincrement())
+  email String  @unique @db.VarChar(255)
+  name  String  @db.VarChar(255)
+  posts posts[]
+}
+
+model posts {
+  id      Int    @id @default(autoincrement())
+  title   String @db.VarChar(255)
+  user_id Int
+  users   users  @relation(fields: [user_id], references: [id])
+}</code></pre>
+        <br/>
+        <li><b>Force overwrite:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma db pull --force
+
+# Overwrites schema.prisma without asking
+# Loses any manual changes you made</code></pre>
+        <br/>
+        <li><b>Print to stdout (don't modify file):</b></li>
+<pre><code class="language-bash line-numbers">npx prisma db pull --print
+
+# Shows what would be generated without writing to file</code></pre>
+        <br/>
+        <li><b>After pulling, you typically:</b></li>
+        <ol>
+            <li>Rename models (e.g., <code>users</code> → <code>User</code>)</li>
+            <li>Rename fields (e.g., <code>user_id</code> → <code>userId</code>)</li>
+            <li>Add <code>@@map()</code> to preserve database names</li>
+        </ol>
+<pre><code class="language-prisma line-numbers">// Cleaned up version
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique @db.VarChar(255)
+  name  String @db.VarChar(255)
+  posts Post[]
+
+  @@map("users")
+}
+
+model Post {
+  id      Int    @id @default(autoincrement())
+  title   String @db.VarChar(255)
+  userId  Int    @map("user_id")
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@map("posts")
+}</code></pre>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>Adding Prisma to existing project</li>
+            <li>Syncing schema after manual database changes</li>
+            <li>Working with legacy databases</li>
+            <li>Database managed by another tool</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma db seed: Seed Database</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Populate database with initial data.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma db seed</code></pre>
+        <br/>
+        <li><b>Setup: Configure seed script in package.json</b></li>
+<pre><code class="language-json line-numbers">{
+  "name": "my-project",
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  }
+}</code></pre>
+        <br/>
+        <li><b>Create seed file:</b></li>
+<pre><code class="language-typescript line-numbers">// prisma/seed.ts
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+async function main() {
+  // Create users
+  const alice = await prisma.user.create({
+    data: {
+      email: 'alice@example.com',
+      name: 'Alice'
+    }
+  })
+
+  const bob = await prisma.user.create({
+    data: {
+      email: 'bob@example.com',
+      name: 'Bob'
+    }
+  })
+
+  // Create posts
+  await prisma.post.create({
+    data: {
+      title: 'First Post',
+      content: 'Hello World',
+      authorId: alice.id
+    }
+  })
+
+  console.log('Database seeded successfully')
+}
+
+main()
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })</code></pre>
+        <br/>
+        <li><b>Run seed:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma db seed
+
+# Output:
+# Running seed command `ts-node prisma/seed.ts` ...
+# Database seeded successfully
+#
+# The seed command has been executed.</code></pre>
+        <br/>
+        <li><b>Seed runs automatically after:</b></li>
+        <ul>
+            <li><code>prisma migrate dev</code></li>
+            <li><code>prisma migrate reset</code></li>
+        </ul>
+        <br/>
+        <li><b>JavaScript seed file:</b></li>
+<pre><code class="language-json line-numbers">{
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  }
+}</code></pre>
+        <br/>
+        <li><b>Using different package managers:</b></li>
+<pre><code class="language-json line-numbers">{
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"    // Using tsx
+    "seed": "bun prisma/seed.ts"    // Using bun
+    "seed": "deno run prisma/seed.ts" // Using deno
+  }
+}</code></pre>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>Setting up development environment</li>
+            <li>Creating test data</li>
+            <li>Populating reference data (countries, categories, etc.)</li>
+            <li>After database reset</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma studio: Visual Database Editor</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Open browser-based GUI to view and edit database.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma studio</code></pre>
+        <br/>
+        <li><b>What it does:</b></li>
+        <ul>
+            <li>Starts local web server</li>
+            <li>Opens browser at <code>http://localhost:5555</code></li>
+            <li>Shows all models as tables</li>
+            <li>Allows viewing, creating, editing, deleting records</li>
+        </ul>
+        <br/>
+        <li><b>Example output:</b></li>
+<pre><code class="language-plaintext line-numbers">Prisma Studio is up on http://localhost:5555</code></pre>
+        <br/>
+        <li><b>Custom port:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma studio --port 3000
+
+# Opens on http://localhost:3000</code></pre>
+        <br/>
+        <li><b>Custom browser:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma studio --browser firefox
+npx prisma studio --browser chrome</code></pre>
+        <br/>
+        <li><b>Features in Prisma Studio:</b></li>
+        <ul>
+            <li>Browse all tables</li>
+            <li>Filter records</li>
+            <li>Sort by columns</li>
+            <li>Create new records</li>
+            <li>Edit existing records</li>
+            <li>Delete records</li>
+            <li>View relations</li>
+            <li>Navigate between related records</li>
+        </ul>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>Quickly viewing data during development</li>
+            <li>Debugging data issues</li>
+            <li>Manually creating test data</li>
+            <li>Verifying migrations worked</li>
+            <li>Exploring database structure</li>
+        </ul>
+        <br/>
+        <li><b>Stop Prisma Studio:</b></li>
+<pre><code class="language-bash line-numbers"># Press Ctrl+C in terminal</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma format: Format Schema File</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Auto-format <code>schema.prisma</code> file.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma format</code></pre>
+        <br/>
+        <li><b>What it does:</b></li>
+        <ul>
+            <li>Formats indentation</li>
+            <li>Aligns field types</li>
+            <li>Sorts attributes</li>
+            <li>Validates syntax</li>
+        </ul>
+        <br/>
+        <li><b>Before formatting:</b></li>
+<pre><code class="language-prisma line-numbers">model User {
+id Int @id @default(autoincrement())
+email String @unique
+  name String
+}</code></pre>
+        <br/>
+        <li><b>After formatting:</b></li>
+<pre><code class="language-prisma line-numbers">model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  name  String
+}</code></pre>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>After editing schema manually</li>
+            <li>Before committing to version control</li>
+            <li>To ensure consistent formatting</li>
+        </ul>
+        <br/>
+        <li><b>In VS Code, you can enable format on save.</b></li>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma validate: Validate Schema</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Check schema for errors without applying changes.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma validate</code></pre>
+        <br/>
+        <li><b>Example output (valid schema):</b></li>
+<pre><code class="language-plaintext line-numbers">Prisma schema loaded from prisma/schema.prisma
+
+✔ The schema is valid.</code></pre>
+        <br/>
+        <li><b>Example output (invalid schema):</b></li>
+<pre><code class="language-plaintext line-numbers">Error: Schema parsing
+  error: Error validating model "User": Field "email" is missing the @unique attribute.
+
+  --> schema.prisma:5
+   |
+ 5 |   email String
+   |</code></pre>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>In CI/CD pipelines</li>
+            <li>Before committing changes</li>
+            <li>After manually editing schema</li>
+            <li>To check for errors without applying</li>
+        </ul>
+        <br/>
+        <li><b>CI/CD example:</b></li>
+<pre><code class="language-yaml line-numbers"># GitHub Actions
+- name: Validate Prisma schema
+  run: npx prisma validate</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>prisma version: Show Versions</li>
+    <br/>
+    <ul>
+        <li><b>Purpose:</b> Display Prisma CLI and dependency versions.</li>
+        <br/>
+        <li><b>Basic syntax:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma version</code></pre>
+        <br/>
+        <li><b>Example output:</b></li>
+<pre><code class="language-plaintext line-numbers">prisma               : 5.8.0
+@prisma/client       : 5.8.0
+Current platform     : darwin-arm64
+Query Engine (Node-API) : libquery-engine 78caf6feeaed953168c64e15a249c3e9a033ebe2
+Migration Engine     : migration-engine-cli 78caf6feeaed953168c64e15a249c3e9a033ebe2
+Introspection Engine : introspection-core 78caf6feeaed953168c64e15a249c3e9a033ebe2
+Format Wasm          : @prisma/prisma-fmt-wasm 5.8.0-44.78caf6feeaed953168c64e15a249c3e9a033ebe2
+Default Engines Hash : 78caf6feeaed953168c64e15a249c3e9a033ebe2
+Studio               : 0.499.0</code></pre>
+        <br/>
+        <li><b>Short version:</b></li>
+<pre><code class="language-bash line-numbers">npx prisma --version
+# or
+npx prisma -v
+
+# Output: prisma: 5.8.0</code></pre>
+        <br/>
+        <li><b>When to use:</b></li>
+        <ul>
+            <li>Debugging version mismatches</li>
+            <li>Reporting issues</li>
+            <li>Checking if update needed</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Workflows</li>
+    <br/>
+    <ul>
+        <li><b>Starting new project:</b></li>
+<pre><code class="language-bash line-numbers"># 1. Initialize Prisma
+npx prisma init
+
+# 2. Update DATABASE_URL in .env
+
+# 3. Add models to schema.prisma
+
+# 4. Create first migration
+npx prisma migrate dev --name init
+
+# 5. Open Studio to verify
+npx prisma studio</code></pre>
+        <br/>
+        <li><b>Adding new model:</b></li>
+<pre><code class="language-bash line-numbers"># 1. Add model to schema.prisma
+
+# 2. Create migration
+npx prisma migrate dev --name add_posts
+
+# 3. Use in code (client auto-generated)</code></pre>
+        <br/>
+        <li><b>Joining existing project:</b></li>
+<pre><code class="language-bash line-numbers"># 1. Clone repository
+git clone <repo>
+
+# 2. Install dependencies
+npm install
+
+# 3. Set up .env with DATABASE_URL
+
+# 4. Apply migrations
+npx prisma migrate deploy
+
+# 5. Generate client
+npx prisma generate
+
+# 6. Seed database (optional)
+npx prisma db seed</code></pre>
+        <br/>
+        <li><b>Prototyping (fast iteration):</b></li>
+<pre><code class="language-bash line-numbers"># 1. Add/modify models in schema.prisma
+
+# 2. Push directly to database
+npx prisma db push
+
+# 3. Test in Studio
+npx prisma studio
+
+# 4. Repeat until satisfied
+
+# 5. Later, create proper migrations
+npx prisma migrate dev --name finalized_schema</code></pre>
+        <br/>
+        <li><b>Production deployment:</b></li>
+<pre><code class="language-bash line-numbers"># In deployment script or Dockerfile
+
+# 1. Install dependencies
+npm ci
+
+# 2. Apply migrations
+npx prisma migrate deploy
+
+# 3. Generate client
+npx prisma generate
+
+# 4. Start application
+npm start</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Command Comparison Cheat Sheet</li>
+    <br/>
+    <ul>
+<table>
+    <thead>
+        <tr>
+            <th>Command</th>
+            <th>Purpose</th>
+            <th>Environment</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>init</code></td>
+            <td>Set up Prisma</td>
+            <td>Once per project</td>
+        </tr>
+        <tr>
+            <td><code>generate</code></td>
+            <td>Update Prisma Client</td>
+            <td>After schema changes</td>
+        </tr>
+        <tr>
+            <td><code>migrate dev</code></td>
+            <td>Create & apply migrations</td>
+            <td>Development</td>
+        </tr>
+        <tr>
+            <td><code>migrate deploy</code></td>
+            <td>Apply migrations</td>
+            <td>Production</td>
+        </tr>
+        <tr>
+            <td><code>migrate reset</code></td>
+            <td>Reset database</td>
+            <td>Development only</td>
+        </tr>
+        <tr>
+            <td><code>migrate status</code></td>
+            <td>Check migration state</td>
+            <td>Any</td>
+        </tr>
+        <tr>
+            <td><code>db push</code></td>
+            <td>Sync without migrations</td>
+            <td>Prototyping</td>
+        </tr>
+        <tr>
+            <td><code>db pull</code></td>
+            <td>Generate schema from DB</td>
+            <td>Existing databases</td>
+        </tr>
+        <tr>
+            <td><code>db seed</code></td>
+            <td>Add initial data</td>
+            <td>Development/testing</td>
+        </tr>
+        <tr>
+            <td><code>studio</code></td>
+            <td>Visual editor</td>
+            <td>Development</td>
+        </tr>
+        <tr>
+            <td><code>format</code></td>
+            <td>Format schema</td>
+            <td>Any</td>
+        </tr>
+        <tr>
+            <td><code>validate</code></td>
+            <td>Check schema</td>
+            <td>Any</td>
+        </tr>
+        <tr>
+            <td><code>version</code></td>
+            <td>Show versions</td>
+            <td>Any</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Quick Reference</li>
+    <br/>
+    <ul>
+        <li><b>Most commonly used commands:</b></li>
+<pre><code class="language-bash line-numbers"># Start new project
+npx prisma init
+
+# After schema changes (development)
+npx prisma migrate dev
+
+# Deploy to production
+npx prisma migrate deploy
+
+# Quick prototyping
+npx prisma db push
+
+# View data visually
+npx prisma studio
+
+# Update client types
+npx prisma generate</code></pre>
+    </ul>
+    <br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
