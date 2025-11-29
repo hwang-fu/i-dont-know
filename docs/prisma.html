@@ -158,6 +158,8 @@
         <li><a href="#prisma-relationships">Understanding Relationships</a></li>
         <li><a href="#prisma-read-operations">Reading Data</a></li>
         <li><a href="#prisma-create-operations">Creating Data</a></li>
+        <li><a href="#prisma-update-operations">Upadting Data</a></li>
+        <li><a href="#prisma-delete-operations">Deleting Data</a></li>
     </ol>
 </nav>
 <hr/>
@@ -7017,7 +7019,1477 @@ await prisma.user.create({
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="prisma-update-operations">Updating Data with Prisma</h3>
+<ol>
 
+    <li>Understanding Update Syntax Structure</li>
+    <br/>
+    <ul>
+        <li>Prisma provides several update methods:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Updates</th>
+            <th>Returns</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>update()</code></td>
+            <td>Single record (must exist)</td>
+            <td>Updated record or throws error</td>
+        </tr>
+        <tr>
+            <td><code>updateMany()</code></td>
+            <td>Multiple records</td>
+            <td><code>{ count: n }</code></td>
+        </tr>
+        <tr>
+            <td><code>upsert()</code></td>
+            <td>Update if exists, create if not</td>
+            <td>Updated or created record</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Basic <code>update()</code> structure:</li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL_NAME.update({
+  where: {
+    // How to find the record (must use unique field)
+  },
+  data: {
+    // What to update
+  },
+  select: {
+    // Optional: which fields to return
+  },
+  include: {
+    // Optional: include related data in response
+  }
+})</code></pre>
+        <br/>
+        <li>Only <code>where</code> and <code>data</code> are required.</li>
+        <br/>
+        <li>Example schema for this chapter:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  age       Int?
+  role      Role     @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profile   Profile?
+  posts     Post[]
+}
+
+model Profile {
+  id     Int    @id @default(autoincrement())
+  bio    String
+  userId Int    @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  views     Int      @default(0)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  tags      Tag[]
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[]
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The where Clause: Finding Records to Update</li>
+    <br/>
+    <ul>
+        <li><b>Rule:</b> The <code>where</code> clause in <code>update()</code> MUST use a <b>unique field</b>.</li>
+        <br/>
+        <li><b>Valid unique fields:</b></li>
+        <ul>
+            <li>Fields marked with <code>@id</code></li>
+            <li>Fields marked with <code>@unique</code></li>
+            <li>Combinations marked with <code>@@unique</code></li>
+        </ul>
+        <br/>
+        <li><b>Update by ID:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: {
+    id: 1  // id is unique (@id)
+  },
+  data: {
+    name: "Alice Updated"
+  }
+})</code></pre>
+        <br/>
+        <li><b>Update by unique email:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: {
+    email: "alice@example.com"  // email is @unique
+  },
+  data: {
+    name: "Alice Updated"
+  }
+})</code></pre>
+        <br/>
+        <li><b>Update by composite unique:</b></li>
+<pre><code class="language-prisma line-numbers">model UserRole {
+  userId Int
+  roleId Int
+
+  @@unique([userId, roleId])
+}</code></pre>
+<pre><code class="language-typescript line-numbers">await prisma.userRole.update({
+  where: {
+    userId_roleId: {  // Composite unique field
+      userId: 1,
+      roleId: 2
+    }
+  },
+  data: {
+    // updates
+  }
+})</code></pre>
+        <br/>
+        <li><b>Cannot use non-unique fields:</b></li>
+<pre><code class="language-typescript line-numbers">// ✗ Error - name is not unique
+await prisma.user.update({
+  where: {
+    name: "Alice"  // Error!
+  },
+  data: { age: 26 }
+})
+
+// Use updateMany for non-unique fields (covered later)</code></pre>
+        <br/>
+        <li><b>If record not found, throws error:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 9999 },  // Doesn't exist
+  data: { name: "Updated" }
+})
+
+// Throws: PrismaClientKnownRequestError
+// Code: P2025
+// Message: "Record to update not found"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The data Clause: Basic Field Updates</li>
+    <br/>
+    <ul>
+        <li>The <code>data</code> clause specifies what to update.</li>
+        <br/>
+        <li><b>Set field to new value:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    name: "New Name"  // Replace old value with new value
+  }
+})</code></pre>
+        <br/>
+        <li><b>Update multiple fields:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    name: "Alice",
+    age: 26,
+    isActive: false
+  }
+})</code></pre>
+        <br/>
+        <li><b>Set field to null (only for optional fields):</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    age: null  // Only works if age is Int? (optional)
+  }
+})</code></pre>
+        <br/>
+        <li><b>Update with different types:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    name: "Alice",          // String
+    age: 26,                // Number
+    isActive: true,         // Boolean
+    role: "ADMIN",          // Enum
+    updatedAt: new Date()   // DateTime (usually auto-updated)
+  }
+})</code></pre>
+        <br/>
+        <li><b>Cannot update auto-generated fields:</b></li>
+<pre><code class="language-typescript line-numbers">// ✗ Error - cannot update @id field
+data: {
+  id: 5  // Error!
+}
+
+// ✗ Usually don't need to update @updatedAt (auto-updates)
+// But technically allowed:
+data: {
+  updatedAt: new Date()  // Allowed but unnecessary
+}</code></pre>
+        <br/>
+        <li><b>Fields not mentioned remain unchanged:</b></li>
+<pre><code class="language-typescript line-numbers">// Before update:
+// { id: 1, name: "Alice", age: 25, email: "alice@example.com" }
+
+await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    age: 26  // Only update age
+  }
+})
+
+// After update:
+// { id: 1, name: "Alice", age: 26, email: "alice@example.com" }
+// name and email unchanged</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Atomic Number Operations</li>
+    <br/>
+    <ul>
+        <li>For numeric fields, you can perform <b>atomic operations</b> instead of setting values.</li>
+        <br/>
+        <li><b>Available operations:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Operation</th>
+            <th>Syntax</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Increment</td>
+            <td><code>{ increment: n }</code></td>
+            <td>Add n to current value</td>
+        </tr>
+        <tr>
+            <td>Decrement</td>
+            <td><code>{ decrement: n }</code></td>
+            <td>Subtract n from current value</td>
+        </tr>
+        <tr>
+            <td>Multiply</td>
+            <td><code>{ multiply: n }</code></td>
+            <td>Multiply current value by n</td>
+        </tr>
+        <tr>
+            <td>Divide</td>
+            <td><code>{ divide: n }</code></td>
+            <td>Divide current value by n</td>
+        </tr>
+        <tr>
+            <td>Set</td>
+            <td><code>value</code> or <code>{ set: value }</code></td>
+            <td>Replace with new value</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Increment:</b></li>
+<pre><code class="language-typescript line-numbers">// Before: views = 100
+await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    views: {
+      increment: 1  // Add 1
+    }
+  }
+})
+// After: views = 101</code></pre>
+        <br/>
+        <li><b>Decrement:</b></li>
+<pre><code class="language-typescript line-numbers">// Before: age = 25
+await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    age: {
+      decrement: 1  // Subtract 1
+    }
+  }
+})
+// After: age = 24</code></pre>
+        <br/>
+        <li><b>Multiply:</b></li>
+<pre><code class="language-typescript line-numbers">// Before: views = 100
+await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    views: {
+      multiply: 2  // Double it
+    }
+  }
+})
+// After: views = 200</code></pre>
+        <br/>
+        <li><b>Divide:</b></li>
+<pre><code class="language-typescript line-numbers">// Before: views = 100
+await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    views: {
+      divide: 2  // Halve it
+    }
+  }
+})
+// After: views = 50</code></pre>
+        <br/>
+        <li><b>Example: Race condition with regular set</b></li>
+<pre><code class="language-typescript line-numbers">// ✗ Bad - race condition possible
+// User A reads views: 100
+const post = await prisma.post.findUnique({ where: { id: 1 } })
+// User B reads views: 100
+// User A updates: 100 + 1 = 101
+await prisma.post.update({
+  where: { id: 1 },
+  data: { views: post.views + 1 }
+})
+// User B updates: 100 + 1 = 101 (should be 102!)
+// Lost one increment!
+
+// ✓ Good - atomic operation, no race condition
+await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    views: { increment: 1 }
+  }
+})
+// Database handles it atomically</code></pre>
+        <br/>
+        <li><b>Combine with regular updates:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    title: "Updated Title",  // Regular update
+    views: { increment: 1 }   // Atomic operation
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Updating Relations: Connect and Disconnect</li>
+    <br/>
+    <ul>
+        <li>When updating relations, you have several operations:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operation</th>
+            <th>Effect</th>
+            <th>Syntax Pattern</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>set</code></td>
+            <td>Replace all relations</td>
+            <td><code>relation: { set: [...] }</code></td>
+        </tr>
+        <tr>
+            <td><code>connect</code></td>
+            <td>Add relations</td>
+            <td><code>relation: { connect: [...] }</code></td>
+        </tr>
+        <tr>
+            <td><code>disconnect</code></td>
+            <td>Remove relations</td>
+            <td><code>relation: { disconnect: [...] }</code></td>
+        </tr>
+        <tr>
+            <td><code>create</code></td>
+            <td>Create and connect new records</td>
+            <td><code>relation: { create: [...] }</code></td>
+        </tr>
+        <tr>
+            <td><code>delete</code></td>
+            <td>Disconnect and delete records</td>
+            <td><code>relation: { delete: [...] }</code></td>
+        </tr>
+        <tr>
+            <td><code>update</code></td>
+            <td>Update related records</td>
+            <td><code>relation: { update: {...} }</code></td>
+        </tr>
+        <tr>
+            <td><code>upsert</code></td>
+            <td>Update if exists, create if not</td>
+            <td><code>relation: { upsert: {...} }</code></td>
+        </tr>
+        <tr>
+            <td><code>connectOrCreate</code></td>
+            <td>Connect if exists, create if not</td>
+            <td><code>relation: { connectOrCreate: {...} }</code></td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Updating One-to-Many Relations</li>
+    <br/>
+    <ul>
+        <li>Scenario: User has many Posts.</li>
+        <br/>
+        <li><b>Connect new posts to user:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    posts: {
+      connect: [
+        { id: 5 },  // Connect existing post 5
+        { id: 6 }   // Connect existing post 6
+      ]
+    }
+  }
+})
+
+// Posts 5 and 6 now have authorId = 1
+// User's existing posts are NOT affected</code></pre>
+        <br/>
+        <li><b>Disconnect posts from user:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    posts: {
+      disconnect: [
+        { id: 2 },  // Disconnect post 2
+        { id: 3 }   // Disconnect post 3
+      ]
+    }
+  }
+})
+
+// Posts 2 and 3 now have authorId = null (if optional)
+// or throws error if authorId is required</code></pre>
+        <br/>
+        <li><b>Set (replace all relations):</b></li>
+<pre><code class="language-typescript line-numbers">// User currently has posts: [1, 2, 3, 4]
+
+await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    posts: {
+      set: [
+        { id: 5 },
+        { id: 6 }
+      ]
+    }
+  }
+})
+
+// User now has posts: [5, 6]
+// Posts 1, 2, 3, 4 are disconnected</code></pre>
+        <br/>
+        <li><b>Create new posts while updating:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    posts: {
+      create: [
+        { title: "New Post 1", content: "Content" },
+        { title: "New Post 2", content: "More content" }
+      ]
+    }
+  }
+})
+
+// Creates 2 new posts and connects them to user
+// Existing posts remain connected</code></pre>
+        <br/>
+        <li><b>Delete related posts:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    posts: {
+      delete: [
+        { id: 2 },  // Delete post 2
+        { id: 3 }   // Delete post 3
+      ]
+    }
+  }
+})
+
+// Posts 2 and 3 are DELETED from database
+// Not just disconnected!</code></pre>
+        <br/>
+        <li><b>Combine multiple operations:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    posts: {
+      create: [
+        { title: "New Post", content: "Content" }
+      ],
+      connect: [
+        { id: 10 }
+      ],
+      disconnect: [
+        { id: 2 }
+      ],
+      delete: [
+        { id: 3 }
+      ]
+    }
+  }
+})
+
+// Creates new post
+// Connects existing post 10
+// Disconnects post 2
+// Deletes post 3</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Updating One-to-One Relations</li>
+    <br/>
+    <ul>
+        <li>Scenario: User has one Profile.</li>
+        <br/>
+        <li><b>Connect a profile:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    profile: {
+      connect: { id: 5 }  // Single object, not array
+    }
+  }
+})
+
+// Profile 5 now has userId = 1</code></pre>
+        <br/>
+        <li><b>Disconnect profile:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    profile: {
+      disconnect: true  // For one-to-one, just true
+    }
+  }
+})
+
+// Profile's userId is set to null (if optional)</code></pre>
+        <br/>
+        <li><b>Create new profile:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    profile: {
+      create: {
+        bio: "New bio"
+      }
+    }
+  }
+})
+
+// Creates new profile connected to user</code></pre>
+        <br/>
+        <li><b>Delete existing profile:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    profile: {
+      delete: true  // For one-to-one, just true
+    }
+  }
+})
+
+// Deletes the user's profile from database</code></pre>
+        <br/>
+        <li><b>Update existing profile:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    profile: {
+      update: {
+        bio: "Updated bio"
+      }
+    }
+  }
+})
+
+// Updates the user's existing profile
+// Throws error if user has no profile</code></pre>
+        <br/>
+        <li><b>Upsert profile (update if exists, create if not):</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    profile: {
+      upsert: {
+        create: {
+          bio: "New bio"
+        },
+        update: {
+          bio: "Updated bio"
+        }
+      }
+    }
+  }
+})
+
+// If user has profile: updates bio
+// If user has no profile: creates one</code></pre>
+        <br/>
+        <li><b>Rule:</b> One-to-one uses <b>single objects</b>, one-to-many uses <b>arrays</b>.</li>
+<pre><code class="language-typescript line-numbers">// One-to-one (User → Profile)
+profile: {
+  connect: { id: 1 }     // Object
+  disconnect: true       // Boolean
+  delete: true           // Boolean
+}
+
+// One-to-many (User → Posts)
+posts: {
+  connect: [{ id: 1 }]   // Array
+  disconnect: [{ id: 1 }] // Array
+  delete: [{ id: 1 }]    // Array
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Updating Many-to-Many Relations</li>
+    <br/>
+    <ul>
+        <li>Scenario: Post has many Tags, Tag has many Posts.</li>
+        <br/>
+        <li><b>Add tags to post:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    tags: {
+      connect: [
+        { id: 1 },
+        { id: 2 }
+      ]
+    }
+  }
+})
+
+// Creates entries in join table
+// Existing tag connections remain</code></pre>
+        <br/>
+        <li><b>Remove tags from post:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    tags: {
+      disconnect: [
+        { id: 1 },
+        { id: 2 }
+      ]
+    }
+  }
+})
+
+// Removes entries from join table
+// Tags themselves are NOT deleted</code></pre>
+        <br/>
+        <li><b>Replace all tags:</b></li>
+<pre><code class="language-typescript line-numbers">// Post currently has tags: [1, 2, 3]
+
+await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    tags: {
+      set: [
+        { id: 4 },
+        { id: 5 }
+      ]
+    }
+  }
+})
+
+// Post now has tags: [4, 5]
+// Tags 1, 2, 3 are disconnected from this post</code></pre>
+        <br/>
+        <li><b>Create and connect new tags:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    tags: {
+      create: [
+        { name: "newtag1" },
+        { name: "newtag2" }
+      ]
+    }
+  }
+})
+
+// Creates 2 new tags and connects them to post</code></pre>
+        <br/>
+        <li><b>Connect by unique field:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    tags: {
+      connect: [
+        { name: "javascript" },  // Connect by unique name
+        { name: "typescript" }
+      ]
+    }
+  }
+})
+
+// Connects to tags with these names (must exist)</code></pre>
+        <br/>
+        <li><b>ConnectOrCreate tags:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    tags: {
+      connectOrCreate: [
+        {
+          where: { name: "javascript" },
+          create: { name: "javascript" }
+        },
+        {
+          where: { name: "newTag" },
+          create: { name: "newTag" }
+        }
+      ]
+    }
+  }
+})
+
+// Connects to "javascript" if exists, creates if not
+// Connects to "newTag" if exists, creates if not</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Updating Nested Relations</li>
+    <br/>
+    <ul>
+        <li>You can update relations of relations (nested updates).</li>
+        <br/>
+        <li><b>Update user's posts' tags:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    posts: {
+      update: [
+        {
+          where: { id: 5 },
+          data: {
+            title: "Updated Title",
+            tags: {
+              connect: [{ id: 1 }]
+            }
+          }
+        }
+      ]
+    }
+  }
+})
+
+// Updates post 5's title
+// Connects tag 1 to post 5</code></pre>
+        <br/>
+        <li><b>Update or create in nested relation:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    profile: {
+      upsert: {
+        create: {
+          bio: "New bio"
+        },
+        update: {
+          bio: "Updated bio"
+        }
+      }
+    },
+    posts: {
+      update: [
+        {
+          where: { id: 3 },
+          data: {
+            published: true
+          }
+        }
+      ]
+    }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Updating from the Foreign Key Side</li>
+    <br/>
+    <ul>
+        <li>When updating from the "many" side, you can set foreign key OR use relation operations.</li>
+        <br/>
+        <li><b>Method 1: Set foreign key directly:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    authorId: 5  // Change author to user 5
+  }
+})</code></pre>
+        <br/>
+        <li><b>Method 2: Use connect:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    author: {
+      connect: { id: 5 }
+    }
+  }
+})
+
+// Same result as Method 1</code></pre>
+        <br/>
+        <li><b>Method 3: Disconnect:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    author: {
+      disconnect: true
+    }
+  }
+})
+
+// Sets authorId to null (only if optional)</code></pre>
+        <br/>
+        <li><b>Rule:</b> Cannot use BOTH foreign key and relation operation.</li>
+<pre><code class="language-typescript line-numbers">// ✗ Error - conflicting
+data: {
+  authorId: 5,
+  author: {
+    connect: { id: 5 }
+  }
+}
+
+// ✓ Choose one
+data: {
+  authorId: 5
+}
+
+// Or
+data: {
+  author: { connect: { id: 5 } }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>updateMany: Updating Multiple Records</li>
+    <br/>
+    <ul>
+        <li><code>updateMany()</code> updates all records matching criteria.</li>
+        <br/>
+        <li><b>Syntax structure:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL_NAME.updateMany({
+  where: {
+    // Filter criteria (can use ANY fields, not just unique)
+  },
+  data: {
+    // What to update
+  }
+})</code></pre>
+        <br/>
+        <li><b>Key differences from update():</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>update()</th>
+            <th>updateMany()</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>where clause</td>
+            <td>Must use unique field</td>
+            <td>Can use any field(s)</td>
+        </tr>
+        <tr>
+            <td>Records affected</td>
+            <td>Exactly one (or error)</td>
+            <td>Zero or more</td>
+        </tr>
+        <tr>
+            <td>Return value</td>
+            <td>Updated record</td>
+            <td><code>{ count: n }</code></td>
+        </tr>
+        <tr>
+            <td>Relation operations</td>
+            <td>Supported</td>
+            <td>NOT supported</td>
+        </tr>
+        <tr>
+            <td>select/include</td>
+            <td>Supported</td>
+            <td>NOT supported</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Update all matching records:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.user.updateMany({
+  where: {
+    isActive: false
+  },
+  data: {
+    isActive: true
+  }
+})
+
+console.log(result)
+// { count: 5 }  // Updated 5 users</code></pre>
+        <br/>
+        <li><b>Update with multiple conditions:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.updateMany({
+  where: {
+    published: false,
+    authorId: 1
+  },
+  data: {
+    published: true
+  }
+})
+
+// Publishes all unpublished posts by user 1</code></pre>
+        <br/>
+        <li><b>Update with comparison operators:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.updateMany({
+  where: {
+    age: {
+      lt: 18
+    }
+  },
+  data: {
+    role: "USER"  // Set all minors to USER role
+  }
+})</code></pre>
+        <br/>
+        <li><b>Update all records (no where clause):</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.updateMany({
+  data: {
+    isActive: true
+  }
+})
+
+// Updates ALL users (use with caution!)</code></pre>
+        <br/>
+        <li><b>Atomic operations work with updateMany:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.updateMany({
+  where: {
+    published: true
+  },
+  data: {
+    views: {
+      increment: 1  // Increment all published posts' views
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Cannot update relations:</b></li>
+<pre><code class="language-typescript line-numbers">// ✗ Error - cannot update relations in updateMany
+await prisma.user.updateMany({
+  where: { age: { gt: 18 } },
+  data: {
+    posts: {  // Error!
+      create: [{ title: "Post" }]
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>No return of updated records:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.user.updateMany({
+  where: { age: 25 },
+  data: { role: "ADMIN" }
+})
+
+console.log(result)
+// { count: 3 }
+
+// To get updated records, query again:
+const updatedUsers = await prisma.user.findMany({
+  where: { age: 25 }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>upsert: Update or Create</li>
+    <br/>
+    <ul>
+        <li><code>upsert()</code> updates record if it exists, creates if it doesn't.</li>
+        <br/>
+        <li><b>Syntax structure:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL_NAME.upsert({
+  where: {
+    // How to find record (must use unique field)
+  },
+  update: {
+    // What to update if record exists
+  },
+  create: {
+    // What to create if record doesn't exist
+  }
+})</code></pre>
+        <br/>
+        <li><b>Example:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.upsert({
+  where: {
+    email: "alice@example.com"
+  },
+  update: {
+    name: "Alice Updated"
+  },
+  create: {
+    email: "alice@example.com",
+    name: "Alice New"
+  }
+})
+
+// If user with this email exists: updates name to "Alice Updated"
+// If user doesn't exist: creates with name "Alice New"</code></pre>
+        <br/>
+        <li><b>Return value is the updated or created record:</b></li>
+<pre><code class="language-typescript line-numbers">console.log(user)
+// {
+//   id: 1,
+//   email: "alice@example.com",
+//   name: "Alice Updated",  // or "Alice New"
+//   ...
+// }</code></pre>
+        <br/>
+        <li><b>Common use case: Idempotent operations</b></li>
+<pre><code class="language-typescript line-numbers">// Safe to call multiple times - same result
+await prisma.user.upsert({
+  where: { email: "alice@example.com" },
+  update: { lastLogin: new Date() },
+  create: {
+    email: "alice@example.com",
+    name: "Alice",
+    lastLogin: new Date()
+  }
+})
+
+// First call: creates user
+// Subsequent calls: update lastLogin</code></pre>
+        <br/>
+        <li><b>Different data in update vs create:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.upsert({
+  where: { email: "alice@example.com" },
+  update: {
+    // Only update these fields
+    name: "Alice",
+    age: 26
+  },
+  create: {
+    // Must provide all required fields for create
+    email: "alice@example.com",
+    name: "Alice",
+    age: 26,
+    role: "USER"
+  }
+})</code></pre>
+        <br/>
+        <li><b>With relations:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.upsert({
+  where: { email: "alice@example.com" },
+  update: {
+    name: "Alice Updated",
+    posts: {
+      create: [{ title: "New Post", content: "Content" }]
+    }
+  },
+  create: {
+    email: "alice@example.com",
+    name: "Alice",
+    posts: {
+      create: [{ title: "First Post", content: "Content" }]
+    }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Conditional Updates with update.where</li>
+    <br/>
+    <ul>
+        <li>When updating arrays of relations, you can filter which items to update.</li>
+        <br/>
+        <li><b>Update specific posts in array:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    posts: {
+      update: [
+        {
+          where: { id: 5 },  // Which post to update
+          data: {
+            published: true  // What to update
+          }
+        },
+        {
+          where: { id: 6 },
+          data: {
+            published: true
+          }
+        }
+      ]
+    }
+  }
+})
+
+// Only updates posts 5 and 6</code></pre>
+        <br/>
+        <li><b>Update matching criteria:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    posts: {
+      updateMany: {
+        where: {
+          published: false  // Filter posts to update
+        },
+        data: {
+          published: true
+        }
+      }
+    }
+  }
+})
+
+// Updates all unpublished posts for this user</code></pre>
+        <br/>
+        <li><b>Delete matching posts:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    posts: {
+      deleteMany: {
+        where: {
+          views: { lt: 10 }  // Delete posts with few views
+        }
+      }
+    }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Updating JSON Fields</li>
+    <br/>
+    <ul>
+        <li>JSON fields can be updated completely or partially.</li>
+        <br/>
+        <li><b>Replace entire JSON:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    metadata: {
+      theme: "dark",
+      notifications: true
+    }
+  }
+})
+
+// Replaces entire JSON field</code></pre>
+        <br/>
+        <li><b>Update nested JSON path (PostgreSQL only):</b></li>
+<pre><code class="language-typescript line-numbers">// Current: { preferences: { theme: "light" }, tags: ["a"] }
+
+await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    metadata: {
+      path: ['preferences', 'theme'],
+      set: 'dark'
+    }
+  }
+})
+
+// Result: { preferences: { theme: "dark" }, tags: ["a"] }
+// Only updates the nested path</code></pre>
+        <br/>
+        <li><b>Set to null:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    metadata: null  // Clear JSON field
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Updating Arrays (PostgreSQL/MongoDB)</li>
+    <br/>
+    <ul>
+        <li>For databases that support arrays (PostgreSQL, MongoDB), you can update array fields.</li>
+        <br/>
+        <li><b>Replace entire array:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    tags: ["javascript", "typescript"]
+  }
+})
+
+// Replaces entire array</code></pre>
+        <br/>
+        <li><b>Add to array:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    tags: {
+      push: "react"  // Add to end
+    }
+  }
+})
+
+// Before: ["javascript", "typescript"]
+// After: ["javascript", "typescript", "react"]</code></pre>
+        <br/>
+        <li><b>Add multiple items:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    tags: {
+      push: ["react", "vue"]
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Set to empty array:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    tags: []  // or { set: [] }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Handling</li>
+    <br/>
+    <ul>
+        <li><b>Record not found:</b></li>
+<pre><code class="language-typescript line-numbers">try {
+  await prisma.user.update({
+    where: { id: 9999 },
+    data: { name: "Updated" }
+  })
+} catch (error) {
+  if (error.code === 'P2025') {
+    console.log('Record to update not found')
+  }
+}</code></pre>
+        <br/>
+        <li><b>Unique constraint violation:</b></li>
+<pre><code class="language-typescript line-numbers">try {
+  await prisma.user.update({
+    where: { id: 1 },
+    data: { email: "existing@example.com" }  // Email already used
+  })
+} catch (error) {
+  if (error.code === 'P2002') {
+    console.log('Email already exists')
+  }
+}</code></pre>
+        <br/>
+        <li><b>Foreign key constraint:</b></li>
+<pre><code class="language-typescript line-numbers">try {
+  await prisma.post.update({
+    where: { id: 1 },
+    data: { authorId: 9999 }  // User doesn't exist
+  })
+} catch (error) {
+  if (error.code === 'P2003') {
+    console.log('Foreign key constraint failed')
+  }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Selecting Return Data</li>
+    <br/>
+    <ul>
+        <li>Like create, you can control what update returns.</li>
+        <br/>
+        <li><b>Default - returns full record:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.update({
+  where: { id: 1 },
+  data: { name: "Alice" }
+})
+
+// Returns all fields</code></pre>
+        <br/>
+        <li><b>Select specific fields:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.update({
+  where: { id: 1 },
+  data: { name: "Alice" },
+  select: {
+    id: true,
+    name: true,
+    email: true
+  }
+})
+
+// Returns only id, name, email</code></pre>
+        <br/>
+        <li><b>Include relations:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.update({
+  where: { id: 1 },
+  data: { name: "Alice" },
+  include: {
+    posts: true,
+    profile: true
+  }
+})
+
+// Returns user with posts and profile</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Update Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Toggle boolean:</b></li>
+<pre><code class="language-typescript line-numbers">// Get current state and toggle
+const user = await prisma.user.findUnique({ where: { id: 1 } })
+await prisma.user.update({
+  where: { id: 1 },
+  data: { isActive: !user.isActive }
+})</code></pre>
+        <br/>
+        <li><b>Increment counter:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    views: { increment: 1 }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Update timestamp:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    lastLogin: new Date()
+  }
+})</code></pre>
+        <br/>
+        <li><b>Add tag to post:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    tags: {
+      connectOrCreate: {
+        where: { name: "javascript" },
+        create: { name: "javascript" }
+      }
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Transfer ownership:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.updateMany({
+  where: { authorId: 1 },  // All posts by user 1
+  data: { authorId: 2 }     // Transfer to user 2
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Summary: Update Syntax Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Basic update:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.update({
+  where: { uniqueField: value },
+  data: { field: value }
+})</code></pre>
+        <br/>
+        <li><b>Atomic operations:</b></li>
+<pre><code class="language-typescript line-numbers">data: {
+  numericField: { increment: n }  // or decrement, multiply, divide
+}</code></pre>
+        <br/>
+        <li><b>Relation operations (one-to-many):</b></li>
+<pre><code class="language-typescript line-numbers">data: {
+  relationMany: {
+    set: [{ id: 1 }],        // Replace all
+    connect: [{ id: 2 }],    // Add
+    disconnect: [{ id: 3 }], // Remove
+    create: [{ }],           // Create and add
+    delete: [{ id: 4 }],     // Remove and delete
+    update: [{               // Update specific
+      where: { id: 5 },
+      data: { }
+    }]
+  }
+}</code></pre>
+        <br/>
+        <li><b>Relation operations (one-to-one):</b></li>
+<pre><code class="language-typescript line-numbers">data: {
+  relationOne: {
+    connect: { id: 1 },      // Connect
+    disconnect: true,        // Disconnect
+    create: { },             // Create and connect
+    delete: true,            // Disconnect and delete
+    update: { },             // Update
+    upsert: {                // Update or create
+      create: { },
+      update: { }
+    }
+  }
+}</code></pre>
+        <br/>
+        <li><b>Update many:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.updateMany({
+  where: { anyField: value },  // Can use any field
+  data: { field: value }       // No relations allowed
+})
+// Returns: { count: n }</code></pre>
+        <br/>
+        <li><b>Upsert:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.upsert({
+  where: { uniqueField: value },
+  update: { field: value },
+  create: { field: value }
+})</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
