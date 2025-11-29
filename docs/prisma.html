@@ -156,6 +156,7 @@
         <li><a href="#prisma-read-replicas">Read Replicas</a></li>
         <li><a href="#prisma-schema-overview">Schema Overview</a></li>
         <li><a href="#prisma-relationships">Understanding Relationships</a></li>
+        <li><a href="#prisma-read-operations">Reading Data</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4619,6 +4620,1324 @@ model Enrollment {
     </ul>
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="prisma-read-operations">Reading Data with Prisma</h3>
+<ol>
+
+    <li>Understanding Read Operations</li>
+    <ul>
+        <br/>
+        <li>Reading (retrieving) data means fetching records from your database.</li>
+        <br/>
+        <li>Prisma provides several methods for reading data:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Returns</th>
+            <th>Use When</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>findUnique()</code></td>
+            <td>Single record or null</td>
+            <td>You have a unique identifier (ID, email)</td>
+        </tr>
+        <tr>
+            <td><code>findUniqueOrThrow()</code></td>
+            <td>Single record or throws error</td>
+            <td>Record must exist, want error if not found</td>
+        </tr>
+        <tr>
+            <td><code>findFirst()</code></td>
+            <td>First matching record or null</td>
+            <td>You want one record matching criteria</td>
+        </tr>
+        <tr>
+            <td><code>findFirstOrThrow()</code></td>
+            <td>First record or throws error</td>
+            <td>Record must exist, want error if not found</td>
+        </tr>
+        <tr>
+            <td><code>findMany()</code></td>
+            <td>Array of records (may be empty)</td>
+            <td>You want multiple records</td>
+        </tr>
+        <tr>
+            <td><code>count()</code></td>
+            <td>Number</td>
+            <td>You only need to count records</td>
+        </tr>
+        <tr>
+            <td><code>aggregate()</code></td>
+            <td>Aggregated data</td>
+            <td>You need sum, average, min, max</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>All examples assume this schema:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  age       Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  posts     Post[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  published Boolean  @default(false)
+  views     Int      @default(0)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>findUnique: Get One Record by Unique Field</li>
+    <br/>
+    <ul>
+        <li>Use <code>findUnique()</code> when you know a unique value (ID, email, etc.).</li>
+        <br/>
+        <li>Basic example - find by ID:</li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: {
+    id: 1
+  }
+})
+
+console.log(user)
+// Returns:
+// { id: 1, email: 'alice@example.com', name: 'Alice', age: 25, ... }
+// or null if not found</code></pre>
+        <br/>
+        <li>Find by unique email:</li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: {
+    email: 'alice@example.com'
+  }
+})</code></pre>
+        <br/>
+        <li><b>Important:</b> Can only use fields marked with <code>@unique</code> or <code>@id</code> in the schema.</li>
+<pre><code class="language-typescript line-numbers">// ✓ Valid - id is unique
+where: { id: 1 }
+
+// ✓ Valid - email has @unique
+where: { email: 'alice@example.com' }
+
+// ✗ Invalid - name is not unique
+where: { name: 'Alice' }  // Error!</code></pre>
+        <br/>
+        <li>Returns <code>null</code> if not found:</li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: { id: 9999 }  // Doesn't exist
+})
+
+console.log(user)  // null</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>findUniqueOrThrow: Get One Record or Error</li>
+    <br/>
+    <ul>
+        <li>Same as <code>findUnique()</code>, but throws error instead of returning <code>null</code>.</li>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-typescript line-numbers">try {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: 9999 }  // Doesn't exist
+  })
+} catch (error) {
+  console.log(error.message)
+  // "No User found"
+}</code></pre>
+        <br/>
+        <li>Use when the record <u>must</u> exist (otherwise it's a bug):</li>
+<pre><code class="language-typescript line-numbers">// If user doesn't exist, something is seriously wrong
+const currentUser = await prisma.user.findUniqueOrThrow({
+  where: { id: session.userId }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>findFirst: Get First Matching Record</li>
+    <br/>
+    <ul>
+        <li>Use <code>findFirst()</code> when you want the first record matching criteria.</li>
+        <br/>
+        <li>Unlike <code>findUnique()</code>, you can filter by <u>any</u> field:</li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findFirst({
+  where: {
+    name: 'Alice'  // Not unique - might have multiple Alices
+  }
+})
+
+// Returns the first Alice found (or null)</code></pre>
+        <br/>
+        <li>Multiple conditions:</li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findFirst({
+  where: {
+    name: 'Alice',
+    age: 25,
+    isActive: true
+  }
+})
+
+// Returns first user matching ALL conditions</code></pre>
+        <br/>
+        <li>With ordering:</li>
+<pre><code class="language-typescript line-numbers">const newestUser = await prisma.user.findFirst({
+  where: {
+    isActive: true
+  },
+  orderBy: {
+    createdAt: 'desc'  // Newest first
+  }
+})
+
+// Returns the most recently created active user</code></pre>
+        <br/>
+        <li>Returns <code>null</code> if no match found:</li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findFirst({
+  where: { age: 150 }  // Unlikely to exist
+})
+
+console.log(user)  // null</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>findMany: Get Multiple Records</li>
+    <br/>
+    <ul>
+        <li>Use <code>findMany()</code> to get an array of records.</li>
+        <br/>
+        <li>Get all records:</li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany()
+
+console.log(users)
+// [
+//   { id: 1, email: 'alice@example.com', ... },
+//   { id: 2, email: 'bob@example.com', ... },
+//   { id: 3, email: 'carol@example.com', ... }
+// ]</code></pre>
+        <br/>
+        <li>With filtering:</li>
+<pre><code class="language-typescript line-numbers">const activeUsers = await prisma.user.findMany({
+  where: {
+    isActive: true
+  }
+})</code></pre>
+        <br/>
+        <li>Returns empty array if no matches:</li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: { age: 150 }
+})
+
+console.log(users)  // []</code></pre>
+        <br/>
+        <li>Never returns <code>null</code>, always an array (even if empty).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Filtering with where</li>
+    <br/>
+    <ul>
+        <li>The <code>where</code> clause filters which records to retrieve.</li>
+        <br/>
+        <li><b>Exact match:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    age: 25  // age equals 25
+  }
+})</code></pre>
+        <br/>
+        <li><b>Multiple conditions (AND):</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    age: 25,
+    isActive: true,
+    name: 'Alice'
+    // All conditions must be true
+  }
+})</code></pre>
+        <br/>
+        <li><b>Comparison operators:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    age: {
+      gt: 18,      // Greater than
+      lte: 65      // Less than or equal
+    }
+  }
+})
+
+// Users between 19 and 65 years old</code></pre>
+        <br/>
+        <li>Available comparison operators:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operator</th>
+            <th>Meaning</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>equals</code></td>
+            <td>Equal to</td>
+            <td><code>age: { equals: 25 }</code></td>
+        </tr>
+        <tr>
+            <td><code>not</code></td>
+            <td>Not equal to</td>
+            <td><code>age: { not: 25 }</code></td>
+        </tr>
+        <tr>
+            <td><code>gt</code></td>
+            <td>Greater than</td>
+            <td><code>age: { gt: 18 }</code></td>
+        </tr>
+        <tr>
+            <td><code>gte</code></td>
+            <td>Greater than or equal</td>
+            <td><code>age: { gte: 18 }</code></td>
+        </tr>
+        <tr>
+            <td><code>lt</code></td>
+            <td>Less than</td>
+            <td><code>age: { lt: 65 }</code></td>
+        </tr>
+        <tr>
+            <td><code>lte</code></td>
+            <td>Less than or equal</td>
+            <td><code>age: { lte: 65 }</code></td>
+        </tr>
+        <tr>
+            <td><code>in</code></td>
+            <td>In array</td>
+            <td><code>age: { in: [25, 30, 35] }</code></td>
+        </tr>
+        <tr>
+            <td><code>notIn</code></td>
+            <td>Not in array</td>
+            <td><code>age: { notIn: [25, 30] }</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>String filters:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    email: {
+      contains: '@gmail.com'  // Email contains this string
+    }
+  }
+})</code></pre>
+        <br/>
+        <li>String filter operators:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operator</th>
+            <th>Meaning</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>contains</code></td>
+            <td>Contains substring</td>
+            <td><code>email: { contains: 'gmail' }</code></td>
+        </tr>
+        <tr>
+            <td><code>startsWith</code></td>
+            <td>Starts with</td>
+            <td><code>name: { startsWith: 'A' }</code></td>
+        </tr>
+        <tr>
+            <td><code>endsWith</code></td>
+            <td>Ends with</td>
+            <td><code>email: { endsWith: '.com' }</code></td>
+        </tr>
+        <tr>
+            <td><code>mode</code></td>
+            <td>Case sensitivity</td>
+            <td><code>name: { equals: 'alice', mode: 'insensitive' }</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Case-insensitive search:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    email: {
+      contains: 'GMAIL',
+      mode: 'insensitive'  // Matches 'gmail', 'Gmail', 'GMAIL'
+    }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Logical Operators: AND, OR, NOT</li>
+    <br/>
+    <ul>
+        <li><b>AND (default behavior):</b></li>
+<pre><code class="language-typescript line-numbers">// These are equivalent:
+where: {
+  age: 25,
+  isActive: true
+}
+
+where: {
+  AND: [
+    { age: 25 },
+    { isActive: true }
+  ]
+}</code></pre>
+        <br/>
+        <li><b>OR (any condition matches):</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    OR: [
+      { age: { lt: 18 } },    // Under 18
+      { age: { gt: 65 } }     // Over 65
+    ]
+  }
+})
+
+// Returns users who are EITHER under 18 OR over 65</code></pre>
+        <br/>
+        <li><b>NOT (negation):</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    NOT: {
+      email: {
+        endsWith: '@gmail.com'
+      }
+    }
+  }
+})
+
+// Returns users whose email does NOT end with @gmail.com</code></pre>
+        <br/>
+        <li><b>Combining operators:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    AND: [
+      { isActive: true },
+      {
+        OR: [
+          { age: { lt: 18 } },
+          { age: { gt: 65 } }
+        ]
+      }
+    ]
+  }
+})
+
+// Active users who are EITHER under 18 OR over 65</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Filtering by Related Data</li>
+    <br/>
+    <ul>
+        <li>You can filter based on relationships.</li>
+        <br/>
+        <li><b>Find users who have posts:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    posts: {
+      some: {}  // Has at least one post
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Find users who have NO posts:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    posts: {
+      none: {}  // Has zero posts
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Find users with published posts:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    posts: {
+      some: {
+        published: true  // Has at least one published post
+      }
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Find users where ALL posts are published:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    posts: {
+      every: {
+        published: true  // Every post is published
+      }
+    }
+  }
+})</code></pre>
+        <br/>
+        <li>Relation filter operators:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operator</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>some</code></td>
+            <td>At least one related record matches</td>
+        </tr>
+        <tr>
+            <td><code>none</code></td>
+            <td>No related records match</td>
+        </tr>
+        <tr>
+            <td><code>every</code></td>
+            <td>All related records match</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Filter posts by author data:</b></li>
+<pre><code class="language-typescript line-numbers">const posts = await prisma.post.findMany({
+  where: {
+    author: {
+      age: { gt: 18 },
+      isActive: true
+    }
+  }
+})
+
+// Posts written by active users over 18</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Selecting Specific Fields</li>
+    <br/>
+    <ul>
+        <li>By default, Prisma returns <u>all</u> fields. Use <code>select</code> to choose specific fields.</li>
+        <br/>
+        <li><b>Without select (default):</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: { id: 1 }
+})
+
+console.log(user)
+// {
+//   id: 1,
+//   email: 'alice@example.com',
+//   name: 'Alice',
+//   age: 25,
+//   isActive: true,
+//   createdAt: 2024-01-01T00:00:00.000Z
+// }</code></pre>
+        <br/>
+        <li><b>With select:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  select: {
+    id: true,
+    name: true,
+    email: true
+  }
+})
+
+console.log(user)
+// {
+//   id: 1,
+//   name: 'Alice',
+//   email: 'alice@example.com'
+// }
+// age, isActive, createdAt are NOT included</code></pre>
+        <br/>
+        <li>Select only what you need - improves performance:</li>
+<pre><code class="language-typescript line-numbers">// Good - only select needed fields
+const users = await prisma.user.findMany({
+  select: {
+    id: true,
+    email: true
+  }
+})
+
+// Less efficient - fetches all fields
+const users = await prisma.user.findMany()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Including Related Data</li>
+    <br/>
+    <ul>
+        <li>Use <code>include</code> to fetch related records.</li>
+        <br/>
+        <li><b>Without include:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: { id: 1 }
+})
+
+console.log(user.posts)  // undefined - posts not fetched</code></pre>
+        <br/>
+        <li><b>With include:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  include: {
+    posts: true
+  }
+})
+
+console.log(user)
+// {
+//   id: 1,
+//   name: 'Alice',
+//   email: 'alice@example.com',
+//   posts: [
+//     { id: 1, title: 'First Post', ... },
+//     { id: 2, title: 'Second Post', ... }
+//   ]
+// }</code></pre>
+        <br/>
+        <li><b>Include with filtering:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  include: {
+    posts: {
+      where: {
+        published: true  // Only published posts
+      }
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Include with ordering:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  include: {
+    posts: {
+      orderBy: {
+        createdAt: 'desc'  // Newest first
+      },
+      take: 5  // Only 5 most recent
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Nested includes:</b></li>
+<pre><code class="language-typescript line-numbers">const post = await prisma.post.findUnique({
+  where: { id: 1 },
+  include: {
+    author: {
+      include: {
+        posts: true  // Include author's other posts too
+      }
+    }
+  }
+})
+
+console.log(post.author.posts)  // All posts by this author</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Combining select and include</li>
+    <br/>
+    <ul>
+        <li>You can <u>not</u> use <code>select</code> and <code>include</code> at the same level:</li>
+<pre><code class="language-typescript line-numbers">// ✗ Error - can't use both
+const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  select: { name: true },
+  include: { posts: true }  // Error!
+})</code></pre>
+        <br/>
+        <li><b>Solution:</b> Use <code>select</code> with relation selects:</li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  select: {
+    name: true,
+    email: true,
+    posts: true  // Include posts via select
+  }
+})
+
+// Or with nested select:
+const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  select: {
+    name: true,
+    email: true,
+    posts: {
+      select: {
+        id: true,
+        title: true
+        // Only these post fields
+      }
+    }
+  }
+})</code></pre>
+        <li>Rule of thumb:</li>
+        <ul>
+            <li>Use <code>include</code> for simple "give me everything" scenarios</li>
+            <li>Use <code>select</code> when you need precise control over fields</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sorting Results with orderBy</li>
+    <br/>
+    <ul>
+        <li>Use <code>orderBy</code> to sort results.</li>
+        <br/>
+        <li><b>Single field, ascending:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  orderBy: {
+    name: 'asc'  // A to Z
+  }
+})</code></pre>
+        <br/>
+        <li><b>Single field, descending:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  orderBy: {
+    createdAt: 'desc'  // Newest first
+  }
+})</code></pre>
+        <br/>
+        <li><b>Multiple fields:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  orderBy: [
+    { age: 'desc' },      // Sort by age first (oldest first)
+    { name: 'asc' }       // Then by name (A to Z)
+  ]
+})</code></pre>
+        <br/>
+        <li><b>Sort by related field:</b></li>
+<pre><code class="language-typescript line-numbers">const posts = await prisma.post.findMany({
+  orderBy: {
+    author: {
+      name: 'asc'  // Sort posts by author name
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Sort by relation count:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  orderBy: {
+    posts: {
+      _count: 'desc'  // Users with most posts first
+    }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Pagination: skip and take</li>
+    <br/>
+    <ul>
+        <li>Use <code>skip</code> and <code>take</code> for pagination.</li>
+        <br/>
+        <li><b>take (limit):</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  take: 10  // Get first 10 users
+})</code></pre>
+        <br/>
+        <li><b>skip (offset):</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  skip: 20,  // Skip first 20 users
+  take: 10   // Then take 10 (users 21-30)
+})</code></pre>
+        <br/>
+        <li><b>Page-based pagination:</b></li>
+<pre><code class="language-typescript line-numbers">const page = 3
+const pageSize = 10
+
+const users = await prisma.user.findMany({
+  skip: (page - 1) * pageSize,  // Skip 20 (pages 1 and 2)
+  take: pageSize,                // Take 10 (page 3)
+  orderBy: { id: 'asc' }
+})
+
+// Page 1: skip 0, take 10   (users 1-10)
+// Page 2: skip 10, take 10  (users 11-20)
+// Page 3: skip 20, take 10  (users 21-30)</code></pre>
+        <br/>
+        <li><b>Complete pagination example:</b></li>
+<pre><code class="language-typescript line-numbers">async function getUsersPage(page: number, pageSize: number) {
+  const [users, totalCount] = await Promise.all([
+    prisma.user.findMany({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.user.count()
+  ])
+
+  return {
+    users,
+    totalCount,
+    totalPages: Math.ceil(totalCount / pageSize),
+    currentPage: page
+  }
+}
+
+const result = await getUsersPage(1, 10)
+// {
+//   users: [...],
+//   totalCount: 247,
+//   totalPages: 25,
+//   currentPage: 1
+// }</code></pre>
+        <br/>
+        <li><b>Cursor-based pagination (better for large datasets):</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  take: 10,
+  skip: 1,  // Skip the cursor itself
+  cursor: {
+    id: 20  // Start after this ID
+  },
+  orderBy: { id: 'asc' }
+})
+
+// Returns 10 users starting after ID 20</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Counting Records</li>
+    <br/>
+    <ul>
+        <li>Use <code>count()</code> to count records without fetching them.</li>
+        <br/>
+        <li><b>Count all:</b></li>
+<pre><code class="language-typescript line-numbers">const userCount = await prisma.user.count()
+
+console.log(userCount)  // 247</code></pre>
+        <br/>
+        <li><b>Count with filter:</b></li>
+<pre><code class="language-typescript line-numbers">const activeUserCount = await prisma.user.count({
+  where: {
+    isActive: true
+  }
+})
+
+console.log(activeUserCount)  // 189</code></pre>
+        <br/>
+        <li><b>Count by groups:</b></li>
+<pre><code class="language-typescript line-numbers">const counts = await prisma.user.groupBy({
+  by: ['isActive'],
+  _count: {
+    _all: true
+  }
+})
+
+console.log(counts)
+// [
+//   { isActive: true, _count: { _all: 189 } },
+//   { isActive: false, _count: { _all: 58 } }
+// ]</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Aggregations</li>
+    <br/>
+    <ul>
+        <li>Use <code>aggregate()</code> for calculations on numeric fields.</li>
+        <br/>
+        <li><b>Available aggregations:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Function</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>_count</code></td>
+            <td>Count records</td>
+        </tr>
+        <tr>
+            <td><code>_sum</code></td>
+            <td>Sum values</td>
+        </tr>
+        <tr>
+            <td><code>_avg</code></td>
+            <td>Average value</td>
+        </tr>
+        <tr>
+            <td><code>_min</code></td>
+            <td>Minimum value</td>
+        </tr>
+        <tr>
+            <td><code>_max</code></td>
+            <td>Maximum value</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Single aggregation:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.post.aggregate({
+  _avg: {
+    views: true
+  }
+})
+
+console.log(result)
+// { _avg: { views: 342.5 } }</code></pre>
+        <br/>
+        <li><b>Multiple aggregations:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.post.aggregate({
+  _count: { _all: true },
+  _sum: { views: true },
+  _avg: { views: true },
+  _min: { views: true },
+  _max: { views: true }
+})
+
+console.log(result)
+// {
+//   _count: { _all: 150 },
+//   _sum: { views: 51375 },
+//   _avg: { views: 342.5 },
+//   _min: { views: 0 },
+//   _max: { views: 9845 }
+// }</code></pre>
+        <br/>
+        <li><b>Aggregation with filter:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.post.aggregate({
+  where: {
+    published: true
+  },
+  _avg: {
+    views: true
+  }
+})
+
+// Average views of published posts only</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Group By</li>
+    <br/>
+    <ul>
+        <li>Use <code>groupBy()</code> to group and aggregate data.</li>
+        <br/>
+        <li><b>Group posts by author:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.post.groupBy({
+  by: ['authorId'],
+  _count: {
+    _all: true
+  }
+})
+
+console.log(result)
+// [
+//   { authorId: 1, _count: { _all: 5 } },
+//   { authorId: 2, _count: { _all: 3 } },
+//   { authorId: 3, _count: { _all: 7 } }
+// ]</code></pre>
+        <br/>
+        <li><b>Group with multiple fields:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.post.groupBy({
+  by: ['authorId', 'published'],
+  _count: {
+    _all: true
+  },
+  _sum: {
+    views: true
+  }
+})
+
+console.log(result)
+// [
+//   { authorId: 1, published: true, _count: { _all: 3 }, _sum: { views: 1500 } },
+//   { authorId: 1, published: false, _count: { _all: 2 }, _sum: { views: 50 } },
+//   ...
+// ]</code></pre>
+        <br/>
+        <li><b>Group with filtering:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.post.groupBy({
+  by: ['authorId'],
+  where: {
+    published: true  // Only count published posts
+  },
+  _count: {
+    _all: true
+  },
+  having: {
+    _count: {
+      _all: {
+        gt: 5  // Only authors with more than 5 published posts
+      }
+    }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Distinct Records</li>
+    <br/>
+    <ul>
+        <li>Use <code>distinct</code> to get unique values.</li>
+        <br/>
+        <li><b>Get unique ages:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  distinct: ['age'],
+  select: {
+    age: true
+  }
+})
+
+console.log(users)
+// [
+//   { age: 25 },
+//   { age: 30 },
+//   { age: 35 }
+// ]
+// No duplicate ages</code></pre>
+        <br/>
+        <li><b>Distinct on multiple fields:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  distinct: ['age', 'isActive'],
+  select: {
+    age: true,
+    isActive: true
+  }
+})
+
+// Unique combinations of age and isActive</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Null and Undefined Handling</li>
+    <br/>
+    <ul>
+        <li>Filter for null values:</li>
+<pre><code class="language-typescript line-numbers">// Find users with no name
+const users = await prisma.user.findMany({
+  where: {
+    name: null
+  }
+})
+
+// Find users WITH a name
+const users = await prisma.user.findMany({
+  where: {
+    name: {
+      not: null
+    }
+  }
+})</code></pre>
+        <br/>
+        <li>Check if field is set:</li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.user.findMany({
+  where: {
+    name: {
+      isSet: true  // Name field has been set (not undefined)
+    }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Raw Queries</li>
+    <br/>
+    <ul>
+        <li>When Prisma's query builder isn't enough, use raw SQL.</li>
+        <br/>
+        <li><b>Raw query with $queryRaw:</b></li>
+<pre><code class="language-typescript line-numbers">const users = await prisma.$queryRaw`
+  SELECT * FROM "User" WHERE age > 25
+`
+
+console.log(users)  // Array of raw database rows</code></pre>
+        <br/>
+        <li><b>With parameters (safe from SQL injection):</b></li>
+<pre><code class="language-typescript line-numbers">const minAge = 25
+const users = await prisma.$queryRaw`
+  SELECT * FROM "User" WHERE age > ${minAge}
+`
+
+// Prisma safely escapes the parameter</code></pre>
+        <br/>
+        <li><b>Type-safe raw queries:</b></li>
+<pre><code class="language-typescript line-numbers">import { Prisma } from '@prisma/client'
+
+const users = await prisma.$queryRaw<User[]>`
+  SELECT * FROM "User" WHERE age > 25
+`
+
+// users is typed as User[]</code></pre>
+        <br/>
+        <li><b>Unsafe raw query (use with caution):</b></li>
+<pre><code class="language-typescript line-numbers">const tableName = 'User'
+const users = await prisma.$queryRawUnsafe(
+  `SELECT * FROM "${tableName}"`
+)
+
+// Only use $queryRawUnsafe when you need dynamic table/column names</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Query Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Search pattern:</b></li>
+<pre><code class="language-typescript line-numbers">async function searchUsers(searchTerm: string) {
+  return await prisma.user.findMany({
+    where: {
+      OR: [
+        { name: { contains: searchTerm, mode: 'insensitive' } },
+        { email: { contains: searchTerm, mode: 'insensitive' } }
+      ]
+    }
+  })
+}</code></pre>
+        <br/>
+        <li><b>Get or create pattern:</b></li>
+<pre><code class="language-typescript line-numbers">async function getOrCreateUser(email: string) {
+  let user = await prisma.user.findUnique({
+    where: { email }
+  })
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: { email, name: 'New User' }
+    })
+  }
+
+  return user
+}</code></pre>
+        <br/>
+        <li><b>Fetch with default value:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: { id: 1 }
+}) ?? { id: 0, name: 'Guest', email: 'guest@example.com' }
+
+// If user not found, use default object</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Performance Tips</li>
+    <br/>
+    <ul>
+        <li><b>Select only needed fields:</b></li>
+<pre><code class="language-typescript line-numbers">// ✓ Good - only fetch what you need
+const users = await prisma.user.findMany({
+  select: { id: true, email: true }
+})
+
+// ✗ Bad - fetches all fields
+const users = await prisma.user.findMany()</code></pre>
+        <br/>
+        <li><b>Use pagination for large datasets:</b></li>
+<pre><code class="language-typescript line-numbers">// ✓ Good - paginate
+const users = await prisma.user.findMany({
+  take: 100,
+  skip: 0
+})
+
+// ✗ Bad - fetches all records (could be millions)
+const users = await prisma.user.findMany()</code></pre>
+        <br/>
+        <li><b>Use count instead of fetching when possible:</b></li>
+<pre><code class="language-typescript line-numbers">// ✓ Good - just count
+const userCount = await prisma.user.count()
+
+// ✗ Bad - fetches all records just to count
+const users = await prisma.user.findMany()
+const userCount = users.length</code></pre>
+        <br/>
+        <li><b>Avoid N+1 queries with include:</b></li>
+<pre><code class="language-typescript line-numbers">// ✗ Bad - N+1 query problem
+const users = await prisma.user.findMany()
+for (const user of users) {
+  const posts = await prisma.post.findMany({
+    where: { authorId: user.id }
+  })
+  console.log(user.name, posts.length)
+}
+
+// ✓ Good - single query with include
+const users = await prisma.user.findMany({
+  include: {
+    posts: true
+  }
+})
+for (const user of users) {
+  console.log(user.name, user.posts.length)
+}</code></pre>
+        <br/>
+        <li><b>Use indexes for frequently filtered fields:</b></li>
+<pre><code class="language-prisma line-numbers">// Add to schema
+model User {
+  email String @unique
+  age   Int
+
+  @@index([age])  // Index for frequent age queries
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Handling</li>
+    <br/>
+    <ul>
+        <li><b>Handle not found:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: { id: 9999 }
+})
+
+if (!user) {
+  throw new Error('User not found')
+}
+
+// Or use findUniqueOrThrow
+const user = await prisma.user.findUniqueOrThrow({
+  where: { id: 9999 }
+})
+// Automatically throws if not found</code></pre>
+        <br/>
+        <li><b>Handle database errors:</b></li>
+<pre><code class="language-typescript line-numbers">try {
+  const users = await prisma.user.findMany()
+} catch (error) {
+  if (error.code === 'P2002') {
+    console.log('Unique constraint violation')
+  } else if (error.code === 'P2025') {
+    console.log('Record not found')
+  } else {
+    console.log('Database error:', error.message)
+  }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Quick Reference Cheat Sheet</li>
+    <br/>
+    <ul>
+<table>
+    <thead>
+        <tr>
+            <th>Task</th>
+            <th>Code</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Get by ID</td>
+            <td><code>findUnique({ where: { id: 1 } })</code></td>
+        </tr>
+        <tr>
+            <td>Get all</td>
+            <td><code>findMany()</code></td>
+        </tr>
+        <tr>
+            <td>Filter</td>
+            <td><code>findMany({ where: { age: 25 } })</code></td>
+        </tr>
+        <tr>
+            <td>Greater than</td>
+            <td><code>where: { age: { gt: 18 } }</code></td>
+        </tr>
+        <tr>
+            <td>Contains text</td>
+            <td><code>where: { email: { contains: 'gmail' } }</code></td>
+        </tr>
+        <tr>
+            <td>OR condition</td>
+            <td><code>where: { OR: [{...}, {...}] }</code></td>
+        </tr>
+        <tr>
+            <td>Select fields</td>
+            <td><code>select: { id: true, name: true }</code></td>
+        </tr>
+        <tr>
+            <td>Include relations</td>
+            <td><code>include: { posts: true }</code></td>
+        </tr>
+        <tr>
+            <td>Sort</td>
+            <td><code>orderBy: { createdAt: 'desc' }</code></td>
+        </tr>
+        <tr>
+            <td>Limit</td>
+            <td><code>take: 10</code></td>
+        </tr>
+        <tr>
+            <td>Skip/Offset</td>
+            <td><code>skip: 20</code></td>
+        </tr>
+        <tr>
+            <td>Count</td>
+            <td><code>count({ where: {...} })</code></td>
+        </tr>
+        <tr>
+            <td>Average</td>
+            <td><code>aggregate({ _avg: { views: true } })</code></td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
