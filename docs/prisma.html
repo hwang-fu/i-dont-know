@@ -8497,7 +8497,1125 @@ await prisma.user.update({
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="prisma-delete-operations">Deleting Data with Prisma</h3>
+<ol>
 
+    <li>Understanding Delete Syntax Structure</li>
+    <br/>
+    <ul>
+        <li>Prisma provides two main delete methods:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Deletes</th>
+            <th>Returns</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>delete()</code></td>
+            <td>Single record (must exist)</td>
+            <td>Deleted record or throws error</td>
+        </tr>
+        <tr>
+            <td><code>deleteMany()</code></td>
+            <td>Multiple records (zero or more)</td>
+            <td><code>{ count: n }</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Basic <code>delete()</code> structure:</li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL_NAME.delete({
+  where: {
+    // How to find the record (must use unique field)
+  },
+  select: {
+    // Optional: which fields to return from deleted record
+  },
+  include: {
+    // Optional: include related data in response
+  }
+})</code></pre>
+        <br/>
+        <li>Only <code>where</code> is required.</li>
+        <br/>
+        <li>Example schema for this chapter:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  profile   Profile?
+  posts     Post[]
+}
+
+model Profile {
+  id     Int    @id @default(autoincrement())
+  bio    String
+  userId Int    @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id        Int     @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean @default(false)
+  authorId  Int
+  author    User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  tags      Tag[]
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[]
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The where Clause: Finding Records to Delete</li>
+    <br/>
+    <ul>
+        <li><b>Rule:</b> The <code>where</code> clause in <code>delete()</code> MUST use a <b>unique field</b>.</li>
+        <br/>
+        <li><b>Delete by ID:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.delete({
+  where: {
+    id: 1  // id is unique (@id)
+  }
+})</code></pre>
+        <br/>
+        <li><b>Delete by unique email:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.delete({
+  where: {
+    email: "alice@example.com"  // email is @unique
+  }
+})</code></pre>
+        <br/>
+        <li><b>Delete by composite unique:</b></li>
+<pre><code class="language-prisma line-numbers">model UserRole {
+  userId Int
+  roleId Int
+
+  @@unique([userId, roleId])
+}</code></pre>
+<pre><code class="language-typescript line-numbers">await prisma.userRole.delete({
+  where: {
+    userId_roleId: {
+      userId: 1,
+      roleId: 2
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Cannot use non-unique fields:</b></li>
+<pre><code class="language-typescript line-numbers">// ✗ Error - name is not unique
+await prisma.user.delete({
+  where: {
+    name: "Alice"  // Error!
+  }
+})
+
+// Use deleteMany for non-unique fields</code></pre>
+        <br/>
+        <li><b>If record not found, throws error:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.delete({
+  where: { id: 9999 }  // Doesn't exist
+})
+
+// Throws: PrismaClientKnownRequestError
+// Code: P2025
+// Message: "Record to delete does not exist"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Delete Operations</li>
+    <br/>
+    <ul>
+        <li><b>Delete single record:</b></li>
+<pre><code class="language-typescript line-numbers">const deletedUser = await prisma.user.delete({
+  where: { id: 1 }
+})
+
+console.log(deletedUser)
+// {
+//   id: 1,
+//   email: "alice@example.com",
+//   name: "Alice",
+//   createdAt: 2024-01-01T00:00:00.000Z
+// }
+
+// Returns the deleted record</code></pre>
+        <br/>
+        <li><b>Delete returns the deleted record by default:</b></li>
+<pre><code class="language-typescript line-numbers">// After delete, the record is gone from database
+// But you get back what was deleted
+const deleted = await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Can use the deleted data
+console.log(`Deleted user: ${deleted.name}`)</code></pre>
+        <br/>
+        <li><b>Select specific fields from deleted record:</b></li>
+<pre><code class="language-typescript line-numbers">const deleted = await prisma.user.delete({
+  where: { id: 1 },
+  select: {
+    id: true,
+    email: true
+  }
+})
+
+console.log(deleted)
+// { id: 1, email: "alice@example.com" }
+// Only returns selected fields</code></pre>
+        <br/>
+        <li><b>Include relations in deleted record:</b></li>
+<pre><code class="language-typescript line-numbers">const deleted = await prisma.user.delete({
+  where: { id: 1 },
+  include: {
+    posts: true
+  }
+})
+
+console.log(deleted)
+// {
+//   id: 1,
+//   email: "alice@example.com",
+//   name: "Alice",
+//   posts: [
+//     { id: 1, title: "Post 1", ... },
+//     { id: 2, title: "Post 2", ... }
+//   ]
+// }
+
+// Shows what posts existed before deletion</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Cascade Delete: Understanding Relation Actions</li>
+    <br/>
+    <ul>
+        <li>What happens to related records when you delete depends on <code>onDelete</code> in schema.</li>
+        <br/>
+        <li><b>Available onDelete actions:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Action</th>
+            <th>Behavior</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>Cascade</code></td>
+            <td>Delete related records automatically</td>
+        </tr>
+        <tr>
+            <td><code>SetNull</code></td>
+            <td>Set foreign key to NULL in related records</td>
+        </tr>
+        <tr>
+            <td><code>Restrict</code></td>
+            <td>Prevent deletion if related records exist</td>
+        </tr>
+        <tr>
+            <td><code>NoAction</code></td>
+            <td>Database decides (usually same as Restrict)</td>
+        </tr>
+        <tr>
+            <td><code>SetDefault</code></td>
+            <td>Set foreign key to default value</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Cascade example:</b></li>
+<pre><code class="language-prisma line-numbers">model User {
+  id    Int    @id
+  posts Post[]
+}
+
+model Post {
+  id       Int  @id
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}</code></pre>
+<pre><code class="language-typescript line-numbers">// Delete user
+await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Result: User is deleted
+// All posts with authorId = 1 are ALSO deleted automatically</code></pre>
+        <br/>
+        <li><b>SetNull example:</b></li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id       Int   @id
+  authorId Int?  // Must be optional for SetNull
+  author   User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+}</code></pre>
+<pre><code class="language-typescript line-numbers">// Delete user
+await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Result: User is deleted
+// Posts with authorId = 1 now have authorId = null</code></pre>
+        <br/>
+        <li><b>Restrict example:</b></li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id       Int  @id
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Restrict)
+}</code></pre>
+<pre><code class="language-typescript line-numbers">// Try to delete user who has posts
+await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Throws error: Cannot delete user with existing posts
+// Code: P2003
+// Message: "Foreign key constraint failed"</code></pre>
+        <br/>
+        <li><b>Default behavior (no onDelete specified):</b></li>
+        <ul>
+            <li>If <code>onDelete</code> not specified, behavior depends on database</li>
+            <li>Most databases default to <code>Restrict</code> or <code>NoAction</code></li>
+            <li>Always specify <code>onDelete</code> explicitly for clarity</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deleting with One-to-Many Relations</li>
+    <br/>
+    <ul>
+        <li>Scenario: User has many Posts.</li>
+        <br/>
+        <li><b>Delete parent (with Cascade):</b></li>
+<pre><code class="language-typescript line-numbers">// Schema has: onDelete: Cascade
+
+await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Deletes user + all their posts automatically</code></pre>
+        <br/>
+        <li><b>Delete parent (with SetNull):</b></li>
+<pre><code class="language-typescript line-numbers">// Schema has: onDelete: SetNull
+// authorId must be Int? (optional)
+
+await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Deletes user
+// Posts now have authorId = null</code></pre>
+        <br/>
+        <li><b>Delete parent (with Restrict):</b></li>
+<pre><code class="language-typescript line-numbers">// Schema has: onDelete: Restrict
+
+// Must delete posts first
+await prisma.post.deleteMany({
+  where: { authorId: 1 }
+})
+
+// Then delete user
+await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Or handle error:
+try {
+  await prisma.user.delete({
+    where: { id: 1 }
+  })
+} catch (error) {
+  if (error.code === 'P2003') {
+    console.log('Cannot delete: user has posts')
+  }
+}</code></pre>
+        <br/>
+        <li><b>Delete child record:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.delete({
+  where: { id: 1 }
+})
+
+// Deletes only the post
+// User remains unchanged</code></pre>
+        <br/>
+        <li><b>Delete all children:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.deleteMany({
+  where: { authorId: 1 }
+})
+
+// Deletes all posts by user 1
+// User remains unchanged</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deleting with One-to-One Relations</li>
+    <br/>
+    <ul>
+        <li>Scenario: User has one Profile.</li>
+        <br/>
+        <li><b>Delete parent (with Cascade):</b></li>
+<pre><code class="language-prisma line-numbers">model Profile {
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}</code></pre>
+<pre><code class="language-typescript line-numbers">await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Deletes user + their profile automatically</code></pre>
+        <br/>
+        <li><b>Delete parent (with SetNull):</b></li>
+<pre><code class="language-prisma line-numbers">model Profile {
+  userId Int?  @unique  // Must be optional
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}</code></pre>
+<pre><code class="language-typescript line-numbers">await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Deletes user
+// Profile's userId becomes null
+// Profile itself remains in database</code></pre>
+        <br/>
+        <li><b>Delete child (profile):</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.profile.delete({
+  where: { userId: 1 }
+})
+
+// Or by profile ID:
+await prisma.profile.delete({
+  where: { id: 1 }
+})
+
+// Deletes only the profile
+// User remains unchanged</code></pre>
+        <br/>
+        <li><b>Check if profile exists before deleting user:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  include: { profile: true }
+})
+
+if (user?.profile) {
+  // Delete profile first
+  await prisma.profile.delete({
+    where: { id: user.profile.id }
+  })
+}
+
+// Then delete user
+await prisma.user.delete({
+  where: { id: 1 }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deleting with Many-to-Many Relations</li>
+    <br/>
+    <ul>
+        <li>Scenario: Post has many Tags, Tag has many Posts.</li>
+        <br/>
+        <li><b>Delete post (implicit many-to-many):</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.delete({
+  where: { id: 1 }
+})
+
+// Deletes post
+// Join table entries are automatically removed
+// Tags themselves remain (not deleted)</code></pre>
+        <br/>
+        <li><b>Delete tag:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.tag.delete({
+  where: { id: 1 }
+})
+
+// Deletes tag
+// Join table entries are automatically removed
+// Posts themselves remain (not deleted)</code></pre>
+        <br/>
+        <li><b>Explicit many-to-many with join table:</b></li>
+<pre><code class="language-prisma line-numbers">model Post {
+  postTags PostTag[]
+}
+
+model Tag {
+  postTags PostTag[]
+}
+
+model PostTag {
+  postId Int
+  tagId  Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+}</code></pre>
+<pre><code class="language-typescript line-numbers">// Delete post
+await prisma.post.delete({
+  where: { id: 1 }
+})
+
+// PostTag entries with postId = 1 are deleted (cascade)
+// Tags remain
+
+// Delete tag
+await prisma.tag.delete({
+  where: { id: 1 }
+})
+
+// PostTag entries with tagId = 1 are deleted (cascade)
+// Posts remain</code></pre>
+        <br/>
+        <li><b>Many-to-many deletions never delete the other side automatically:</b></li>
+        <ul>
+            <li>Deleting a post never deletes tags</li>
+            <li>Deleting a tag never deletes posts</li>
+            <li>Only the join table entries are removed</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>deleteMany: Deleting Multiple Records</li>
+    <br/>
+    <ul>
+        <li><code>deleteMany()</code> deletes all records matching criteria.</li>
+        <br/>
+        <li><b>Syntax structure:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL_NAME.deleteMany({
+  where: {
+    // Filter criteria (can use ANY fields, not just unique)
+  }
+})</code></pre>
+        <br/>
+        <li><b>Key differences from delete():</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>delete()</th>
+            <th>deleteMany()</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>where clause</td>
+            <td>Must use unique field</td>
+            <td>Can use any field(s)</td>
+        </tr>
+        <tr>
+            <td>Records affected</td>
+            <td>Exactly one (or error)</td>
+            <td>Zero or more</td>
+        </tr>
+        <tr>
+            <td>Return value</td>
+            <td>Deleted record</td>
+            <td><code>{ count: n }</code></td>
+        </tr>
+        <tr>
+            <td>Error if not found</td>
+            <td>Yes</td>
+            <td>No (returns count: 0)</td>
+        </tr>
+        <tr>
+            <td>select/include</td>
+            <td>Supported</td>
+            <td>NOT supported</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Delete all matching records:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.user.deleteMany({
+  where: {
+    isActive: false
+  }
+})
+
+console.log(result)
+// { count: 5 }  // Deleted 5 inactive users</code></pre>
+        <br/>
+        <li><b>Delete with multiple conditions:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.deleteMany({
+  where: {
+    published: false,
+    createdAt: {
+      lt: new Date('2024-01-01')
+    }
+  }
+})
+
+// Deletes all unpublished posts created before 2024</code></pre>
+        <br/>
+        <li><b>Delete with comparison operators:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.deleteMany({
+  where: {
+    views: {
+      lt: 10  // Less than 10 views
+    }
+  }
+})
+
+// Deletes all posts with few views</code></pre>
+        <br/>
+        <li><b>Delete all records (no where clause):</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.deleteMany()
+
+// Deletes ALL users (use with extreme caution!)
+// Same as: deleteMany({ where: {} })</code></pre>
+        <br/>
+        <li><b>Delete returns count, not records:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.user.deleteMany({
+  where: { age: { lt: 18 } }
+})
+
+console.log(result)
+// { count: 12 }
+
+// Cannot do select or include with deleteMany
+// Cannot get the deleted records back</code></pre>
+        <br/>
+        <li><b>No error if nothing deleted:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.user.deleteMany({
+  where: { age: 200 }  // No users match
+})
+
+console.log(result)
+// { count: 0 }
+
+// No error thrown (unlike delete())</code></pre>
+        <br/>
+        <li><b>Delete by relation filter:</b></li>
+<pre><code class="language-typescript line-numbers">// Delete all users who have no posts
+await prisma.user.deleteMany({
+  where: {
+    posts: {
+      none: {}
+    }
+  }
+})
+
+// Delete all posts by specific author
+await prisma.post.deleteMany({
+  where: {
+    author: {
+      email: "alice@example.com"
+    }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deleting Related Records First</li>
+    <br/>
+    <ul>
+        <li>When <code>onDelete: Restrict</code>, you must delete related records first.</li>
+        <br/>
+        <li><b>Delete in correct order:</b></li>
+<pre><code class="language-typescript line-numbers">// Step 1: Delete posts
+await prisma.post.deleteMany({
+  where: { authorId: 1 }
+})
+
+// Step 2: Delete profile
+await prisma.profile.delete({
+  where: { userId: 1 }
+})
+
+// Step 3: Delete user
+await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Order matters when Restrict is used!</code></pre>
+        <br/>
+        <li><b>Delete in transaction (all or nothing):</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.$transaction([
+  prisma.post.deleteMany({ where: { authorId: 1 } }),
+  prisma.profile.delete({ where: { userId: 1 } }),
+  prisma.user.delete({ where: { id: 1 } })
+])
+
+// All deletions succeed or all fail
+// Prevents partial deletion</code></pre>
+        <br/>
+        <li><b>Nested deletions in single operation:</b></li>
+<pre><code class="language-typescript line-numbers">// This doesn't exist in Prisma - you can't do:
+// await prisma.user.delete({
+//   where: { id: 1 },
+//   data: {
+//     posts: { deleteMany: {} }
+//   }
+// })
+
+// Instead use Cascade or manual deletion</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Soft Delete Pattern</li>
+    <br/>
+    <ul>
+        <li>Soft delete = mark as deleted instead of actually deleting.</li>
+        <br/>
+        <li><b>Add deletedAt field to schema:</b></li>
+<pre><code class="language-prisma line-numbers">model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String
+  deletedAt DateTime?
+}</code></pre>
+        <br/>
+        <li><b>Soft delete implementation:</b></li>
+<pre><code class="language-typescript line-numbers">// "Delete" user
+await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    deletedAt: new Date()
+  }
+})
+
+// User is marked as deleted but still in database</code></pre>
+        <br/>
+        <li><b>Filter out soft-deleted records:</b></li>
+<pre><code class="language-typescript line-numbers">// Get active users only
+const activeUsers = await prisma.user.findMany({
+  where: {
+    deletedAt: null
+  }
+})
+
+// Get deleted users
+const deletedUsers = await prisma.user.findMany({
+  where: {
+    deletedAt: {
+      not: null
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Restore soft-deleted record:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    deletedAt: null
+  }
+})
+
+// User is restored</code></pre>
+        <br/>
+        <li><b>Hard delete soft-deleted records:</b></li>
+<pre><code class="language-typescript line-numbers">// Permanently delete records deleted over 30 days ago
+const thirtyDaysAgo = new Date()
+thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+await prisma.user.deleteMany({
+  where: {
+    deletedAt: {
+      lt: thirtyDaysAgo
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Global soft delete with middleware:</b></li>
+<pre><code class="language-typescript line-numbers">// Automatically filter soft-deleted records
+prisma.$use(async (params, next) => {
+  // Intercept findMany, findFirst, findUnique
+  if (params.action === 'findMany' || params.action === 'findFirst') {
+    // Add deletedAt: null filter
+    params.args.where = {
+      ...params.args.where,
+      deletedAt: null
+    }
+  }
+
+  // Intercept delete and convert to update
+  if (params.action === 'delete') {
+    params.action = 'update'
+    params.args.data = { deletedAt: new Date() }
+  }
+
+  if (params.action === 'deleteMany') {
+    params.action = 'updateMany'
+    params.args.data = { deletedAt: new Date() }
+  }
+
+  return next(params)
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Handling</li>
+    <br/>
+    <ul>
+        <li><b>Record not found:</b></li>
+<pre><code class="language-typescript line-numbers">try {
+  await prisma.user.delete({
+    where: { id: 9999 }
+  })
+} catch (error) {
+  if (error.code === 'P2025') {
+    console.log('Record to delete does not exist')
+  }
+}
+
+// Alternative: check first
+const user = await prisma.user.findUnique({ where: { id: 9999 } })
+if (user) {
+  await prisma.user.delete({ where: { id: 9999 } })
+} else {
+  console.log('User not found')
+}</code></pre>
+        <br/>
+        <li><b>Foreign key constraint (Restrict):</b></li>
+<pre><code class="language-typescript line-numbers">try {
+  await prisma.user.delete({
+    where: { id: 1 }
+  })
+} catch (error) {
+  if (error.code === 'P2003') {
+    console.log('Cannot delete: user has related records')
+    // Could be posts, profile, etc.
+  }
+}</code></pre>
+        <br/>
+        <li><b>Handle gracefully:</b></li>
+<pre><code class="language-typescript line-numbers">async function safeDelete(userId: number) {
+  try {
+    const deleted = await prisma.user.delete({
+      where: { id: userId }
+    })
+    return { success: true, deleted }
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return { success: false, error: 'User not found' }
+    }
+    if (error.code === 'P2003') {
+      return { success: false, error: 'User has related records' }
+    }
+    throw error  // Re-throw unexpected errors
+  }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Transactions for Safe Deletion</li>
+    <br/>
+    <ul>
+        <li>Use transactions to ensure all-or-nothing deletion.</li>
+        <br/>
+        <li><b>Sequential transaction:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.$transaction([
+  prisma.post.deleteMany({ where: { authorId: 1 } }),
+  prisma.profile.delete({ where: { userId: 1 } }),
+  prisma.user.delete({ where: { id: 1 } })
+])
+
+// Either all deletions succeed or all fail
+// Database remains consistent</code></pre>
+        <br/>
+        <li><b>Interactive transaction:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.$transaction(async (tx) => {
+  // Delete posts
+  const deletedPosts = await tx.post.deleteMany({
+    where: { authorId: 1 }
+  })
+
+  console.log(`Deleted ${deletedPosts.count} posts`)
+
+  // Delete profile
+  await tx.profile.delete({
+    where: { userId: 1 }
+  })
+
+  // Delete user
+  const deletedUser = await tx.user.delete({
+    where: { id: 1 }
+  })
+
+  return deletedUser
+})</code></pre>
+        <br/>
+        <li><b>Rollback on error:</b></li>
+<pre><code class="language-typescript line-numbers">try {
+  await prisma.$transaction(async (tx) => {
+    await tx.post.deleteMany({ where: { authorId: 1 } })
+
+    // Some logic
+    if (someCondition) {
+      throw new Error('Cannot proceed')
+    }
+
+    await tx.user.delete({ where: { id: 1 } })
+  })
+} catch (error) {
+  console.log('Transaction rolled back')
+  // All deletions undone
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Batch Deletion Strategies</li>
+    <br/>
+    <ul>
+        <li><b>Delete in batches to avoid timeouts:</b></li>
+<pre><code class="language-typescript line-numbers">// Delete old records in batches
+async function deleteOldRecords() {
+  const batchSize = 1000
+  let deletedCount = 0
+
+  while (true) {
+    const result = await prisma.post.deleteMany({
+      where: {
+        createdAt: {
+          lt: new Date('2020-01-01')
+        }
+      },
+      take: batchSize
+    })
+
+    deletedCount += result.count
+
+    if (result.count < batchSize) {
+      break  // No more records to delete
+    }
+
+    // Optional: add delay to reduce database load
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+
+  console.log(`Deleted ${deletedCount} records`)
+}</code></pre>
+        <br/>
+        <li><b>Delete with progress tracking:</b></li>
+<pre><code class="language-typescript line-numbers">async function deleteWithProgress() {
+  // Count total first
+  const total = await prisma.post.count({
+    where: { published: false }
+  })
+
+  let deleted = 0
+  const batchSize = 100
+
+  while (deleted < total) {
+    const result = await prisma.post.deleteMany({
+      where: { published: false },
+      take: batchSize
+    })
+
+    deleted += result.count
+    console.log(`Progress: ${deleted}/${total}`)
+
+    if (result.count === 0) break
+  }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Delete Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Delete user and all data:</b></li>
+<pre><code class="language-typescript line-numbers">// With Cascade in schema, just:
+await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Without Cascade:
+await prisma.$transaction([
+  prisma.post.deleteMany({ where: { authorId: 1 } }),
+  prisma.comment.deleteMany({ where: { userId: 1 } }),
+  prisma.profile.delete({ where: { userId: 1 } }),
+  prisma.user.delete({ where: { id: 1 } })
+])</code></pre>
+        <br/>
+        <li><b>Delete old inactive records:</b></li>
+<pre><code class="language-typescript line-numbers">const sixMonthsAgo = new Date()
+sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+
+await prisma.user.deleteMany({
+  where: {
+    isActive: false,
+    lastLogin: {
+      lt: sixMonthsAgo
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Delete orphaned records:</b></li>
+<pre><code class="language-typescript line-numbers">// Delete posts with no author (if authorId is optional)
+await prisma.post.deleteMany({
+  where: {
+    authorId: null
+  }
+})
+
+// Delete tags not used in any posts
+const unusedTags = await prisma.tag.findMany({
+  where: {
+    posts: {
+      none: {}
+    }
+  }
+})
+
+for (const tag of unusedTags) {
+  await prisma.tag.delete({ where: { id: tag.id } })
+}</code></pre>
+        <br/>
+        <li><b>Archive before delete:</b></li>
+<pre><code class="language-typescript line-numbers">// Copy to archive table before deleting
+const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  include: { posts: true, profile: true }
+})
+
+if (user) {
+  // Save to archive
+  await prisma.archivedUser.create({
+    data: {
+      originalId: user.id,
+      data: JSON.stringify(user),
+      archivedAt: new Date()
+    }
+  })
+
+  // Then delete
+  await prisma.user.delete({ where: { id: 1 } })
+}</code></pre>
+        <br/>
+        <li><b>Conditional delete:</b></li>
+<pre><code class="language-typescript line-numbers">// Only delete if no recent activity
+const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  include: {
+    posts: {
+      where: {
+        createdAt: {
+          gt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // 30 days
+        }
+      }
+    }
+  }
+})
+
+if (user && user.posts.length === 0) {
+  await prisma.user.delete({ where: { id: 1 } })
+  console.log('User deleted')
+} else {
+  console.log('User has recent activity, not deleting')
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Performance Considerations</li>
+    <br/>
+    <ul>
+        <li><b>Cascade deletions can be expensive:</b></li>
+<pre><code class="language-typescript line-numbers">// Deleting user with 10,000 posts
+await prisma.user.delete({
+  where: { id: 1 }
+})
+
+// Database must delete 1 user + 10,000 posts
+// Can be slow and lock tables
+
+// Alternative: delete in batches first
+await prisma.post.deleteMany({
+  where: { authorId: 1 }
+})
+
+await prisma.user.delete({
+  where: { id: 1 }
+})</code></pre>
+        <br/>
+        <li><b>Use indexes on foreign keys:</b></li>
+<pre><code class="language-prisma line-numbers">model Post {
+  id       Int  @id
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id])
+
+  @@index([authorId])  // Makes deleteMany faster
+}</code></pre>
+        <br/>
+        <li><b>Delete vs deleteMany performance:</b></li>
+<pre><code class="language-typescript line-numbers">// Slower - multiple queries
+for (const id of userIds) {
+  await prisma.user.delete({ where: { id } })
+}
+
+// Faster - single query
+await prisma.user.deleteMany({
+  where: {
+    id: { in: userIds }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Summary: Delete Syntax Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Basic delete:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.delete({
+  where: { uniqueField: value }
+})</code></pre>
+        <br/>
+        <li><b>Delete many:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.deleteMany({
+  where: { anyField: value }  // Can use any field
+})
+// Returns: { count: n }</code></pre>
+        <br/>
+        <li><b>Delete with select:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.delete({
+  where: { id: 1 },
+  select: { field: true }
+})</code></pre>
+        <br/>
+        <li><b>Delete with include:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.delete({
+  where: { id: 1 },
+  include: { relation: true }
+})</code></pre>
+        <br/>
+        <li><b>Delete in transaction:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.$transaction([
+  prisma.MODEL1.deleteMany({ where: { } }),
+  prisma.MODEL2.delete({ where: { } })
+])</code></pre>
+        <br/>
+        <li><b>Soft delete:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.update({
+  where: { id: 1 },
+  data: { deletedAt: new Date() }
+})</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
