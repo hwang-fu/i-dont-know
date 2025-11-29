@@ -152,6 +152,7 @@
         <li><a href="#scm-syntax-overview">Syntax Overview</a></li>
         <li><a href="#scm-multiple-expressions">Multiple Expressions</a></li>
         <li><a href="#scm-naming-conventions">Naming Conventions</a></li>
+        <li><a href="#scm-compiler-interpreter">Interacting with Chez Scheme</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2313,6 +2314,873 @@ send-email-notification</code></pre>
 (connection-&gt;string my-conn)             ; Returns: "localhost:8080"</code></pre>
     </ul>
     <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-compiler-interpreter">Interacting with Chez Scheme</h3>
+<ol>
+
+    <li>Starting Chez Scheme</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme provides both an interactive REPL and a compiler.</li>
+        <br/>
+        <li><b>Starting the REPL:</b></li>
+<pre><code class="language-bash line-numbers"># Start interactive session
+$ scheme
+
+# Start with specific options
+$ scheme --script myscript.scm
+$ scheme --program myprogram.ss</code></pre>
+        <br/>
+        <li><b>Basic interaction:</b></li>
+<pre><code class="language-scheme line-numbers">> (+ 2 3)
+5
+
+> (define x 10)
+
+> x
+10
+
+> (string-append "Hello, " "World!")
+"Hello, World!"</code></pre>
+        <br/>
+        <li><b>Exiting the REPL:</b></li>
+<pre><code class="language-scheme line-numbers">; Method 1: Use exit procedure
+> (exit)
+
+; Method 2: Ctrl+D (Unix/Linux/Mac)
+> ^D
+
+; Method 3: Ctrl+Z then Enter (Windows)
+> ^Z</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Loading and Compiling Files</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme can load source files or compiled object files.</li>
+        <br/>
+        <li><b>Loading source files with load:</b></li>
+<pre><code class="language-scheme line-numbers">; Load a Scheme source file
+> (load "myfile.ss")
+
+; Load with .scm extension
+> (load "library.scm")
+
+; Load from specific path
+> (load "/home/user/code/utils.ss")
+
+; Load relative to current directory
+> (load "./helpers/math.ss")</code></pre>
+        <br/>
+        <li><b>What load does:</b></li>
+        <ul>
+            <li>Reads and evaluates all expressions in the file</li>
+            <li>Definitions become available immediately</li>
+            <li>Side effects (like <code>display</code>) happen during load</li>
+        </ul>
+        <br/>
+        <li><b>Example file to load:</b></li>
+<pre><code class="language-scheme line-numbers">; File: math-utils.ss
+(define (square x)
+  (* x x))
+
+(define (cube x)
+  (* x x x))
+
+(display "Math utilities loaded")
+(newline)</code></pre>
+<pre><code class="language-scheme line-numbers">; In REPL
+> (load "math-utils.ss")
+Math utilities loaded
+
+> (square 5)
+25
+
+> (cube 3)
+27</code></pre>
+        <br/>
+        <li><b>Compiling files:</b></li>
+<pre><code class="language-scheme line-numbers">; Compile a source file to object file
+> (compile-file "myfile.ss")
+
+; This creates myfile.so (compiled object)</code></pre>
+        <br/>
+        <li><b>Loading compiled files:</b></li>
+<pre><code class="language-scheme line-numbers">; Load compiled object (faster)
+> (load "myfile.so")
+
+; Chez automatically uses .so if available
+> (load "myfile")  ; Loads myfile.so if it exists and is newer</code></pre>
+        <br/>
+        <li><b>Compilation workflow:</b></li>
+<pre><code class="language-bash line-numbers"># From command line
+$ echo '(compile-file "myfile.ss")' | scheme
+
+# Or in REPL
+> (compile-file "myfile.ss")
+> (exit)
+
+# Then load the compiled version
+$ scheme
+> (load "myfile.so")</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Command-Line Usage</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme supports various command-line options for different use cases.</li>
+        <br/>
+        <li><b>Running a script:</b></li>
+<pre><code class="language-bash line-numbers"># Execute script and exit
+$ scheme --script myscript.ss
+
+# With arguments
+$ scheme --script myscript.ss arg1 arg2 arg3</code></pre>
+        <br/>
+        <li><b>Running a program:</b></li>
+<pre><code class="language-bash line-numbers"># Run as R6RS program
+$ scheme --program myprogram.ss
+
+# Programs must start with library/import declarations
+$ scheme --program myprogram.ss arg1 arg2</code></pre>
+        <br/>
+        <li><b>Evaluating expressions:</b></li>
+<pre><code class="language-bash line-numbers"># Evaluate expression and exit
+$ scheme --eval '(display "Hello")' --eval '(newline)'
+
+# Combine multiple expressions
+$ scheme --eval '(+ 2 3)' --eval '(* 4 5)'</code></pre>
+        <br/>
+        <li><b>Loading files on startup:</b></li>
+<pre><code class="language-bash line-numbers"># Load file then start REPL
+$ scheme myfile.ss
+
+# Load multiple files
+$ scheme file1.ss file2.ss file3.ss
+
+# Load and run expression
+$ scheme myfile.ss --eval '(main)'</code></pre>
+        <br/>
+        <li><b>Common command-line options:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Option</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>--script file</code></td>
+            <td>Run script and exit</td>
+            <td><code>scheme --script test.ss</code></td>
+        </tr>
+        <tr>
+            <td><code>--program file</code></td>
+            <td>Run R6RS program and exit</td>
+            <td><code>scheme --program app.ss</code></td>
+        </tr>
+        <tr>
+            <td><code>--eval expr</code></td>
+            <td>Evaluate expression</td>
+            <td><code>scheme --eval '(+ 1 2)'</code></td>
+        </tr>
+        <tr>
+            <td><code>-q</code></td>
+            <td>Quiet mode (no banner)</td>
+            <td><code>scheme -q</code></td>
+        </tr>
+        <tr>
+            <td><code>--version</code></td>
+            <td>Display version and exit</td>
+            <td><code>scheme --version</code></td>
+        </tr>
+        <tr>
+            <td><code>--help</code></td>
+            <td>Display help message</td>
+            <td><code>scheme --help</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Example script file:</b></li>
+<pre><code class="language-scheme line-numbers">#!/usr/bin/env scheme --script
+; File: hello.ss
+
+(display "Hello from Chez Scheme!")
+(newline)
+
+; Access command-line arguments
+(display "Arguments: ")
+(display (command-line))
+(newline)</code></pre>
+<pre><code class="language-bash line-numbers"># Make executable
+$ chmod +x hello.ss
+
+# Run directly
+$ ./hello.ss arg1 arg2
+Hello from Chez Scheme!
+Arguments: ("./hello.ss" "arg1" "arg2")</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>REPL Special Commands and Features</li>
+    <br/>
+    <ul>
+        <li>The REPL provides special commands for development and debugging.</li>
+        <br/>
+        <li><b>Inspecting values:</b></li>
+<pre><code class="language-scheme line-numbers">; Display value with details
+> (define lst '(1 2 3))
+> lst
+(1 2 3)
+
+; Inspect procedure
+> car
+#&lt;procedure car&gt;
+
+; Get procedure information
+> (procedure-arity car)
+#&lt;arity (1)&gt;</code></pre>
+        <br/>
+        <li><b>Getting help and documentation:</b></li>
+<pre><code class="language-scheme line-numbers">; Load help system (if available)
+> (load "help.ss")
+
+; Describe a procedure
+> (describe '+)
+; Shows documentation for +
+
+; Apropos - search for procedures
+> (apropos "list")
+; Shows all procedures with "list" in name</code></pre>
+        <br/>
+        <li><b>Compiler and runtime information:</b></li>
+<pre><code class="language-scheme line-numbers">; Check Scheme version
+> (scheme-version)
+"10.0.0"
+
+; Machine type
+> (machine-type)
+'ta6le  ; or 'a6le, etc.
+
+; Optimize level
+> (optimize-level)
+2
+
+; Set optimize level (0-3)
+> (optimize-level 3)</code></pre>
+        <br/>
+        <li><b>Timing expressions:</b></li>
+<pre><code class="language-scheme line-numbers">; Time an expression
+> (time (+ 2 3))
+(time (+ 2 3))
+    no collections
+    0.000000s elapsed cpu time
+    0.000001s elapsed real time
+    0 bytes allocated
+5
+
+; Time a longer computation
+> (time (apply + (iota 1000000)))
+(time (apply + (iota 1000000)))
+    5 collections
+    0.021000s elapsed cpu time
+    0.021234s elapsed real time
+    24000016 bytes allocated
+499999500000</code></pre>
+        <br/>
+        <li><b>Viewing compiler output:</b></li>
+<pre><code class="language-scheme line-numbers">; Generate and view assembly
+> (expand '(lambda (x) (* x x)))
+; Shows expanded form
+
+; Compile and inspect
+> (compile '(lambda (x) (* x x)))
+#&lt;procedure&gt;</code></pre>
+        <br/>
+        <li><b>Multi-line input in REPL:</b></li>
+<pre><code class="language-scheme line-numbers">; REPL waits for complete expression
+> (define (factorial n)
+    (if (= n 0)
+        1
+        (* n (factorial (- n 1)))))
+
+> (factorial 5)
+120</code></pre>
+        <br/>
+        <li><b>Recovering from errors:</b></li>
+<pre><code class="language-scheme line-numbers">; Error example
+> (/ 1 0)
+Exception: attempt to divide by zero
+
+; REPL continues
+> (+ 2 3)
+5
+
+; Reset environment if needed
+> (reset)
+; Or restart REPL</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Working with Libraries and Imports</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme supports R6RS libraries and import system.</li>
+        <br/>
+        <li><b>Defining a library file:</b></li>
+<pre><code class="language-scheme line-numbers">; File: mylib.sls (Scheme Library Source)
+(library (mylib)
+  (export square cube double)
+  (import (chezscheme))
+
+  (define (square x)
+    (* x x))
+
+  (define (cube x)
+    (* x x x))
+
+  (define (double x)
+    (* 2 x)))</code></pre>
+        <br/>
+        <li><b>Importing a library in REPL:</b></li>
+<pre><code class="language-scheme line-numbers">; Import library
+> (import (mylib))
+
+; Use exported functions
+> (square 5)
+25
+
+> (cube 3)
+27
+
+> (double 10)
+20</code></pre>
+        <br/>
+        <li><b>Importing specific bindings:</b></li>
+<pre><code class="language-scheme line-numbers">; Import only specific functions
+> (import (only (mylib) square cube))
+
+; Import all except specific
+> (import (except (mylib) double))
+
+; Import with rename
+> (import (rename (mylib) (square sq)))
+> (sq 4)
+16
+
+; Import with prefix
+> (import (prefix (mylib) math:))
+> (math:square 5)
+25</code></pre>
+        <br/>
+        <li><b>Standard library imports:</b></li>
+<pre><code class="language-scheme line-numbers">; Import R6RS base library
+> (import (rnrs base))
+
+; Import specific R6RS libraries
+> (import (rnrs io simple))
+> (import (rnrs lists))
+> (import (rnrs sorting))
+
+; Import Chez-specific features
+> (import (chezscheme))
+
+; Multiple imports at once
+> (import (rnrs base)
+          (rnrs io simple)
+          (mylib))</code></pre>
+        <br/>
+        <li><b>Library search paths:</b></li>
+<pre><code class="language-scheme line-numbers">; Check current library paths
+> (library-directories)
+(("." . "."))
+
+; Add library path
+> (library-directories
+    '(("." . ".")
+      ("/usr/local/lib/scheme" . "/usr/local/lib/scheme/compiled")))
+
+; Now libraries in /usr/local/lib/scheme are searchable</code></pre>
+        <br/>
+        <li><b>Creating a program with imports:</b></li>
+<pre><code class="language-scheme line-numbers">; File: myprogram.ss
+#!chezscheme
+(import (chezscheme)
+        (mylib))
+
+(define (main)
+  (display "Square of 10: ")
+  (display (square 10))
+  (newline)
+
+  (display "Cube of 5: ")
+  (display (cube 5))
+  (newline))
+
+(main)</code></pre>
+<pre><code class="language-bash line-numbers"># Run the program
+$ scheme --program myprogram.ss
+Square of 10: 100
+Cube of 5: 125</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Compilation Options and Optimization</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme provides optimization levels and compilation controls.</li>
+        <br/>
+        <li><b>Optimization levels:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Level</th>
+            <th>Description</th>
+            <th>Use Case</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>0</code></td>
+            <td>No optimization, fastest compile</td>
+            <td>Development, debugging</td>
+        </tr>
+        <tr>
+            <td><code>1</code></td>
+            <td>Basic optimization</td>
+            <td>Default development</td>
+        </tr>
+        <tr>
+            <td><code>2</code></td>
+            <td>Standard optimization</td>
+            <td>Default (balanced)</td>
+        </tr>
+        <tr>
+            <td><code>3</code></td>
+            <td>Aggressive optimization</td>
+            <td>Production, performance</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Setting optimization level:</b></li>
+<pre><code class="language-scheme line-numbers">; In REPL
+> (optimize-level 3)
+
+; Now compilations use level 3
+> (compile-file "myfile.ss")
+
+; Check current level
+> (optimize-level)
+3</code></pre>
+        <br/>
+        <li><b>Safety vs speed trade-offs:</b></li>
+<pre><code class="language-scheme line-numbers">; Debug mode (more checks)
+> (debug-level 3)
+> (optimize-level 0)
+
+; Production mode (maximum speed)
+> (debug-level 0)
+> (optimize-level 3)
+
+; Balanced (default)
+> (debug-level 2)
+> (optimize-level 2)</code></pre>
+        <br/>
+        <li><b>Compiling with specific options:</b></li>
+<pre><code class="language-scheme line-numbers">; Set options before compiling
+(parameterize ([optimize-level 3]
+               [debug-level 0])
+  (compile-file "myfile.ss"))
+
+; Compile multiple files with settings
+(for-each
+  (lambda (file)
+    (parameterize ([optimize-level 3])
+      (compile-file file)))
+  '("file1.ss" "file2.ss" "file3.ss"))</code></pre>
+        <br/>
+        <li><b>Whole-program optimization:</b></li>
+<pre><code class="language-scheme line-numbers">; Compile library for whole-program optimization
+> (compile-library "mylib.sls")
+
+; Or with options
+> (parameterize ([optimize-level 3]
+                 [generate-wpo-files #t])
+    (compile-library "mylib.sls"))</code></pre>
+        <br/>
+        <li><b>Performance tips:</b></li>
+        <ul>
+            <li>Use <code>(optimize-level 3)</code> for production code</li>
+            <li>Compile files to <code>.so</code> for faster loading</li>
+            <li>Use type declarations when possible</li>
+            <li>Profile with <code>time</code> to find bottlenecks</li>
+            <li>Avoid <code>eval</code> and <code>load</code> in performance-critical code</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Debugging and Error Handling</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme provides tools for debugging and error inspection.</li>
+        <br/>
+        <li><b>Reading error messages:</b></li>
+<pre><code class="language-scheme line-numbers">; Error example
+> (car 42)
+Exception in car: 42 is not a pair
+
+; Error with context
+> (define (process x)
+    (car x))
+> (process 42)
+Exception in car: 42 is not a pair
+Exception occurred in process</code></pre>
+        <br/>
+        <li><b>Stack traces:</b></li>
+<pre><code class="language-scheme line-numbers">; Enable debug mode for better traces
+> (debug-level 3)
+
+; Now errors show more context
+> (define (a) (b))
+> (define (b) (c))
+> (define (c) (car 42))
+> (a)
+Exception in car: 42 is not a pair
+  in c
+  in b
+  in a</code></pre>
+        <br/>
+        <li><b>Exception handling:</b></li>
+<pre><code class="language-scheme line-numbers">; Try-catch style with guard
+(guard (ex
+        [(error? ex)
+         (display "Error caught: ")
+         (display (error-object-message ex))
+         (newline)
+         #f])
+  (car 42))
+; Prints: Error caught: car: 42 is not a pair
+; Returns: #f
+
+; With-exception-handler
+(with-exception-handler
+  (lambda (ex)
+    (display "Exception occurred")
+    (newline)
+    'error)
+  (lambda ()
+    (/ 1 0)))
+; Prints: Exception occurred
+; Returns: error</code></pre>
+        <br/>
+        <li><b>Tracing procedures:</b></li>
+<pre><code class="language-scheme line-numbers">; Define a function
+> (define (factorial n)
+    (if (= n 0)
+        1
+        (* n (factorial (- n 1)))))
+
+; Trace it
+> (trace factorial)
+
+; Now calls are traced
+> (factorial 5)
+|(factorial 5)
+| (factorial 4)
+| |(factorial 3)
+| | (factorial 2)
+| | |(factorial 1)
+| | | (factorial 0)
+| | | 1
+| | |1
+| | 2
+| |6
+| 24
+|120
+120
+
+; Untrace
+> (untrace factorial)</code></pre>
+        <br/>
+        <li><b>Break and inspect:</b></li>
+<pre><code class="language-scheme line-numbers">; Insert breakpoint
+(define (compute x y)
+  (let ((a (* x 2))
+        (b (+ y 3)))
+    (break)  ; Stop here
+    (+ a b)))
+
+; When break is hit, can inspect variables
+> (compute 5 10)
+Break in compute
+debug> a
+10
+debug> b
+13
+debug> (continue)</code></pre>
+        <br/>
+        <li><b>Pretty-printing for debugging:</b></li>
+<pre><code class="language-scheme line-numbers">; Pretty-print complex structures
+> (pretty-print '((a b c) (d (e f) g) (h i)))
+((a b c)
+ (d (e f) g)
+ (h i))
+
+; Print with line numbers
+> (pretty-print
+    '(define (long-function x y z)
+       (let ((a (+ x y))
+             (b (* y z)))
+         (+ a b))))
+(define (long-function x y z)
+  (let ((a (+ x y))
+        (b (* y z)))
+    (+ a b)))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Standalone Executables</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme can create standalone executable programs.</li>
+        <br/>
+        <li><b>Creating a boot file:</b></li>
+<pre><code class="language-scheme line-numbers">; Compile program to boot file
+$ echo '(make-boot-file "myapp.boot" '() "myprogram.ss")' | scheme
+
+; This creates a boot file containing your program</code></pre>
+        <br/>
+        <li><b>Running a boot file:</b></li>
+<pre><code class="language-bash line-numbers"># Run boot file with Scheme
+$ scheme -b myapp.boot
+
+# Or specify boot file and entry point
+$ scheme -b myapp.boot --eval '(main)'</code></pre>
+        <br/>
+        <li><b>Creating shell script wrapper:</b></li>
+<pre><code class="language-bash line-numbers">#!/bin/sh
+# File: myapp
+exec scheme -b myapp.boot "$@"</code></pre>
+<pre><code class="language-bash line-numbers"># Make executable
+$ chmod +x myapp
+
+# Run like a normal program
+$ ./myapp
+$ ./myapp arg1 arg2</code></pre>
+        <br/>
+        <li><b>Example: complete program structure</b></li>
+<pre><code class="language-scheme line-numbers">; File: myapp.ss
+#!chezscheme
+
+(import (chezscheme))
+
+(define (main args)
+  (display "MyApp v1.0")
+  (newline)
+  (when (> (length args) 1)
+    (display "Arguments: ")
+    (display (cdr args))
+    (newline))
+  (display "Hello from standalone app!")
+  (newline))
+
+; Auto-run main when loaded
+(main (command-line))</code></pre>
+<pre><code class="language-bash line-numbers"># Build steps
+$ scheme --compile-imported-libraries --program myapp.ss
+$ echo '(make-boot-file "myapp.boot" '() "myapp.ss")' | scheme
+
+# Create wrapper script
+$ cat > myapp << 'EOF'
+#!/bin/sh
+exec scheme -b myapp.boot "$@"
+EOF
+$ chmod +x myapp
+
+# Run
+$ ./myapp hello world
+MyApp v1.0
+Arguments: (hello world)
+Hello from standalone app!</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Workflow Examples</li>
+    <br/>
+    <ul>
+        <li><b>Interactive development workflow:</b></li>
+<pre><code class="language-scheme line-numbers">; 1. Start REPL
+$ scheme
+
+; 2. Load your code
+> (load "mycode.ss")
+
+; 3. Test functions interactively
+> (my-function test-data)
+
+; 4. Modify code in editor
+
+; 5. Reload
+> (load "mycode.ss")
+
+; 6. Test again
+> (my-function test-data)
+
+; Repeat 4-6 until satisfied</code></pre>
+        <br/>
+        <li><b>Library development workflow:</b></li>
+<pre><code class="language-bash line-numbers"># 1. Create library file
+$ cat > mylib.sls << 'EOF'
+(library (mylib)
+  (export func1 func2)
+  (import (chezscheme))
+  (define (func1 x) ...)
+  (define (func2 y) ...))
+EOF
+
+# 2. Compile library
+$ echo '(compile-library "mylib.sls")' | scheme
+
+# 3. Test in REPL
+$ scheme
+> (import (mylib))
+> (func1 test-input)
+
+# 4. Modify and recompile as needed</code></pre>
+        <br/>
+        <li><b>Script development workflow:</b></li>
+<pre><code class="language-bash line-numbers"># 1. Create script
+$ cat > myscript.ss << 'EOF'
+#!/usr/bin/env scheme --script
+(display "Running script")
+(newline)
+EOF
+
+# 2. Make executable
+$ chmod +x myscript.ss
+
+# 3. Test
+$ ./myscript.ss
+
+# 4. Debug if needed
+$ scheme
+> (load "myscript.ss")</code></pre>
+        <br/>
+        <li><b>Production deployment workflow:</b></li>
+<pre><code class="language-bash line-numbers"># 1. Set optimization and compile all files
+$ scheme &lt;&lt; 'EOF'
+(optimize-level 3)
+(debug-level 0)
+(compile-file "module1.ss")
+(compile-file "module2.ss")
+(compile-library "mylib.sls")
+(compile-program "main.ss")
+EOF
+
+# 2. Create boot file
+$ echo '(make-boot-file "app.boot" '() "main.ss")' | scheme
+
+# 3. Create launcher script
+$ cat > app << 'EOF'
+#!/bin/sh
+exec scheme -b app.boot "$@"
+EOF
+$ chmod +x app
+
+# 4. Deploy: copy app, app.boot, and .so files to target</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Tips and Best Practices</li>
+    <br/>
+    <ul>
+        <li><b>Development mode setup:</b></li>
+<pre><code class="language-scheme line-numbers">; In your .chezscheme.rc or startup file
+(optimize-level 1)
+(debug-level 3)
+(case-sensitive #t)
+(print-gensym #t)
+
+; Load commonly used utilities
+(load "~/scheme/utils.ss")</code></pre>
+        <br/>
+        <li><b>REPL productivity tips:</b></li>
+        <ul>
+            <li>Use arrow keys for command history</li>
+            <li>Use Tab for completion (if enabled)</li>
+            <li>Define helper functions in a utils file</li>
+            <li>Keep a scratch file for experiments</li>
+            <li>Use <code>(trace ...)</code> liberally during debugging</li>
+        </ul>
+        <br/>
+        <li><b>File organization:</b></li>
+<pre><code class="language-plaintext line-numbers">project/
+  src/
+    mylib.sls          ; Library definitions
+    module1.ss         ; Module source
+    module2.ss         ; Module source
+  compiled/
+    mylib.so           ; Compiled library
+    module1.so         ; Compiled module
+    module2.so         ; Compiled module
+  tests/
+    test-mylib.ss      ; Tests
+  scripts/
+    build.ss           ; Build script
+  main.ss              ; Entry point</code></pre>
+        <br/>
+        <li><b>Avoid common pitfalls:</b></li>
+<pre><code class="language-scheme line-numbers">; Don't redefine in REPL without restarting
+; if you change function signatures
+
+; Don't:
+> (define (func x) ...)      ; Define with 1 arg
+> (define (func x y) ...)    ; Redefine with 2 args
+; Old callers may still use 1-arg version!
+
+; Do: Restart REPL after signature changes
+; Or use parameterize for temporary changes
+
+; Don't load same file multiple times
+; without understanding effects
+
+; Don't rely on load order side effects
+
+; Do use libraries for clean interfaces</code></pre>
+        <br/>
+        <li><b>Performance considerations:</b></li>
+        <ul>
+            <li>Compile files for production use</li>
+            <li>Use <code>(optimize-level 3)</code> for hot paths</li>
+            <li>Profile before optimizing</li>
+            <li>Consider whole-program compilation for maximum performance</li>
+            <li>Avoid unnecessary <code>eval</code> calls</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
