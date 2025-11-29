@@ -150,6 +150,7 @@
     <h2> <img src="resources/chez.png" alt="Logo" class="nav-icon"/></h2>
     <ol style="line-height: 1.8;">
         <li><a href="#scm-syntax-overview">Syntax Overview</a></li>
+        <li><a href="#scm-multiple-expressions">Multiple Expressions</a></li>
     </ol>
 </nav>
 <hr/>
@@ -499,49 +500,49 @@ x                   ; Returns: 100</code></pre>
             <td><code>=</code></td>
             <td>Numeric equality</td>
             <td><code>(= 5 5)</code></td>
-            <td>#t</td>
+            <td><code>#t</code></td>
         </tr>
         <tr>
             <td><code>&lt;</code></td>
             <td>Less than</td>
             <td><code>(&lt; 3 5)</code></td>
-            <td>#t</td>
+            <td><code>#t</code></td>
         </tr>
         <tr>
             <td><code>&gt;</code></td>
             <td>Greater than</td>
             <td><code>(&gt; 5 3)</code></td>
-            <td>#t</td>
+            <td><code>#t</code></td>
         </tr>
         <tr>
             <td><code>&lt;=</code></td>
             <td>Less than or equal</td>
             <td><code>(&lt;= 5 5)</code></td>
-            <td>#t</td>
+            <td><code>#t</code></td>
         </tr>
         <tr>
             <td><code>&gt;=</code></td>
             <td>Greater than or equal</td>
             <td><code>(&gt;= 5 3)</code></td>
-            <td>#t</td>
+            <td><code>#t</code></td>
         </tr>
         <tr>
             <td><code>eq?</code></td>
             <td>Same object</td>
             <td><code>(eq? 'a 'a)</code></td>
-            <td>#t</td>
+            <td><code>#t</code></td>
         </tr>
         <tr>
             <td><code>eqv?</code></td>
             <td>Equivalent value</td>
             <td><code>(eqv? 5 5)</code></td>
-            <td>#t</td>
+            <td><code>#t</code></td>
         </tr>
         <tr>
             <td><code>equal?</code></td>
             <td>Structurally equal</td>
             <td><code>(equal? '(1 2) '(1 2))</code></td>
-            <td>#t</td>
+            <td><code>#t</code></td>
         </tr>
     </tbody>
 </table>
@@ -714,9 +715,10 @@ x                   ; Returns: 100</code></pre>
         <li><b>Difference between quote and list:</b></li>
 <pre><code class="language-scheme line-numbers">; With quote - literal
 '(+ 1 2)            ; Returns: (+ 1 2) - just a list of symbols
+'((+ 1 2) 3)        ; Returns: ((+ 1 2) 3)
 
 ; With list - evaluates arguments
-(list + 1 2)        ; Returns: (#<procedure:+> 1 2)
+(list + 1 2)        ; Returns: (#&lt;procedure:+&gt; 1 2)
 (list (+ 1 2) 3)    ; Returns: (3 3)</code></pre>
         <br/>
         <li><b>Accessing list elements:</b></li>
@@ -756,7 +758,7 @@ x                   ; Returns: 100</code></pre>
         </tr>
         <tr>
             <td><code>list-ref</code></td>
-            <td>Element at index</td>
+            <td>Element at index (0-based)</td>
             <td><code>(list-ref '(a b c) 1)</code></td>
             <td>b</td>
         </tr>
@@ -1332,7 +1334,495 @@ x                   ; Returns: 100</code></pre>
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-multiple-expressions">Multiple Expressions in Conditionals</h3>
+<ol>
 
+    <li>The Problem with if</li>
+    <br/>
+    <ul>
+        <li><b>if only accepts single expressions</b> for then and else branches.</li>
+        <br/>
+        <li><b>This doesn't work:</b></li>
+<pre><code class="language-scheme line-numbers">; ✗ Error - trying multiple expressions
+(if (> x 0)
+    (display "Positive")
+    (newline)           ; Error! if expects only one expression
+    (display "Negative"))
+</code></pre>
+        <br/>
+        <li>You need a way to <b>group multiple expressions into one</b>.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Solution: Using begin</li>
+    <br/>
+    <ul>
+        <li><b>begin:</b> Groups multiple expressions into a single expression.</li>
+        <br/>
+        <li><b>Syntax:</b></li>
+<pre><code class="language-scheme line-numbers">(begin
+  expression1
+  expression2
+  expression3
+  ...
+  final-expression)</code></pre>
+        <br/>
+        <li><b>What begin does:</b></li>
+        <ul>
+            <li>Evaluates all expressions in sequence (top to bottom)</li>
+            <li>Returns the value of the <b>last expression only</b></li>
+            <li>Side effects (like display, file I/O) from all expressions occur</li>
+        </ul>
+        <br/>
+        <li><b>Basic begin example:</b></li>
+<pre><code class="language-scheme line-numbers">(begin
+  (display "First")
+  (newline)
+  (display "Second")
+  (newline)
+  42)               ; This value is returned
+
+; Prints:
+; First
+; Second
+; Returns: 42</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using begin with if</li>
+    <br/>
+    <ul>
+        <li><b>Pattern for multiple expressions in then branch:</b></li>
+<pre><code class="language-scheme line-numbers">(if condition
+    (begin
+      expression1
+      expression2
+      ...)
+    else-expression)</code></pre>
+        <br/>
+        <li><b>Example:</b></li>
+<pre><code class="language-scheme line-numbers">(define x 10)
+
+(if (&gt; x 0)
+    (begin
+      (display "x is positive")
+      (newline)
+      (display "x = ")
+      (display x)
+      #t)           ; Return value
+    #f)
+
+; Prints:
+; x is positive
+; x = 10
+; Returns: #t</code></pre>
+        <br/>
+        <li><b>Multiple expressions in else branch:</b></li>
+<pre><code class="language-scheme line-numbers">(if (> x 0)
+    (display "Positive")
+    (begin
+      (display "Not positive")
+      (newline)
+      (display "Please enter a positive number")
+      #f))</code></pre>
+        <br/>
+        <li><b>Multiple expressions in both branches:</b></li>
+<pre><code class="language-scheme line-numbers">(if (> x 0)
+    (begin
+      (display "Positive: ")
+      (display x)
+      'positive)
+    (begin
+      (display "Not positive: ")
+      (display x)
+      'not-positive))</code></pre>
+        <br/>
+        <li><b>Real-world example - login check:</b></li>
+<pre><code class="language-scheme line-numbers">(define (login username password)
+  (if (and (string=? username "admin")
+           (string=? password "secret"))
+      (begin
+        (display "Login successful!")
+        (newline)
+        (display "Welcome, ")
+        (display username)
+        (newline)
+        #t)         ; Return success
+      (begin
+        (display "Login failed!")
+        (newline)
+        (display "Invalid credentials")
+        (newline)
+        #f)))       ; Return failure
+
+(login "admin" "secret")
+; Prints:
+; Login successful!
+; Welcome, admin
+; Returns: #t
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Alternative: when and unless</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme provides <code>when</code> and <code>unless</code> for common cases.</li>
+        <br/>
+        <li><b>when:</b> Execute multiple expressions if condition is true.</li>
+<pre><code class="language-scheme line-numbers">; Syntax
+(when condition
+  expression1
+  expression2
+  ...)
+
+; Equivalent to:
+(if condition
+    (begin expression1 expression2 ...)
+    (void))     ; or returns unspecified value</code></pre>
+        <br/>
+        <li><b>when example:</b></li>
+<pre><code class="language-scheme line-numbers">(define x 10)
+
+(when (&gt; x 0)
+  (display "x is positive")
+  (newline)
+  (display "x = ")
+  (display x))
+
+; No else branch needed
+; If condition is false, does nothing</code></pre>
+        <br/>
+        <li><b>unless:</b> Execute multiple expressions if condition is false.</li>
+<pre><code class="language-scheme line-numbers">; Syntax
+(unless condition
+  expression1
+  expression2
+  ...)
+
+; Equivalent to:
+(if (not condition)
+    (begin expression1 expression2 ...)
+    (void))</code></pre>
+        <br/>
+        <li><b>unless example:</b></li>
+<pre><code class="language-scheme line-numbers">(define balance 50)
+
+(unless (&gt;= balance 100)
+  (display "Warning: Low balance")
+  (newline)
+  (display "Current balance: ")
+  (display balance))
+
+; Executes when balance < 100</code></pre>
+        <br/>
+        <li><b>Comparison:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Form</th>
+            <th>When to Use</th>
+            <th>Has else?</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>if</code> + <code>begin</code></td>
+            <td>Need both then and else branches</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td><code>when</code></td>
+            <td>Only execute if true, no else needed</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>unless</code></td>
+            <td>Only execute if false, no else needed</td>
+            <td>No</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using cond for Multiple Expressions</li>
+    <br/>
+    <ul>
+        <li><code>cond</code> clauses can have multiple expressions without <code>begin</code>.</li>
+        <br/>
+        <li><b>Syntax:</b></li>
+<pre><code class="language-scheme line-numbers">(cond
+  (condition1
+    expression1
+    expression2
+    ...)
+  (condition2
+    expression1
+    expression2
+    ...)
+  (else
+    expression1
+    expression2
+    ...))</code></pre>
+        <br/>
+        <li><b>Example:</b></li>
+<pre><code class="language-scheme line-numbers">(define (grade-message score)
+  (cond
+    ((&gt;= score 90)
+     (display "Excellent!")
+     (newline)
+     (display "Grade: A")
+     'A)
+    ((&gt;= score 80)
+     (display "Good job!")
+     (newline)
+     (display "Grade: B")
+     'B)
+    ((&gt;= score 70)
+     (display "Passing")
+     (newline)
+     (display "Grade: C")
+     'C)
+    (else
+     (display "Failed")
+     (newline)
+     (display "Grade: F")
+     'F)))
+
+(grade-message 85)
+; Prints:
+; Good job!
+; Grade: B
+; Returns: B</code></pre>
+        <br/>
+        <li><b>Note:</b> Each clause can have multiple expressions, and the value of the last expression is returned if that clause matches.</li>
+        <br/>
+        <li><b>Comparison with if + begin:</b></li>
+<pre><code class="language-scheme line-numbers">; Using if + begin (verbose)
+(if (&gt;= score 90)
+    (begin
+      (display "Excellent!")
+      'A)
+    (if (&gt;= score 80)
+        (begin
+          (display "Good!")
+          'B)
+        ...))
+
+; Using cond (cleaner)
+(cond
+  ((&gt;= score 90)
+   (display "Excellent!")
+   'A)
+  ((&gt;= score 80)
+   (display "Good!")
+   'B)
+  ...)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Patterns and Examples</li>
+    <br/>
+    <ul>
+        <li><b>Pattern 1: Validation with multiple actions</b></li>
+<pre><code class="language-scheme line-numbers">(define (validate-age age)
+  (if (and (&gt;= age 0) (<= age 150))
+      (begin
+        (display "Age is valid")
+        (newline)
+        #t)
+      (begin
+        (display "Error: Invalid age")
+        (newline)
+        (display "Age must be between 0 and 150")
+        (newline)
+        #f)))
+</code></pre>
+        <br/>
+        <li><b>Pattern 2: Side effects only when condition is true</b></li>
+<pre><code class="language-scheme line-numbers">; Using when
+(when (file-exists? "config.txt")
+  (display "Loading config...")
+  (newline)
+  (load-config)
+  (display "Config loaded"))
+
+; Without when (more verbose)
+(if (file-exists? "config.txt")
+    (begin
+      (display "Loading config...")
+      (newline)
+      (load-config)
+      (display "Config loaded"))
+    (void))</code></pre>
+        <br/>
+        <li><b>Pattern 3: Guard clauses</b></li>
+<pre><code class="language-scheme line-numbers">(define (process-data data)
+  ; Early return with multiple expressions
+  (unless (valid-data? data)
+    (display "Error: Invalid data")
+    (newline)
+    (return-error))
+
+  ; Continue processing if valid
+  (display "Processing...")
+  (transform-data data))</code></pre>
+        <br/>
+        <li><b>Pattern 4: Logging with computation</b></li>
+<pre><code class="language-scheme line-numbers">(define (calculate x y)
+  (if (= y 0)
+      (begin
+        (display "Error: Division by zero")
+        (newline)
+        (display "Returning default value")
+        (newline)
+        0)
+      (begin
+        (display "Calculating: ")
+        (display x)
+        (display " / ")
+        (display y)
+        (newline)
+        (/ x y))))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>When begin is NOT Needed</li>
+    <br/>
+    <ul>
+        <li>Some forms already allow multiple expressions implicitly.</li>
+        <br/>
+        <li><b>Function bodies (define):</b></li>
+<pre><code class="language-scheme line-numbers">; begin NOT needed in function body
+(define (greet name)
+  (display "Hello, ")
+  (display name)
+  (display "!")
+  (newline)
+  'done)            ; Returns 'done
+
+; All expressions execute in sequence
+; Last one is the return value</code></pre>
+        <br/>
+        <li><b>let, let*, letrec bodies:</b></li>
+<pre><code class="language-scheme line-numbers">; begin NOT needed in let body
+(let ((x 10)
+      (y 20))
+  (display "Computing sum")
+  (newline)
+  (+ x y))          ; Returns 30</code></pre>
+        <br/>
+        <li><b>lambda bodies:</b></li>
+<pre><code class="language-scheme line-numbers">; begin NOT needed in lambda body
+(lambda (x)
+  (display "Processing: ")
+  (display x)
+  (newline)
+  (* x x))          ; Returns x squared</code></pre>
+        <br/>
+        <li><b>cond clauses:</b></li>
+<pre><code class="language-scheme line-numbers">; begin NOT needed in cond clauses
+(cond
+  ((> x 0)
+   (display "Positive")
+   (newline)
+   'pos)
+  (else
+   (display "Not positive")
+   'not-pos))</code></pre>
+        <br/>
+        <li><b>case clauses:</b></li>
+<pre><code class="language-scheme line-numbers">; begin NOT needed in case clauses
+(case n
+  ((1)
+   (display "One")
+   1)
+  ((2)
+   (display "Two")
+   2))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Summary: When to Use What</li>
+    <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Situation</th>
+            <th>Use</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Multiple expressions in if then/else</td>
+            <td><code>begin</code></td>
+            <td><code>(if test (begin e1 e2) e3)</code></td>
+        </tr>
+        <tr>
+            <td>Only execute if true, no else</td>
+            <td><code>when</code></td>
+            <td><code>(when test e1 e2)</code></td>
+        </tr>
+        <tr>
+            <td>Only execute if false, no else</td>
+            <td><code>unless</code></td>
+            <td><code>(unless test e1 e2)</code></td>
+        </tr>
+        <tr>
+            <td>Multi-way with multiple expressions</td>
+            <td><code>cond</code></td>
+            <td><code>(cond (t1 e1 e2) (t2 e3 e4))</code></td>
+        </tr>
+        <tr>
+            <td>In function/lambda/let body</td>
+            <td>Nothing (implicit)</td>
+            <td><code>(define (f) e1 e2)</code></td>
+        </tr>
+    </tbody>
+</table>
+    <br/>
+    <ul>
+        <li><b>Quick reference:</b></li>
+    </ul>
+<pre><code class="language-scheme line-numbers">; if with multiple expressions
+(if test
+    (begin e1 e2 e3)
+    (begin e4 e5 e6))
+
+; when (cleaner for one-sided if)
+(when test
+  e1
+  e2
+  e3)
+
+; unless (cleaner for negative one-sided if)
+(unless test
+  e1
+  e2
+  e3)
+
+; cond (no begin needed)
+(cond
+  (test1 e1 e2 e3)
+  (test2 e4 e5 e6)
+  (else e7 e8 e9))
+
+; Function body (no begin needed)
+(define (func)
+  e1
+  e2
+  e3)</code></pre>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
