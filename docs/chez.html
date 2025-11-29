@@ -151,6 +151,7 @@
     <ol style="line-height: 1.8;">
         <li><a href="#scm-syntax-overview">Syntax Overview</a></li>
         <li><a href="#scm-multiple-expressions">Multiple Expressions</a></li>
+        <li><a href="#scm-naming-conventions">Naming Conventions</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1822,6 +1823,496 @@ x                   ; Returns: 100</code></pre>
   e2
   e3)</code></pre>
     <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-naming-conventions">Chez Scheme Naming Conventions</h3>
+<ol>
+
+    <li>Understanding Scheme Identifiers</li>
+    <br/>
+    <ul>
+        <li>Scheme has flexible rules for naming variables and functions.</li>
+        <br/>
+        <li><b>Core principle:</b> Names should be descriptive and follow consistent patterns.</li>
+        <br/>
+        <li><b>Valid characters in identifiers:</b></li>
+        <ul>
+            <li>Letters: <code>a-z</code>, <code>A-Z</code></li>
+            <li>Digits: <code>0-9</code> (not at the start)</li>
+            <li>Special characters: <code>!</code> <code>$</code> <code>%</code> <code>&</code> <code>*</code> <code>+</code> <code>-</code> <code>.</code> <code>/</code> <code>:</code> <code>&lt;</code> <code>=</code> <code>&gt;</code> <code>?</code> <code>@</code> <code>^</code> <code>_</code> <code>~</code></li>
+        </ul>
+        <br/>
+        <li><b>Examples of valid identifiers:</b></li>
+<pre><code class="language-scheme line-numbers">; All valid
+x
+my-variable
+list->vector
+string-ref
+empty?
+set!
+<=
++
+make-counter
+file-exists?
+*global-config*</code></pre>
+        <br/>
+        <li><b>Examples of invalid identifiers:</b></li>
+<pre><code class="language-scheme line-numbers">; Invalid - starts with digit
+123abc
+
+; Invalid - contains space
+my variable
+
+; Invalid - contains special chars not allowed
+my#var
+item[0]
+value{x}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Predicate Naming Convention</li>
+    <br/>
+    <ul>
+        <li>Functions that return boolean values end with <code>?</code></li>
+        <br/>
+        <li><b>Purpose:</b> Immediately identifies a function as a test or check.</li>
+        <br/>
+        <li><b>Standard library examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Type predicates
+(number? 42)        ; Returns: #t
+(string? "hi")      ; Returns: #t
+(list? '(1 2 3))    ; Returns: #t
+(pair? '(a . b))    ; Returns: #t
+(null? '())         ; Returns: #t
+
+; Comparison predicates
+(zero? 0)           ; Returns: #t
+(positive? 5)       ; Returns: #t
+(negative? -3)      ; Returns: #t
+(even? 4)           ; Returns: #t
+(odd? 7)            ; Returns: #t
+
+; State predicates
+(eof-object? x)     ; Checks for EOF
+(file-exists? "test.txt")
+(char-whitespace? #\space)</code></pre>
+        <br/>
+        <li><b>Creating your own predicates:</b></li>
+<pre><code class="language-scheme line-numbers">(define (adult? age)
+  (>= age 18))
+
+(define (valid-email? email)
+  (and (string? email)
+       (string-contains? email "@")))
+
+(define (empty-list? lst)
+  (null? lst))
+
+; Using predicates
+(adult? 25)                    ; Returns: #t
+(valid-email? "test@test.com") ; Returns: #t
+(empty-list? '())              ; Returns: #t</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Mutating Function Convention</li>
+    <br/>
+    <ul>
+        <li>Functions that modify (mutate) their arguments end with <code>!</code></li>
+        <br/>
+        <li><b>Warning:</b> The <code>!</code> signals side effects - use with caution.</li>
+        <br/>
+        <li><b>Standard library examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Variable mutation
+(define x 10)
+(set! x 20)         ; Modifies x
+x                   ; Returns: 20
+
+; List mutation
+(define lst '(1 2 3))
+(set-car! lst 99)   ; Modifies first element
+lst                 ; Returns: (99 2 3)
+
+(set-cdr! lst '(8 9))
+lst                 ; Returns: (99 8 9)
+
+; Vector mutation
+(define vec #(1 2 3))
+(vector-set! vec 0 42)  ; Modifies element at index 0
+vec                     ; Returns: #(42 2 3)</code></pre>
+        <br/>
+        <li><b>Creating your own mutators:</b></li>
+<pre><code class="language-scheme line-numbers">(define (reset-counter! counter)
+  (set-car! counter 0))
+
+(define (increment! counter)
+  (set-car! counter (+ (car counter) 1)))
+
+(define (update-status! object new-status)
+  (set-car! (cdr object) new-status))
+
+; Usage
+(define my-counter (list 0))
+(increment! my-counter)
+my-counter              ; Returns: (1)</code></pre>
+        <br/>
+        <li><b>Contrast with non-mutating functions:</b></li>
+<pre><code class="language-scheme line-numbers">; Non-mutating - returns new value
+(define (increment counter)
+  (+ counter 1))
+
+(define x 5)
+(increment x)       ; Returns: 6
+x                   ; Still: 5
+
+; Mutating - modifies in place
+(define (increment! counter-box)
+  (set-car! counter-box
+            (+ (car counter-box) 1)))
+
+(define y (list 5))
+(increment! y)      ; Modifies y
+y                   ; Now: (6)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Conversion Convention</li>
+    <br/>
+    <ul>
+        <li>Conversion functions use <code>-&gt;</code> pattern: <code>source-&gt;target</code></li>
+        <br/>
+        <li><b>Pattern:</b> <code>(type-a-&gt;type-b value)</code> converts from type A to type B.</li>
+        <br/>
+        <li><b>Standard library examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Number conversions
+(string->number "42")       ; Returns: 42
+(number->string 123)        ; Returns: "123"
+(char->integer #\A)         ; Returns: 65
+(integer->char 65)          ; Returns: #\A
+
+; List/vector conversions
+(list->vector '(1 2 3))     ; Returns: #(1 2 3)
+(vector->list #(a b c))     ; Returns: (a b c)
+(list->string '(#\h #\i))   ; Returns: "hi"
+(string->list "abc")        ; Returns: (#\a #\b #\c)
+
+; Symbol conversions
+(symbol->string 'hello)     ; Returns: "hello"
+(string->symbol "world")    ; Returns: world</code></pre>
+        <br/>
+        <li><b>Creating your own converters:</b></li>
+<pre><code class="language-scheme line-numbers">(define (celsius->fahrenheit c)
+  (+ (* c 9/5) 32))
+
+(define (fahrenheit->celsius f)
+  (* (- f 32) 5/9))
+
+(define (list->set lst)
+  ; Convert list to set (remove duplicates)
+  (delete-duplicates lst))
+
+(define (record->alist rec)
+  ; Convert record to association list
+  (map cons (record-field-names rec)
+            (record-field-values rec)))
+
+; Usage
+(celsius->fahrenheit 100)   ; Returns: 212
+(fahrenheit->celsius 32)    ; Returns: 0
+(list->set '(1 2 2 3 3 3))  ; Returns: (1 2 3)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multi-word Identifier Convention</li>
+    <br/>
+    <ul>
+        <li>Use <code>kebab-case</code> (words separated by hyphens) for multi-word names.</li>
+        <br/>
+        <li><b>Scheme style:</b> <code>kebab-case</code> is standard, NOT <code>camelCase</code> or <code>snake_case</code></li>
+        <br/>
+        <li><b>Standard library examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Standard functions
+string-length
+string-append
+list-ref
+vector-set!
+make-vector
+call-with-current-continuation
+call-with-input-file
+read-char
+write-char</code></pre>
+        <br/>
+        <li><b>Creating your own multi-word names:</b></li>
+<pre><code class="language-scheme line-numbers">; Variables
+(define max-retry-count 5)
+(define database-connection-string "localhost:5432")
+(define user-input-buffer '())
+
+; Functions
+(define (calculate-total-price items tax-rate)
+  (* (apply + items) (+ 1 tax-rate)))
+
+(define (validate-user-credentials username password)
+  (and (valid-username? username)
+       (valid-password? password)))
+
+(define (send-email-notification recipient subject body)
+  (email-send recipient subject body))
+
+; Usage
+(calculate-total-price '(10 20 30) 0.1)  ; Returns: 66.0</code></pre>
+        <br/>
+        <li><b>Bad examples (don't do this):</b></li>
+<pre><code class="language-scheme line-numbers">; Wrong - camelCase (not Scheme style)
+calculateTotalPrice
+getUserInput
+sendEmailNotification
+
+; Wrong - snake_case (not Scheme style)
+calculate_total_price
+get_user_input
+send_email_notification
+
+; Right - kebab-case (Scheme style)
+calculate-total-price
+get-user-input
+send-email-notification</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Global Variable Convention</li>
+    <br/>
+    <ul>
+        <li>Global variables and parameters are sometimes surrounded by asterisks <code>*name*</code></li>
+        <br/>
+        <li><b>Note:</b> This convention is not universal in Scheme, but common in some codebases.</li>
+        <br/>
+        <li><b>Examples from libraries:</b></li>
+<pre><code class="language-scheme line-numbers">; Common in some Scheme systems
+*random-state*
+*default-input-port*
+*default-output-port*
+*error-port*
+*command-line-args*</code></pre>
+        <br/>
+        <li><b>Creating your own globals:</b></li>
+<pre><code class="language-scheme line-numbers">(define *debug-mode* #f)
+(define *max-connections* 100)
+(define *database-url* "localhost:5432")
+(define *application-version* "1.0.0")
+
+; Usage
+(when *debug-mode*
+  (display "Debug: Processing request")
+  (newline))
+
+(if (< (connection-count) *max-connections*)
+    (accept-connection)
+    (reject-connection))</code></pre>
+        <br/>
+        <li><b>Alternative convention:</b> Some prefer <code>%name</code> for internal/private globals</li>
+<pre><code class="language-scheme line-numbers">; Internal implementation details
+(define %internal-cache (make-hash-table))
+(define %debug-counter 0)
+(define %temporary-buffer (make-vector 1024))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Constructor and Maker Convention</li>
+    <br/>
+    <ul>
+        <li>Constructor functions often use <code>make-</code> prefix.</li>
+        <br/>
+        <li><b>Pattern:</b> <code>(make-type args...)</code> creates a new instance of type.</li>
+        <br/>
+        <li><b>Standard library examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Creating data structures
+(make-vector 10)                  ; Creates vector of size 10
+(make-vector 5 'x)                ; Creates #(x x x x x)
+(make-string 3 #\a)               ; Creates "aaa"
+(make-hash-table)                 ; Creates hash table
+(make-list 4 0)                   ; Creates (0 0 0 0)</code></pre>
+        <br/>
+        <li><b>Creating your own constructors:</b></li>
+<pre><code class="language-scheme line-numbers">(define (make-point x y)
+  (cons x y))
+
+(define (make-rectangle width height)
+  (list 'rectangle width height))
+
+(define (make-account name balance)
+  (list name balance '()))  ; name, balance, transaction-history
+
+(define (make-counter initial-value)
+  (let ((count initial-value))
+    (lambda ()
+      (set! count (+ count 1))
+      count)))
+
+; Usage
+(define p1 (make-point 10 20))
+(define r1 (make-rectangle 100 50))
+(define acc (make-account "John" 1000))
+(define counter (make-counter 0))
+(counter)  ; Returns: 1
+(counter)  ; Returns: 2</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Private/Internal Naming</li>
+    <br/>
+    <ul>
+        <li>Internal helper functions sometimes use <code>%</code> prefix or <code>-internal</code> suffix.</li>
+        <br/>
+        <li><b>Purpose:</b> Signals that a function is not part of the public API.</li>
+        <br/>
+        <li><b>Using % prefix:</b></li>
+<pre><code class="language-scheme line-numbers">; Public API
+(define (parse-expression expr)
+  (%validate-syntax expr)
+  (%transform-expr expr))
+
+; Internal helpers (not for public use)
+(define (%validate-syntax expr)
+  ; Internal validation logic
+  #t)
+
+(define (%transform-expr expr)
+  ; Internal transformation logic
+  expr)</code></pre>
+        <br/>
+        <li><b>Using -internal suffix:</b></li>
+<pre><code class="language-scheme line-numbers">; Public API
+(define (calculate-total items)
+  (apply + (map calculate-price-internal items)))
+
+; Internal helper
+(define (calculate-price-internal item)
+  (* (item-quantity item)
+     (item-unit-price item)
+     (+ 1 (item-tax-rate item))))</code></pre>
+        <br/>
+        <li><b>Nested definitions (alternative):</b></li>
+<pre><code class="language-scheme line-numbers">; Internal helpers defined inside public function
+(define (process-data data)
+  ; Helper only accessible within this function
+  (define (validate item)
+    (and (number? item) (positive? item)))
+
+  (define (transform item)
+    (* item 2))
+
+  ; Use helpers
+  (map transform (filter validate data)))
+
+(process-data '(1 -2 3 4))  ; Returns: (2 6 8)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Naming Patterns Summary</li>
+    <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Convention</th>
+            <th>Pattern</th>
+            <th>Examples</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Predicates (boolean returns)</td>
+            <td><code>name?</code></td>
+            <td><code>empty?</code>, <code>valid?</code>, <code>member?</code></td>
+        </tr>
+        <tr>
+            <td>Mutating functions</td>
+            <td><code>name!</code></td>
+            <td><code>set!</code>, <code>vector-set!</code>, <code>increment!</code></td>
+        </tr>
+        <tr>
+            <td>Type conversions</td>
+            <td><code>type-a-&gt;type-b</code></td>
+            <td><code>list-&gt;vector</code>, <code>string-&gt;number</code></td>
+        </tr>
+        <tr>
+            <td>Multi-word names</td>
+            <td><code>kebab-case</code></td>
+            <td><code>string-length</code>, <code>file-exists?</code></td>
+        </tr>
+        <tr>
+            <td>Global variables</td>
+            <td><code>*name*</code></td>
+            <td><code>*debug-mode*</code>, <code>*max-size*</code></td>
+        </tr>
+        <tr>
+            <td>Constructors</td>
+            <td><code>make-name</code></td>
+            <td><code>make-vector</code>, <code>make-point</code></td>
+        </tr>
+        <tr>
+            <td>Internal/private</td>
+            <td><code>%name</code> or <code>name-internal</code></td>
+            <td><code>%helper</code>, <code>parse-internal</code></td>
+        </tr>
+    </tbody>
+</table>
+    <br/>
+    <ul>
+        <li><b>Complete example using multiple conventions:</b></li>
+<pre><code class="language-scheme line-numbers">; Global configuration
+(define *max-retries* 3)
+
+; Constructor
+(define (make-connection host port)
+  (list host port 'disconnected))
+
+; Predicate
+(define (connected? conn)
+  (eq? (caddr conn) 'connected))
+
+; Type conversion
+(define (connection-&gt;string conn)
+  (string-append (car conn) ":" (number-&gt;string (cadr conn))))
+
+; Mutator
+(define (connect! conn)
+  (set-car! (cddr conn) 'connected))
+
+; Multi-word function
+(define (establish-secure-connection host port)
+  (let ((conn (make-connection host port)))
+    (when (%validate-host host)
+      (connect! conn))
+    conn))
+
+; Internal helper
+(define (%validate-host host)
+  (and (string? host)
+       (> (string-length host) 0)))
+
+; Usage
+(define my-conn (make-connection "localhost" 8080))
+(connected? my-conn)                    ; Returns: #f
+(connect! my-conn)
+(connected? my-conn)                    ; Returns: #t
+(connection-&gt;string my-conn)             ; Returns: "localhost:8080"</code></pre>
+    </ul>
+    <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
