@@ -149,7 +149,7 @@
 <nav id="toc" style="margin-bottom: 2rem;">
     <h2> <img src="resources/chez.png" alt="Logo" class="nav-icon"/></h2>
     <ol style="line-height: 1.8;">
-        <li><a href="#"></a></li>
+        <li><a href="#scm-syntax-overview">Syntax Overview</a></li>
     </ol>
 </nav>
 <hr/>
@@ -157,7 +157,1174 @@
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-syntax-overview">Chez Scheme Syntax Overview</h3>
+<ol>
 
+    <li>Understanding Scheme Basics</li>
+    <br/>
+    <ul>
+        <li>Scheme is a dialect of Lisp with minimal, elegant syntax.</li>
+        <br/>
+        <li><b>Core principle:</b> Everything is an expression that returns a value.</li>
+        <br/>
+        <li><b>Syntax pattern:</b> <code>(function arg1 arg2 arg3 ...)</code></li>
+        <ul>
+            <li>Parentheses group expressions</li>
+            <li>First element is the function/operator</li>
+            <li>Remaining elements are arguments</li>
+            <li>This is called "prefix notation" or "Polish notation"</li>
+        </ul>
+        <br/>
+        <li><b>Examples of basic syntax:</b></li>
+<pre><code class="language-scheme line-numbers">; Addition
+(+ 2 3)          ; Returns: 5
+
+; Multiplication
+(* 4 5)          ; Returns: 20
+
+; Function call
+(string-length "hello")  ; Returns: 5
+
+; Nested expressions
+(+ (* 2 3) 4)    ; Returns: 10
+                 ; First evaluates (* 2 3) = 6
+                 ; Then evaluates (+ 6 4) = 10</code></pre>
+        <br/>
+        <li><b>Comments:</b></li>
+<pre><code class="language-scheme line-numbers">; Single-line comment starts with semicolon
+
+#|
+  Multi-line
+  comment between
+  #| and |#
+|#</code></pre>
+        <br/>
+        <li><b>Case sensitivity:</b> Scheme is case-insensitive by default, but Chez Scheme preserves case.</li>
+<pre><code class="language-scheme line-numbers">(define MyVar 10)
+MyVar    ; Works
+MYVAR    ; Doesn't Work</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Data Types</li>
+    <br/>
+    <ul>
+        <li>Scheme has several fundamental data types:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Examples</th>
+            <th>Predicate</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Number</td>
+            <td><code>42</code>, <code>3.14</code>, <code>1/3</code>, <code>2+3i</code></td>
+            <td><code>number?</code></td>
+        </tr>
+        <tr>
+            <td>Boolean</td>
+            <td><code>#t</code>, <code>#f</code></td>
+            <td><code>boolean?</code></td>
+        </tr>
+        <tr>
+            <td>String</td>
+            <td><code>"hello"</code>, <code>"world"</code></td>
+            <td><code>string?</code></td>
+        </tr>
+        <tr>
+            <td>Character</td>
+            <td><code>#\a</code>, <code>#\space</code></td>
+            <td><code>char?</code></td>
+        </tr>
+        <tr>
+            <td>Symbol</td>
+            <td><code>'foo</code>, <code>'bar</code></td>
+            <td><code>symbol?</code></td>
+        </tr>
+        <tr>
+            <td>List</td>
+            <td><code>'(1 2 3)</code>, <code>'(a b c)</code></td>
+            <td><code>list?</code></td>
+        </tr>
+        <tr>
+            <td>Pair</td>
+            <td><code>'(1 . 2)</code></td>
+            <td><code>pair?</code></td>
+        </tr>
+        <tr>
+            <td>Vector</td>
+            <td><code>#(1 2 3)</code></td>
+            <td><code>vector?</code></td>
+        </tr>
+        <tr>
+            <td>Procedure</td>
+            <td><code>(lambda (x) (* x x))</code></td>
+            <td><code>procedure?</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Numbers:</b></li>
+<pre><code class="language-scheme line-numbers">; Integers
+42
+-17
+0
+
+; Floating point
+3.14
+-2.5
+
+; Fractions (exact rationals)
+1/3
+22/7
+
+; Complex numbers
+2+3i
+-1-4i
+
+; Different bases
+#b1010      ; Binary (10 in decimal)
+#o755       ; Octal (493 in decimal)
+#x1A        ; Hexadecimal (26 in decimal)</code></pre>
+        <br/>
+        <li><b>Booleans:</b></li>
+<pre><code class="language-scheme line-numbers">#t          ; True
+#f          ; False
+
+; Everything except #f is considered true
+(if 0 'yes 'no)        ; Returns: yes
+(if "" 'yes 'no)       ; Returns: yes
+(if '() 'yes 'no)      ; Returns: yes
+(if #f 'yes 'no)       ; Returns: no</code></pre>
+        <br/>
+        <li><b>Strings:</b></li>
+<pre><code class="language-scheme line-numbers">"Hello, World!"
+"Multiple\nlines"
+"Escape \"quotes\""
+""              ; Empty string</code></pre>
+        <br/>
+        <li><b>Characters:</b></li>
+<pre><code class="language-scheme line-numbers">#\a             ; Letter 'a'
+#\Z             ; Letter 'Z'
+#\0             ; Digit '0'
+#\space         ; Space character
+#\newline       ; Newline character
+#\tab           ; Tab character</code></pre>
+        <br/>
+        <li><b>Symbols:</b></li>
+<pre><code class="language-scheme line-numbers">'foo            ; Symbol foo
+'hello-world    ; Symbol hello-world
+'+              ; Symbol +
+'lambda         ; Symbol lambda
+
+; Symbols are like unique identifiers/names</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Variables and Definitions</li>
+    <br/>
+    <ul>
+        <li><b>define:</b> Create global variables and functions.</li>
+        <br/>
+        <li><b>Syntax for variables:</b></li>
+<pre><code class="language-scheme line-numbers">(define variable-name value)</code></pre>
+        <br/>
+        <li><b>Examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Define a number
+(define x 10)
+x                   ; Returns: 10
+
+; Define a string
+(define message "Hello")
+message             ; Returns: "Hello"
+
+; Define using an expression
+(define y (* 5 4))
+y                   ; Returns: 20
+
+; Redefine (changes value)
+(define x 100)
+x                   ; Returns: 100</code></pre>
+        <br/>
+        <li><b>Syntax for functions:</b></li>
+<pre><code class="language-scheme line-numbers">(define (function-name parameter1 parameter2 ...)
+  body-expression)</code></pre>
+        <br/>
+        <li><b>Function examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Simple function
+(define (square x)
+  (* x x))
+
+(square 5)          ; Returns: 25
+
+; Multiple parameters
+(define (add a b)
+  (+ a b))
+
+(add 3 7)           ; Returns: 10
+
+; Multiple expressions (returns last one)
+(define (greet name)
+  (display "Processing...")
+  (newline)
+  (string-append "Hello, " name "!"))
+
+(greet "Alice")     ; Prints "Processing..." then returns "Hello, Alice!"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Arithmetic Operations</li>
+    <br/>
+    <ul>
+        <li>All arithmetic uses prefix notation.</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operation</th>
+            <th>Syntax</th>
+            <th>Example</th>
+            <th>Result</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Addition</td>
+            <td><code>(+ n1 n2 ...)</code></td>
+            <td><code>(+ 1 2 3)</code></td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>Subtraction</td>
+            <td><code>(- n1 n2 ...)</code></td>
+            <td><code>(- 10 3)</code></td>
+            <td>7</td>
+        </tr>
+        <tr>
+            <td>Multiplication</td>
+            <td><code>(* n1 n2 ...)</code></td>
+            <td><code>(* 2 3 4)</code></td>
+            <td>24</td>
+        </tr>
+        <tr>
+            <td>Division</td>
+            <td><code>(/ n1 n2 ...)</code></td>
+            <td><code>(/ 10 2)</code></td>
+            <td>5</td>
+        </tr>
+        <tr>
+            <td>Quotient</td>
+            <td><code>(quotient n1 n2)</code></td>
+            <td><code>(quotient 10 3)</code></td>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td>Remainder</td>
+            <td><code>(remainder n1 n2)</code></td>
+            <td><code>(remainder 10 3)</code></td>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>Modulo</td>
+            <td><code>(modulo n1 n2)</code></td>
+            <td><code>(modulo 10 3)</code></td>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>Exponentiation</td>
+            <td><code>(expt base exp)</code></td>
+            <td><code>(expt 2 8)</code></td>
+            <td>256</td>
+        </tr>
+        <tr>
+            <td>Square root</td>
+            <td><code>(sqrt n)</code></td>
+            <td><code>(sqrt 16)</code></td>
+            <td>4</td>
+        </tr>
+        <tr>
+            <td>Absolute value</td>
+            <td><code>(abs n)</code></td>
+            <td><code>(abs -5)</code></td>
+            <td>5</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Multiple arguments:</b></li>
+<pre><code class="language-scheme line-numbers">(+ 1 2 3 4 5)       ; Returns: 15
+(* 2 3 4)           ; Returns: 24
+
+; With single argument
+(+ 5)               ; Returns: 5
+(- 10)              ; Returns: -10 (negation)
+
+; No arguments
+(+)                 ; Returns: 0
+(*)                 ; Returns: 1</code></pre>
+        <br/>
+        <li><b>Nested operations:</b></li>
+<pre><code class="language-scheme line-numbers">; Traditional: (2 + 3) * 4
+(* (+ 2 3) 4)       ; Returns: 20
+
+; Traditional: 2 + 3 * 4
+(+ 2 (* 3 4))       ; Returns: 14
+
+; Traditional: (10 - 2) / (3 + 1)
+(/ (- 10 2) (+ 3 1))  ; Returns: 2</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Comparison and Logical Operations</li>
+    <br/>
+    <ul>
+        <li><b>Comparison operators:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Operator</th>
+            <th>Description</th>
+            <th>Example</th>
+            <th>Result</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>=</code></td>
+            <td>Numeric equality</td>
+            <td><code>(= 5 5)</code></td>
+            <td>#t</td>
+        </tr>
+        <tr>
+            <td><code>&lt;</code></td>
+            <td>Less than</td>
+            <td><code>(&lt; 3 5)</code></td>
+            <td>#t</td>
+        </tr>
+        <tr>
+            <td><code>&gt;</code></td>
+            <td>Greater than</td>
+            <td><code>(&gt; 5 3)</code></td>
+            <td>#t</td>
+        </tr>
+        <tr>
+            <td><code>&lt;=</code></td>
+            <td>Less than or equal</td>
+            <td><code>(&lt;= 5 5)</code></td>
+            <td>#t</td>
+        </tr>
+        <tr>
+            <td><code>&gt;=</code></td>
+            <td>Greater than or equal</td>
+            <td><code>(&gt;= 5 3)</code></td>
+            <td>#t</td>
+        </tr>
+        <tr>
+            <td><code>eq?</code></td>
+            <td>Same object</td>
+            <td><code>(eq? 'a 'a)</code></td>
+            <td>#t</td>
+        </tr>
+        <tr>
+            <td><code>eqv?</code></td>
+            <td>Equivalent value</td>
+            <td><code>(eqv? 5 5)</code></td>
+            <td>#t</td>
+        </tr>
+        <tr>
+            <td><code>equal?</code></td>
+            <td>Structurally equal</td>
+            <td><code>(equal? '(1 2) '(1 2))</code></td>
+            <td>#t</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Comparison examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Numeric comparisons
+(= 5 5)             ; #t
+(= 5 6)             ; #f
+(&lt; 3 5)             ; #t
+(&gt; 5 3)             ; #t
+
+; Multiple arguments (chain)
+(&lt; 1 2 3 4)         ; #t (all comparisons true)
+(&lt; 1 3 2 4)         ; #f (3 is not &lt; 2)
+
+; String comparison
+(string=? "hello" "hello")    ; #t
+(string&lt;? "abc" "xyz")        ; #t
+</code></pre>
+        <br/>
+        <li><b>Logical operators:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Operator</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>and</code></td>
+            <td>Logical AND</td>
+            <td><code>(and #t #t)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>or</code></td>
+            <td>Logical OR</td>
+            <td><code>(or #f #t)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>not</code></td>
+            <td>Logical NOT</td>
+            <td><code>(not #t)</code> → #f</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Logical examples:</b></li>
+<pre><code class="language-scheme line-numbers">; AND - returns #f if any argument is #f
+(and #t #t #t)      ; #t
+(and #t #f #t)      ; #f
+
+; OR - returns #t if any argument is true
+(or #f #f #t)       ; #t
+(or #f #f #f)       ; #f
+
+; NOT
+(not #t)            ; #f
+(not #f)            ; #t
+
+; Short-circuit evaluation
+(and #f (display "This won't print"))  ; #f (doesn't evaluate second)
+(or #t (display "This won't print"))   ; #t (doesn't evaluate second)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Conditional Expressions</li>
+    <br/>
+    <ul>
+        <li><b>if expression syntax:</b></li>
+<pre><code class="language-scheme line-numbers">(if condition
+    then-expression
+    else-expression)</code></pre>
+        <br/>
+        <li><b>if examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Basic if
+(if (> 5 3)
+    "yes"
+    "no")           ; Returns: "yes"
+
+; If with computation
+(if (= (* 2 3) 6)
+    (+ 10 5)
+    (- 10 5))       ; Returns: 15
+
+; Nested if
+(define (sign x)
+  (if (< x 0)
+      "negative"
+      (if (= x 0)
+          "zero"
+          "positive")))
+
+(sign -5)           ; Returns: "negative"
+(sign 0)            ; Returns: "zero"
+(sign 5)            ; Returns: "positive"</code></pre>
+        <br/>
+        <li><b>cond expression (multi-way conditional):</b></li>
+<pre><code class="language-scheme line-numbers">(cond
+  (condition1 result1)
+  (condition2 result2)
+  (condition3 result3)
+  ...
+  (else default-result))</code></pre>
+        <br/>
+        <li><b>cond examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Multiple conditions
+(define (grade score)
+  (cond
+    ((>= score 90) "A")
+    ((>= score 80) "B")
+    ((>= score 70) "C")
+    ((>= score 60) "D")
+    (else "F")))
+
+(grade 85)          ; Returns: "B"
+(grade 55)          ; Returns: "F"
+
+; Without else
+(cond
+  ((< 5 3) "impossible")
+  ((> 5 3) "correct"))  ; Returns: "correct"</code></pre>
+        <br/>
+        <li><b>case expression (switch-like):</b></li>
+<pre><code class="language-scheme line-numbers">(case key-expression
+  ((value1 value2 ...) result1)
+  ((value3 value4 ...) result2)
+  ...
+  (else default-result))</code></pre>
+        <br/>
+        <li><b>case examples:</b></li>
+<pre><code class="language-scheme line-numbers">(define (day-name n)
+  (case n
+    ((1) "Monday")
+    ((2) "Tuesday")
+    ((3) "Wednesday")
+    ((4) "Thursday")
+    ((5) "Friday")
+    ((6 7) "Weekend")
+    (else "Invalid day")))
+
+(day-name 1)        ; Returns: "Monday"
+(day-name 6)        ; Returns: "Weekend"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Lists and Pairs</li>
+    <br/>
+    <ul>
+        <li>Lists are fundamental to Scheme.</li>
+        <br/>
+        <li><b>Creating lists:</b></li>
+<pre><code class="language-scheme line-numbers">; Quoted list (doesn't evaluate)
+'(1 2 3 4)
+
+; Using list function
+(list 1 2 3 4)
+
+; Empty list
+'()
+(list)
+
+; Mixed types
+'(1 "hello" x #t)
+(list 1 "hello" 'x #t)</code></pre>
+        <br/>
+        <li><b>Difference between quote and list:</b></li>
+<pre><code class="language-scheme line-numbers">; With quote - literal
+'(+ 1 2)            ; Returns: (+ 1 2) - just a list of symbols
+
+; With list - evaluates arguments
+(list + 1 2)        ; Returns: (#<procedure:+> 1 2)
+(list (+ 1 2) 3)    ; Returns: (3 3)</code></pre>
+        <br/>
+        <li><b>Accessing list elements:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Function</th>
+            <th>Description</th>
+            <th>Example</th>
+            <th>Result</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>car</code></td>
+            <td>First element</td>
+            <td><code>(car '(1 2 3))</code></td>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td><code>cdr</code></td>
+            <td>Rest of list</td>
+            <td><code>(cdr '(1 2 3))</code></td>
+            <td>(2 3)</td>
+        </tr>
+        <tr>
+            <td><code>cadr</code></td>
+            <td>Second element</td>
+            <td><code>(cadr '(1 2 3))</code></td>
+            <td>2</td>
+        </tr>
+        <tr>
+            <td><code>caddr</code></td>
+            <td>Third element</td>
+            <td><code>(caddr '(1 2 3))</code></td>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td><code>list-ref</code></td>
+            <td>Element at index</td>
+            <td><code>(list-ref '(a b c) 1)</code></td>
+            <td>b</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>List manipulation:</b></li>
+<pre><code class="language-scheme line-numbers">; cons - add element to front
+(cons 1 '(2 3))             ; Returns: (1 2 3)
+(cons 'a '())               ; Returns: (a)
+
+; append - combine lists
+(append '(1 2) '(3 4))      ; Returns: (1 2 3 4)
+(append '(a) '(b) '(c))     ; Returns: (a b c)
+
+; length
+(length '(1 2 3 4))         ; Returns: 4
+(length '())                ; Returns: 0
+
+; reverse
+(reverse '(1 2 3))          ; Returns: (3 2 1)
+
+; member - find element
+(member 3 '(1 2 3 4))       ; Returns: (3 4)
+(member 'x '(a b c))        ; Returns: #f</code></pre>
+        <br/>
+        <li><b>Pairs (dotted pairs):</b></li>
+<pre><code class="language-scheme line-numbers">; Create pair with cons
+(cons 1 2)              ; Returns: (1 . 2)
+
+; Lists are chains of pairs ending in '()
+(cons 1 (cons 2 (cons 3 '())))  ; Returns: (1 2 3)
+; Same as '(1 2 3)
+
+; Access pair elements
+(car '(1 . 2))          ; Returns: 1
+(cdr '(1 . 2))          ; Returns: 2</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Lambda Expressions</li>
+    <br/>
+    <ul>
+        <li><b>lambda creates anonymous functions.</b></li>
+        <br/>
+        <li><b>Syntax:</b></li>
+<pre><code class="language-scheme line-numbers">(lambda (parameter1 parameter2 ...)
+  body-expression)</code></pre>
+        <br/>
+        <li><b>Basic examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Anonymous function
+(lambda (x) (* x x))
+
+; Call immediately
+((lambda (x) (* x x)) 5)    ; Returns: 25
+
+; Assign to variable
+(define square (lambda (x) (* x x)))
+(square 5)                  ; Returns: 25
+
+; Multiple parameters
+(define add (lambda (a b) (+ a b)))
+(add 3 7)                   ; Returns: 10</code></pre>
+        <br/>
+        <li><b>Note: These are equivalent:</b></li>
+<pre><code class="language-scheme line-numbers">; Using lambda explicitly
+(define square (lambda (x) (* x x)))
+
+; Shorthand (what we've been using)
+(define (square x) (* x x))
+
+; Both create the same function</code></pre>
+        <br/>
+        <li><b>Variable number of arguments:</b></li>
+<pre><code class="language-scheme line-numbers">; Rest parameters
+(define (sum . numbers)
+  (if (null? numbers)
+      0
+      (+ (car numbers) (apply sum (cdr numbers)))))
+
+(sum 1 2 3 4 5)     ; Returns: 15
+
+; Mix fixed and rest parameters
+(define (greet name . titles)
+  (string-append name " " (apply string-append titles)))
+
+(greet "John" "Dr. " "PhD")  ; Returns: "John Dr. PhD"</code></pre>
+        <br/>
+        <li><b>Higher-order functions:</b></li>
+<pre><code class="language-scheme line-numbers">; Function that returns a function
+(define (make-adder n)
+  (lambda (x) (+ x n)))
+
+(define add5 (make-adder 5))
+(add5 10)           ; Returns: 15
+(add5 3)            ; Returns: 8
+
+; Function that takes a function
+(define (apply-twice f x)
+  (f (f x)))
+
+(apply-twice (lambda (x) (* x 2)) 3)  ; Returns: 12
+; First: (* 3 2) = 6
+; Second: (* 6 2) = 12</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Local Bindings: let, let*, and letrec</li>
+    <br/>
+    <ul>
+        <li><b>let:</b> Create local variables (parallel binding).</li>
+        <br/>
+        <li><b>Syntax:</b></li>
+<pre><code class="language-scheme line-numbers">(let ((var1 value1)
+      (var2 value2)
+      ...)
+  body-expression)</code></pre>
+        <br/>
+        <li><b>let examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Simple let
+(let ((x 5)
+      (y 10))
+  (+ x y))          ; Returns: 15
+
+; Variables are parallel (can't reference each other)
+(let ((x 5)
+      (y x))        ; Error! x not yet defined
+  (+ x y))
+
+; Correct way
+(let ((x 5))
+  (let ((y x))
+    (+ x y)))       ; Returns: 10</code></pre>
+        <br/>
+        <li><b>let*:</b> Create local variables (sequential binding).</li>
+<pre><code class="language-scheme line-numbers">(let* ((var1 value1)
+       (var2 value2)  ; Can use var1 here
+       ...)
+  body-expression)</code></pre>
+        <br/>
+        <li><b>let* examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Sequential binding
+(let* ((x 5)
+       (y (* x 2)))     ; Can use x
+  (+ x y))              ; Returns: 15
+
+; Each binding can use previous ones
+(let* ((a 1)
+       (b (+ a 1))      ; Uses a
+       (c (+ a b)))     ; Uses a and b
+  c)                    ; Returns: 3</code></pre>
+        <br/>
+        <li><b>letrec:</b> Create local recursive functions.</li>
+<pre><code class="language-scheme line-numbers">(letrec ((var1 value1)
+         (var2 value2)
+         ...)
+  body-expression)</code></pre>
+        <br/>
+        <li><b>letrec examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Recursive function
+(letrec ((factorial
+          (lambda (n)
+            (if (<= n 1)
+                1
+                (* n (factorial (- n 1)))))))
+  (factorial 5))    ; Returns: 120
+
+; Mutually recursive functions
+(letrec ((even?
+          (lambda (n)
+            (if (= n 0)
+                #t
+                (odd? (- n 1)))))
+         (odd?
+          (lambda (n)
+            (if (= n 0)
+                #f
+                (even? (- n 1))))))
+  (even? 10))       ; Returns: #t</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Recursion</li>
+    <br/>
+    <ul>
+        <li>Recursion is the primary iteration mechanism in Scheme.</li>
+        <br/>
+        <li><b>Basic recursive pattern:</b></li>
+<pre><code class="language-scheme line-numbers">(define (function-name param)
+  (if base-case
+      base-result
+      (recursive-call)))</code></pre>
+        <br/>
+        <li><b>Factorial example:</b></li>
+<pre><code class="language-scheme line-numbers">(define (factorial n)
+  (if (<= n 1)
+      1                         ; Base case
+      (* n (factorial (- n 1)))))  ; Recursive case
+
+(factorial 5)       ; Returns: 120
+; 5 * 4 * 3 * 2 * 1 = 120</code></pre>
+        <br/>
+        <li><b>List recursion:</b></li>
+<pre><code class="language-scheme line-numbers">; Sum all numbers in list
+(define (sum-list lst)
+  (if (null? lst)
+      0                         ; Base: empty list
+      (+ (car lst)              ; Add first element
+         (sum-list (cdr lst))))) ; Recursively sum rest
+
+(sum-list '(1 2 3 4))   ; Returns: 10
+
+; Length of list
+(define (my-length lst)
+  (if (null? lst)
+      0
+      (+ 1 (my-length (cdr lst)))))
+
+(my-length '(a b c d))  ; Returns: 4</code></pre>
+        <br/>
+        <li><b>Tail recursion (more efficient):</b></li>
+<pre><code class="language-scheme line-numbers">; Tail-recursive factorial
+(define (factorial n)
+  (define (fact-iter n acc)
+    (if (<= n 1)
+        acc
+        (fact-iter (- n 1) (* n acc))))
+  (fact-iter n 1))
+
+; Tail-recursive sum
+(define (sum-list lst)
+  (define (sum-iter lst acc)
+    (if (null? lst)
+        acc
+        (sum-iter (cdr lst) (+ acc (car lst)))))
+  (sum-iter lst 0))
+
+(sum-list '(1 2 3 4))   ; Returns: 10</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common List Operations</li>
+    <br/>
+    <ul>
+        <li><b>map:</b> Apply function to each element.</li>
+<pre><code class="language-scheme line-numbers">; Syntax: (map function list)
+
+(map (lambda (x) (* x 2)) '(1 2 3))
+; Returns: (2 4 6)
+
+(map car '((a b) (c d) (e f)))
+; Returns: (a c e)
+
+; Multiple lists
+(map + '(1 2 3) '(10 20 30))
+; Returns: (11 22 33)</code></pre>
+        <br/>
+        <li><b>filter:</b> Keep elements that satisfy predicate.</li>
+<pre><code class="language-scheme line-numbers">; Keep only even numbers
+(filter even? '(1 2 3 4 5 6))
+; Returns: (2 4 6)
+
+; Keep numbers > 5
+(filter (lambda (x) (> x 5)) '(1 8 3 9 2 7))
+; Returns: (8 9 7)</code></pre>
+        <br/>
+        <li><b>fold (reduce):</b> Combine elements.</li>
+<pre><code class="language-scheme line-numbers">; foldl - fold from left
+(foldl + 0 '(1 2 3 4))
+; Returns: 10
+; ((((0 + 1) + 2) + 3) + 4)
+
+; foldr - fold from right
+(foldr cons '() '(1 2 3))
+; Returns: (1 2 3)
+
+; foldl vs foldr
+(foldl - 0 '(1 2 3))    ; (((0 - 1) - 2) - 3) = -6
+(foldr - 0 '(1 2 3))    ; (1 - (2 - (3 - 0))) = 2</code></pre>
+        <br/>
+        <li><b>apply:</b> Apply function to list as arguments.</li>
+<pre><code class="language-scheme line-numbers">(apply + '(1 2 3 4))
+; Same as: (+ 1 2 3 4)
+; Returns: 10
+
+(apply max '(3 7 2 9 1))
+; Same as: (max 3 7 2 9 1)
+; Returns: 9</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Operations</li>
+    <br/>
+    <ul>
+        <li><b>Common string functions:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Function</th>
+            <th>Description</th>
+            <th>Example</th>
+            <th>Result</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>string-length</code></td>
+            <td>Get length</td>
+            <td><code>(string-length "hello")</code></td>
+            <td>5</td>
+        </tr>
+        <tr>
+            <td><code>string-append</code></td>
+            <td>Concatenate</td>
+            <td><code>(string-append "hi" " " "there")</code></td>
+            <td>"hi there"</td>
+        </tr>
+        <tr>
+            <td><code>string-ref</code></td>
+            <td>Get character</td>
+            <td><code>(string-ref "hello" 1)</code></td>
+            <td>#\e</td>
+        </tr>
+        <tr>
+            <td><code>substring</code></td>
+            <td>Extract portion</td>
+            <td><code>(substring "hello" 1 4)</code></td>
+            <td>"ell"</td>
+        </tr>
+        <tr>
+            <td><code>string-upcase</code></td>
+            <td>Uppercase</td>
+            <td><code>(string-upcase "hello")</code></td>
+            <td>"HELLO"</td>
+        </tr>
+        <tr>
+            <td><code>string-downcase</code></td>
+            <td>Lowercase</td>
+            <td><code>(string-downcase "HELLO")</code></td>
+            <td>"hello"</td>
+        </tr>
+        <tr>
+            <td><code>string->list</code></td>
+            <td>Convert to list</td>
+            <td><code>(string->list "abc")</code></td>
+            <td>(#\a #\b #\c)</td>
+        </tr>
+        <tr>
+            <td><code>list->string</code></td>
+            <td>Convert from list</td>
+            <td><code>(list->string '(#\a #\b))</code></td>
+            <td>"ab"</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Examples:</b></li>
+<pre><code class="language-scheme line-numbers">; Concatenation
+(string-append "Hello" ", " "World" "!")
+; Returns: "Hello, World!"
+
+; Substring
+(substring "Hello, World!" 0 5)
+; Returns: "Hello"
+
+; Character access
+(string-ref "Scheme" 0)     ; Returns: #\S
+
+; String manipulation
+(string-upcase "hello")     ; Returns: "HELLO"
+(string-downcase "WORLD")   ; Returns: "world"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Input and Output</li>
+    <br/>
+    <ul>
+        <li><b>Display output:</b></li>
+<pre><code class="language-scheme line-numbers">; display - print without quotes
+(display "Hello, World!")   ; Prints: Hello, World!
+
+; newline - print newline
+(newline)
+
+; write - print with quotes
+(write "Hello")             ; Prints: "Hello"
+
+; print multiple things
+(display "x = ")
+(display 42)
+(newline)
+; Prints: x = 42</code></pre>
+        <br/>
+        <li><b>Read input:</b></li>
+<pre><code class="language-scheme line-numbers">; read - read S-expression
+(define input (read))
+; User types: (1 2 3)
+; input is: '(1 2 3)
+
+; read-line - read line as string
+(define line (read-line))
+; User types: Hello World
+; line is: "Hello World"</code></pre>
+        <br/>
+        <li><b>File I/O:</b></li>
+<pre><code class="language-scheme line-numbers">; Open file for reading
+(define in (open-input-file "input.txt"))
+
+; Read from file
+(read in)
+(read-line in)
+
+; Close file
+(close-input-port in)
+
+; Open file for writing
+(define out (open-output-file "output.txt"))
+
+; Write to file
+(write '(1 2 3) out)
+(display "Hello" out)
+
+; Close file
+(close-output-port out)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Predicates</li>
+    <br/>
+    <ul>
+        <li>Predicates are functions that return boolean values.</li>
+<table>
+    <thead>
+        <tr>
+            <th>Predicate</th>
+            <th>Tests for</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>null?</code></td>
+            <td>Empty list</td>
+            <td><code>(null? '())</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>pair?</code></td>
+            <td>Pair/cons cell</td>
+            <td><code>(pair? '(1 2))</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>list?</code></td>
+            <td>Proper list</td>
+            <td><code>(list? '(1 2))</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>number?</code></td>
+            <td>Number</td>
+            <td><code>(number? 42)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>integer?</code></td>
+            <td>Integer</td>
+            <td><code>(integer? 5)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>real?</code></td>
+            <td>Real number</td>
+            <td><code>(real? 3.14)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>string?</code></td>
+            <td>String</td>
+            <td><code>(string? "hi")</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>char?</code></td>
+            <td>Character</td>
+            <td><code>(char? #\a)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>symbol?</code></td>
+            <td>Symbol</td>
+            <td><code>(symbol? 'x)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>boolean?</code></td>
+            <td>Boolean</td>
+            <td><code>(boolean? #t)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>procedure?</code></td>
+            <td>Function</td>
+            <td><code>(procedure? +)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>zero?</code></td>
+            <td>Zero</td>
+            <td><code>(zero? 0)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>positive?</code></td>
+            <td>Positive number</td>
+            <td><code>(positive? 5)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>negative?</code></td>
+            <td>Negative number</td>
+            <td><code>(negative? -5)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>even?</code></td>
+            <td>Even number</td>
+            <td><code>(even? 4)</code> → #t</td>
+        </tr>
+        <tr>
+            <td><code>odd?</code></td>
+            <td>Odd number</td>
+            <td><code>(odd? 3)</code> → #t</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Quick Reference Summary</li>
+    <br/>
+    <ul>
+        <li><b>Basic syntax patterns:</b></li>
+<pre><code class="language-scheme line-numbers">; Define variable
+(define name value)
+
+; Define function
+(define (name params...) body)
+
+; Lambda
+(lambda (params...) body)
+
+; Conditional
+(if test then else)
+(cond (test1 result1) (test2 result2) ... (else default))
+
+; Local binding
+(let ((var val) ...) body)
+(let* ((var val) ...) body)
+(letrec ((var val) ...) body)
+
+; List operations
+(car list)          ; First element
+(cdr list)          ; Rest
+(cons item list)    ; Add to front
+(append list1 list2) ; Combine
+
+; Higher-order
+(map function list)
+(filter predicate list)
+(apply function list)</code></pre>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
