@@ -157,6 +157,7 @@
         <li><a href="#prisma-schema-overview">Schema Overview</a></li>
         <li><a href="#prisma-relationships">Understanding Relationships</a></li>
         <li><a href="#prisma-read-operations">Reading Data</a></li>
+        <li><a href="#prisma-create-operations">Creating Data</a></li>
     </ol>
 </nav>
 <hr/>
@@ -5929,7 +5930,1086 @@ const user = await prisma.user.findUniqueOrThrow({
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="prisma-create-operations">Creating Data with Prisma</h3>
+<ol>
 
+    <li>Understanding Create Syntax Structure</li>
+    <br/>
+    <ul>
+        <li>The <code>create()</code> method follows this structure:</li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL_NAME.create({
+  data: {
+    // Field assignments go here
+  },
+  select: {
+    // Optional: choose which fields to return
+  },
+  include: {
+    // Optional: include related data in response
+  }
+})</code></pre>
+        <br/>
+        <li>Only <code>data</code> is <u>required</u>. <code>select</code> and <code>include</code> are <u>optional</u>.</li>
+        <br/>
+        <li>The <code>data</code> object contains field assignments using this pattern:</li>
+<pre><code class="language-typescript line-numbers">data: {
+  fieldName: value,           // Set literal value
+  fieldName: { ... },         // Set with operation or relation
+  relationName: { ... }       // Create/connect related records
+}</code></pre>
+        <br/>
+        <li>Example schema for this chapter:</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  age       Int?
+  role      Role     @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  profile   Profile?
+  posts     Post[]
+}
+
+model Profile {
+  id     Int    @id @default(autoincrement())
+  bio    String
+  userId Int    @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id       Int     @id @default(autoincrement())
+  title    String
+  content  String?
+  authorId Int
+  author   User    @relation(fields: [authorId], references: [id])
+  tags     Tag[]
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[]
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Field Assignment Syntax</li>
+    <br/>
+    <ul>
+        <li><b>Rule:</b> Required fields (no <code>?</code> or <code>@default</code>) MUST be provided.</li>
+        <br/>
+        <li>Field assignment patterns:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Field Type in Schema</th>
+            <th>Required in create()?</th>
+            <th>Syntax</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>name String</code></td>
+            <td>Yes</td>
+            <td><code>name: "Alice"</code></td>
+        </tr>
+        <tr>
+            <td><code>age Int?</code></td>
+            <td>No (optional)</td>
+            <td><code>age: 25</code> or omit</td>
+        </tr>
+        <tr>
+            <td><code>isActive Boolean @default(true)</code></td>
+            <td>No (has default)</td>
+            <td><code>isActive: false</code> or omit</td>
+        </tr>
+        <tr>
+            <td><code>id Int @id @default(autoincrement())</code></td>
+            <td>No (auto-generated)</td>
+            <td>Cannot set (Prisma generates it)</td>
+        </tr>
+        <tr>
+            <td><code>createdAt DateTime @default(now())</code></td>
+            <td>No (has default)</td>
+            <td><code>createdAt: new Date()</code> or omit</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Examples of field assignments:</li>
+<pre><code class="language-typescript line-numbers">// String
+name: "Alice"
+
+// Number
+age: 25
+
+// Boolean
+isActive: true
+
+// Date
+createdAt: new Date()
+createdAt: new Date("2024-01-01")
+
+// Enum
+role: "ADMIN"  // or Role.ADMIN if imported
+
+// Null (only for optional fields)
+age: null
+
+// Array (PostgreSQL/MongoDB)
+tags: ["javascript", "typescript"]</code></pre>
+        <br/>
+        <li><b>Rule:</b> You CANNOT set fields that have <code>@default(autoincrement())</code> or <code>@updatedAt</code>.</li>
+<pre><code class="language-typescript line-numbers">// ✗ Error - cannot set auto-increment ID
+data: {
+  id: 5,  // Error!
+  name: "Alice"
+}
+
+// ✓ Correct - let Prisma generate ID
+data: {
+  name: "Alice"
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete Syntax: Required vs Optional Fields</li>
+    <br/>
+    <ul>
+        <li>When creating a record, you must understand which fields are required:</li>
+        <br/>
+        <li><b>Required fields:</b> Fields without <code>?</code>, without <code>@default()</code>, and not auto-generated.</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id    Int    @id @default(autoincrement())  // Not required (auto)
+  email String @unique                        // REQUIRED
+  name  String                                // REQUIRED
+  age   Int?                                  // Not required (optional)
+  role  Role   @default(USER)                 // Not required (has default)
+}</code></pre>
+        <br/>
+        <li>Minimum valid create:</li>
+<pre><code class="language-typescript line-numbers">await prisma.user.create({
+  data: {
+    email: "alice@example.com",  // Required
+    name: "Alice"                // Required
+    // id: auto-generated
+    // age: null (optional, not provided)
+    // role: USER (default)
+  }
+})</code></pre>
+        <br/>
+        <li>Override defaults and optionals:</li>
+<pre><code class="language-typescript line-numbers">await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    age: 25,           // Override optional
+    role: "ADMIN",     // Override default
+    isActive: false    // Override default
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Relation Field Syntax: The Three Operations</li>
+    <br/>
+    <ul>
+        <li>When creating a record with relations, you have <b>three operations</b>:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operation</th>
+            <th>When to Use</th>
+            <th>Syntax Pattern</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>create</code></td>
+            <td>Create new related record(s)</td>
+            <td><code>relationName: { create: { ... } }</code></td>
+        </tr>
+        <tr>
+            <td><code>connect</code></td>
+            <td>Link to existing record(s)</td>
+            <td><code>relationName: { connect: { id: 1 } }</code></td>
+        </tr>
+        <tr>
+            <td><code>connectOrCreate</code></td>
+            <td>Connect if exists, create if not</td>
+            <td><code>relationName: { connectOrCreate: { ... } }</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Important:</b> Relation operations apply to the <b>relation field</b> (e.g., <code>author</code>, <code>posts</code>), NOT the foreign key field (e.g., <code>authorId</code>).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>One-to-Many: Creating with Related Records</li>
+    <br/>
+    <ul>
+        <li>Scenario: User (one) has many Posts (many).</li>
+        <br/>
+        <li><b>Pattern 1: Create user with new posts</b></li>
+<pre><code class="language-typescript line-numbers">// Syntax structure:
+await prisma.user.create({
+  data: {
+    // User fields
+    email: "...",
+    name: "...",
+
+    // Relation field (array for one-to-many)
+    posts: {
+      create: [
+        { /* post 1 data */ },
+        { /* post 2 data */ }
+      ]
+    }
+  }
+})</code></pre>
+<pre><code class="language-typescript line-numbers">// Actual example:
+await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    posts: {
+      create: [
+        { title: "First Post", content: "Hello" },
+        { title: "Second Post", content: "World" }
+      ]
+    }
+  }
+})
+
+// Creates: 1 user + 2 posts
+// Posts automatically get authorId set to new user's id</code></pre>
+        <br/>
+        <li><b>Pattern 2: Create single related record (not array)</b></li>
+<pre><code class="language-typescript line-numbers">// For single record, use object instead of array:
+posts: {
+  create: { title: "First Post", content: "Hello" }
+}
+
+// Both work, but single object is cleaner for one record</code></pre>
+        <br/>
+        <li><b>Pattern 3: Connect to existing posts</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    posts: {
+      connect: [
+        { id: 1 },  // Connect to post with id 1
+        { id: 2 }   // Connect to post with id 2
+      ]
+    }
+  }
+})
+
+// Prerequisite: Posts with id 1 and 2 must already exist
+// Changes their authorId to point to new user</code></pre>
+        <br/>
+        <li><b>Pattern 4: Mix create and connect</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    posts: {
+      create: [
+        { title: "New Post", content: "Fresh content" }
+      ],
+      connect: [
+        { id: 5 }  // Also connect existing post
+      ]
+    }
+  }
+})
+
+// Creates 1 new post AND connects to existing post 5</code></pre>
+        <br/>
+        <li><b>Rule:</b> For one-to-many, the relation field accepts <b>arrays</b> (<code>[]</code>).</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>One-to-One: Creating with Single Related Record</li>
+    <br/>
+    <ul>
+        <li>Scenario: User (one) has one Profile (one).</li>
+        <br/>
+        <li><b>Pattern 1: Create user with new profile</b></li>
+<pre><code class="language-typescript line-numbers">// Syntax structure:
+await prisma.user.create({
+  data: {
+    // User fields
+    email: "...",
+    name: "...",
+
+    // Relation field (single object for one-to-one)
+    profile: {
+      create: {
+        /* profile data */
+      }
+    }
+  }
+})</code></pre>
+<pre><code class="language-typescript line-numbers">// Actual example:
+await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    profile: {
+      create: {
+        bio: "Software developer"
+      }
+    }
+  }
+})
+
+// Creates: 1 user + 1 profile
+// Profile automatically gets userId set to new user's id</code></pre>
+        <br/>
+        <li><b>Pattern 2: Connect to existing profile</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    profile: {
+      connect: { id: 3 }  // Single object, not array
+    }
+  }
+})
+
+// Prerequisite: Profile with id 3 must exist
+// Sets profile's userId to new user's id</code></pre>
+        <br/>
+        <li><b>Rule:</b> For one-to-one, the relation field accepts <b>single object</b>, NOT arrays.</li>
+<pre><code class="language-typescript line-numbers">// ✓ Correct - single object
+profile: { create: { bio: "..." } }
+
+// ✗ Wrong - cannot use array for one-to-one
+profile: { create: [{ bio: "..." }] }  // Error!</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating from the "Many" Side</li>
+    <br/>
+    <ul>
+        <li>When creating from the "many" side (e.g., Post), you can set the foreign key OR use relation syntax.</li>
+        <br/>
+        <li><b>Method 1: Set foreign key directly</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.create({
+  data: {
+    title: "My Post",
+    content: "Content here",
+    authorId: 1  // Set foreign key directly
+  }
+})
+
+// Prerequisite: User with id 1 must exist</code></pre>
+        <br/>
+        <li><b>Method 2: Use connect</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.create({
+  data: {
+    title: "My Post",
+    content: "Content here",
+    author: {
+      connect: { id: 1 }  // Connect to user via relation
+    }
+  }
+})
+
+// Same result as Method 1, but uses relation syntax</code></pre>
+        <br/>
+        <li><b>Method 3: Create new parent</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.create({
+  data: {
+    title: "My Post",
+    content: "Content here",
+    author: {
+      create: {
+        email: "alice@example.com",
+        name: "Alice"
+      }
+    }
+  }
+})
+
+// Creates both post AND user</code></pre>
+        <br/>
+        <li><b>Rule:</b> You can EITHER set <code>authorId</code> OR use <code>author: { connect/create }</code>, but NOT both.</li>
+<pre><code class="language-typescript line-numbers">// ✗ Error - conflicting operations
+data: {
+  title: "My Post",
+  authorId: 1,  // Setting foreign key
+  author: {
+    connect: { id: 1 }  // Also trying to connect via relation
+  }
+}
+
+// ✓ Choose one approach
+data: {
+  title: "My Post",
+  authorId: 1  // Either this
+}
+
+// Or
+data: {
+  title: "My Post",
+  author: { connect: { id: 1 } }  // Or this
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Many-to-Many: Creating with Multiple Relations</li>
+    <br/>
+    <ul>
+        <li>Scenario: Post has many Tags, Tag has many Posts.</li>
+        <br/>
+        <li><b>Pattern 1: Create post with new tags</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.create({
+  data: {
+    title: "My Post",
+    authorId: 1,
+    tags: {
+      create: [
+        { name: "javascript" },
+        { name: "typescript" }
+      ]
+    }
+  }
+})
+
+// Creates: 1 post + 2 tags + 2 join table entries</code></pre>
+        <br/>
+        <li><b>Pattern 2: Connect to existing tags</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.create({
+  data: {
+    title: "My Post",
+    authorId: 1,
+    tags: {
+      connect: [
+        { id: 1 },
+        { id: 2 }
+      ]
+    }
+  }
+})
+
+// Tags must already exist
+// Creates: 1 post + 2 join table entries</code></pre>
+        <br/>
+        <li><b>Pattern 3: Connect by unique field</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.create({
+  data: {
+    title: "My Post",
+    authorId: 1,
+    tags: {
+      connect: [
+        { name: "javascript" },  // Connect by unique name
+        { name: "typescript" }
+      ]
+    }
+  }
+})
+
+// name must be @unique in schema</code></pre>
+        <br/>
+        <li><b>Pattern 4: Mix create and connect</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.create({
+  data: {
+    title: "My Post",
+    authorId: 1,
+    tags: {
+      create: [
+        { name: "newTag" }  // Create new tag
+      ],
+      connect: [
+        { id: 1 }  // Connect existing tag
+      ]
+    }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>connectOrCreate: Conditional Creation</li>
+    <br/>
+    <ul>
+        <li><code>connectOrCreate</code> connects to existing record if found, creates if not found.</li>
+        <br/>
+        <li><b>Syntax structure:</b></li>
+<pre><code class="language-typescript line-numbers">relationName: {
+  connectOrCreate: {
+    where: {
+      // How to find existing record (must use unique field)
+    },
+    create: {
+      // What to create if not found
+    }
+  }
+}</code></pre>
+        <br/>
+        <li><b>Example: Create post with tags (create tag if doesn't exist)</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.post.create({
+  data: {
+    title: "My Post",
+    authorId: 1,
+    tags: {
+      connectOrCreate: [
+        {
+          where: { name: "javascript" },
+          create: { name: "javascript" }
+        },
+        {
+          where: { name: "typescript" },
+          create: { name: "typescript" }
+        }
+      ]
+    }
+  }
+})
+
+// If tag "javascript" exists: connects to it
+// If tag "javascript" doesn't exist: creates it
+// Same for "typescript"</code></pre>
+        <br/>
+        <li><b>Rule:</b> The <code>where</code> clause in <code>connectOrCreate</code> MUST use a unique field.</li>
+<pre><code class="language-typescript line-numbers">// ✓ Correct - name is @unique
+where: { name: "javascript" }
+
+// ✓ Correct - id is unique
+where: { id: 1 }
+
+// ✗ Error - title is not unique
+where: { title: "Some Title" }  // Error!</code></pre>
+        <br/>
+        <li><b>For one-to-one relations:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    profile: {
+      connectOrCreate: {
+        where: { id: 5 },
+        create: { bio: "New profile" }
+      }
+    }
+  }
+})
+
+// Single object for one-to-one (not array)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Nested Creates: Multiple Levels Deep</li>
+    <br/>
+    <ul>
+        <li>You can nest creates multiple levels deep.</li>
+        <br/>
+        <li><b>Pattern: Create user → profile → posts → tags</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+
+    // Level 1: Create profile
+    profile: {
+      create: {
+        bio: "Developer"
+      }
+    },
+
+    // Level 1: Create posts
+    posts: {
+      create: [
+        {
+          title: "First Post",
+          content: "Content",
+
+          // Level 2: Create tags for this post
+          tags: {
+            create: [
+              { name: "javascript" },
+              { name: "typescript" }
+            ]
+          }
+        }
+      ]
+    }
+  }
+})
+
+// Creates: 1 user + 1 profile + 1 post + 2 tags</code></pre>
+        <br/>
+        <li>No arbitrary depth limit, but keep it reasonable for readability.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Multiple Records: createMany</li>
+    <br/>
+    <ul>
+        <li><code>createMany</code> inserts multiple records in one operation (bulk insert).</li>
+        <br/>
+        <li><b>Syntax structure:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL_NAME.createMany({
+  data: [
+    { /* record 1 */ },
+    { /* record 2 */ },
+    { /* record 3 */ }
+  ],
+  skipDuplicates: true  // Optional: skip records that violate unique constraints
+})</code></pre>
+        <br/>
+        <li><b>Example:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.createMany({
+  data: [
+    { email: "alice@example.com", name: "Alice" },
+    { email: "bob@example.com", name: "Bob" },
+    { email: "carol@example.com", name: "Carol" }
+  ]
+})
+
+// Creates 3 users in one database operation</code></pre>
+        <br/>
+        <li><b>Return value:</b></li>
+<pre><code class="language-typescript line-numbers">const result = await prisma.user.createMany({
+  data: [...]
+})
+
+console.log(result)
+// { count: 3 }
+
+// Note: createMany does NOT return the created records
+// It only returns count of records created</code></pre>
+        <br/>
+        <li><b>Skip duplicates:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.createMany({
+  data: [
+    { email: "alice@example.com", name: "Alice" },
+    { email: "alice@example.com", name: "Alice2" },  // Duplicate email
+    { email: "bob@example.com", name: "Bob" }
+  ],
+  skipDuplicates: true  // Skip the duplicate instead of erroring
+})
+
+// Creates Alice and Bob, skips duplicate Alice
+// Returns: { count: 2 }</code></pre>
+        <br/>
+        <li><b>Important limitations of createMany:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Limitation</th>
+            <th>Explanation</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>No nested creates</td>
+            <td>Cannot use <code>create</code>, <code>connect</code>, etc. in relations</td>
+        </tr>
+        <tr>
+            <td>No return of created records</td>
+            <td>Only returns <code>{ count: n }</code>, not the actual records</td>
+        </tr>
+        <tr>
+            <td>No select/include</td>
+            <td>Cannot choose fields to return (because nothing is returned)</td>
+        </tr>
+        <tr>
+            <td>SQLite limitation</td>
+            <td>SQLite doesn't support <code>skipDuplicates</code></td>
+        </tr>
+    </tbody>
+</table>
+<pre><code class="language-typescript line-numbers">// ✗ Error - cannot use nested creates in createMany
+await prisma.user.createMany({
+  data: [
+    {
+      email: "alice@example.com",
+      name: "Alice",
+      posts: {  // Error!
+        create: [{ title: "Post" }]
+      }
+    }
+  ]
+})
+
+// ✓ Correct - only flat data
+await prisma.user.createMany({
+  data: [
+    { email: "alice@example.com", name: "Alice" },
+    { email: "bob@example.com", name: "Bob" }
+  ]
+})</code></pre>
+        <br/>
+        <li><b>When to use createMany vs multiple create:</b></li>
+<pre><code class="language-typescript line-numbers">// Use createMany when:
+// - Creating many simple records
+// - No relations needed
+// - Performance is important (single query)
+await prisma.user.createMany({
+  data: users  // Array of user data
+})
+
+// Use multiple create when:
+// - Need to create with relations
+// - Need to get created records back
+// - Need select/include
+for (const userData of users) {
+  await prisma.user.create({
+    data: {
+      ...userData,
+      posts: { create: [...] }
+    }
+  })
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Selecting Return Data</li>
+    <br/>
+    <ul>
+        <li>By default, <code>create()</code> returns the entire created record.</li>
+        <br/>
+        <li><b>Default behavior:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice"
+  }
+})
+
+console.log(user)
+// {
+//   id: 1,
+//   email: "alice@example.com",
+//   name: "Alice",
+//   age: null,
+//   role: "USER",
+//   isActive: true,
+//   createdAt: 2024-01-01T00:00:00.000Z
+// }</code></pre>
+        <br/>
+        <li><b>Select specific fields:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice"
+  },
+  select: {
+    id: true,
+    email: true
+  }
+})
+
+console.log(user)
+// { id: 1, email: "alice@example.com" }
+// Other fields not included</code></pre>
+        <br/>
+        <li><b>Include related data:</b></li>
+<pre><code class="language-typescript line-numbers">const user = await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    posts: {
+      create: [
+        { title: "First Post", content: "Hello" }
+      ]
+    }
+  },
+  include: {
+    posts: true
+  }
+})
+
+console.log(user)
+// {
+//   id: 1,
+//   email: "alice@example.com",
+//   ...
+//   posts: [
+//     { id: 1, title: "First Post", content: "Hello", authorId: 1 }
+//   ]
+// }</code></pre>
+        <br/>
+        <li><b>Cannot use select and include together (at same level):</b></li>
+<pre><code class="language-typescript line-numbers">// ✗ Error
+const user = await prisma.user.create({
+  data: { ... },
+  select: { id: true },
+  include: { posts: true }  // Error!
+})
+
+// ✓ Use select with nested relation select
+const user = await prisma.user.create({
+  data: { ... },
+  select: {
+    id: true,
+    email: true,
+    posts: {
+      select: {
+        id: true,
+        title: true
+      }
+    }
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Handling Unique Constraint Violations</li>
+    <br/>
+    <ul>
+        <li>If you try to create a record that violates a unique constraint, Prisma throws an error.</li>
+        <br/>
+        <li><b>Example error:</b></li>
+<pre><code class="language-typescript line-numbers">// First create
+await prisma.user.create({
+  data: { email: "alice@example.com", name: "Alice" }
+})
+
+// Try to create duplicate email
+await prisma.user.create({
+  data: { email: "alice@example.com", name: "Alice2" }
+})
+
+// Throws: PrismaClientKnownRequestError
+// Code: P2002
+// Message: "Unique constraint failed on the fields: (`email`)"</code></pre>
+        <br/>
+        <li><b>Handle with try-catch:</b></li>
+<pre><code class="language-typescript line-numbers">try {
+  const user = await prisma.user.create({
+    data: { email: "alice@example.com", name: "Alice" }
+  })
+} catch (error) {
+  if (error.code === 'P2002') {
+    console.log('User with this email already exists')
+    // Handle duplicate gracefully
+  } else {
+    throw error
+  }
+}</code></pre>
+        <br/>
+        <li><b>Alternative: upsert (create or update):</b></li>
+<pre><code class="language-typescript line-numbers">// If user exists: update it
+// If user doesn't exist: create it
+const user = await prisma.user.upsert({
+  where: {
+    email: "alice@example.com"
+  },
+  update: {
+    name: "Alice Updated"
+  },
+  create: {
+    email: "alice@example.com",
+    name: "Alice"
+  }
+})
+
+// No error, handles both cases</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Understanding Data Validation</li>
+    <br/>
+    <ul>
+        <li>Prisma validates data types before sending to database.</li>
+        <br/>
+        <li><b>Type validation:</b></li>
+<pre><code class="language-typescript line-numbers">// ✗ Error - wrong type
+await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    age: "25"  // Error! Should be number, not string
+  }
+})
+
+// ✓ Correct
+await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    age: 25  // Number
+  }
+})</code></pre>
+        <br/>
+        <li><b>Required field validation:</b></li>
+<pre><code class="language-typescript line-numbers">// ✗ Error - missing required field
+await prisma.user.create({
+  data: {
+    email: "alice@example.com"
+    // Missing required field: name
+  }
+})
+
+// Error: "Argument `name` is missing"</code></pre>
+        <br/>
+        <li><b>Enum validation:</b></li>
+<pre><code class="language-typescript line-numbers">// ✗ Error - invalid enum value
+await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    role: "SUPERADMIN"  // Not in enum
+  }
+})
+
+// ✓ Correct - valid enum value
+await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    role: "ADMIN"  // Valid: USER | ADMIN | MODERATOR
+  }
+})</code></pre>
+        <br/>
+        <li>Validation happens at TypeScript level (if using TypeScript) AND at Prisma level.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Working with JSON Fields</li>
+    <br/>
+    <ul>
+        <li>If you have a <code>Json</code> field in your schema, you can store any valid JSON.</li>
+<pre><code class="language-prisma line-numbers">model User {
+  id       Int  @id @default(autoincrement())
+  metadata Json?
+}</code></pre>
+        <br/>
+        <li><b>Store JSON object:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    metadata: {
+      preferences: {
+        theme: "dark",
+        notifications: true
+      },
+      tags: ["developer", "typescript"]
+    }
+  }
+})
+
+// Stored as JSON in database</code></pre>
+        <br/>
+        <li><b>Store JSON array:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    metadata: ["tag1", "tag2", "tag3"]
+  }
+})</code></pre>
+        <br/>
+        <li><b>Store null:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.user.create({
+  data: {
+    email: "alice@example.com",
+    name: "Alice",
+    metadata: null  // Only if field is optional (Json?)
+  }
+})</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Summary: Create Syntax Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Basic create:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.create({
+  data: { field: value }
+})</code></pre>
+        <br/>
+        <li><b>Create with one-to-many (new related records):</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.create({
+  data: {
+    field: value,
+    relationMany: {
+      create: [{ }, { }]  // Array for many
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Create with one-to-one (new related record):</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.create({
+  data: {
+    field: value,
+    relationOne: {
+      create: { }  // Object for one
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Connect existing relations:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.create({
+  data: {
+    field: value,
+    relationMany: {
+      connect: [{ id: 1 }, { id: 2 }]  // Array
+    },
+    relationOne: {
+      connect: { id: 3 }  // Object
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>ConnectOrCreate:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.create({
+  data: {
+    field: value,
+    relation: {
+      connectOrCreate: {
+        where: { uniqueField: value },
+        create: { }
+      }
+    }
+  }
+})</code></pre>
+        <br/>
+        <li><b>Multiple records:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.createMany({
+  data: [{ }, { }, { }],
+  skipDuplicates: true
+})</code></pre>
+        <br/>
+        <li><b>With select/include:</b></li>
+<pre><code class="language-typescript line-numbers">await prisma.MODEL.create({
+  data: { },
+  select: { field: true }
+  // OR
+  include: { relation: true }
+})</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
