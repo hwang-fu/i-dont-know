@@ -161,6 +161,7 @@
         <li><a href="#go-type-aliases">Type Aliases</a></li>
         <li><a href="#go-maps">Maps</a></li>
         <li><a href="#go-strings">Strings</a></li>
+        <li><a href="#go-pointers">Pointers</a></li>
     </ol>
 </nav>
 <hr/>
@@ -6509,7 +6510,259 @@ for _, r := range s {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-pointers">Pointers in Go</h3>
+<ol>
+    <li>Pointer Syntax</li>
+    <br/>
+    <ul>
+        <li>Declaring pointer variables:</li>
+<pre><code class="language-go line-numbers">var x int = 42
 
+// Declare pointer to int
+var p *int      // p is nil (zero value of pointer)
+
+// Assign address to pointer
+p = &amp;x          // Now p points to x
+
+// Declare and initialize
+p2 := &amp;x        // Type inferred as *int
+</code></pre>
+        <br/>
+        <li>Pointer type notation:</li>
+<pre><code class="language-go line-numbers">var p1 *int        // Pointer to int
+var p2 *string     // Pointer to string
+var p3 *bool       // Pointer to bool
+var p4 *[]int      // Pointer to slice of ints
+var p5 *MyStruct   // Pointer to struct
+</code></pre>
+        <br/>
+        <li>The <code>&amp;</code> operator (address-of):</li>
+<pre><code class="language-go line-numbers">x := 100
+p := &amp;x                                 // Get address of x
+
+fmt.Printf("x = %d\n", x)               // x = 100
+fmt.Printf("address of x = %p\n", p)    // address of x = 0xc000012028
+</code></pre>
+        <br/>
+        <li>The <code>*</code> operator (dereference):</li>
+<pre><code class="language-go line-numbers">x := 100
+p := &amp;x
+
+// Read value through pointer
+value := *p     // value = 100
+
+// Modify value through pointer
+*p = 200        // Changes x to 200
+
+fmt.Println(x)  // 200 (x was modified!)
+fmt.Println(*p) // 200</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Pointers and Functions</li>
+    <br/>
+    <ul>
+        <li>Pass by value (default in Go):</li>
+<pre><code class="language-go line-numbers">func modify(x int) {
+    x = 100  // Modifies local copy only
+}
+
+func main() {
+    num := 10
+    modify(num)
+    fmt.Println(num)  // 10 (unchanged)
+}</code></pre>
+        <br/>
+        <li>Pass by pointer (to modify original):</li>
+<pre><code class="language-go line-numbers">func modify(x *int) {
+    *x = 100  // Modifies original value
+}
+
+func main() {
+    num := 10
+    modify(&amp;num)
+    fmt.Println(num)  // 100 (changed!)
+}</code></pre>
+        <br/>
+        <li>Returning pointers:</li>
+<pre><code class="language-go line-numbers">func createPerson(name string, age int) *Person {
+    p := Person{
+        Name: name,
+        Age:  age,
+    }
+    return &amp;p  // ✓ Safe in Go (p survives beyond function)
+}
+
+func main() {
+    person := createPerson("Alice", 30)
+    fmt.Printf("%+v\n", person)  // &amp;{Name:Alice Age:30}
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Pointers and Structs</li>
+    <br/>
+    <ul>
+        <li>Accessing struct fields through pointers:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name string
+    Age  int
+}
+
+func main() {
+    p := Person{Name: "Alice", Age: 30}
+    ptr := &amp;p
+
+    // Go automatically dereferences
+    fmt.Println(ptr.Name)       // "Alice" (Go does: (*ptr).Name)
+
+    // Both syntaxes work
+    fmt.Println((*ptr).Name)    // "Alice" (explicit)
+    fmt.Println(ptr.Name)       // "Alice" (automatic)
+
+    // Modify through pointer
+    ptr.Age = 31
+    fmt.Println(p.Age)  // 31 (original modified)
+}
+</code></pre>
+        <br/>
+        <li>Methods with pointer receivers:</li>
+<pre><code class="language-go line-numbers">type Counter struct {
+    count int
+}
+
+// Pointer receiver - can modify
+func (c *Counter) Increment() {
+    c.count++
+}
+
+// Value receiver - cannot modify original
+func (c Counter) IncrementBad() {
+    c.count++  // Modifies copy, not original
+}
+
+func main() {
+    c := Counter{}
+
+    c.Increment()
+    c.Increment()
+    fmt.Println(c.count)  // 2
+
+    c.IncrementBad()
+    fmt.Println(c.count)  // 2 (unchanged)
+}
+</code></pre>
+        <br/>
+        <li>Creating struct pointers:</li>
+<pre><code class="language-go line-numbers">// Method 1: Create value, then take address
+p1 := Person{Name: "Alice", Age: 30}
+ptr1 := &amp;p1
+
+// Method 2: Use &amp; with literal
+ptr2 := &amp;Person{Name: "Bob", Age: 25}
+
+// Method 3: Use new (creates zero-valued struct)
+ptr3 := new(Person)  // &amp;Person{Name: "", Age: 0}
+ptr3.Name = "Carol"
+ptr3.Age = 28</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Nil Pointers</li>
+    <br/>
+    <ul>
+        <li>The zero value of a pointer is <code>nil</code> (doesn't point to anything).</li>
+        <br/>
+        <li>Checking for <code>nil</code>:</li>
+<pre><code class="language-go line-numbers">var p *int      // p is nil
+
+if p == nil {
+    fmt.Println("Pointer is nil")
+}
+
+// Assign address
+x := 42
+p = &amp;x
+
+if p != nil {
+    fmt.Println("Pointer is not nil")
+    fmt.Println(*p)  // 42
+}</code></pre>
+        <br/>
+        <li>Dereferencing <code>nil</code> pointer causes panic:</li>
+<pre><code class="language-go line-numbers">var p *int      // nil pointer
+
+// ❌ Panic: runtime error
+// value := *p
+
+// ✓ Always check before dereferencing
+if p != nil {
+    value := *p
+    fmt.Println(value)
+}</code></pre>
+        <br/>
+        <li>Safe <code>struct</code> field access:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name string
+    Age  int
+}
+
+var p *Person  // nil
+
+// ❌ Panic
+// name := p.Name
+
+// ✓ Check first
+if p != nil {
+    name := p.Name
+    fmt.Println(name)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Pointers and Arrays vs Slices</li>
+    <br/>
+    <ul>
+        <li>Arrays are copied:</li>
+<pre><code class="language-go line-numbers">func modifyArray(arr [3]int) {
+    arr[0] = 100  // Modifies copy
+}
+
+func modifyArrayPtr(arr *[3]int) {
+    arr[0] = 100  // Modifies original
+}
+
+func main() {
+    arr := [3]int{1, 2, 3}
+
+    modifyArray(arr)
+    fmt.Println(arr)  // [1 2 3] (unchanged)
+
+    modifyArrayPtr(&amp;arr)
+    fmt.Println(arr)  // [100 2 3] (changed)
+}</code></pre>
+        <br/>
+        <li>Slices are already references (don't need pointers):</li>
+<pre><code class="language-go line-numbers">func modifySlice(s []int) {
+    s[0] = 100  // Modifies original (slice is reference type)
+}
+
+func main() {
+    slice := []int{1, 2, 3}
+
+    modifySlice(slice)
+    fmt.Println(slice)  // [100 2 3] (changed!)
+
+    // Usually don't need *[]int
+}</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
