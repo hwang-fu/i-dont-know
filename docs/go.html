@@ -13827,6 +13827,1430 @@ default:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-file-handling">File Handling in Go</h3>
+<ol>
+
+    <li>File Basics</li>
+    <br/>
+    <ul>
+        <li>Go provides the <code>os</code> and <code>io</code> packages for file operations.</li>
+        <br/>
+        <li>Files are represented by the <code>*os.File</code> type.</li>
+        <br/>
+        <li><b>Always close files</b> when done using <code>defer file.Close()</code></li>
+        <br/>
+        <li><b>Basic file operations:</b></li>
+        <ul>
+            <li>Reading files</li>
+            <li>Writing files</li>
+            <li>Creating files</li>
+            <li>Appending to files</li>
+            <li>Getting file information</li>
+        </ul>
+        <br/>
+        <li><b>Simple example:</b></li>
+<pre><code class="language-go line-numbers">import (
+    "fmt"
+    "os"
+)
+
+func main() {
+    // Open file
+    file, err := os.Open("example.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()  // Always close!
+
+    // Read file
+    data := make([]byte, 100)
+    count, err := file.Read(data)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Printf("Read %d bytes: %s\n", count, data[:count])
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reading Files</li>
+    <br/>
+    <ul>
+        <li><b>Method 1: Read entire file at once (simple, for small files)</b></li>
+<pre><code class="language-go line-numbers">import (
+    "fmt"
+    "os"
+)
+
+func main() {
+    // Read entire file into memory
+    data, err := os.ReadFile("example.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println(string(data))
+}
+
+// Note: ReadFile automatically closes the file</code></pre>
+        <br/>
+        <li><b>Method 2: Read with os.Open() and Read() (manual control)</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    file, err := os.Open("example.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    // Read in chunks
+    buffer := make([]byte, 1024)
+    for {
+        count, err := file.Read(buffer)
+        if err != nil {
+            if err.Error() == "EOF" {
+                break  // End of file
+            }
+            fmt.Println("Error:", err)
+            return
+        }
+
+        fmt.Print(string(buffer[:count]))
+    }
+}</code></pre>
+        <br/>
+        <li><b>Method 3: Read with io.ReadAll() (from io package)</b></li>
+<pre><code class="language-go line-numbers">import (
+    "fmt"
+    "io"
+    "os"
+)
+
+func main() {
+    file, err := os.Open("example.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    data, err := io.ReadAll(file)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println(string(data))
+}</code></pre>
+        <br/>
+        <li><b>Method 4: Buffered reading (efficient for large files)</b></li>
+<pre><code class="language-go line-numbers">import (
+    "bufio"
+    "fmt"
+    "os"
+)
+
+func main() {
+    file, err := os.Open("example.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    // Create buffered reader
+    scanner := bufio.NewScanner(file)
+
+    // Read line by line
+    for scanner.Scan() {
+        line := scanner.Text()
+        fmt.Println(line)
+    }
+
+    if err := scanner.Err(); err != nil {
+        fmt.Println("Error:", err)
+    }
+}</code></pre>
+        <br/>
+        <li><b>Comparison of reading methods:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Use Case</th>
+            <th>Memory</th>
+            <th>Speed</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>os.ReadFile</td>
+            <td>Small files, simple needs</td>
+            <td>Loads all in memory</td>
+            <td>Fast</td>
+        </tr>
+        <tr>
+            <td>file.Read</td>
+            <td>Manual control, binary files</td>
+            <td>Chunk by chunk</td>
+            <td>Fast</td>
+        </tr>
+        <tr>
+            <td>io.ReadAll</td>
+            <td>Reading from any io.Reader</td>
+            <td>Loads all in memory</td>
+            <td>Fast</td>
+        </tr>
+        <tr>
+            <td>bufio.Scanner</td>
+            <td>Line-by-line, large files</td>
+            <td>Low (buffered)</td>
+            <td>Efficient</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Writing Files</li>
+    <br/>
+    <ul>
+        <li><b>Method 1: Write entire content at once (simple)</b></li>
+<pre><code class="language-go line-numbers">import "os"
+
+func main() {
+    data := []byte("Hello, World!\n")
+
+    // Write to file (creates or truncates)
+    err := os.WriteFile("output.txt", data, 0644)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("File written successfully")
+}
+
+// Note: 0644 is the file permission (rw-r--r--)</code></pre>
+        <br/>
+        <li><b>Method 2: Write with os.Create() (manual control)</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Create file (truncates if exists)
+    file, err := os.Create("output.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    // Write string
+    _, err = file.WriteString("Hello, World!\n")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    // Write bytes
+    data := []byte("More data\n")
+    _, err = file.Write(data)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("File written successfully")
+}</code></pre>
+        <br/>
+        <li><b>Method 3: Buffered writing (efficient for multiple writes)</b></li>
+<pre><code class="language-go line-numbers">import (
+    "bufio"
+    "fmt"
+    "os"
+)
+
+func main() {
+    file, err := os.Create("output.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    // Create buffered writer
+    writer := bufio.NewWriter(file)
+
+    // Write multiple times
+    writer.WriteString("Line 1\n")
+    writer.WriteString("Line 2\n")
+    writer.WriteString("Line 3\n")
+
+    // IMPORTANT: Flush buffer to file
+    err = writer.Flush()
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("File written successfully")
+}</code></pre>
+        <br/>
+        <li><b>Method 4: Append to existing file</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Open file for appending (creates if doesn't exist)
+    file, err := os.OpenFile("output.txt",
+        os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    // Append data
+    _, err = file.WriteString("Appended line\n")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("Data appended successfully")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Open Modes and Flags</li>
+    <br/>
+    <ul>
+        <li><b>os.OpenFile()</b> provides fine-grained control with flags:</li>
+<pre><code class="language-go line-numbers">file, err := os.OpenFile(filename, flags, permissions)</code></pre>
+        <br/>
+        <li><b>Common flags:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Flag</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>os.O_RDONLY</td>
+            <td>Open for reading only</td>
+        </tr>
+        <tr>
+            <td>os.O_WRONLY</td>
+            <td>Open for writing only</td>
+        </tr>
+        <tr>
+            <td>os.O_RDWR</td>
+            <td>Open for reading and writing</td>
+        </tr>
+        <tr>
+            <td>os.O_APPEND</td>
+            <td>Append data to file</td>
+        </tr>
+        <tr>
+            <td>os.O_CREATE</td>
+            <td>Create file if it doesn't exist</td>
+        </tr>
+        <tr>
+            <td>os.O_TRUNC</td>
+            <td>Truncate file when opening</td>
+        </tr>
+        <tr>
+            <td>os.O_EXCL</td>
+            <td>Used with O_CREATE, file must not exist</td>
+        </tr>
+        <tr>
+            <td>os.O_SYNC</td>
+            <td>Synchronous I/O</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Combining flags:</b></li>
+<pre><code class="language-go line-numbers">// Append to file, create if doesn't exist
+file, err := os.OpenFile("log.txt",
+    os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+// Read and write, create if doesn't exist
+file, err := os.OpenFile("data.txt",
+    os.O_RDWR|os.O_CREATE, 0644)
+
+// Create new file, fail if already exists
+file, err := os.OpenFile("new.txt",
+    os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)</code></pre>
+        <br/>
+        <li><b>File permissions (Unix-style):</b></li>
+<pre><code class="language-go line-numbers">// Common permissions
+0644  // rw-r--r-- (owner: read+write, others: read)
+0755  // rwxr-xr-x (owner: all, others: read+execute)
+0600  // rw------- (owner: read+write, others: none)
+0666  // rw-rw-rw- (all: read+write)
+
+// Permission breakdown:
+// 0644 = 0 (special) 6 (owner) 4 (group) 4 (others)
+// 6 = 4 (read) + 2 (write)
+// 4 = 4 (read)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Information and Metadata</li>
+    <br/>
+    <ul>
+        <li><b>Getting file info:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Get file info without opening
+    info, err := os.Stat("example.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("Name:", info.Name())
+    fmt.Println("Size:", info.Size(), "bytes")
+    fmt.Println("Permissions:", info.Mode())
+    fmt.Println("Modified:", info.ModTime())
+    fmt.Println("Is Directory:", info.IsDir())
+}</code></pre>
+        <br/>
+        <li><b>Checking if file exists:</b></li>
+<pre><code class="language-go line-numbers">func fileExists(filename string) bool {
+    _, err := os.Stat(filename)
+    if err == nil {
+        return true  // File exists
+    }
+    if os.IsNotExist(err) {
+        return false  // File does not exist
+    }
+    return false  // Other error (permission, etc.)
+}
+
+func main() {
+    if fileExists("example.txt") {
+        fmt.Println("File exists")
+    } else {
+        fmt.Println("File does not exist")
+    }
+}</code></pre>
+        <br/>
+        <li><b>Getting file info from open file:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    file, err := os.Open("example.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    // Get info from open file
+    info, err := file.Stat()
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("Size:", info.Size())
+}</code></pre>
+        <br/>
+        <li><b>Checking file permissions:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    info, err := os.Stat("example.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    mode := info.Mode()
+
+    fmt.Printf("Permissions: %s\n", mode.Perm())
+    fmt.Println("Is regular file:", mode.IsRegular())
+    fmt.Println("Is directory:", mode.IsDir())
+    fmt.Println("Is symbolic link:", mode&os.ModeSymlink != 0)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Working with Directories</li>
+    <br/>
+    <ul>
+        <li><b>Creating directories:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Create single directory
+    err := os.Mkdir("mydir", 0755)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    // Create nested directories
+    err = os.MkdirAll("path/to/nested/dir", 0755)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("Directories created")
+}</code></pre>
+        <br/>
+        <li><b>Reading directory contents:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Read directory entries
+    entries, err := os.ReadDir(".")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    for _, entry := range entries {
+        fmt.Printf("%s (dir: %v)\n", entry.Name(), entry.IsDir())
+    }
+}</code></pre>
+        <br/>
+        <li><b>Getting detailed directory info:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    entries, err := os.ReadDir(".")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    for _, entry := range entries {
+        info, err := entry.Info()
+        if err != nil {
+            continue
+        }
+
+        fmt.Printf("%-20s %10d bytes  %s\n",
+            entry.Name(),
+            info.Size(),
+            info.ModTime().Format("2006-01-02 15:04:05"))
+    }
+}</code></pre>
+        <br/>
+        <li><b>Removing directories:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Remove empty directory
+    err := os.Remove("emptydir")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    // Remove directory and all contents
+    err = os.RemoveAll("path/to/dir")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("Directories removed")
+}</code></pre>
+        <br/>
+        <li><b>Walking directory tree:</b></li>
+<pre><code class="language-go line-numbers">import (
+    "fmt"
+    "os"
+    "path/filepath"
+)
+
+func main() {
+    err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+        if err != nil {
+            return err
+        }
+
+        if info.IsDir() {
+            fmt.Printf("DIR:  %s\n", path)
+        } else {
+            fmt.Printf("FILE: %s (%d bytes)\n", path, info.Size())
+        }
+
+        return nil
+    })
+
+    if err != nil {
+        fmt.Println("Error:", err)
+    }
+}</code></pre>
+        <br/>
+        <li><b>Walking with filepath.WalkDir (Go 1.16+, more efficient):</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
+        if err != nil {
+            return err
+        }
+
+        if d.IsDir() {
+            fmt.Printf("DIR:  %s\n", path)
+        } else {
+            fmt.Printf("FILE: %s\n", path)
+        }
+
+        return nil
+    })
+
+    if err != nil {
+        fmt.Println("Error:", err)
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Operations: Copy, Move, Delete</li>
+    <br/>
+    <ul>
+        <li><b>Copying files:</b></li>
+<pre><code class="language-go line-numbers">import "io"
+
+func copyFile(src, dst string) error {
+    // Open source file
+    sourceFile, err := os.Open(src)
+    if err != nil {
+        return err
+    }
+    defer sourceFile.Close()
+
+    // Create destination file
+    destFile, err := os.Create(dst)
+    if err != nil {
+        return err
+    }
+    defer destFile.Close()
+
+    // Copy content
+    _, err = io.Copy(destFile, sourceFile)
+    if err != nil {
+        return err
+    }
+
+    // Flush to disk
+    return destFile.Sync()
+}
+
+func main() {
+    err := copyFile("source.txt", "destination.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    fmt.Println("File copied successfully")
+}</code></pre>
+        <br/>
+        <li><b>Moving/renaming files:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Rename/move file
+    err := os.Rename("oldname.txt", "newname.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    // Move to different directory
+    err = os.Rename("file.txt", "subdir/file.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("File moved successfully")
+}</code></pre>
+        <br/>
+        <li><b>Deleting files:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Delete single file
+    err := os.Remove("file.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    // Delete file if exists (ignore error if not exists)
+    err = os.Remove("maybe.txt")
+    if err != nil && !os.IsNotExist(err) {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("File deleted successfully")
+}</code></pre>
+        <br/>
+        <li><b>Changing file permissions:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Change permissions to rw-r--r--
+    err := os.Chmod("file.txt", 0644)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    // Make file executable
+    err = os.Chmod("script.sh", 0755)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("Permissions changed")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Temporary Files and Directories</li>
+    <br/>
+    <ul>
+        <li><b>Creating temporary files:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Create temp file with pattern
+    tmpFile, err := os.CreateTemp("", "example-*.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer os.Remove(tmpFile.Name())  // Clean up
+    defer tmpFile.Close()
+
+    fmt.Println("Temp file created:", tmpFile.Name())
+
+    // Write to temp file
+    _, err = tmpFile.WriteString("Temporary data\n")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+}</code></pre>
+        <br/>
+        <li><b>Creating temporary directories:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Create temp directory
+    tmpDir, err := os.MkdirTemp("", "example-*")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer os.RemoveAll(tmpDir)  // Clean up
+
+    fmt.Println("Temp directory created:", tmpDir)
+
+    // Create file in temp directory
+    tmpFile := filepath.Join(tmpDir, "data.txt")
+    err = os.WriteFile(tmpFile, []byte("data"), 0644)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+}</code></pre>
+        <br/>
+        <li><b>Using system temp directory:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Get system temp directory
+    tempDir := os.TempDir()
+    fmt.Println("System temp dir:", tempDir)
+
+    // Create file in system temp directory
+    tmpFile := filepath.Join(tempDir, "myfile.txt")
+    err := os.WriteFile(tmpFile, []byte("data"), 0644)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer os.Remove(tmpFile)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reading and Writing Structured Data</li>
+    <br/>
+    <ul>
+        <li><b>Reading CSV files:</b></li>
+<pre><code class="language-go line-numbers">import (
+    "encoding/csv"
+    "fmt"
+    "os"
+)
+
+func main() {
+    file, err := os.Open("data.csv")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    reader := csv.NewReader(file)
+
+    // Read all records
+    records, err := reader.ReadAll()
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    for _, record := range records {
+        fmt.Println(record)
+    }
+}</code></pre>
+        <br/>
+        <li><b>Writing CSV files:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    file, err := os.Create("output.csv")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    writer := csv.NewWriter(file)
+    defer writer.Flush()
+
+    // Write records
+    records := [][]string{
+        {"Name", "Age", "City"},
+        {"Alice", "30", "New York"},
+        {"Bob", "25", "San Francisco"},
+    }
+
+    for _, record := range records {
+        err := writer.Write(record)
+        if err != nil {
+            fmt.Println("Error:", err)
+            return
+        }
+    }
+
+    fmt.Println("CSV written successfully")
+}</code></pre>
+        <br/>
+        <li><b>Reading JSON files:</b></li>
+<pre><code class="language-go line-numbers">import (
+    "encoding/json"
+    "fmt"
+    "os"
+)
+
+type Person struct {
+    Name  string `json:"name"`
+    Age   int    `json:"age"`
+    Email string `json:"email"`
+}
+
+func main() {
+    file, err := os.Open("data.json")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    var people []Person
+    decoder := json.NewDecoder(file)
+    err = decoder.Decode(&people)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    for _, person := range people {
+        fmt.Printf("%s (%d): %s\n", person.Name, person.Age, person.Email)
+    }
+}</code></pre>
+        <br/>
+        <li><b>Writing JSON files:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    people := []Person{
+        {Name: "Alice", Age: 30, Email: "alice@example.com"},
+        {Name: "Bob", Age: 25, Email: "bob@example.com"},
+    }
+
+    file, err := os.Create("output.json")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    encoder := json.NewEncoder(file)
+    encoder.SetIndent("", "  ")  // Pretty print
+
+    err = encoder.Encode(people)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Println("JSON written successfully")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Seeking and Random Access</li>
+    <br/>
+    <ul>
+        <li><b>Seeking to specific position:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    file, err := os.OpenFile("data.txt", os.O_RDWR, 0644)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    // Seek to beginning
+    file.Seek(0, 0)  // or io.SeekStart
+
+    // Seek to end
+    file.Seek(0, 2)  // or io.SeekEnd
+
+    // Seek relative to current position
+    file.Seek(10, 1)  // or io.SeekCurrent
+
+    // Get current position
+    pos, err := file.Seek(0, 1)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    fmt.Println("Current position:", pos)
+}</code></pre>
+        <br/>
+        <li><b>Reading from specific position:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    file, err := os.Open("data.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    // Read from byte 10
+    file.Seek(10, 0)
+
+    data := make([]byte, 5)
+    count, err := file.Read(data)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    fmt.Printf("Read %d bytes: %s\n", count, data)
+}</code></pre>
+        <br/>
+        <li><b>Writing at specific position:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    file, err := os.OpenFile("data.txt", os.O_RDWR, 0644)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    // Write at byte 10
+    file.Seek(10, 0)
+
+    _, err = file.WriteString("REPLACED")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Locking and Concurrent Access</li>
+    <br/>
+    <ul>
+        <li><b>Basic file locking (Unix):</b></li>
+<pre><code class="language-go line-numbers">import "syscall"
+
+func lockFile(file *os.File) error {
+    return syscall.Flock(int(file.Fd()), syscall.LOCK_EX)
+}
+
+func unlockFile(file *os.File) error {
+    return syscall.Flock(int(file.Fd()), syscall.LOCK_UN)
+}
+
+func main() {
+    file, err := os.OpenFile("data.txt", os.O_RDWR, 0644)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer file.Close()
+
+    // Lock file
+    err = lockFile(file)
+    if err != nil {
+        fmt.Println("Error locking:", err)
+        return
+    }
+    defer unlockFile(file)
+
+    // Work with file
+    // ...
+}</code></pre>
+        <br/>
+        <li><b>Safe concurrent writes with mutex:</b></li>
+<pre><code class="language-go line-numbers">import "sync"
+
+type SafeFile struct {
+    file *os.File
+    mu   sync.Mutex
+}
+
+func (sf *SafeFile) Write(data []byte) error {
+    sf.mu.Lock()
+    defer sf.mu.Unlock()
+
+    _, err := sf.file.Write(data)
+    return err
+}
+
+func (sf *SafeFile) Close() error {
+    sf.mu.Lock()
+    defer sf.mu.Unlock()
+
+    return sf.file.Close()
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Path Manipulation</li>
+    <br/>
+    <ul>
+        <li><b>Working with file paths:</b></li>
+<pre><code class="language-go line-numbers">import "path/filepath"
+
+func main() {
+    // Join path components
+    path := filepath.Join("dir", "subdir", "file.txt")
+    fmt.Println(path)  // dir/subdir/file.txt (OS-specific)
+
+    // Get directory
+    dir := filepath.Dir("/path/to/file.txt")
+    fmt.Println(dir)  // /path/to
+
+    // Get filename
+    filename := filepath.Base("/path/to/file.txt")
+    fmt.Println(filename)  // file.txt
+
+    // Get extension
+    ext := filepath.Ext("file.txt")
+    fmt.Println(ext)  // .txt
+
+    // Split path
+    dir, file := filepath.Split("/path/to/file.txt")
+    fmt.Println(dir, file)  // /path/to/ file.txt
+}</code></pre>
+        <br/>
+        <li><b>Absolute and relative paths:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Get absolute path
+    absPath, err := filepath.Abs("file.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    fmt.Println("Absolute:", absPath)
+
+    // Check if path is absolute
+    isAbs := filepath.IsAbs("/path/to/file.txt")
+    fmt.Println("Is absolute:", isAbs)  // true
+
+    // Get relative path
+    relPath, err := filepath.Rel("/home/user", "/home/user/docs/file.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    fmt.Println("Relative:", relPath)  // docs/file.txt
+}</code></pre>
+        <br/>
+        <li><b>Pattern matching:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Match pattern
+    matched, err := filepath.Match("*.txt", "file.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    fmt.Println("Matched:", matched)  // true
+
+    // Find all matching files
+    files, err := filepath.Glob("*.txt")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    fmt.Println("Files:", files)
+}</code></pre>
+        <br/>
+        <li><b>Clean path:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Clean up path
+    cleaned := filepath.Clean("dir/../file.txt")
+    fmt.Println(cleaned)  // file.txt
+
+    cleaned = filepath.Clean("./dir//subdir/./file.txt")
+    fmt.Println(cleaned)  // dir/subdir/file.txt
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Pattern 1: Read file line by line (memory efficient)</b></li>
+<pre><code class="language-go line-numbers">func processLargeFile(filename string) error {
+    file, err := os.Open(filename)
+    if err != nil {
+        return err
+    }
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+    lineNum := 0
+
+    for scanner.Scan() {
+        lineNum++
+        line := scanner.Text()
+
+        // Process line
+        fmt.Printf("Line %d: %s\n", lineNum, line)
+    }
+
+    return scanner.Err()
+}</code></pre>
+        <br/>
+        <li><b>Pattern 2: Append to log file</b></li>
+<pre><code class="language-go line-numbers">func appendLog(filename, message string) error {
+    file, err := os.OpenFile(filename,
+        os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+    if err != nil {
+        return err
+    }
+    defer file.Close()
+
+    timestamp := time.Now().Format("2006-01-02 15:04:05")
+    logEntry := fmt.Sprintf("[%s] %s\n", timestamp, message)
+
+    _, err = file.WriteString(logEntry)
+    return err
+}</code></pre>
+        <br/>
+        <li><b>Pattern 3: Safe file write (atomic write)</b></li>
+<pre><code class="language-go line-numbers">func safeWriteFile(filename string, data []byte) error {
+    // Write to temporary file first
+    tmpFile, err := os.CreateTemp(filepath.Dir(filename), ".tmp-*")
+    if err != nil {
+        return err
+    }
+    tmpName := tmpFile.Name()
+
+    // Clean up temp file on error
+    defer func() {
+        if tmpFile != nil {
+            tmpFile.Close()
+            os.Remove(tmpName)
+        }
+    }()
+
+    // Write data
+    if _, err := tmpFile.Write(data); err != nil {
+        return err
+    }
+
+    // Sync to disk
+    if err := tmpFile.Sync(); err != nil {
+        return err
+    }
+
+    // Close temp file
+    if err := tmpFile.Close(); err != nil {
+        return err
+    }
+
+    // Atomic rename
+    if err := os.Rename(tmpName, filename); err != nil {
+        return err
+    }
+
+    tmpFile = nil  // Prevent cleanup
+    return nil
+}</code></pre>
+        <br/>
+        <li><b>Pattern 4: Find files recursively</b></li>
+<pre><code class="language-go line-numbers">func findFiles(root, pattern string) ([]string, error) {
+    var matches []string
+
+    err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+        if err != nil {
+            return err
+        }
+
+        if d.IsDir() {
+            return nil
+        }
+
+        matched, err := filepath.Match(pattern, filepath.Base(path))
+        if err != nil {
+            return err
+        }
+
+        if matched {
+            matches = append(matches, path)
+        }
+
+        return nil
+    })
+
+    return matches, err
+}
+
+func main() {
+    files, err := findFiles(".", "*.go")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+
+    for _, file := range files {
+        fmt.Println(file)
+    }
+}</code></pre>
+        <br/>
+        <li><b>Pattern 5: Read config file with defaults</b></li>
+<pre><code class="language-go line-numbers">type Config struct {
+    Host string
+    Port int
+}
+
+func loadConfig(filename string) (*Config, error) {
+    config := &Config{
+        Host: "localhost",  // Defaults
+        Port: 8080,
+    }
+
+    data, err := os.ReadFile(filename)
+    if err != nil {
+        if os.IsNotExist(err) {
+            return config, nil  // Return defaults if file doesn't exist
+        }
+        return nil, err
+    }
+
+    err = json.Unmarshal(data, config)
+    if err != nil {
+        return nil, err
+    }
+
+    return config, nil
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Mistakes and How to Avoid Them</li>
+    <br/>
+    <ul>
+        <li><b>Mistake 1: Not closing files</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: file never closed on error
+file, err := os.Open("file.txt")
+if err != nil {
+    return err
+}
+data, err := io.ReadAll(file)  // If error, file leaks!
+file.Close()
+
+// ✓ Correct: use defer
+file, err := os.Open("file.txt")
+if err != nil {
+    return err
+}
+defer file.Close()  // Always closes
+data, err := io.ReadAll(file)</code></pre>
+        <br/>
+        <li><b>Mistake 2: Ignoring close errors</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: ignoring close error
+file, _ := os.Create("file.txt")
+defer file.Close()
+file.Write(data)
+
+// ✓ Correct: check close error
+func writeFile(filename string, data []byte) (err error) {
+    file, err := os.Create(filename)
+    if err != nil {
+        return err
+    }
+    defer func() {
+        closeErr := file.Close()
+        if err == nil {
+            err = closeErr
+        }
+    }()
+
+    _, err = file.Write(data)
+    return err
+}</code></pre>
+        <br/>
+        <li><b>Mistake 3: Not checking if file exists before operations</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: assuming file exists
+os.Remove("file.txt")  // Errors if doesn't exist
+
+// ✓ Correct: check first or ignore specific error
+err := os.Remove("file.txt")
+if err != nil && !os.IsNotExist(err) {
+    return err
+}</code></pre>
+        <br/>
+        <li><b>Mistake 4: Not using buffered I/O for large files</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: reading large file into memory
+data, err := os.ReadFile("large.txt")  // May OOM!
+
+// ✓ Correct: use buffered reading
+file, err := os.Open("large.txt")
+defer file.Close()
+
+scanner := bufio.NewScanner(file)
+for scanner.Scan() {
+    // Process line by line
+}</code></pre>
+        <br/>
+        <li><b>Mistake 5: Forgetting to flush buffered writers</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: not flushing buffer
+file, _ := os.Create("file.txt")
+defer file.Close()
+writer := bufio.NewWriter(file)
+writer.WriteString("data")
+// Buffer not flushed!
+
+// ✓ Correct: flush before closing
+file, _ := os.Create("file.txt")
+defer file.Close()
+writer := bufio.NewWriter(file)
+defer writer.Flush()  // Flush buffer
+writer.WriteString("data")</code></pre>
+        <br/>
+        <li><b>Mistake 6: Using string concatenation for paths</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: manual path construction
+path := "dir/" + "subdir/" + "file.txt"  // Wrong on Windows!
+
+// ✓ Correct: use filepath.Join
+path := filepath.Join("dir", "subdir", "file.txt")  // OS-independent</code></pre>
+        <br/>
+        <li><b>Mistake 7: Not handling concurrent file access</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: concurrent writes without synchronization
+for i := 0; i < 10; i++ {
+    go func(n int) {
+        file.WriteString(fmt.Sprintf("%d\n", n))  // Race condition!
+    }(i)
+}
+
+// ✓ Correct: use synchronization
+var mu sync.Mutex
+for i := 0; i < 10; i++ {
+    go func(n int) {
+        mu.Lock()
+        file.WriteString(fmt.Sprintf("%d\n", n))
+        mu.Unlock()
+    }(i)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices</li>
+    <br/>
+    <ul>
+        <li><b>1. Always defer file.Close() immediately after opening</b></li>
+<pre><code class="language-go line-numbers">file, err := os.Open("file.txt")
+if err != nil {
+    return err
+}
+defer file.Close()  // Right after error check</code></pre>
+        <br/>
+        <li><b>2. Check for specific error types</b></li>
+<pre><code class="language-go line-numbers">if os.IsNotExist(err) {
+    // File doesn't exist
+}
+if os.IsPermission(err) {
+    // Permission denied
+}</code></pre>
+        <br/>
+        <li><b>3. Use buffered I/O for better performance</b></li>
+<pre><code class="language-go line-numbers">// For reading
+scanner := bufio.NewScanner(file)
+
+// For writing
+writer := bufio.NewWriter(file)
+defer writer.Flush()</code></pre>
+        <br/>
+        <li><b>4. Use os.ReadFile/os.WriteFile for simple cases</b></li>
+<pre><code class="language-go line-numbers">// Simple read
+data, err := os.ReadFile("file.txt")
+
+// Simple write
+err := os.WriteFile("file.txt", data, 0644)</code></pre>
+        <br/>
+        <li><b>5. Use filepath package for path manipulation</b></li>
+<pre><code class="language-go line-numbers">path := filepath.Join("dir", "file.txt")
+dir := filepath.Dir(path)
+ext := filepath.Ext(path)</code></pre>
+        <br/>
+        <li><b>6. Handle file close errors properly</b></li>
+<pre><code class="language-go line-numbers">func processFile(filename string) (err error) {
+    file, err := os.Open(filename)
+    if err != nil {
+        return err
+    }
+    defer func() {
+        if closeErr := file.Close(); closeErr != nil && err == nil {
+            err = closeErr
+        }
+    }()
+    // Process file
+    return nil
+}</code></pre>
+        <br/>
+        <li><b>7. Use appropriate permissions</b></li>
+<pre><code class="language-go line-numbers">// Files: 0644 (rw-r--r--)
+os.WriteFile("file.txt", data, 0644)
+
+// Directories: 0755 (rwxr-xr-x)
+os.MkdirAll("path/to/dir", 0755)</code></pre>
+        <br/>
+        <li><b>8. Clean up temporary files</b></li>
+<pre><code class="language-go line-numbers">tmpFile, err := os.CreateTemp("", "prefix-*")
+if err != nil {
+    return err
+}
+defer os.Remove(tmpFile.Name())  // Always cleanup
+defer tmpFile.Close()</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
 
 <!-- * * * * * * * * * * * * * * -->
 
