@@ -157,6 +157,10 @@
         <li><a href="#go-module-naming">Understanding Go Module Names and Project Naming</a></li>
         <li><a href="#go-control-flow">Control Flow</a></li>
         <li><a href="#go-arrays-slices">Arrays and Slices</a></li>
+        <li><a href="#go-variadic-functions">Variadic Functions</a></li>
+        <li><a href="#go-type-alias">Type Aliases</a></li>
+        <li><a href="#go-maps">Maps</a></li>
+        <li><a href="#go-strings">Strings</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4349,7 +4353,320 @@ func getFirstTwo(data []int) []int {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-variadic-functions">Variadic Functions in Go</h3>
+<ol>
 
+    <li>What Are Variadic Functions?</li>
+    <br/>
+    <ul>
+        <li><b>Variadic functions</b> are functions that can accept a variable number of arguments of the same type.</li>
+        <br/>
+        <li>The last parameter uses <code>...</code> syntax before the type: <code>func name(args ...Type)</code></li>
+        <br/>
+        <li>Inside the function, the variadic parameter becomes a slice of that type.</li>
+        <br/>
+        <li>Example from standard library:</li>
+<pre><code class="language-go line-numbers">fmt.Println("Hello", "World", "!")      // Takes any number of arguments
+fmt.Printf("%s %s\n", "Hello", "World") // First arg is format, rest are variadic
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Syntax</li>
+    <br/>
+    <ul>
+        <li>Declaring a variadic function:</li>
+<pre><code class="language-go line-numbers">// Simple variadic function
+func sum(numbers ...int) int {
+    total := 0
+    for _, num := range numbers {
+        total += num
+    }
+    return total
+}
+
+func main() {
+    // Call with different number of arguments
+    fmt.Println(sum())              // 0 (no arguments)
+    fmt.Println(sum(1))             // 1 (one argument)
+    fmt.Println(sum(1, 2, 3))       // 6 (three arguments)
+    fmt.Println(sum(1, 2, 3, 4, 5)) // 15 (five arguments)
+}
+</code></pre>
+        <li>Only the <u>last parameter</u> can be variadic</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Variadic Parameters Are Slices</li>
+    <br/>
+    <ul>
+        <li>Inside the function, the variadic parameter is a regular slice:</li>
+    </ul>
+<pre><code class="language-go line-numbers">func printInfo(names ...string) {
+    // names is a []string slice
+    fmt.Printf("Type: %T\n", names)      // Type: []string
+    fmt.Printf("Length: %d\n", len(names))
+    fmt.Printf("Values: %v\n", names)
+
+    // Can use all slice operations
+    if len(names) > 0 {
+        fmt.Println("First:", names[0])
+    }
+
+    // Can iterate
+    for i, name := range names {
+        fmt.Printf("%d: %s\n", i, name)
+    }
+}
+
+func main() {
+    printInfo("Alice", "Bob", "Carol")
+}
+
+// Output:
+// Type: []string
+// Length: 3
+// Values: [Alice Bob Carol]
+// First: Alice
+// 0: Alice
+// 1: Bob
+// 2: Carol
+</code></pre>
+    <br/><br/>
+
+
+    <li>Passing Slices to Variadic Functions</li>
+    <br/>
+    <ul>
+        <li>You can pass a slice to a variadic function using the <code>...</code> operator:</li>
+<pre><code class="language-go line-numbers">func sum(numbers ...int) int {
+    total := 0
+    for _, num := range numbers {
+        total += num
+    }
+    return total
+}
+
+func main() {
+    // Pass individual arguments
+    result := sum(1, 2, 3, 4, 5)
+    fmt.Println(result)  // 15
+
+    // Pass a slice using ...
+    nums := []int{1, 2, 3, 4, 5}
+    result = sum(nums...)  // Unpack slice into variadic args
+    fmt.Println(result)    // 15
+
+    // Can also use slice literal
+    result = sum([]int{10, 20, 30}...)
+    fmt.Println(result)    // 60
+}</code></pre>
+        <br/>
+        <li><b>The <code>...</code> operator unpacks the slice:</b></li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3}
+
+// These are equivalent:
+sum(numbers...)        // Unpack slice
+sum(1, 2, 3)           // Individual arguments
+
+// Without ..., it's a type error:
+// sum(numbers)        // ❌ Error: cannot use []int as int</code></pre>
+        <br/>
+        <li><b>Important: Unpacking creates a slice reference</b></li>
+<pre><code class="language-go line-numbers">func modify(numbers ...int) {
+    if len(numbers) > 0 {
+        numbers[0] = 999  // Modify the slice
+    }
+}
+
+func main() {
+    nums := []int{1, 2, 3}
+
+    modify(nums...)        // Pass slice
+    fmt.Println(nums)      // [999 2 3] - Original slice modified!
+
+    modify(1, 2, 3)        // Pass individual values
+    // Creates a new slice, original data not affected
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Advanced Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Functional options pattern:</b></li>
+<pre><code class="language-go line-numbers">type Server struct {
+    host string
+    port int
+    timeout int
+}
+
+type Option func(*Server)
+
+func WithHost(host string) Option {
+    return func(s *Server) {
+        s.host = host
+    }
+}
+
+func WithPort(port int) Option {
+    return func(s *Server) {
+        s.port = port
+    }
+}
+
+func WithTimeout(timeout int) Option {
+    return func(s *Server) {
+        s.timeout = timeout
+    }
+}
+
+func NewServer(options ...Option) *Server {
+    // Default values
+    server := &Server{
+        host:    "localhost",
+        port:    8080,
+        timeout: 30,
+    }
+
+    // Apply options
+    for _, opt := range options {
+        opt(server)
+    }
+
+    return server
+}
+
+func main() {
+    // Use defaults
+    s1 := NewServer()
+    fmt.Printf("%+v\n", s1)  // {host:localhost port:8080 timeout:30}
+
+    // Customize some options
+    s2 := NewServer(
+        WithHost("example.com"),
+        WithPort(3000),
+    )
+    fmt.Printf("%+v\n", s2)  // {host:example.com port:3000 timeout:30}
+
+    // Customize all options
+    s3 := NewServer(
+        WithHost("api.example.com"),
+        WithPort(443),
+        WithTimeout(60),
+    )
+    fmt.Printf("%+v\n", s3)  // {host:api.example.com port:443 timeout:60}
+}</code></pre>
+        <br/>
+        <li><b>Logger with variadic formatting:</b></li>
+<pre><code class="language-go line-numbers">type Logger struct {
+    prefix string
+}
+
+func (l *Logger) Log(format string, args ...interface{}) {
+    message := fmt.Sprintf(format, args...)
+    fmt.Printf("[%s] %s\n", l.prefix, message)
+}
+
+func main() {
+    logger := Logger{prefix: "APP"}
+
+    logger.Log("Starting server")
+    // [APP] Starting server
+
+    logger.Log("User %s logged in at %d", "alice", 1234567890)
+    // [APP] User alice logged in at 1234567890
+
+    logger.Log("Processing %d items", 42)
+    // [APP] Processing 42 items
+}</code></pre>
+        <br/>
+        <li><b>Variadic method receivers:</b></li>
+<pre><code class="language-go line-numbers">type Numbers struct {
+    values []int
+}
+
+func (n *Numbers) Add(numbers ...int) {
+    n.values = append(n.values, numbers...)
+}
+
+func (n *Numbers) Sum() int {
+    total := 0
+    for _, v := range n.values {
+        total += v
+    }
+    return total
+}
+
+func main() {
+    nums := &Numbers{}
+
+    nums.Add(1, 2, 3)
+    nums.Add(4, 5)
+
+    slice := []int{6, 7, 8}
+    nums.Add(slice...)
+
+    fmt.Println(nums.Sum())  // 36
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Performance Considerations</li>
+    <br/>
+    <ul>
+        <li><b>Memory allocation:</b></li>
+<pre><code class="language-go line-numbers">func process(items ...string) {
+    // items is allocated as a slice each call
+    fmt.Println(len(items))
+}
+
+// Each call allocates a new slice
+process("a", "b", "c")  // Allocates []string with 3 elements
+process("d", "e")       // Allocates []string with 2 elements
+
+// If you already have a slice, use ... to avoid extra allocation
+existing := []string{"a", "b", "c"}
+process(existing...)    // No extra allocation, passes existing slice</code></pre>
+        <br/>
+        <li><b>Passing slice vs individual args:</b></li>
+<pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
+
+// Option 1: Unpack slice (no copy, just passes reference)
+sum(numbers...)     // Efficient
+
+// Option 2: Individual args (compiler creates new slice)
+sum(1, 2, 3, 4, 5)  // Less efficient for many args
+
+// For small number of args (< 5), individual args are fine
+// For large number of args or existing slice, use ... operator</code></pre>
+        <br/>
+        <li><b>Benchmarking example:</b></li>
+<pre><code class="language-go line-numbers">// For hot paths or performance-critical code:
+
+// If always passing 2-3 args, might be better to have explicit params
+func add3(a, b, c int) int {
+    return a + b + c
+}
+
+// Instead of
+func addVariadic(numbers ...int) int {
+    total := 0
+    for _, n := range numbers {
+        total += n
+    }
+    return total
+}
+
+// addVariadic is more flexible but slightly slower
+// Difference is negligible for most use cases</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
