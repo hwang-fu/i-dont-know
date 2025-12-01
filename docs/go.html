@@ -164,6 +164,7 @@
         <li><a href="#go-pointers">Pointers</a></li>
         <li><a href="#go-structs">Structs</a></li>
         <li><a href="#go-interfaces">Interfaces</a></li>
+        <li><a href="#go-concurrency">Concurrency</a></li>
     </ol>
 </nav>
 <hr/>
@@ -272,7 +273,7 @@ age := 30  // Short declaration with type inference</code></pre>
 }</code></pre>
         <br/>
         <li><b>Control Structures:</b></li>
-<pre><code class="language-go line-numbers">if x > 10 {
+<pre><code class="language-go line-numbers">if x &gt; 10 {
     fmt.Println("x is large")
 }
 
@@ -285,7 +286,8 @@ case "Monday":
     fmt.Println("Start of week")
 default:
     fmt.Println("Other day")
-}</code></pre>
+}
+</code></pre>
         <br/>
         <li>Note: Go has no <code>while</code> loop, <code>for</code> is used for all loops.</li>
     </ul>
@@ -8395,6 +8397,1106 @@ type DataStore interface {
 
 type MySQLStore struct{}
 func (m MySQLStore) Save(data string) error { /* ... */ }</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="go-concurrency">Concurrency in Go</h3>
+<ol>
+
+    <li>What Is Concurrency?</li>
+    <br/>
+    <ul>
+        <li><b>Concurrency</b> is about dealing with multiple things at once (structure).</li>
+        <br/>
+        <li><b>Parallelism</b> is about doing multiple things at once (execution).</li>
+        <br/>
+        <li>Concurrency is about the <b>design</b>, parallelism is about the <b>execution</b>.</li>
+        <br/>
+        <li>Go's concurrency model is based on <b>Communicating Sequential Processes (CSP)</b>.</li>
+        <br/>
+        <li>"Don't communicate by sharing memory, share memory by communicating."</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Goroutines</li>
+    <br/>
+    <ul>
+        <li>A <u>goroutine</u> is a lightweight thread managed by the Go runtime.</li>
+        <br/>
+        <li>Goroutines are much cheaper than OS threads, you can have thousands or millions.</li>
+        <br/>
+        <li><b>Creating a goroutine:</b></li>
+<pre><code class="language-go line-numbers">func sayHello() {
+    fmt.Println("Hello from goroutine!")
+}
+
+func main() {
+    // Run in new goroutine
+    go sayHello()
+
+    // Main goroutine continues
+    fmt.Println("Hello from main!")
+
+    // Wait a bit so goroutine can finish
+    time.Sleep(time.Second)
+}
+
+// Output (order may vary):
+// Hello from main!
+// Hello from goroutine!</code></pre>
+        <br/>
+        <li><b>Anonymous goroutines:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    go func() {
+        fmt.Println("Hello from anonymous goroutine!")
+    }()
+
+    time.Sleep(time.Second)
+}</code></pre>
+        <br/>
+        <li><b>Goroutines with parameters:</b></li>
+<pre><code class="language-go line-numbers">func printNumber(n int) {
+    fmt.Println("Number:", n)
+}
+
+func main() {
+    for i := 0; i < 5; i++ {
+        go printNumber(i)
+    }
+
+    time.Sleep(time.Second)
+}
+
+// Output (order varies):
+// Number: 2
+// Number: 0
+// Number: 4
+// Number: 1
+// Number: 3
+</code></pre>
+        <br/>
+        <li><b>Important notes:</b></li>
+        <ul>
+            <li>Main goroutine exits → all other goroutines are terminated immediately</li>
+            <li>Goroutines run concurrently, not necessarily in order</li>
+            <li>Creating a goroutine is very cheap (~2KB stack initially)</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Channels</li>
+    <br/>
+    <ul>
+        <li><u>Channels</u> are typed conduits for communication between goroutines.</li>
+        <br/>
+        <li>Channels allow goroutines to synchronize without explicit locks.</li>
+        <br/>
+        <li><b>Creating channels:</b></li>
+<pre><code class="language-go line-numbers">// Unbuffered channel
+ch := make(chan int)
+
+// Buffered channel (capacity 5)
+ch := make(chan int, 5)
+
+// Channel of strings
+messages := make(chan string)
+
+// Channel of structs
+type Result struct {
+    Value int
+    Error error
+}
+results := make(chan Result)</code></pre>
+        <br/>
+        <li><b>Sending and receiving:</b></li>
+<pre><code class="language-go line-numbers">ch := make(chan int)
+
+// Send to channel
+go func() {
+    ch <- 42  // Send 42 to channel
+}()
+
+// Receive from channel
+value := <-ch  // Receive from channel
+fmt.Println(value)  // 42
+</code></pre>
+        <br/>
+        <li><b>Channels block until ready:</b></li>
+<pre><code class="language-go line-numbers">ch := make(chan int)
+
+// This would block forever (deadlock)
+// ch <- 42  // No receiver!
+
+// This would also block forever (deadlock)
+// value := <-ch  // No sender!
+
+// Need sender and receiver
+go func() {
+    ch &lt;- 42  // Sender in goroutine
+}()
+value := <-ch  // Receiver in main
+fmt.Println(value)  // 42
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Unbuffered vs Buffered Channels</li>
+    <br/>
+    <ul>
+        <li><b>Unbuffered channels (synchronous):</b></li>
+<pre><code class="language-go line-numbers">ch := make(chan int)  // No buffer
+
+go func() {
+    fmt.Println("Sending...")
+    ch <- 42
+    fmt.Println("Sent!")
+}()
+
+time.Sleep(time.Second)  // Wait before receiving
+value := <-ch
+fmt.Println("Received:", value)
+
+// Output:
+// Sending...
+// (1 second pause)
+// Sent!
+// Received: 42
+
+// Sender blocks until receiver is ready
+</code></pre>
+        <br/>
+        <li><b>Buffered channels (asynchronous up to capacity):</b></li>
+<pre><code class="language-go line-numbers">ch := make(chan int, 2)  // Buffer size 2
+
+// Can send without receiver (up to capacity)
+ch &lt;- 1
+ch &lt;- 2
+fmt.Println("Sent 2 values")
+
+// Third send would block
+// ch &lt;- 3  // Blocks until someone receives
+
+// Receive values
+fmt.Println(&lt;-ch)  // 1
+fmt.Println(&lt;-ch)  // 2
+</code></pre>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>Unbuffered</th>
+            <th>Buffered</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><b>Creation</b></td>
+            <td><code>make(chan T)</code></td>
+            <td><code>make(chan T, n)</code></td>
+        </tr>
+        <tr>
+            <td><b>Send blocks when</b></td>
+            <td>No receiver ready</td>
+            <td>Buffer full</td>
+        </tr>
+        <tr>
+            <td><b>Receive blocks when</b></td>
+            <td>No sender ready</td>
+            <td>Buffer empty</td>
+        </tr>
+        <tr>
+            <td><b>Synchronization</b></td>
+            <td>Guaranteed rendezvous</td>
+            <td>Decoupled (up to buffer)</td>
+        </tr>
+        <tr>
+            <td><b>Use case</b></td>
+            <td>Tight synchronization</td>
+            <td>Throughput optimization</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Channel Directions</li>
+    <br/>
+    <ul>
+        <li>Channels can be restricted to send-only or receive-only:</li>
+<pre><code class="language-go line-numbers">// Send-only channel
+func sendOnly(ch chan<- int) {
+    ch <- 42  // ✓ Can send
+    // value := <-ch  // ❌ Error: cannot receive
+}
+
+// Receive-only channel
+func receiveOnly(ch <-chan int) {
+    value := <-ch  // ✓ Can receive
+    // ch <- 42  // ❌ Error: cannot send
+}
+
+func main() {
+    ch := make(chan int)  // Bidirectional channel
+
+    go sendOnly(ch)       // Converted to send-only
+    receiveOnly(ch)       // Converted to receive-only
+}</code></pre>
+        <br/>
+        <li><b>Common pattern: Function parameters</b></li>
+<pre><code class="language-go line-numbers">// Producer sends to channel
+func producer(ch chan<- int) {
+    for i := 0; i < 5; i++ {
+        ch <- i
+    }
+    close(ch)
+}
+
+// Consumer receives from channel
+func consumer(ch <-chan int) {
+    for value := range ch {
+        fmt.Println("Received:", value)
+    }
+}
+
+func main() {
+    ch := make(chan int)
+
+    go producer(ch)
+    consumer(ch)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Closing Channels</li>
+    <br/>
+    <ul>
+        <li>Closing a channel indicates no more values will be sent:</li>
+<pre><code class="language-go line-numbers">ch := make(chan int)
+
+go func() {
+    ch <- 1
+    ch <- 2
+    ch <- 3
+    close(ch)  // Close when done sending
+}()
+
+// Receive until channel is closed
+for value := range ch {
+    fmt.Println(value)
+}
+// Prints: 1, 2, 3</code></pre>
+        <br/>
+        <li><b>Checking if channel is closed:</b></li>
+<pre><code class="language-go line-numbers">ch := make(chan int)
+
+go func() {
+    ch <- 42
+    close(ch)
+}()
+
+// Two-value receive
+value, ok := <-ch
+if ok {
+    fmt.Println("Received:", value)  // Received: 42
+} else {
+    fmt.Println("Channel closed")
+}
+
+// After close, receiving returns zero value
+value2, ok2 := <-ch
+fmt.Println(value2, ok2)  // 0 false</code></pre>
+        <br/>
+        <li><b>Important rules:</b></li>
+        <ul>
+            <li>Only the sender should close a channel</li>
+            <li>Don't close a channel if receivers might still send (panic!)</li>
+            <li>Closing an already-closed channel panics</li>
+            <li>Sending to a closed channel panics</li>
+            <li>Receiving from a closed channel returns zero value and false</li>
+        </ul>
+        <br/>
+        <li><b>Common pattern: Signal completion</b></li>
+<pre><code class="language-go line-numbers">done := make(chan bool)
+
+go func() {
+    // Do work
+    time.Sleep(time.Second)
+
+    // Signal completion
+    done <- true
+}()
+
+// Wait for completion
+<-done
+fmt.Println("Done!")</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Select Statement</li>
+    <br/>
+    <ul>
+        <li>Select lets you wait on multiple channel operations:</li>
+<pre><code class="language-go line-numbers">ch1 := make(chan string)
+ch2 := make(chan string)
+
+go func() {
+    time.Sleep(time.Second)
+    ch1 <- "one"
+}()
+
+go func() {
+    time.Sleep(2 * time.Second)
+    ch2 <- "two"
+}()
+
+// Wait for whichever comes first
+select {
+case msg1 := <-ch1:
+    fmt.Println("Received:", msg1)
+case msg2 := <-ch2:
+    fmt.Println("Received:", msg2)
+}
+// Prints: Received: one (after 1 second)</code></pre>
+        <br/>
+        <li><b>Select with multiple ready channels (random choice):</b></li>
+<pre><code class="language-go line-numbers">ch1 := make(chan int)
+ch2 := make(chan int)
+
+// Both send immediately
+go func() { ch1 <- 1 }()
+go func() { ch2 <- 2 }()
+
+time.Sleep(100 * time.Millisecond)
+
+// Random selection when both ready
+select {
+case v := <-ch1:
+    fmt.Println("ch1:", v)
+case v := <-ch2:
+    fmt.Println("ch2:", v)
+}
+// Randomly prints either "ch1: 1" or "ch2: 2"</code></pre>
+        <br/>
+        <li><b>Default case (non-blocking):</b></li>
+<pre><code class="language-go line-numbers">ch := make(chan int)
+
+// Non-blocking receive
+select {
+case value := <-ch:
+    fmt.Println("Received:", value)
+default:
+    fmt.Println("No value ready")
+}
+// Prints: No value ready (immediately)</code></pre>
+        <br/>
+        <li><b>Timeout pattern:</b></li>
+<pre><code class="language-go line-numbers">ch := make(chan string)
+
+go func() {
+    time.Sleep(2 * time.Second)
+    ch <- "result"
+}()
+
+select {
+case result := <-ch:
+    fmt.Println("Got:", result)
+case <-time.After(1 * time.Second):
+    fmt.Println("Timeout!")
+}
+// Prints: Timeout! (after 1 second)</code></pre>
+        <br/>
+        <li><b>Select in a loop:</b></li>
+<pre><code class="language-go line-numbers">ch1 := make(chan int)
+ch2 := make(chan int)
+done := make(chan bool)
+
+go func() {
+    for i := 0; i < 3; i++ {
+        ch1 <- i
+        time.Sleep(500 * time.Millisecond)
+    }
+    done <- true
+}()
+
+go func() {
+    for i := 0; i < 3; i++ {
+        ch2 <- i * 10
+        time.Sleep(700 * time.Millisecond)
+    }
+}()
+
+for {
+    select {
+    case v := <-ch1:
+        fmt.Println("ch1:", v)
+    case v := <-ch2:
+        fmt.Println("ch2:", v)
+    case <-done:
+        fmt.Println("Done!")
+        return
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>WaitGroups</li>
+    <br/>
+    <ul>
+        <li><b>sync.WaitGroup</b> waits for a collection of goroutines to finish:</li>
+<pre><code class="language-go line-numbers">import "sync"
+
+func worker(id int, wg *sync.WaitGroup) {
+    defer wg.Done()  // Decrement counter when done
+
+    fmt.Printf("Worker %d starting\n", id)
+    time.Sleep(time.Second)
+    fmt.Printf("Worker %d done\n", id)
+}
+
+func main() {
+    var wg sync.WaitGroup
+
+    for i := 1; i <= 5; i++ {
+        wg.Add(1)  // Increment counter
+        go worker(i, &wg)
+    }
+
+    wg.Wait()  // Block until counter is 0
+    fmt.Println("All workers done")
+}</code></pre>
+        <br/>
+        <li><b>Important WaitGroup rules:</b></li>
+        <ul>
+            <li>Call <code>Add()</code> before starting goroutine</li>
+            <li>Call <code>Done()</code> when goroutine finishes (use <code>defer</code>)</li>
+            <li>Call <code>Wait()</code> to block until all done</li>
+            <li>Don't copy WaitGroup - pass by pointer</li>
+        </ul>
+        <br/>
+        <li><b>Common mistake - Add in goroutine:</b></li>
+<pre><code class="language-go line-numbers">var wg sync.WaitGroup
+
+for i := 0; i < 5; i++ {
+    // ❌ Wrong: Race condition
+    go func(id int) {
+        wg.Add(1)  // Don't add in goroutine!
+        defer wg.Done()
+        fmt.Println(id)
+    }(i)
+}
+
+wg.Wait()  // Might not wait for all
+
+// ✓ Correct: Add before starting goroutine
+var wg sync.WaitGroup
+
+for i := 0; i < 5; i++ {
+    wg.Add(1)  // Add before go
+    go func(id int) {
+        defer wg.Done()
+        fmt.Println(id)
+    }(i)
+}
+
+wg.Wait()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Mutexes</li>
+    <br/>
+    <ul>
+        <li><b>Mutex</b> (mutual exclusion) protects shared data from concurrent access:</li>
+<pre><code class="language-go line-numbers">import "sync"
+
+type Counter struct {
+    mu    sync.Mutex
+    value int
+}
+
+func (c *Counter) Increment() {
+    c.mu.Lock()
+    c.value++
+    c.mu.Unlock()
+}
+
+func (c *Counter) Value() int {
+    c.mu.Lock()
+    defer c.mu.Unlock()
+    return c.value
+}
+
+func main() {
+    counter := &Counter{}
+    var wg sync.WaitGroup
+
+    // 1000 goroutines incrementing
+    for i := 0; i < 1000; i++ {
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            counter.Increment()
+        }()
+    }
+
+    wg.Wait()
+    fmt.Println("Final value:", counter.Value())  // 1000
+}</code></pre>
+        <br/>
+        <li><b>Always use defer with Unlock:</b></li>
+<pre><code class="language-go line-numbers">func (c *Counter) SafeMethod() {
+    c.mu.Lock()
+    defer c.mu.Unlock()  // ✓ Ensures unlock even if panic
+
+    // Do work
+    // If panic occurs, defer still runs
+}
+
+// ❌ Dangerous - might not unlock if error/panic
+func (c *Counter) UnsafeMethod() {
+    c.mu.Lock()
+    // Do work that might panic
+    c.mu.Unlock()  // Might never reach here!
+}</code></pre>
+        <br/>
+        <li><b>RWMutex (Read-Write Mutex):</b></li>
+<pre><code class="language-go line-numbers">type Cache struct {
+    mu   sync.RWMutex
+    data map[string]string
+}
+
+func (c *Cache) Get(key string) string {
+    c.mu.RLock()  // Multiple readers allowed
+    defer c.mu.RUnlock()
+    return c.data[key]
+}
+
+func (c *Cache) Set(key, value string) {
+    c.mu.Lock()  // Exclusive access for writing
+    defer c.mu.Unlock()
+    c.data[key] = value
+}
+
+// Multiple Get() can run concurrently
+// Set() blocks all Get() and other Set()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Concurrency Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Pattern 1: Worker Pool</b></li>
+<pre><code class="language-go line-numbers">func worker(id int, jobs <-chan int, results chan<- int) {
+    for job := range jobs {
+        fmt.Printf("Worker %d processing job %d\n", id, job)
+        time.Sleep(time.Second)
+        results <- job * 2
+    }
+}
+
+func main() {
+    jobs := make(chan int, 100)
+    results := make(chan int, 100)
+
+    // Start 3 workers
+    for w := 1; w <= 3; w++ {
+        go worker(w, jobs, results)
+    }
+
+    // Send 9 jobs
+    for j := 1; j <= 9; j++ {
+        jobs <- j
+    }
+    close(jobs)
+
+    // Collect results
+    for a := 1; a <= 9; a++ {
+        <-results
+    }
+}</code></pre>
+        <br/>
+        <li><b>Pattern 2: Pipeline</b></li>
+<pre><code class="language-go line-numbers">// Stage 1: Generate numbers
+func generate(nums ...int) <-chan int {
+    out := make(chan int)
+    go func() {
+        for _, n := range nums {
+            out <- n
+        }
+        close(out)
+    }()
+    return out
+}
+
+// Stage 2: Square numbers
+func square(in <-chan int) <-chan int {
+    out := make(chan int)
+    go func() {
+        for n := range in {
+            out <- n * n
+        }
+        close(out)
+    }()
+    return out
+}
+
+// Stage 3: Print results
+func main() {
+    // Pipeline: generate -> square -> print
+    numbers := generate(2, 3, 4, 5)
+    squares := square(numbers)
+
+    for result := range squares {
+        fmt.Println(result)
+    }
+    // Output: 4, 9, 16, 25
+}</code></pre>
+        <br/>
+        <li><b>Pattern 3: Fan-Out, Fan-In</b></li>
+<pre><code class="language-go line-numbers">func fanOut(in <-chan int, n int) []<-chan int {
+    outs := make([]<-chan int, n)
+
+    for i := 0; i < n; i++ {
+        outs[i] = worker(in)
+    }
+
+    return outs
+}
+
+func worker(in <-chan int) <-chan int {
+    out := make(chan int)
+    go func() {
+        for v := range in {
+            out <- v * 2
+            time.Sleep(100 * time.Millisecond)
+        }
+        close(out)
+    }()
+    return out
+}
+
+func fanIn(channels ...<-chan int) <-chan int {
+    var wg sync.WaitGroup
+    out := make(chan int)
+
+    for _, ch := range channels {
+        wg.Add(1)
+        go func(c <-chan int) {
+            defer wg.Done()
+            for v := range c {
+                out <- v
+            }
+        }(ch)
+    }
+
+    go func() {
+        wg.Wait()
+        close(out)
+    }()
+
+    return out
+}</code></pre>
+        <br/>
+        <li><b>Pattern 4: Quit Channel</b></li>
+<pre><code class="language-go line-numbers">func worker(quit <-chan bool) {
+    for {
+        select {
+        case <-quit:
+            fmt.Println("Worker stopping")
+            return
+        default:
+            // Do work
+            fmt.Println("Working...")
+            time.Sleep(500 * time.Millisecond)
+        }
+    }
+}
+
+func main() {
+    quit := make(chan bool)
+
+    go worker(quit)
+
+    time.Sleep(2 * time.Second)
+    quit <- true  // Signal worker to stop
+    time.Sleep(100 * time.Millisecond)
+}</code></pre>
+        <br/>
+        <li><b>Pattern 5: Rate Limiting</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    requests := make(chan int, 5)
+    for i := 1; i <= 5; i++ {
+        requests <- i
+    }
+    close(requests)
+
+    // Rate limiter: 1 request per 200ms
+    limiter := time.Tick(200 * time.Millisecond)
+
+    for req := range requests {
+        <-limiter  // Wait for limiter
+        fmt.Println("Request", req, time.Now())
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>sync.Once</li>
+    <br/>
+    <ul>
+        <li><b>sync.Once</b> ensures a function is only called once:</li>
+<pre><code class="language-go line-numbers">import "sync"
+
+var (
+    instance *Database
+    once     sync.Once
+)
+
+func GetDatabase() *Database {
+    once.Do(func() {
+        fmt.Println("Creating database connection")
+        instance = &Database{}
+    })
+    return instance
+}
+
+func main() {
+    var wg sync.WaitGroup
+
+    for i := 0; i < 10; i++ {
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            db := GetDatabase()
+            fmt.Printf("DB: %p\n", db)
+        }()
+    }
+
+    wg.Wait()
+    // "Creating database connection" prints only once
+    // All goroutines get same instance
+}</code></pre>
+        <br/>
+        <li><b>Common use case: Lazy initialization</b></li>
+<pre><code class="language-go line-numbers">type Config struct {
+    settings map[string]string
+}
+
+var (
+    config *Config
+    once   sync.Once
+)
+
+func GetConfig() *Config {
+    once.Do(func() {
+        // Expensive initialization
+        config = &Config{
+            settings: loadFromFile(),
+        }
+    })
+    return config
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Context Package</li>
+    <br/>
+    <ul>
+        <li><b>Context</b> carries deadlines, cancellation signals, and values across API boundaries:</li>
+<pre><code class="language-go line-numbers">import "context"
+
+func worker(ctx context.Context, id int) {
+    for {
+        select {
+        case <-ctx.Done():
+            fmt.Printf("Worker %d stopping: %v\n", id, ctx.Err())
+            return
+        default:
+            fmt.Printf("Worker %d working...\n", id)
+            time.Sleep(500 * time.Millisecond)
+        }
+    }
+}
+
+func main() {
+    // Context with timeout
+    ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+    defer cancel()
+
+    go worker(ctx, 1)
+    go worker(ctx, 2)
+
+    // Wait for context to expire
+    <-ctx.Done()
+    fmt.Println("Main done")
+    time.Sleep(100 * time.Millisecond)
+}</code></pre>
+        <br/>
+        <li><b>Context types:</b></li>
+<pre><code class="language-go line-numbers">// 1. Background context (root)
+ctx := context.Background()
+
+// 2. WithCancel - manual cancellation
+ctx, cancel := context.WithCancel(context.Background())
+cancel()  // Call to cancel
+
+// 3. WithTimeout - auto-cancel after duration
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
+
+// 4. WithDeadline - auto-cancel at specific time
+deadline := time.Now().Add(5 * time.Second)
+ctx, cancel := context.WithDeadline(context.Background(), deadline)
+defer cancel()
+
+// 5. WithValue - carry request-scoped values
+ctx := context.WithValue(context.Background(), "userID", 12345)</code></pre>
+        <br/>
+        <li><b>Best practices:</b></li>
+        <ul>
+            <li>Pass context as first parameter: <code>func Do(ctx context.Context, ...)</code></li>
+            <li>Don't store contexts in structs</li>
+            <li>Always defer cancel() to avoid leaks</li>
+            <li>Use context.Background() at top level</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Mistakes and How to Avoid Them</li>
+    <br/>
+    <ul>
+        <li><b>Mistake 1: Forgetting WaitGroup Done()</b></li>
+<pre><code class="language-go line-numbers">var wg sync.WaitGroup
+
+wg.Add(1)
+go func() {
+    // ❌ Forgot wg.Done()
+    fmt.Println("Working...")
+}()
+
+wg.Wait()  // Blocks forever!
+
+// ✓ Always use defer
+wg.Add(1)
+go func() {
+    defer wg.Done()
+    fmt.Println("Working...")
+}()</code></pre>
+        <br/>
+        <li><b>Mistake 2: Not closing channels</b></li>
+<pre><code class="language-go line-numbers">ch := make(chan int)
+
+go func() {
+    for i := 0; i < 5; i++ {
+        ch <- i
+    }
+    // ❌ Forgot to close
+}()
+
+// Blocks forever after receiving 5 values
+for val := range ch {
+    fmt.Println(val)
+}
+
+// ✓ Close when done sending
+go func() {
+    for i := 0; i < 5; i++ {
+        ch <- i
+    }
+    close(ch)
+}()</code></pre>
+        <br/>
+        <li><b>Mistake 3: Closing channel from receiver</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: Receiver closes
+go func() {
+    for val := range ch {
+        fmt.Println(val)
+    }
+    close(ch)  // Sender might still be sending!
+}()
+
+// ✓ Correct: Sender closes
+go func() {
+    for i := 0; i < 5; i++ {
+        ch <- i
+    }
+    close(ch)
+}()</code></pre>
+        <br/>
+        <li><b>Mistake 4: Goroutine leaks</b></li>
+<pre><code class="language-go line-numbers">// ❌ Goroutine never exits
+func leak() {
+    ch := make(chan int)
+    go func() {
+        val := <-ch  // Blocks forever if nothing sent
+        fmt.Println(val)
+    }()
+    // Goroutine continues running forever
+}
+
+// ✓ Use context for cancellation
+func noLeak() {
+    ch := make(chan int)
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    go func() {
+        select {
+        case val := <-ch:
+            fmt.Println(val)
+        case <-ctx.Done():
+            return
+        }
+    }()
+}</code></pre>
+        <br/>
+        <li><b>Mistake 5: Race conditions without synchronization</b></li>
+<pre><code class="language-go line-numbers">// ❌ Race condition
+counter := 0
+for i := 0; i < 1000; i++ {
+    go func() {
+        counter++  // Not thread-safe!
+    }()
+}
+// counter might not be 1000
+
+// ✓ Use mutex
+var mu sync.Mutex
+counter := 0
+for i := 0; i < 1000; i++ {
+    go func() {
+        mu.Lock()
+        counter++
+        mu.Unlock()
+    }()
+}</code></pre>
+        <br/>
+        <li><b>Mistake 6: Using time.Sleep to wait for goroutines</b></li>
+<pre><code class="language-go line-numbers">// ❌ Unreliable
+go doWork()
+time.Sleep(time.Second)  // Hope it finishes in 1 second?
+
+// ✓ Use WaitGroup or channels
+var wg sync.WaitGroup
+wg.Add(1)
+go func() {
+    defer wg.Done()
+    doWork()
+}()
+wg.Wait()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Detecting Race Conditions</li>
+    <br/>
+    <ul>
+        <li>Go has a built-in race detector:</li>
+<pre><code class="language-bash line-numbers"># Run with race detector
+go run -race main.go
+
+# Test with race detector
+go test -race
+
+# Build with race detector
+go build -race</code></pre>
+        <br/>
+        <li><b>Example race condition:</b></li>
+<pre><code class="language-go line-numbers">package main
+
+import "fmt"
+
+func main() {
+    counter := 0
+
+    go func() {
+        counter++  // Write
+    }()
+
+    fmt.Println(counter)  // Read
+}
+
+// Running with -race will report:
+// WARNING: DATA RACE</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices</li>
+    <br/>
+    <ul>
+        <li><b>1. Share memory by communicating (use channels)</b></li>
+<pre><code class="language-go line-numbers">// ✓ Prefer channels
+ch := make(chan Data)
+go producer(ch)
+go consumer(ch)
+
+// Instead of sharing memory with locks
+// var data Data
+// var mu sync.Mutex</code></pre>
+        <br/>
+        <li><b>2. Use WaitGroups for goroutine synchronization</b></li>
+<pre><code class="language-go line-numbers">var wg sync.WaitGroup
+
+for i := 0; i < 10; i++ {
+    wg.Add(1)
+    go func(id int) {
+        defer wg.Done()
+        doWork(id)
+    }(i)
+}
+
+wg.Wait()</code></pre>
+        <br/>
+        <li><b>3. Always defer mutex unlocks</b></li>
+<pre><code class="language-go line-numbers">mu.Lock()
+defer mu.Unlock()
+// Do work</code></pre>
+        <br/>
+        <li><b>4. Use buffered channels for better throughput</b></li>
+<pre><code class="language-go line-numbers">// Unbuffered: sender blocks until receiver ready
+ch := make(chan int)
+
+// Buffered: sender doesn't block until buffer full
+ch := make(chan int, 100)</code></pre>
+        <br/>
+        <li><b>5. Limit goroutine count for resource-intensive tasks</b></li>
+<pre><code class="language-go line-numbers">// Worker pool pattern
+jobs := make(chan Job, 100)
+results := make(chan Result, 100)
+
+// Limit to 10 workers
+for w := 0; w < 10; w++ {
+    go worker(jobs, results)
+}</code></pre>
+        <br/>
+        <li><b>6. Use context for cancellation</b></li>
+<pre><code class="language-go line-numbers">ctx, cancel := context.WithCancel(context.Background())
+defer cancel()
+
+go worker(ctx)</code></pre>
+        <br/>
+        <li><b>7. Test with race detector</b></li>
+<pre><code class="language-bash line-numbers">go test -race ./...</code></pre>
     </ul>
     <br/><br/>
 </ol>
