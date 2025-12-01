@@ -167,7 +167,8 @@
         <li><a href="#go-concurrency">Concurrency</a></li>
         <li><a href="#go-defer">Defer</a></li>
         <li><a href="#go-error-handling">Error Handling</a></li>
-        <li><a href="#go-"></a></li>
+        <li><a href="#go-first-class-functions">First Class Functions</a></li>
+        <li><a href="#go-reflection">Reflection</a></li>
         <li><a href="#go-"></a></li>
     </ol>
     </ol>
@@ -11381,7 +11382,7 @@ if err != nil {
         {
             name:    "valid user",
             userID:  1,
-            want:    &User{ID: 1, Name: "Alice"},
+            want:    &amp;User{ID: 1, Name: "Alice"},
             wantErr: nil,
         },
         {
@@ -11437,7 +11438,1124 @@ if err != nil {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-first-class-functions">First-Class Functions in Go</h3>
+<ol>
 
+    <li>What Are First-Class Functions?</li>
+    <br/>
+    <ul>
+        <li>In Go, functions are <b>first-class citizens</b> - they can be:</li>
+        <ul>
+            <li>Assigned to variables</li>
+            <li>Passed as arguments to other functions</li>
+            <li>Returned from functions</li>
+            <li>Stored in data structures</li>
+        </ul>
+        <br/>
+        <li>This enables powerful programming patterns like callbacks, closures, and higher-order functions.</li>
+        <br/>
+        <li><b>Basic example:</b></li>
+<pre><code class="language-go line-numbers">func add(a, b int) int {
+    return a + b
+}
+
+func main() {
+    // Assign function to variable
+    operation := add
+
+    // Call function through variable
+    result := operation(3, 4)
+    fmt.Println(result)  // 7
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Function Types</li>
+    <br/>
+    <ul>
+        <li>Every function has a type based on its signature:</li>
+<pre><code class="language-go line-numbers">// Function that takes two ints and returns an int
+func add(a, b int) int {
+    return a + b
+}
+
+// Type of add is: func(int, int) int
+
+// Declare variable with function type
+var operation func(int, int) int
+operation = add
+
+result := operation(5, 3)  // 8</code></pre>
+        <br/>
+        <li><b>Declaring function types:</b></li>
+<pre><code class="language-go line-numbers">// Define a custom function type
+type BinaryOperation func(int, int) int
+
+func add(a, b int) int { return a + b }
+func multiply(a, b int) int { return a * b }
+
+func main() {
+    var op BinaryOperation
+
+    op = add
+    fmt.Println(op(3, 4))  // 7
+
+    op = multiply
+    fmt.Println(op(3, 4))  // 12
+}</code></pre>
+        <br/>
+        <li><b>Function type with multiple return values:</b></li>
+<pre><code class="language-go line-numbers">// Function that returns result and error
+type Calculator func(int, int) (int, error)
+
+func safeDivide(a, b int) (int, error) {
+    if b == 0 {
+        return 0, errors.New("division by zero")
+    }
+    return a / b, nil
+}
+
+func main() {
+    var calc Calculator = safeDivide
+    result, err := calc(10, 2)
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(result)  // 5
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Functions as Parameters (Higher-Order Functions)</li>
+    <br/>
+    <ul>
+        <li>Functions that take other functions as parameters are called <b>higher-order functions</b>:</li>
+<pre><code class="language-go line-numbers">// apply takes a function and applies it to two values
+func apply(a, b int, operation func(int, int) int) int {
+    return operation(a, b)
+}
+
+func add(a, b int) int { return a + b }
+func multiply(a, b int) int { return a * b }
+
+func main() {
+    result1 := apply(3, 4, add)       // 7
+    result2 := apply(3, 4, multiply)  // 12
+
+    fmt.Println(result1, result2)
+}</code></pre>
+        <br/>
+        <li><b>Example: Map function (transform slice)</b></li>
+<pre><code class="language-go line-numbers">// Map applies a function to each element in a slice
+func Map(slice []int, fn func(int) int) []int {
+    result := make([]int, len(slice))
+    for i, v := range slice {
+        result[i] = fn(v)
+    }
+    return result
+}
+
+func double(x int) int { return x * 2 }
+func square(x int) int { return x * x }
+
+func main() {
+    numbers := []int{1, 2, 3, 4, 5}
+
+    doubled := Map(numbers, double)
+    fmt.Println(doubled)  // [2 4 6 8 10]
+
+    squared := Map(numbers, square)
+    fmt.Println(squared)  // [1 4 9 16 25]
+}</code></pre>
+        <br/>
+        <li><b>Example: Filter function</b></li>
+<pre><code class="language-go line-numbers">// Filter returns elements that match the predicate
+func Filter(slice []int, predicate func(int) bool) []int {
+    result := []int{}
+    for _, v := range slice {
+        if predicate(v) {
+            result = append(result, v)
+        }
+    }
+    return result
+}
+
+func isEven(x int) bool { return x%2 == 0 }
+func isPositive(x int) bool { return x > 0 }
+
+func main() {
+    numbers := []int{-2, -1, 0, 1, 2, 3, 4, 5}
+
+    evens := Filter(numbers, isEven)
+    fmt.Println(evens)  // [-2 0 2 4]
+
+    positives := Filter(numbers, isPositive)
+    fmt.Println(positives)  // [1 2 3 4 5]
+}</code></pre>
+        <br/>
+        <li><b>Example: Reduce function</b></li>
+<pre><code class="language-go line-numbers">// Reduce combines all elements using a function
+func Reduce(slice []int, initial int, fn func(int, int) int) int {
+    result := initial
+    for _, v := range slice {
+        result = fn(result, v)
+    }
+    return result
+}
+
+func add(a, b int) int { return a + b }
+func multiply(a, b int) int { return a * b }
+
+func main() {
+    numbers := []int{1, 2, 3, 4, 5}
+
+    sum := Reduce(numbers, 0, add)
+    fmt.Println(sum)  // 15
+
+    product := Reduce(numbers, 1, multiply)
+    fmt.Println(product)  // 120
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Functions as Return Values</li>
+    <br/>
+    <ul>
+        <li>Functions can return other functions:</li>
+<pre><code class="language-go line-numbers">// makeAdder returns a function that adds n to its input
+func makeAdder(n int) func(int) int {
+    return func(x int) int {
+        return x + n
+    }
+}
+
+func main() {
+    add5 := makeAdder(5)
+    add10 := makeAdder(10)
+
+    fmt.Println(add5(3))   // 8
+    fmt.Println(add10(3))  // 13
+}</code></pre>
+        <br/>
+        <li><b>Example: Function factory</b></li>
+<pre><code class="language-go line-numbers">// makeMultiplier creates a function that multiplies by n
+func makeMultiplier(n int) func(int) int {
+    return func(x int) int {
+        return x * n
+    }
+}
+
+func main() {
+    double := makeMultiplier(2)
+    triple := makeMultiplier(3)
+
+    fmt.Println(double(5))  // 10
+    fmt.Println(triple(5))  // 15
+}</code></pre>
+        <br/>
+        <li><b>Example: Configurable operations</b></li>
+<pre><code class="language-go line-numbers">type Operation string
+
+const (
+    Add      Operation = "add"
+    Subtract Operation = "subtract"
+    Multiply Operation = "multiply"
+)
+
+func getOperation(op Operation) func(int, int) int {
+    switch op {
+    case Add:
+        return func(a, b int) int { return a + b }
+    case Subtract:
+        return func(a, b int) int { return a - b }
+    case Multiply:
+        return func(a, b int) int { return a * b }
+    default:
+        return func(a, b int) int { return 0 }
+    }
+}
+
+func main() {
+    op := getOperation(Add)
+    result := op(10, 5)
+    fmt.Println(result)  // 15
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Anonymous Functions and Function Literals</li>
+    <br/>
+    <ul>
+        <li>Anonymous functions (function literals) are functions without a name:</li>
+<pre><code class="language-go line-numbers">func main() {
+    // Define and call immediately
+    func() {
+        fmt.Println("Hello from anonymous function!")
+    }()
+
+    // Assign to variable
+    greet := func(name string) {
+        fmt.Printf("Hello, %s!\n", name)
+    }
+    greet("Alice")
+
+    // Pass as argument
+    numbers := []int{1, 2, 3, 4, 5}
+    doubled := Map(numbers, func(x int) int {
+        return x * 2
+    })
+    fmt.Println(doubled)  // [2 4 6 8 10]
+}</code></pre>
+        <br/>
+        <li><b>Anonymous function with parameters and return value:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Calculate immediately
+    result := func(a, b int) int {
+        return a*a + b*b
+    }(3, 4)
+
+    fmt.Println(result)  // 25 (3² + 4²)
+}</code></pre>
+        <br/>
+        <li><b>Common use: Sorting with custom comparator</b></li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name string
+    Age  int
+}
+
+func main() {
+    people := []Person{
+        {"Alice", 30},
+        {"Bob", 25},
+        {"Charlie", 35},
+    }
+
+    // Sort by age using anonymous function
+    sort.Slice(people, func(i, j int) bool {
+        return people[i].Age < people[j].Age
+    })
+
+    fmt.Println(people)
+    // [{Bob 25} {Alice 30} {Charlie 35}]
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Closures: Functions That Capture Variables</li>
+    <br/>
+    <ul>
+        <li>A <b>closure</b> is a function that references variables from outside its body:</li>
+<pre><code class="language-go line-numbers">func main() {
+    x := 10
+
+    // This function "closes over" the variable x
+    increment := func() int {
+        x++  // References x from outer scope
+        return x
+    }
+
+    fmt.Println(increment())  // 11
+    fmt.Println(increment())  // 12
+    fmt.Println(increment())  // 13
+    fmt.Println(x)            // 13 (x was modified)
+}</code></pre>
+        <br/>
+        <li><b>Example: Counter generator</b></li>
+<pre><code class="language-go line-numbers">func makeCounter() func() int {
+    count := 0
+
+    return func() int {
+        count++
+        return count
+    }
+}
+
+func main() {
+    counter1 := makeCounter()
+    counter2 := makeCounter()
+
+    fmt.Println(counter1())  // 1
+    fmt.Println(counter1())  // 2
+    fmt.Println(counter2())  // 1 (separate counter)
+    fmt.Println(counter1())  // 3
+    fmt.Println(counter2())  // 2
+}</code></pre>
+        <br/>
+        <li><b>Example: Closure with configuration</b></li>
+<pre><code class="language-go line-numbers">func makeGreeter(greeting string) func(string) string {
+    return func(name string) string {
+        return fmt.Sprintf("%s, %s!", greeting, name)
+    }
+}
+
+func main() {
+    hello := makeGreeter("Hello")
+    goodbye := makeGreeter("Goodbye")
+
+    fmt.Println(hello("Alice"))     // Hello, Alice!
+    fmt.Println(goodbye("Bob"))     // Goodbye, Bob!
+}</code></pre>
+        <br/>
+        <li><b>Important: Closures capture variables by reference</b></li>
+<pre><code class="language-go line-numbers">// ❌ Common mistake in loops
+func main() {
+    functions := []func(){}
+
+    for i := 0; i < 3; i++ {
+        functions = append(functions, func() {
+            fmt.Println(i)  // Captures i by reference!
+        })
+    }
+
+    for _, f := range functions {
+        f()  // Prints: 3, 3, 3 (not 0, 1, 2!)
+    }
+}
+
+// ✓ Correct: Create new variable for each iteration
+func main() {
+    functions := []func(){}
+
+    for i := 0; i < 3; i++ {
+        i := i  // Create new variable
+        functions = append(functions, func() {
+            fmt.Println(i)
+        })
+    }
+
+    for _, f := range functions {
+        f()  // Prints: 0, 1, 2
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Callback Functions</li>
+    <br/>
+    <ul>
+        <li>Callbacks are functions passed to other functions to be called at a specific time:</li>
+<pre><code class="language-go line-numbers">// Process data and call callback when done
+func processData(data string, callback func(string)) {
+    // Simulate processing
+    result := strings.ToUpper(data)
+
+    // Call the callback with result
+    callback(result)
+}
+
+func main() {
+    processData("hello", func(result string) {
+        fmt.Println("Result:", result)
+    })
+    // Result: HELLO
+}</code></pre>
+        <br/>
+        <li><b>Example: HTTP handler callbacks</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    // Handler function is a callback
+    http.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintf(w, "Hello, World!")
+    })
+
+    http.ListenAndServe(":8080", nil)
+}</code></pre>
+        <br/>
+        <li><b>Example: Success/error callbacks</b></li>
+<pre><code class="language-go line-numbers">func fetchData(
+    url string,
+    onSuccess func(string),
+    onError func(error),
+) {
+    resp, err := http.Get(url)
+    if err != nil {
+        onError(err)
+        return
+    }
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        onError(err)
+        return
+    }
+
+    onSuccess(string(body))
+}
+
+func main() {
+    fetchData(
+        "https://api.example.com/data",
+        func(data string) {
+            fmt.Println("Success:", data)
+        },
+        func(err error) {
+            fmt.Println("Error:", err)
+        },
+    )
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Function Decorators and Middleware</li>
+    <br/>
+    <ul>
+        <li>Decorators wrap functions to add behavior (common in web servers):</li>
+<pre><code class="language-go line-numbers">// Logging decorator
+func withLogging(fn func(string) string) func(string) string {
+    return func(input string) string {
+        fmt.Printf("Calling function with input: %s\n", input)
+        result := fn(input)
+        fmt.Printf("Function returned: %s\n", result)
+        return result
+    }
+}
+
+func toUpper(s string) string {
+    return strings.ToUpper(s)
+}
+
+func main() {
+    decorated := withLogging(toUpper)
+    result := decorated("hello")
+
+    // Output:
+    // Calling function with input: hello
+    // Function returned: HELLO
+
+    fmt.Println(result)  // HELLO
+}</code></pre>
+        <br/>
+        <li><b>Example: Timing decorator</b></li>
+<pre><code class="language-go line-numbers">func withTiming(fn func()) func() {
+    return func() {
+        start := time.Now()
+        fn()
+        elapsed := time.Since(start)
+        fmt.Printf("Function took %v\n", elapsed)
+    }
+}
+
+func slowOperation() {
+    time.Sleep(100 * time.Millisecond)
+    fmt.Println("Operation complete")
+}
+
+func main() {
+    timed := withTiming(slowOperation)
+    timed()
+
+    // Output:
+    // Operation complete
+    // Function took 100.xxxms
+}</code></pre>
+        <br/>
+        <li><b>Example: HTTP middleware</b></li>
+<pre><code class="language-go line-numbers">type HandlerFunc func(http.ResponseWriter, *http.Request)
+
+// Middleware that logs requests
+func loggingMiddleware(next HandlerFunc) HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
+        log.Printf("Started %s %s", r.Method, r.URL.Path)
+
+        next(w, r)
+
+        log.Printf("Completed in %v", time.Since(start))
+    }
+}
+
+// Middleware that adds authentication
+func authMiddleware(next HandlerFunc) HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        token := r.Header.Get("Authorization")
+        if token != "valid-token" {
+            http.Error(w, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+        next(w, r)
+    }
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "Hello!")
+}
+
+func main() {
+    // Chain middlewares
+    finalHandler := loggingMiddleware(authMiddleware(handler))
+
+    http.HandleFunc("/api", finalHandler)
+    http.ListenAndServe(":8080", nil)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Method Values and Method Expressions</li>
+    <br/>
+    <ul>
+        <li><b>Method values</b> bind a method to a specific receiver:</li>
+<pre><code class="language-go line-numbers">type Counter struct {
+    count int
+}
+
+func (c *Counter) Increment() {
+    c.count++
+}
+
+func (c *Counter) Value() int {
+    return c.count
+}
+
+func main() {
+    counter := &Counter{}
+
+    // Method value: bound to counter instance
+    inc := counter.Increment
+    inc()  // Same as counter.Increment()
+    inc()
+
+    fmt.Println(counter.Value())  // 2
+}</code></pre>
+        <br/>
+        <li><b>Method expressions</b> create a function from a method:</li>
+<pre><code class="language-go line-numbers">type Rectangle struct {
+    Width, Height float64
+}
+
+func (r Rectangle) Area() float64 {
+    return r.Width * r.Height
+}
+
+func main() {
+    // Method expression: function that takes receiver as first param
+    areaFunc := Rectangle.Area
+
+    rect := Rectangle{Width: 10, Height: 5}
+    area := areaFunc(rect)  // Must pass receiver
+
+    fmt.Println(area)  // 50
+}</code></pre>
+        <br/>
+        <li><b>Practical example: Using method values with goroutines</b></li>
+<pre><code class="language-go line-numbers">type Worker struct {
+    id int
+}
+
+func (w *Worker) Process() {
+    fmt.Printf("Worker %d processing\n", w.id)
+    time.Sleep(100 * time.Millisecond)
+    fmt.Printf("Worker %d done\n", w.id)
+}
+
+func main() {
+    workers := []*Worker{
+        {id: 1},
+        {id: 2},
+        {id: 3},
+    }
+
+    for _, w := range workers {
+        // Method value captures specific worker
+        go w.Process()
+    }
+
+    time.Sleep(200 * time.Millisecond)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Functions in Data Structures</li>
+    <br/>
+    <ul>
+        <li>Functions can be stored in slices, maps, and structs:</li>
+<pre><code class="language-go line-numbers">// Map of operations
+var operations = map[string]func(int, int) int{
+    "add":      func(a, b int) int { return a + b },
+    "subtract": func(a, b int) int { return a - b },
+    "multiply": func(a, b int) int { return a * b },
+}
+
+func main() {
+    result := operations["add"](10, 5)
+    fmt.Println(result)  // 15
+
+    result = operations["multiply"](10, 5)
+    fmt.Println(result)  // 50
+}</code></pre>
+        <br/>
+        <li><b>Example: Command pattern with function map</b></li>
+<pre><code class="language-go line-numbers">type Command func() error
+
+var commands = map[string]Command{
+    "start": func() error {
+        fmt.Println("Starting...")
+        return nil
+    },
+    "stop": func() error {
+        fmt.Println("Stopping...")
+        return nil
+    },
+    "restart": func() error {
+        commands["stop"]()
+        return commands["start"]()
+    },
+}
+
+func main() {
+    if cmd, exists := commands["restart"]; exists {
+        cmd()
+    }
+}</code></pre>
+        <br/>
+        <li><b>Example: Slice of validators</b></li>
+<pre><code class="language-go line-numbers">type Validator func(string) error
+
+func validateLength(min, max int) Validator {
+    return func(s string) error {
+        if len(s) < min || len(s) > max {
+            return fmt.Errorf("length must be between %d and %d", min, max)
+        }
+        return nil
+    }
+}
+
+func validateEmail(s string) error {
+    if !strings.Contains(s, "@") {
+        return errors.New("invalid email format")
+    }
+    return nil
+}
+
+func validate(value string, validators []Validator) error {
+    for _, validator := range validators {
+        if err := validator(value); err != nil {
+            return err
+        }
+    }
+    return nil
+}
+
+func main() {
+    emailValidators := []Validator{
+        validateLength(5, 50),
+        validateEmail,
+    }
+
+    err := validate("test@example.com", emailValidators)
+    if err != nil {
+        fmt.Println("Error:", err)
+    } else {
+        fmt.Println("Valid!")
+    }
+}</code></pre>
+        <br/>
+        <li><b>Example: Struct with function fields</b></li>
+<pre><code class="language-go line-numbers">type HTTPClient struct {
+    BaseURL     string
+    BeforeRequest func(*http.Request)
+    AfterResponse func(*http.Response)
+}
+
+func (c *HTTPClient) Get(path string) (*http.Response, error) {
+    req, err := http.NewRequest("GET", c.BaseURL+path, nil)
+    if err != nil {
+        return nil, err
+    }
+
+    if c.BeforeRequest != nil {
+        c.BeforeRequest(req)
+    }
+
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        return nil, err
+    }
+
+    if c.AfterResponse != nil {
+        c.AfterResponse(resp)
+    }
+
+    return resp, nil
+}
+
+func main() {
+    client := &HTTPClient{
+        BaseURL: "https://api.example.com",
+        BeforeRequest: func(req *http.Request) {
+            req.Header.Set("Authorization", "Bearer token")
+            log.Printf("Request: %s %s", req.Method, req.URL)
+        },
+        AfterResponse: func(resp *http.Response) {
+            log.Printf("Response: %d", resp.StatusCode)
+        },
+    }
+
+    client.Get("/users")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Variadic Functions with Functions</li>
+    <br/>
+    <ul>
+        <li>Functions can accept a variable number of function arguments:</li>
+<pre><code class="language-go line-numbers">// Apply multiple functions in sequence
+func pipe(input int, fns ...func(int) int) int {
+    result := input
+    for _, fn := range fns {
+        result = fn(result)
+    }
+    return result
+}
+
+func double(x int) int { return x * 2 }
+func addTen(x int) int { return x + 10 }
+func square(x int) int { return x * x }
+
+func main() {
+    result := pipe(5, double, addTen, square)
+    // 5 -> 10 -> 20 -> 400
+    fmt.Println(result)  // 400
+}</code></pre>
+        <br/>
+        <li><b>Example: Composing middleware</b></li>
+<pre><code class="language-go line-numbers">type Middleware func(HandlerFunc) HandlerFunc
+
+func chain(h HandlerFunc, middlewares ...Middleware) HandlerFunc {
+    // Apply middlewares in reverse order
+    for i := len(middlewares) - 1; i >= 0; i-- {
+        h = middlewares[i](h)
+    }
+    return h
+}
+
+func main() {
+    handler := func(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintf(w, "Hello!")
+    }
+
+    finalHandler := chain(
+        handler,
+        loggingMiddleware,
+        authMiddleware,
+        rateLimitMiddleware,
+    )
+
+    http.HandleFunc("/api", finalHandler)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Patterns and Idioms</li>
+    <br/>
+    <ul>
+        <li><b>Pattern 1: Option functions (Functional Options Pattern)</b></li>
+<pre><code class="language-go line-numbers">type Server struct {
+    host string
+    port int
+    timeout time.Duration
+}
+
+type Option func(*Server)
+
+func WithHost(host string) Option {
+    return func(s *Server) {
+        s.host = host
+    }
+}
+
+func WithPort(port int) Option {
+    return func(s *Server) {
+        s.port = port
+    }
+}
+
+func WithTimeout(timeout time.Duration) Option {
+    return func(s *Server) {
+        s.timeout = timeout
+    }
+}
+
+func NewServer(opts ...Option) *Server {
+    s := &Server{
+        host: "localhost",
+        port: 8080,
+        timeout: 30 * time.Second,
+    }
+
+    for _, opt := range opts {
+        opt(s)
+    }
+
+    return s
+}
+
+func main() {
+    server := NewServer(
+        WithHost("0.0.0.0"),
+        WithPort(9000),
+    )
+
+    fmt.Printf("Server: %s:%d\n", server.host, server.port)
+}</code></pre>
+        <br/>
+        <li><b>Pattern 2: Strategy pattern</b></li>
+<pre><code class="language-go line-numbers">type SortStrategy func([]int) []int
+
+func bubbleSort(data []int) []int {
+    // Implementation
+    return data
+}
+
+func quickSort(data []int) []int {
+    // Implementation
+    return data
+}
+
+type Sorter struct {
+    strategy SortStrategy
+}
+
+func (s *Sorter) Sort(data []int) []int {
+    return s.strategy(data)
+}
+
+func main() {
+    data := []int{5, 2, 8, 1, 9}
+
+    sorter := &Sorter{strategy: quickSort}
+    sorted := sorter.Sort(data)
+    fmt.Println(sorted)
+}</code></pre>
+        <br/>
+        <li><b>Pattern 3: Lazy evaluation</b></li>
+<pre><code class="language-go line-numbers">// Function that returns a function that computes on demand
+func lazy(compute func() int) func() int {
+    var value int
+    var computed bool
+
+    return func() int {
+        if !computed {
+            value = compute()
+            computed = true
+        }
+        return value
+    }
+}
+
+func main() {
+    expensive := lazy(func() int {
+        fmt.Println("Computing...")
+        time.Sleep(1 * time.Second)
+        return 42
+    })
+
+    fmt.Println("Created lazy value")
+    fmt.Println(expensive())  // Computing... 42
+    fmt.Println(expensive())  // 42 (no recomputation)
+}</code></pre>
+        <br/>
+        <li><b>Pattern 4: Memoization</b></li>
+<pre><code class="language-go line-numbers">func memoize(fn func(int) int) func(int) int {
+    cache := make(map[int]int)
+
+    return func(n int) int {
+        if result, found := cache[n]; found {
+            return result
+        }
+        result := fn(n)
+        cache[n] = result
+        return result
+    }
+}
+
+func fibonacci(n int) int {
+    if n <= 1 {
+        return n
+    }
+    return fibonacci(n-1) + fibonacci(n-2)
+}
+
+func main() {
+    memoFib := memoize(fibonacci)
+
+    fmt.Println(memoFib(40))  // Fast with caching
+    fmt.Println(memoFib(40))  // Instant (cached)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Mistakes and How to Avoid Them</li>
+    <br/>
+    <ul>
+        <li><b>Mistake 1: Closure capturing loop variable</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: All closures reference same variable
+for i := 0; i < 5; i++ {
+    go func() {
+        fmt.Println(i)  // Prints 5, 5, 5, 5, 5
+    }()
+}
+
+// ✓ Correct: Create new variable for each iteration
+for i := 0; i < 5; i++ {
+    i := i  // Shadow variable
+    go func() {
+        fmt.Println(i)  // Prints 0, 1, 2, 3, 4
+    }()
+}
+
+// ✓ Also correct: Pass as parameter
+for i := 0; i < 5; i++ {
+    go func(n int) {
+        fmt.Println(n)
+    }(i)
+}</code></pre>
+        <br/>
+        <li><b>Mistake 2: Not checking for nil function</b></li>
+<pre><code class="language-go line-numbers">type Config struct {
+    OnComplete func()
+}
+
+// ❌ Wrong: may panic if OnComplete is nil
+func process(cfg Config) {
+    // ... work ...
+    cfg.OnComplete()  // Panic if nil!
+}
+
+// ✓ Correct: check before calling
+func process(cfg Config) {
+    // ... work ...
+    if cfg.OnComplete != nil {
+        cfg.OnComplete()
+    }
+}</code></pre>
+        <br/>
+        <li><b>Mistake 3: Forgetting that functions are compared by address</b></li>
+<pre><code class="language-go line-numbers">func add(a, b int) int { return a + b }
+
+func main() {
+    f1 := add
+    f2 := add
+
+    // ❌ Don't compare functions directly
+    if f1 == f2 {  // true (same function)
+        fmt.Println("Same")
+    }
+
+    // But anonymous functions are different
+    g1 := func() {}
+    g2 := func() {}
+
+    // Comparing these will panic!
+    // fmt.Println(g1 == g2)  // panic: runtime error
+}</code></pre>
+        <br/>
+        <li><b>Mistake 4: Modifying slice in closure incorrectly</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: Race condition
+items := []int{1, 2, 3}
+for _, item := range items {
+    go func() {
+        items = append(items, item*2)  // Race!
+    }()
+}
+
+// ✓ Correct: Use proper synchronization
+var mu sync.Mutex
+items := []int{1, 2, 3}
+for _, item := range items {
+    item := item
+    go func() {
+        mu.Lock()
+        items = append(items, item*2)
+        mu.Unlock()
+    }()
+}</code></pre>
+        <br/>
+        <li><b>Mistake 5: Not understanding closure lifetime</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: function may outlive the data
+func makeHandler() http.HandlerFunc {
+    data := fetchData()  // Expensive operation
+
+    return func(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintf(w, "%v", data)
+    }
+    // data stays in memory as long as handler exists!
+}
+
+// ✓ Better: Fetch data on each request if appropriate
+func makeHandler() http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        data := fetchData()
+        fmt.Fprintf(w, "%v", data)
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices</li>
+    <br/>
+    <ul>
+        <li><b>1. Use closures to encapsulate state</b></li>
+<pre><code class="language-go line-numbers">func makeCounter() func() int {
+    count := 0
+    return func() int {
+        count++
+        return count
+    }
+}</code></pre>
+        <br/>
+        <li><b>2. Pass functions as parameters for flexibility</b></li>
+<pre><code class="language-go line-numbers">func process(data []int, fn func(int) int) []int {
+    // Caller controls transformation
+}</code></pre>
+        <br/>
+        <li><b>3. Use type aliases for complex function signatures</b></li>
+<pre><code class="language-go line-numbers">// ✓ Clear and reusable
+type HandlerFunc func(http.ResponseWriter, *http.Request)
+
+// ❌ Harder to read and maintain
+func register(path string, fn func(http.ResponseWriter, *http.Request)) {}</code></pre>
+        <br/>
+        <li><b>4. Check for nil before calling function variables</b></li>
+<pre><code class="language-go line-numbers">if callback != nil {
+    callback()
+}</code></pre>
+        <br/>
+        <li><b>5. Document function parameters clearly</b></li>
+<pre><code class="language-go line-numbers">// Map applies fn to each element in the slice and returns a new slice.
+// fn should be a pure function with no side effects.
+func Map(slice []int, fn func(int) int) []int { }</code></pre>
+        <br/>
+        <li><b>6. Avoid deep nesting with closures</b></li>
+<pre><code class="language-go line-numbers">// ❌ Hard to read
+func complex() func() func() func() int {
+    return func() func() func() int {
+        return func() func() int {
+            return func() int { return 42 }
+        }
+    }
+}
+
+// ✓ Keep it simple
+func simple() func() int {
+    return func() int { return 42 }
+}</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
