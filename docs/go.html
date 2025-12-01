@@ -5556,7 +5556,952 @@ fmt.Println(equalMaps(m1, m3))  // false</code></pre>
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-strings">Strings in Go</h3>
+<ol>
 
+    <li>What Are Strings in Go?</li>
+    <br/>
+    <ul>
+        <li>A <code>string</code> in Go is a read-only sequence of bytes.</li>
+        <br/>
+        <li>Strings are <u>immutable</u> - once created, they cannot be modified.</li>
+        <br/>
+        <li>Strings are <u>UTF-8 encoded</u> by default, supporting Unicode characters.</li>
+        <br/>
+        <li>The zero value of a string is <code>""</code> (empty string).</li>
+        <br/>
+        <li>Basic string operations:</li>
+<pre><code class="language-go line-numbers">// Declaration and initialization
+var s1 string          // Zero value: ""
+var s2 string = "Hello"
+s3 := "World"
+
+// Concatenation
+greeting := s2 + " " + s3  // "Hello World"
+
+// Length (number of bytes, not characters!)
+length := len(greeting)    // 11
+
+// Accessing bytes by index
+first := greeting[0]       // 'H' (byte value: 72)
+last := greeting[len(greeting)-1]  // 'd' (byte value: 100)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Literals</li>
+    <br/>
+    <ul>
+        <li>Interpreted string literals (double quotes):</li>
+<pre><code class="language-go line-numbers">// Use double quotes for interpreted strings
+s := "Hello, World!"
+
+// Escape sequences are processed
+s1 := "Line 1\nLine 2"        // Newline
+s2 := "Tab\there"             // Tab
+s3 := "Quote: \"Hello\""      // Escaped quotes
+s4 := "Path: C:\\Users\\Name" // Backslash
+s5 := "Unicode: \u4e16\u754c" // Unicode code points (世界)
+
+fmt.Println(s1)
+// Output:
+// Line 1
+// Line 2</code></pre>
+        <br/>
+        <li>Raw string literals (backticks):</li>
+<pre><code class="language-go line-numbers">// Use backticks for raw strings
+s := `Hello, World!`
+
+// No escape sequences - everything literal
+s1 := `Line 1\nLine 2`     // Contains literal \n
+s2 := `Quote: "Hello"`     // No need to escape quotes
+s3 := `Path: C:\Users\Name` // Backslashes are literal
+
+// Multiline strings
+s4 := `Line 1
+Line 2
+Line 3`
+
+// Regular expressions (common use case)
+regex := `^\d{3}-\d{3}-\d{4}$`  // Phone number pattern
+
+fmt.Println(s1)
+// Output: Line 1\nLine 2(literal backslash-n)</code></pre>
+        <br/>
+        <li><b>Common escape sequences:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Escape</th>
+            <th>Meaning</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>\n</code></td>
+            <td>Newline</td>
+            <td><code>"Line1\nLine2"</code></td>
+        </tr>
+        <tr>
+            <td><code>\t</code></td>
+            <td>Tab</td>
+            <td><code>"Name:\tValue"</code></td>
+        </tr>
+        <tr>
+            <td><code>\\</code></td>
+            <td>Backslash</td>
+            <td><code>"C:\\path"</code></td>
+        </tr>
+        <tr>
+            <td><code>\"</code></td>
+            <td>Double quote</td>
+            <td><code>"He said \"Hi\""</code></td>
+        </tr>
+        <tr>
+            <td><code>\'</code></td>
+            <td>Single quote</td>
+            <td><code>'\'x\''</code></td>
+        </tr>
+        <tr>
+            <td><code>\r</code></td>
+            <td>Carriage return</td>
+            <td><code>"text\r\n"</code></td>
+        </tr>
+        <tr>
+            <td><code>\uXXXX</code></td>
+            <td>Unicode (4 hex digits)</td>
+            <td><code>"\u4e16"</code> (世)</td>
+        </tr>
+        <tr>
+            <td><code>\UXXXXXXXX</code></td>
+            <td>Unicode (8 hex digits)</td>
+            <td><code>"\U0001F600"</code> (😀)</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Immutability</li>
+    <br/>
+    <ul>
+        <li>Strings in Go are <b>immutable</b> - you cannot modify their contents:</li>
+<pre><code class="language-go line-numbers">s := "Hello"
+
+// ❌ Cannot modify string bytes
+// s[0] = 'h'  // Compile error: cannot assign to s[0]
+
+// ✓ Must create new string
+s = "hello"  // Creates new string, reassigns variable
+
+// String operations create new strings
+s2 := s + " World"  // New string created
+s3 := strings.ToUpper(s)  // New string created
+
+// Original strings unchanged
+fmt.Println(s)   // "hello"
+fmt.Println(s2)  // "hello World"
+fmt.Println(s3)  // "HELLO"</code></pre>
+        <br/>
+        <li><b>Why immutability matters:</b></li>
+        <ul>
+            <li>Strings can be safely shared between goroutines (no race conditions)</li>
+            <li>Strings can be used as map keys (won't change unexpectedly)</li>
+            <li>String values can be optimized by the compiler</li>
+        </ul>
+        <br/>
+        <li><b>To modify strings, convert to []byte or use strings.Builder:</b></li>
+<pre><code class="language-go line-numbers">s := "Hello"
+
+// Method 1: Convert to []byte slice
+bytes := []byte(s)
+bytes[0] = 'h'
+s = string(bytes)
+fmt.Println(s)  // "hello"
+
+// Method 2: Use strings.Builder for multiple modifications
+var builder strings.Builder
+builder.WriteString("Hello")
+builder.WriteString(" ")
+builder.WriteString("World")
+s = builder.String()
+fmt.Println(s)  // "Hello World"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>UTF-8 Encoding and Runes</li>
+    <br/>
+    <ul>
+        <li>Go strings are UTF-8 encoded sequences of <code>byte</code>s.</li>
+        <br/>
+        <li>A <code>rune</code> is a Unicode code point (alias for <code>int32</code>).</li>
+        <br/>
+        <li>One character may use 1-4 bytes in UTF-8.</li>
+        <br/>
+        <li>Length vs character count:</li>
+<pre><code class="language-go line-numbers">s1 := "Hello"
+fmt.Println(len(s1))  // 5 bytes, 5 characters
+
+s2 := "世界"           // "World" in Chinese
+fmt.Println(len(s2))  // 6 bytes (3 bytes per character)
+
+// To count actual characters (runes), use utf8.RuneCountInString
+import "unicode/utf8"
+
+count := utf8.RuneCountInString(s2)
+fmt.Println(count)  // 2 characters
+
+// Or convert to []rune
+runes := []rune(s2)
+fmt.Println(len(runes))  // 2 characters</code></pre>
+        <br/>
+        <li>Rune literals (single quotes):</li>
+<pre><code class="language-go line-numbers">// Single character in single quotes
+var r1 rune = 'A'        // Unicode code point 65
+var r2 rune = '世'       // Unicode code point 19990
+var r3 rune = '\n'       // Newline character
+var r4 rune = '\u4e16'   // Unicode escape
+
+fmt.Printf("%c %d\n", r1, r1)  // A 65
+fmt.Printf("%c %d\n", r2, r2)  // 世 19990
+
+// Rune is int32
+var i int32 = r1
+fmt.Println(i)  // 65</code></pre>
+        <br/>
+        <li>Iterating over <code>rune</code>s vs <code>byte</code>s:</li>
+<pre><code class="language-go line-numbers">s := "Hello世界"
+
+// Iterate bytes (wrong for multi-byte characters!)
+fmt.Println("Bytes:")
+for i := 0; i < len(s); i++ {
+    fmt.Printf("%d: %c (%d)\n", i, s[i], s[i])
+}
+// H, e, l, l, o, then garbage for multi-byte characters
+
+// Iterate runes (correct!)
+fmt.Println("\nRunes:")
+for i, r := range s {
+    fmt.Printf("%d: %c (%d)\n", i, r, r)
+}
+// Output:
+// 0: H (72)
+// 1: e (101)
+// 2: l (108)
+// 3: l (108)
+// 4: o (111)
+// 5: 世 (19990)
+// 8: 界 (30028)
+// Note: indices jump (5 -> 8) because 世 takes 3 bytes</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Indexing and Slicing</li>
+    <br/>
+    <ul>
+        <li>Indexing returns bytes, not characters:</li>
+<pre><code class="language-go line-numbers">s := "Hello"
+
+// Access individual bytes
+first := s[0]   // 'H' (byte value: 72)
+second := s[1]  // 'e' (byte value: 101)
+
+fmt.Printf("%c\n", first)   // H
+fmt.Printf("%d\n", first)   // 72
+
+// ❌ Index out of bounds panics
+// last := s[100]  // panic: index out of range</code></pre>
+        <br/>
+        <li>Slicing creates substrings:</li>
+<pre><code class="language-go line-numbers">s := "Hello, World!"
+
+// Basic slicing
+sub1 := s[0:5]    // "Hello" (index 0 to 4)
+sub2 := s[7:12]   // "World"
+sub3 := s[7:]     // "World!" (from 7 to end)
+sub4 := s[:5]     // "Hello" (from start to 4)
+sub5 := s[:]      // "Hello, World!" (entire string)
+
+// Slicing is based on byte positions, not character positions!
+s2 := "世界你好"
+bytes := s2[0:3]   // "世" (first character is 3 bytes)
+// bytes := s2[0:2] would be invalid UTF-8!
+</code></pre>
+        <br/>
+        <li>Safe substring extraction:</li>
+<pre><code class="language-go line-numbers">// To extract first N characters (not bytes)
+func firstNRunes(s string, n int) string {
+    runes := []rune(s)
+    if len(runes) &lt;= n {
+        return s
+    }
+    return string(runes[:n])
+}
+
+s := "世界你好"
+fmt.Println(firstNRunes(s, 2))  // "世界"
+
+// Check bounds before slicing
+func safeSlice(s string, start, end int) string {
+    if start &lt; 0 || start &gt; len(s) || end &gt; len(s) || start &gt; end {
+        return ""
+    }
+    return s[start:end]
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Concatenation</li>
+    <br/>
+    <ul>
+        <li>Using <code>+</code> operator (simple cases):</li>
+<pre><code class="language-go line-numbers">// Simple concatenation
+s1 := "Hello"
+s2 := "World"
+result := s1 + " " + s2  // "Hello World"
+
+// Multiple concatenations
+path := "home" + "/" + "user" + "/" + "documents"
+
+// Note: Each + creates a new string (inefficient for many concatenations)
+</code></pre>
+        <br/>
+        <li>Using <code>fmt.Sprintf</code> (formatting):</li>
+<pre><code class="language-go line-numbers">name := "Alice"
+age := 30
+
+// Format string with values
+s := fmt.Sprintf("Name: %s, Age: %d", name, age)
+fmt.Println(s)      // "Name: Alice, Age: 30"
+
+// Complex formatting
+price := 19.99
+s2 := fmt.Sprintf("Price: $%.2f", price)
+fmt.Println(s2)     // "Price: $19.99"
+</code></pre>
+        <br/>
+        <li>Using <code>strings.Join</code> (slices):</li>
+<pre><code class="language-go line-numbers">import "strings"
+
+// Join slice of strings
+words := []string{"Go", "is", "awesome"}
+sentence := strings.Join(words, " ")
+fmt.Println(sentence)   // "Go is awesome"
+
+// Join with different separator
+csv := strings.Join([]string{"a", "b", "c"}, ",")
+fmt.Println(csv)        // "a,b,c"
+</code></pre>
+        <br/>
+        <li>Using <code>strings.Builder</code> (efficient for many concatenations):</li>
+<pre><code class="language-go line-numbers">import "strings"
+
+// Efficient string building
+var builder strings.Builder
+
+builder.WriteString("Hello")
+builder.WriteString(" ")
+builder.WriteString("World")
+builder.WriteByte('!')
+
+result := builder.String()
+fmt.Println(result)  // "Hello World!"
+
+// Builder in a loop (much more efficient than +)
+var b strings.Builder
+for i := 0; i &lt; 1000; i++ {
+    b.WriteString("Line ")
+    b.WriteString(fmt.Sprintf("%d\n", i))
+}
+output := b.String()
+</code></pre>
+        <br/>
+        <li>Performance comparison:</li>
+<pre><code class="language-go line-numbers">// ❌ Slow: Creates many intermediate strings
+func buildStringSlow(n int) string {
+    s := ""
+    for i := 0; i &lt; n; i++ {
+        s += "x"  // Creates new string each iteration
+    }
+    return s
+}
+
+// ✓ Fast: Efficient memory usage
+func buildStringFast(n int) string {
+    var builder strings.Builder
+    builder.Grow(n)  // Pre-allocate capacity
+    for i := 0; i &lt; n; i++ {
+        builder.WriteByte('x')
+    }
+    return builder.String()
+}
+
+// For n=10000:
+// buildStringSlow: ~50ms
+// buildStringFast: ~0.1ms
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common String Operations (strings package)</li>
+    <br/>
+    <ul>
+        <li>Checking string contents:</li>
+<pre><code class="language-go line-numbers">import "strings"
+
+s := "Hello, World!"
+
+// Check prefix/suffix
+hasPrefix := strings.HasPrefix(s, "Hello")  // true
+hasSuffix := strings.HasSuffix(s, "!")      // true
+
+// Check if contains substring
+contains := strings.Contains(s, "World")    // true
+
+// Count occurrences
+count := strings.Count(s, "l")              // 3
+count2 := strings.Count(s, "ll")            // 1</code></pre>
+        <br/>
+        <li>Finding substrings:</li>
+<pre><code class="language-go line-numbers">s := "Hello, World!"
+
+// Find first occurrence (returns index, or -1)
+index := strings.Index(s, "World")     // 7
+index2 := strings.Index(s, "xyz")      // -1
+
+// Find last occurrence
+lastIndex := strings.LastIndex(s, "o") // 8
+
+// Find any character from set
+index3 := strings.IndexAny(s, "aeiou") // 1 (first vowel 'e')</code></pre>
+        <br/>
+        <li>Case conversion:</li>
+<pre><code class="language-go line-numbers">s := "Hello, World!"
+
+upper := strings.ToUpper(s)  // "HELLO, WORLD!"
+lower := strings.ToLower(s)  // "hello, world!"
+title := strings.Title(s)    // "Hello, World!" (deprecated in Go 1.18)
+
+// Title case with unicode
+import "golang.org/x/text/cases"
+import "golang.org/x/text/language"
+
+caser := cases.Title(language.English)
+title2 := caser.String("hello world")  // "Hello World"</code></pre>
+        <br/>
+        <li>Trimming whitespace and characters:</li>
+<pre><code class="language-go line-numbers">// Trim whitespace
+s1 := "  Hello  "
+trimmed := strings.TrimSpace(s1)  // "Hello"
+
+// Trim specific characters
+s2 := "!!!Hello!!!"
+trimmed2 := strings.Trim(s2, "!")       // "Hello"
+trimmed3 := strings.TrimLeft(s2, "!")   // "Hello!!!"
+trimmed4 := strings.TrimRight(s2, "!")  // "!!!Hello"
+
+// Trim prefix/suffix
+s3 := "Hello, World!"
+trimmed5 := strings.TrimPrefix(s3, "Hello, ")  // "World!"
+trimmed6 := strings.TrimSuffix(s3, "!")        // "Hello, World"</code></pre>
+        <br/>
+        <li>Splitting and joining:</li>
+<pre><code class="language-go line-numbers">// Split by separator
+s := "apple,banana,cherry"
+fruits := strings.Split(s, ",")
+// []string{"apple", "banana", "cherry"}
+
+// Split with limit
+s2 := "a:b:c:d"
+parts := strings.SplitN(s2, ":", 2)
+// []string{"a", "b:c:d"}
+
+// Split on whitespace
+s3 := "one  two   three"
+words := strings.Fields(s3)
+// []string{"one", "two", "three"}
+
+// Join
+joined := strings.Join(fruits, " | ")
+// "apple | banana | cherry"</code></pre>
+        <br/>
+        <li>Replacing:</li>
+<pre><code class="language-go line-numbers">s := "Hello World, World!"
+
+// Replace all occurrences
+s1 := strings.Replace(s, "World", "Go", -1)
+// "Hello Go, Go!"
+
+// Replace limited number
+s2 := strings.Replace(s, "World", "Go", 1)
+// "Hello Go, World!"
+
+// ReplaceAll (convenience, same as Replace with -1)
+s3 := strings.ReplaceAll(s, "World", "Go")
+// "Hello Go, Go!"</code></pre>
+        <br/>
+        <li>Repeating:</li>
+<pre><code class="language-go line-numbers">// Repeat string n times
+line := strings.Repeat("-", 20)  // "--------------------"
+laugh := strings.Repeat("ha", 3)  // "hahaha"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Comparison</li>
+    <br/>
+    <ul>
+        <li>Using <code>==</code> and <code>!=</code> operators:</li>
+<pre><code class="language-go line-numbers">s1 := "hello"
+s2 := "hello"
+s3 := "Hello"
+
+// Exact comparison
+fmt.Println(s1 == s2)  // true
+fmt.Println(s1 == s3)  // false (case-sensitive)
+fmt.Println(s1 != s3)  // true</code></pre>
+        <br/>
+        <li>Using <code>strings.EqualFold</code> (case-insensitive):</li>
+<pre><code class="language-go line-numbers">s1 := "hello"
+s2 := "HELLO"
+s3 := "Hello"
+
+equal := strings.EqualFold(s1, s2)  // true
+equal2 := strings.EqualFold(s1, s3) // true</code></pre>
+        <br/>
+        <li>Comparing order (lexicographic):</li>
+<pre><code class="language-go line-numbers">s1 := "apple"
+s2 := "banana"
+
+// s1 &lt; s2 lexicographically
+if s1 &lt; s2 {
+    fmt.Println("apple comes before banana")
+}
+
+// Use strings.Compare for explicit comparison
+result := strings.Compare(s1, s2)
+// result &lt; 0 if s1 &lt; s2
+// result == 0 if s1 == s2
+// result &gt; 0 if s1 &gt; s2
+
+fmt.Println(strings.Compare("a", "b"))  // -1
+fmt.Println(strings.Compare("b", "a"))  // 1
+fmt.Println(strings.Compare("a", "a"))  // 0
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Converting Between string, []byte, and []rune</li>
+    <br/>
+    <ul>
+        <li>String to <code>[]byte</code>:</li>
+<pre><code class="language-go line-numbers">s := "Hello"
+
+// Convert to byte slice
+bytes := []byte(s)
+fmt.Printf("%v\n", bytes)  // [72 101 108 108 111]
+
+// Modify bytes
+bytes[0] = 'h'
+s2 := string(bytes)
+fmt.Println(s2)  // "hello"
+
+// Note: Conversion makes a copy
+fmt.Println(s)  // "Hello" (original unchanged)</code></pre>
+        <br/>
+        <li>String to <code>[]rune</code>:</li>
+<pre><code class="language-go line-numbers">s := "Hello世界"
+
+// Convert to rune slice
+runes := []rune(s)
+fmt.Printf("%v\n", runes)  // [72 101 108 108 111 19990 30028]
+
+// Access individual characters
+fmt.Printf("%c\n", runes[5])  // 世
+fmt.Printf("%c\n", runes[6])  // 界
+
+// Modify runes
+runes[0] = 'h'
+s2 := string(runes)
+fmt.Println(s2)  // "hello世界"</code></pre>
+        <br/>
+        <li>[]byte to string:</li>
+<pre><code class="language-go line-numbers">bytes := []byte{72, 101, 108, 108, 111}
+
+// Convert to string
+s := string(bytes)
+fmt.Println(s)  // "Hello"</code></pre>
+        <br/>
+        <li>[]rune to string:</li>
+<pre><code class="language-go line-numbers">runes := []rune{72, 101, 108, 108, 111}
+
+// Convert to string
+s := string(runes)
+fmt.Println(s)  // "Hello"</code></pre>
+        <br/>
+        <li>Performance note:</li>
+<pre><code class="language-go line-numbers">// string <-> []byte conversion makes a copy
+s := "Hello"
+b := []byte(s)    // Allocates new slice, copies data
+s2 := string(b)   // Allocates new string, copies data
+
+// For read-only operations, consider keeping as string
+// For many modifications, work with []byte then convert once</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Iterating Over Strings</li>
+    <br/>
+    <ul>
+        <li>Range loop (iterates over <code>rune</code>s):</li>
+<pre><code class="language-go line-numbers">s := "Hello世界"
+
+// Range automatically decodes UTF-8 to runes
+for i, r := range s {
+    fmt.Printf("%d: %c (U+%04X)\n", i, r, r)
+}
+
+// Output:
+// 0: H (U+0048)
+// 1: e (U+0065)
+// 2: l (U+006C)
+// 3: l (U+006C)
+// 4: o (U+006F)
+// 5: 世 (U+4E16)
+// 8: 界 (U+754C)
+
+// Note: Index jumps from 5 to 8 (世 takes 3 bytes)</code></pre>
+        <br/>
+        <li>Index loop (iterates over <code>byte</code>s):</li>
+<pre><code class="language-go line-numbers">s := "Hello"
+
+// Loop through byte indices
+for i := 0; i &lt; len(s); i++ {
+    fmt.Printf("%d: %c (%d)\n", i, s[i], s[i])
+}
+
+// ❌ Don't use this for multi-byte characters!
+s2 := "世界"
+for i := 0; i &lt; len(s2); i++ {
+    fmt.Printf("%c ", s2[i])  // Prints garbage
+}
+</code></pre>
+        <br/>
+        <li>Using <code>strings.Reader</code>:</li>
+<pre><code class="language-go line-numbers">import "strings"
+
+s := "Hello"
+reader := strings.NewReader(s)
+
+// Read rune by rune
+for {
+    r, size, err := reader.ReadRune()
+    if err != nil {
+        break
+    }
+    fmt.Printf("%c (size: %d bytes)\n", r, size)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Formatting with fmt</li>
+    <br/>
+    <ul>
+        <li>Common format verbs:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Verb</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>%s</code></td>
+            <td>String</td>
+            <td><code>fmt.Printf("%s", "hello")</code></td>
+        </tr>
+        <tr>
+            <td><code>%q</code></td>
+            <td>Quoted string</td>
+            <td><code>fmt.Printf("%q", "hello")</code> → <code>"hello"</code></td>
+        </tr>
+        <tr>
+            <td><code>%x</code></td>
+            <td>Hex bytes</td>
+            <td><code>fmt.Printf("%x", "hi")</code> → <code>6869</code></td>
+        </tr>
+        <tr>
+            <td><code>%X</code></td>
+            <td>Hex bytes (uppercase)</td>
+            <td><code>fmt.Printf("%X", "hi")</code> → <code>6869</code></td>
+        </tr>
+        <tr>
+            <td><code>%#x</code></td>
+            <td>Hex bytes with spaces</td>
+            <td><code>fmt.Printf("%#x", "hi")</code> → <code>68 69</code></td>
+        </tr>
+        <tr>
+            <td><code>%v</code></td>
+            <td>Default format</td>
+            <td><code>fmt.Printf("%v", "hello")</code></td>
+        </tr>
+        <tr>
+            <td><code>%+v</code></td>
+            <td>Value with field names</td>
+            <td>For structs</td>
+        </tr>
+        <tr>
+            <td><code>%#v</code></td>
+            <td>Go syntax representation</td>
+            <td><code>fmt.Printf("%#v", "hello")</code> → <code>"hello"</code></td>
+        </tr>
+        <tr>
+            <td><code>%T</code></td>
+            <td>Type</td>
+            <td><code>fmt.Printf("%T", "hello")</code> → <code>string</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Width and precision:</li>
+<pre><code class="language-go line-numbers">name := "Alice"
+
+// Width (minimum width)
+fmt.Printf("|%10s|\n", name)   // |     Alice|
+fmt.Printf("|%-10s|\n", name)  // |Alice     | (left-aligned)
+
+// Precision (maximum width)
+fmt.Printf("%.3s\n", name)      // Ali
+
+// Both
+fmt.Printf("|%10.3s|\n", name)  // |       Ali|</code></pre>
+        <br/>
+        <li>Sprintf vs Printf vs Print:</li>
+<pre><code class="language-go line-numbers">name := "Alice"
+age := 30
+
+// Printf: prints to stdout
+fmt.Printf("Name: %s, Age: %d\n", name, age)
+
+// Sprintf: returns string
+s := fmt.Sprintf("Name: %s, Age: %d", name, age)
+
+// Print: simple printing (no formatting)
+fmt.Print("Hello ", "World\n")
+
+// Println: adds spaces and newline
+fmt.Println("Hello", "World")  // "Hello World\n"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Regular Expressions with Strings</li>
+    <br/>
+    <ul>
+        <li>Basic regex matching:</li>
+<pre><code class="language-go line-numbers">import "regexp"
+
+// Compile pattern
+pattern := `^\d{3}-\d{3}-\d{4}$`  // Phone: 123-456-7890
+re := regexp.MustCompile(pattern)
+
+// Test if matches
+matched := re.MatchString("123-456-7890")
+fmt.Println(matched)  // true
+
+matched2 := re.MatchString("invalid")
+fmt.Println(matched2)  // false</code></pre>
+        <br/>
+        <li>Finding matches:</li>
+<pre><code class="language-go line-numbers">s := "Contact: alice@example.com or bob@test.com"
+
+// Find email addresses
+re := regexp.MustCompile(`\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b`)
+
+// Find first match
+first := re.FindString(s)
+fmt.Println(first)  // "alice@example.com"
+
+// Find all matches
+all := re.FindAllString(s, -1)
+fmt.Println(all)  // ["alice@example.com", "bob@test.com"]</code></pre>
+        <br/>
+        <li>Replacing with regex:</li>
+<pre><code class="language-go line-numbers">s := "Price: $19.99, Cost: $5.00"
+
+// Replace all dollar amounts
+re := regexp.MustCompile(`\$\d+\.\d+`)
+replaced := re.ReplaceAllString(s, "XXX")
+fmt.Println(replaced)  // "Price: XXX, Cost: XXX"
+
+// Replace with function
+re2 := regexp.MustCompile(`\d+`)
+result := re2.ReplaceAllStringFunc("The year is 2024", func(match string) string {
+    return "[" + match + "]"
+})
+fmt.Println(result)  // "The year is [2024]"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Performance Tips</li>
+    <br/>
+    <ul>
+        <li>Tip 1: Use <code>strings.Builder</code> for concatenation in loops</li>
+<pre><code class="language-go line-numbers">// ❌ Slow: O(n²) complexity
+func buildSlow(words []string) string {
+    result := ""
+    for _, word := range words {
+        result += word + " "
+    }
+    return result
+}
+
+// ✓ Fast: O(n) complexity
+func buildFast(words []string) string {
+    var b strings.Builder
+    for _, word := range words {
+        b.WriteString(word)
+        b.WriteString(" ")
+    }
+    return b.String()
+}</code></pre>
+        <br/>
+        <li>Tip 2: Use <code>strings.Join</code> for slices</li>
+<pre><code class="language-go line-numbers">words := []string{"Go", "is", "fast"}
+
+// ✓ Efficient
+result := strings.Join(words, " ")
+
+// Less efficient
+result2 := words[0] + " " + words[1] + " " + words[2]</code></pre>
+        <br/>
+        <li>Tip 3: Avoid unnecessary conversions</li>
+<pre><code class="language-go line-numbers">s := "Hello"
+
+// ❌ Unnecessary conversions
+bytes := []byte(s)
+s2 := string(bytes)
+
+// ✓ Keep as string if possible
+// Only convert when you need to modify</code></pre>
+        <br/>
+        <li>Tip 4: Pre-allocate Builder capacity</li>
+<pre><code class="language-go line-numbers">// If you know approximate size
+var b strings.Builder
+b.Grow(1000)  // Pre-allocate for ~1000 bytes
+
+for i := 0; i &lt; 100; i++ {
+    b.WriteString("Line\n")
+}
+result := b.String()</code></pre>
+        <br/>
+        <li>Tip 5: Reuse <code>strings.Builder</code></li>
+<pre><code class="language-go line-numbers">var b strings.Builder
+
+for i := 0; i &lt; 10; i++ {
+    b.Reset()  // Reuse the builder
+
+    b.WriteString("Iteration ")
+    b.WriteString(fmt.Sprintf("%d", i))
+
+    result := b.String()
+    fmt.Println(result)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Mistakes and How to Avoid Them</li>
+    <br/>
+    <ul>
+        <li>Mistake 1: Confusing byte length with character count</li>
+<pre><code class="language-go line-numbers">s := "世界"
+
+// ❌ Wrong: Returns byte length
+fmt.Println(len(s))  // 6 (not 2!)
+
+// ✓ Correct: Count runes
+fmt.Println(utf8.RuneCountInString(s))  // 2
+fmt.Println(len([]rune(s)))             // 2</code></pre>
+        <br/>
+        <li>Mistake 2: Modifying strings by index</li>
+<pre><code class="language-go line-numbers">s := "Hello"
+
+// ❌ Error: cannot assign
+// s[0] = 'h'
+
+// ✓ Convert to []byte or []rune
+bytes := []byte(s)
+bytes[0] = 'h'
+s = string(bytes)</code></pre>
+        <br/>
+        <li>Mistake 3: Slicing multi-byte characters</li>
+<pre><code class="language-go line-numbers">s := "世界"
+
+// ❌ Wrong: Cuts in middle of character
+// invalid := s[0:2]  // Invalid UTF-8!
+
+// ✓ Correct: Work with runes
+runes := []rune(s)
+first := string(runes[0:1])  // "世"</code></pre>
+        <br/>
+        <li>Mistake 4: Using + for many concatenations</li>
+<pre><code class="language-go line-numbers">// ❌ Slow for large n
+result := ""
+for i := 0; i &lt; 10000; i++ {
+    result += "x"
+}
+
+// ✓ Use strings.Builder
+var b strings.Builder
+for i := 0; i &lt; 10000; i++ {
+    b.WriteString("x")
+}
+result := b.String()
+</code></pre>
+        <br/>
+        <li>Mistake 5: Not checking for empty string before indexing</li>
+<pre><code class="language-go line-numbers">func getFirst(s string) byte {
+    // ❌ Panics if s is empty
+    // return s[0]
+
+    // ✓ Check length first
+    if len(s) == 0 {
+        return 0
+    }
+    return s[0]
+}</code></pre>
+        <br/>
+        <li>Mistake 6: Iterating bytes for multi-byte strings</li>
+<pre><code class="language-go line-numbers">s := "Hello世界"
+
+// ❌ Wrong: Iterates bytes, breaks multi-byte chars
+for i := 0; i &lt; len(s); i++ {
+    fmt.Printf("%c ", s[i])  // Prints garbage for 世界
+}
+
+// ✓ Correct: Use range (iterates runes)
+for _, r := range s {
+    fmt.Printf("%c ", r)  // Prints all characters correctly
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
