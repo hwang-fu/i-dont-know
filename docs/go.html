@@ -4958,7 +4958,597 @@ func main() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-maps">Maps in Go</h3>
+<ol>
 
+    <li>What Are Maps?</li>
+    <br/>
+    <ul>
+        <li><b>Maps</b> are Go's built-in key-value data structure (similar to dictionaries in Python or objects in JavaScript).</li>
+        <br/>
+        <li>Maps provide fast lookup, insertion, and deletion based on keys.</li>
+        <br/>
+        <li>In Go, maps are <b>reference types</b> - they reference an underlying hash table.</li>
+        <br/>
+        <li>Basic syntax:</li>
+<pre><code class="language-go line-numbers">var ages map[string]int         // Declaration
+ages = make(map[string]int)     // Initialization
+ages["Amy"] = 30                // Assignment
+fmt.Println(ages["Amy"])        // Access: 30</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Map Type Declaration</li>
+    <br/>
+    <ul>
+        <li>Map types are declared as <code>map[KeyType]ValueType</code></li>
+        <br/>
+        <li><code>KeyType</code> must be a comparable type (supports <code>==</code> and <code>!=</code>)</li>
+        <br/>
+        <li><code>ValueType</code> Can be any type, including slices, maps, or functions</li>
+        <br/>
+        <li>Examples of valid map types:</li>
+<pre><code class="language-go line-numbers">map[string]int              // String keys, int values
+map[int]string              // Int keys, string values
+map[string][]int            // String keys, slice values
+map[int]map[string]bool     // Int keys, nested map values
+map[[2]int]string           // Array keys, string values
+
+// Struct as key (all fields must be comparable)
+type Point struct {
+    X, Y int
+}
+map[Point]string            // Point keys, string values
+
+map[[]int]string            // ❌ Slice keys not allowed
+map[map[string]int]bool     // ❌ Map keys not allowed
+map[func()]string           // ❌ Function keys not allowed</code></pre>
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Maps</li>
+    <br/>
+    <ul>
+        <li>Method 1: Using <code>make</code></li>
+<pre><code class="language-go line-numbers">// Create empty map
+ages := make(map[string]int)
+
+// With initial capacity hint (for performance)
+ages := make(map[string]int, 100)  // Hint: expect ~100 elements</code></pre>
+        <br/>
+        <li>Method 2: Map literal</li>
+<pre><code class="language-go line-numbers">// Create and initialize in one step
+ages := map[string]int{
+    "Alice": 30,
+    "Bob":   25,
+    "Carol": 28,
+}
+
+// Empty map literal
+ages := map[string]int{}</code></pre>
+        <br/>
+        <li>Method 3: <code>var</code> declaration (creates <code>nil</code> map)</li>
+<pre><code class="language-go line-numbers">var ages map[string]int     // ages is nil
+// Can read from nil map (returns zero value)
+fmt.Println(ages["Alice"])  // 0
+
+// ❌ Cannot write to nil map - will panic!
+// ages["Alice"] = 30       // panic: assignment to entry in nil map
+
+// Must initialize with make first
+ages = make(map[string]int)
+ages["Alice"] = 30          // ✓ Now it works</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Map Operations</li>
+    <br/>
+    <ul>
+        <li>Adding or updating entries:</li>
+<pre><code class="language-go line-numbers">ages := make(map[string]int)
+
+// Add new entry
+ages["Alice"] = 30
+
+// Update existing entry (same syntax)
+ages["Alice"] = 31
+
+// Multiple assignments
+ages["Bob"] = 25
+ages["Carol"] = 28</code></pre>
+        <br/>
+        <li>Accessing values:</li>
+<pre><code class="language-go line-numbers">ages := map[string]int{
+    "Alice": 30,
+    "Bob":   25,
+}
+
+// Direct access
+age := ages["Alice"]    // 30
+
+// Accessing non-existent key returns zero value
+age := ages["David"]    // 0 (zero value for int)</code></pre>
+        <br/>
+        <li>Checking if key exists:</li>
+<pre><code class="language-go line-numbers">ages := map[string]int{
+    "Alice": 30,
+    "Bob":   0,      // Explicitly set to 0
+}
+
+// Two-value assignment
+age, exists := ages["Alice"]
+if exists {
+    fmt.Println("Alice's age:", age)  // Alice's age: 30
+}
+
+// Check for Bob (age is 0)
+age, exists = ages["Bob"]
+fmt.Println(age, exists)    // 0 true (key exists, value is 0)
+
+// Check for non-existent key
+age, exists = ages["Carol"]
+fmt.Println(age, exists)    // 0 false (key doesn't exist)
+
+// Common pattern: check and use
+if age, ok := ages["Alice"]; ok {
+    fmt.Println("Found:", age)
+}</code></pre>
+        <br/>
+        <li>Deleting entries:</li>
+<pre><code class="language-go line-numbers">ages := map[string]int{
+    "Alice": 30,
+    "Bob":   25,
+    "Carol": 28,
+}
+
+// Delete a key
+delete(ages, "Bob")
+
+// Delete non-existent key (safe, no error)
+delete(ages, "David")  // No-op
+
+fmt.Println(ages)  // map[Alice:30 Carol:28]</code></pre>
+        <br/>
+        <li>Getting map length:</li>
+<pre><code class="language-go line-numbers">ages := map[string]int{
+    "Alice": 30,
+    "Bob":   25,
+}
+
+count := len(ages)      // 2
+
+// Empty map
+empty := make(map[string]int)
+count = len(empty)      // 0
+
+// Nil map
+var nilMap map[string]int
+count = len(nilMap)     // 0</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Iterating Over Maps</li>
+    <br/>
+    <ul>
+        <li>Using <code>for</code>-<code>range</code> loop:</li>
+<pre><code class="language-go line-numbers">ages := map[string]int{
+    "Alice": 30,
+    "Bob":   25,
+    "Carol": 28,
+}
+
+// Iterate over key-value pairs
+for name, age := range ages {
+    fmt.Printf("%s is %d years old\n", name, age)
+}
+
+// Output (order is random!):
+// Bob is 25 years old
+// Carol is 28 years old
+// Alice is 30 years old</code></pre>
+        <br/>
+        <li>Iterate over keys only:</li>
+<pre><code class="language-go line-numbers">for name := range ages {
+    fmt.Println(name)
+}</code></pre>
+        <br/>
+        <li>Iterate over values only (less common):</li>
+<pre><code class="language-go line-numbers">for _, age := range ages {
+    fmt.Println(age)
+}</code></pre>
+        <br/>
+        <li>IMPORTANT: Map iteration order is random!</li>
+<pre><code class="language-go line-numbers">// Do NOT rely on iteration order
+ages := map[string]int{
+    "Alice": 30,
+    "Bob":   25,
+    "Carol": 28,
+}
+
+// Each run may produce different order
+for name := range ages {
+    fmt.Println(name)
+}
+
+// Run 1: Alice, Bob, Carol
+// Run 2: Carol, Alice, Bob
+// Run 3: Bob, Carol, Alice
+// Order is deliberately randomized!</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sorting Map Keys for Consistent Order</li>
+    <br/>
+    <ul>
+        <li>Since map iteration is random, sort keys for consistent output:</li>
+<pre><code class="language-go line-numbers">import (
+    "fmt"
+    "sort"
+)
+
+ages := map[string]int{
+    "Carol": 28,
+    "Alice": 30,
+    "Bob":   25,
+}
+
+// Extract keys into slice
+keys := make([]string, 0, len(ages))
+for k := range ages {
+    keys = append(keys, k)
+}
+
+// Sort keys
+sort.Strings(keys)
+
+// Iterate in sorted order
+for _, name := range keys {
+    fmt.Printf("%s: %d\n", name, ages[name])
+}
+
+// Output (always in this order):
+// Alice: 30
+// Bob: 25
+// Carol: 28</code></pre>
+        <br/>
+        <li>Sorting by values:</li>
+<pre><code class="language-go line-numbers">import (
+    "fmt"
+    "sort"
+)
+
+ages := map[string]int{
+    "Alice": 30,
+    "Bob":   25,
+    "Carol": 28,
+}
+
+// Create slice of key-value pairs
+type kv struct {
+    Key   string
+    Value int
+}
+
+var pairs []kv
+for k, v := range ages {
+    pairs = append(pairs, kv{k, v})
+}
+
+// Sort by value
+sort.Slice(pairs, func(i, j int) bool {
+    return pairs[i].Value < pairs[j].Value
+})
+
+// Print sorted
+for _, pair := range pairs {
+    fmt.Printf("%s: %d\n", pair.Key, pair.Value)
+}
+
+// Output:
+// Bob: 25
+// Carol: 28
+// Alice: 30
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Maps Are Reference Types</li>
+    <br/>
+    <ul>
+        <li>Maps are references to underlying hash table data structure:</li>
+<pre><code class="language-go line-numbers">// When you assign a map, both variables point to same data
+ages1 := map[string]int{
+    "Alice": 30,
+}
+
+ages2 := ages1          // Both reference same underlying map
+
+ages2["Bob"] = 25       // Modify through ages2
+
+fmt.Println(ages1)      // map[Alice:30 Bob:25]
+fmt.Println(ages2)      // map[Alice:30 Bob:25]
+// Both show the change!</code></pre>
+        <br/>
+        <li>Passing maps to functions:</li>
+<pre><code class="language-go line-numbers">func addPerson(m map[string]int, name string, age int) {
+    m[name] = age  // Modifies the original map
+}
+
+func main() {
+    ages := map[string]int{
+        "Alice": 30,
+    }
+
+    addPerson(ages, "Bob", 25)
+
+    fmt.Println(ages)  // map[Alice:30 Bob:25]
+    // Original map is modified
+}</code></pre>
+        <br/>
+        <li>To create a copy, must manually copy entries:</li>
+<pre><code class="language-go line-numbers">original := map[string]int{
+    "Alice": 30,
+    "Bob":   25,
+}
+
+// Create a copy
+copy := make(map[string]int)
+for k, v := range original {
+    copy[k] = v
+}
+
+// Now they're independent
+copy["Carol"] = 28
+fmt.Println(original)  // map[Alice:30 Bob:25]
+fmt.Println(copy)      // map[Alice:30 Bob:25 Carol:28]</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Zero Values and Nil Maps</li>
+    <br/>
+    <ul>
+        <li>Zero value of map type is nil:</li>
+<pre><code class="language-go line-numbers">var ages map[string]int     // nil map
+fmt.Println(ages == nil)    // true
+fmt.Println(len(ages))      // 0</code></pre>
+        <br/>
+        <li>Reading from nil map is safe:</li>
+<pre><code class="language-go line-numbers">var ages map[string]int     // nil
+
+age := ages["Alice"]        // ✓ Returns 0 (zero value)
+_, ok := ages["Bob"]        // ✓ Returns 0, false
+len := len(ages)            // ✓ Returns 0
+
+for k, v := range ages {    // ✓ Loop doesn't execute
+    fmt.Println(k, v)
+}</code></pre>
+        <br/>
+        <li>Writing to nil map causes panic:</li>
+<pre><code class="language-go line-numbers">var ages map[string]int     // nil
+
+ages["Alice"] = 30          // ❌ panic: assignment to entry in nil map
+
+// Must initialize first
+ages = make(map[string]int)
+ages["Alice"] = 30          // ✓ Works</code></pre>
+        <br/>
+        <li>Deleting from nil map is safe (no-op):</li>
+<pre><code class="language-go line-numbers">var ages map[string]int     // nil
+delete(ages, "Alice")       // ✓ Safe, does nothing</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Maps with Complex Value Types</li>
+    <br/>
+    <ul>
+        <li>Map of slices:</li>
+<pre><code class="language-go line-numbers">// Store multiple values per key
+students := make(map[string][]int)
+
+// Add grades
+students["Alice"] = []int{95, 87, 92}
+students["Bob"] = []int{78, 85, 90}
+
+// Add more grades
+students["Alice"] = append(students["Alice"], 88)
+
+fmt.Println(students["Alice"])  // [95 87 92 88]</code></pre>
+        <br/>
+        <li>Map of maps (nested):</li>
+<pre><code class="language-go line-numbers">// Two-level lookup: country -> city -> population
+world := make(map[string]map[string]int)
+
+// Initialize inner maps
+world["USA"] = make(map[string]int)
+world["Japan"] = make(map[string]int)
+
+// Add data
+world["USA"]["NYC"] = 8000000
+world["USA"]["LA"] = 4000000
+world["Japan"]["Tokyo"] = 14000000
+
+// Access nested data
+fmt.Println(world["USA"]["NYC"])  // 8000000
+
+// Check nested key existence
+if cities, ok := world["USA"]; ok {
+    if pop, ok := cities["NYC"]; ok {
+        fmt.Println("NYC population:", pop)
+    }
+}</code></pre>
+        <br/>
+        <li>Map of structs:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Age  int
+    City string
+}
+
+people := make(map[string]Person)
+people["Alice"] = Person{Age: 30, City: "NYC"}
+people["Bob"] = Person{Age: 25, City: "LA"}
+
+// Access
+alice := people["Alice"]
+fmt.Println(alice.City)  // NYC
+
+// Cannot modify struct fields directly (map returns a copy)
+// people["Alice"].Age = 31  // ❌ Compile error
+
+// Must replace entire struct
+alice.Age = 31
+people["Alice"] = alice  // ✓ Works
+
+// Or use pointer to struct
+peoplePtr := make(map[string]*Person)
+peoplePtr["Alice"] = &Person{Age: 30, City: "NYC"}
+peoplePtr["Alice"].Age = 31  // ✓ Works (modifying through pointer)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Concurrent Access to Maps</li>
+    <br/>
+    <ul>
+        <li>WARNING: Maps are <u>NOT</u> safe for concurrent access!</li>
+<pre><code class="language-go line-numbers">// ❌ UNSAFE - will crash!
+m := make(map[int]int)
+
+go func() {
+    for i := 0; i < 1000; i++ {
+        m[i] = i  // Writing
+    }
+}()
+
+go func() {
+    for i := 0; i < 1000; i++ {
+        _ = m[i]  // Reading
+    }
+}()
+
+// This will cause: fatal error: concurrent map read and map write
+</code></pre>
+        <br/>
+        <li>Solution 1: Use <code>sync.Mutex</code></li>
+<pre><code class="language-go line-numbers">import "sync"
+
+type SafeMap struct {
+    mu sync.Mutex
+    m  map[int]int
+}
+
+func (sm *SafeMap) Set(key, value int) {
+    sm.mu.Lock()
+    defer sm.mu.Unlock()
+    sm.m[key] = value
+}
+
+func (sm *SafeMap) Get(key int) (int, bool) {
+    sm.mu.Lock()
+    defer sm.mu.Unlock()
+    val, ok := sm.m[key]
+    return val, ok
+}
+
+func main() {
+    sm := SafeMap{m: make(map[int]int)}
+
+    go func() {
+        for i := 0; i < 1000; i++ {
+            sm.Set(i, i)
+        }
+    }()
+
+    go func() {
+        for i := 0; i < 1000; i++ {
+            sm.Get(i)
+        }
+    }()
+}</code></pre>
+        <br/>
+        <li>Solution 2: Use <code>sync.Map</code> (for specific use cases)</li>
+<pre><code class="language-go line-numbers">import "sync"
+
+var m sync.Map
+
+// Store
+m.Store("key", "value")
+
+// Load
+value, ok := m.Load("key")
+if ok {
+    fmt.Println(value)
+}
+
+// Delete
+m.Delete("key")
+
+// LoadOrStore (atomic)
+actual, loaded := m.LoadOrStore("key", "value")
+
+// Range (iterate)
+m.Range(func(key, value interface{}) bool {
+    fmt.Println(key, value)
+    return true  // continue iteration
+})
+
+// Note: sync.Map uses interface{}, so less type-safe than regular maps</code></pre>
+        <ul>
+            <li>Use <code>sync.Map</code> when: keys are stable (write once, read many), or high contention</li>
+            <li>Use <code>Mutex</code> when: frequent writes, or need type safety, or map is small</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Comparing Maps</li>
+    <br/>
+    <ul>
+        <li>Maps cannot be compared directly with <code>==</code> (except to nil):</li>
+<pre><code class="language-go line-numbers">m1 := map[string]int{"a": 1}
+m2 := map[string]int{"a": 1}
+
+// ❌ Compile error
+// if m1 == m2 { }
+
+// ✓ Can compare to nil
+var m3 map[string]int
+if m3 == nil {
+    fmt.Println("m3 is nil")
+}</code></pre>
+        <br/>
+        <li>To compare maps, must iterate:</li>
+<pre><code class="language-go line-numbers">func equalMaps(m1, m2 map[string]int) bool {
+    if len(m1) != len(m2) {
+        return false
+    }
+
+    for k, v1 := range m1 {
+        if v2, ok := m2[k]; !ok || v1 != v2 {
+            return false
+        }
+    }
+
+    return true
+}
+
+m1 := map[string]int{"a": 1, "b": 2}
+m2 := map[string]int{"a": 1, "b": 2}
+m3 := map[string]int{"a": 1, "b": 3}
+
+fmt.Println(equalMaps(m1, m2))  // true
+fmt.Println(equalMaps(m1, m3))  // false</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
