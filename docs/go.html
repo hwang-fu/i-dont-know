@@ -158,7 +158,7 @@
         <li><a href="#go-control-flow">Control Flow</a></li>
         <li><a href="#go-arrays-slices">Arrays and Slices</a></li>
         <li><a href="#go-variadic-functions">Variadic Functions</a></li>
-        <li><a href="#go-type-alias">Type Aliases</a></li>
+        <li><a href="#go-type-aliases">Type Aliases</a></li>
         <li><a href="#go-maps">Maps</a></li>
         <li><a href="#go-strings">Strings</a></li>
     </ol>
@@ -4674,7 +4674,283 @@ func addVariadic(numbers ...int) int {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-type-aliases">Type Aliases in Go</h3>
+<ol>
 
+    <li>What Are Type Aliases?</li>
+    <br/>
+    <ul>
+        <li>Go has two ways to create new type names:</li>
+        <ul>
+            <br/>
+            <li>Type definition (creates a new, distinct type): <code>type NewType OldType</code></li>
+            <br/>
+            <li>Type alias (creates an alternate name for existing type): <code>type NewType = OldType</code></li>
+        </ul>
+        <br/>
+        <li>Type alias example:</li>
+<pre><code class="language-go line-numbers">// Create an alias for int
+type MyInt = int
+
+func main() {
+    var x MyInt = 42
+    var y int = 100
+
+    // MyInt and int are the SAME type
+    x = y  // ✓ Works - they're identical types
+    y = x  // ✓ Works - they're identical types
+
+    fmt.Printf("Type of x: %T\n", x)  // Type of x: int
+    fmt.Printf("Type of y: %T\n", y)  // Type of y: int
+}</code></pre>
+        <br/>
+        <li>Type definition example (for comparison):</li>
+<pre><code class="language-go line-numbers">// Create a NEW type based on int
+type MyInt int
+
+func main() {
+    var x MyInt = 42
+    var y int = 100
+
+    // MyInt and int are DIFFERENT types
+    // x = y  // ❌ Error: cannot use y (type int) as type MyInt
+    // y = x  // ❌ Error: cannot use x (type MyInt) as type int
+
+    // Must explicitly convert
+    x = MyInt(y)  // ✓ Works with conversion
+    y = int(x)    // ✓ Works with conversion
+
+    fmt.Printf("Type of x: %T\n", x)  // Type of x: main.MyInt
+    fmt.Printf("Type of y: %T\n", y)  // Type of y: int
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Aliases in the Standard Library</li>
+    <br/>
+    <ul>
+        <li><code>byte</code> and <code>rune</code>:</li>
+<pre><code class="language-go line-numbers">// Built-in type aliases
+type byte = uint8
+type rune = int32
+
+func main() {
+    var b byte = 'A'
+    var u uint8 = 65
+
+    b = u  // ✓ Same type
+    u = b  // ✓ Same type
+
+    fmt.Printf("%T\n", b)  // uint8 (not byte!)
+
+    var r rune = '世'
+    var i int32 = 19990
+
+    r = i  // ✓ Same type
+    i = r  // ✓ Same type
+
+    fmt.Printf("%T\n", r)  // int32 (not rune!)
+}
+</code></pre>
+        <br/>
+        <li><code>any</code> (Go 1.18+):</li>
+<pre><code class="language-go line-numbers">// any is an alias for interface{}
+type any = interface{}
+
+func printAny(v any) {
+    fmt.Println(v)
+}
+
+// Same as
+func printInterface(v interface{}) {
+    fmt.Println(v)
+}
+
+// Both are identical
+func main() {
+    printAny("hello")
+    printInterface(42)
+}
+</code></pre>
+        <br/>
+        <li>Type aliases for migration in standard library:</li>
+<pre><code class="language-go line-numbers">// In the context package, there were type aliases
+// used during refactoring
+
+// Original location
+// package oldpkg
+// type Context interface { ... }
+
+// New location
+// package context
+
+// Alias for compatibility
+// type Context = newlocation.Context
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Aliases with Generics (Go 1.18+)</li>
+    <br/>
+    <ul>
+        <li>Alias for generic types:</li>
+<pre><code class="language-go line-numbers">// Original generic type
+type Pair[T, U any] struct {
+    First  T
+    Second U
+}
+
+// Create alias (must include type parameters)
+type Coord[T, U any] = Pair[T, U]
+
+func main() {
+    // Use either name
+    p := Pair[int, string]{First: 1, Second: "one"}
+    c := Coord[int, string]{First: 2, Second: "two"}
+
+    // They're the same type
+    p = c  // ✓ Works
+    c = p  // ✓ Works
+}
+</code></pre>
+        <br/>
+        <li>Alias for specific instantiation:</li>
+<pre><code class="language-go line-numbers">// Generic type
+type List[T any] []T
+
+// Alias for specific type
+type IntList = List[int]
+type StringList = List[string]
+
+func main() {
+    var nums IntList = IntList{1, 2, 3}
+    var words StringList = StringList{"a", "b", "c"}
+
+    // IntList is the same as List[int]
+    var nums2 List[int] = nums  // ✓ Works
+}
+</code></pre>
+        <br/>
+        <li>Simplifying complex generic types:</li>
+<pre><code class="language-go line-numbers">// Complex generic map type
+type Cache[K comparable, V any] map[K]V
+
+// Create simpler aliases for common cases
+type StringCache[V any] = Cache[string, V]
+type IntCache[V any] = Cache[int, V]
+
+func main() {
+    // Simpler to write
+    userCache := StringCache[User]{}
+
+    // Instead of
+    userCache2 := Cache[string, User]{}
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Aliases and Reflection</li>
+    <br/>
+    <ul>
+        <li>Reflection sees type aliases as their underlying type:</li>
+    </ul>
+<pre><code class="language-go line-numbers">import "reflect"
+
+type MyString = string
+type MyStringType string
+
+func main() {
+    var s1 MyString = "alias"
+    var s2 MyStringType = "definition"
+    var s3 string = "original"
+
+    // Type alias: same reflect.Type as original
+    t1 := reflect.TypeOf(s1)
+    t3 := reflect.TypeOf(s3)
+    fmt.Println(t1 == t3)  // true
+    fmt.Println(t1.Name()) // string
+
+    // Type definition: different reflect.Type
+    t2 := reflect.TypeOf(s2)
+    fmt.Println(t2 == t3)  // false
+    fmt.Println(t2.Name()) // MyStringType
+}
+</code></pre>
+    <br/><br/>
+
+
+    <li>Limitations of Type Aliases</li>
+    <br/>
+    <ul>
+        <li>Cannot add methods:</li>
+<pre><code class="language-go line-numbers">type MyInt = int
+
+// ❌ Cannot define methods on non-local type
+// func (m MyInt) Double() int {
+//     return m * 2
+// }
+
+// Solution: use type definition
+type MyIntType int
+
+func (m MyIntType) Double() int {
+    return int(m) * 2
+}  // ✓ Works</code></pre>
+        <br/>
+        <li>No type safety:</li>
+<pre><code class="language-go line-numbers">type UserID = int
+type ProductID = int
+
+func getUser(id UserID) { }
+func getProduct(id ProductID) { }
+
+func main() {
+    var userId UserID = 1
+    var productId ProductID = 2
+
+    // No type safety - both are just int!
+    getUser(productId)    // ✓ Compiles (but logically wrong!)
+    getProduct(userId)    // ✓ Compiles (but logically wrong!)
+
+    // With type definitions, you get safety
+    type UserIDType int
+    type ProductIDType int
+
+    var userId2 UserIDType = 1
+    var productId2 ProductIDType = 2
+
+    // getUser(productId2)  // ❌ Type error
+}</code></pre>
+        <br/>
+        <li>Cannot use in composite literals of unexported types:</li>
+<pre><code class="language-go line-numbers">// In package a
+package a
+
+type internal struct {
+    Field int
+}
+
+type Public = internal  // Alias
+
+// In package b
+package b
+
+import "pkg/a"
+
+func main() {
+    // ❌ Cannot construct - internal is unexported
+    // v := a.Public{Field: 1}
+
+    // Even though Public is exported, it's an alias
+    // to unexported type internal
+}</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
