@@ -165,6 +165,9 @@
         <li><a href="#go-structs">Structs</a></li>
         <li><a href="#go-interfaces">Interfaces</a></li>
         <li><a href="#go-concurrency">Concurrency</a></li>
+        <li><a href="#go-defer">Defer</a></li>
+        <li><a href="#go-"></a></li>
+    </ol>
     </ol>
 </nav>
 <hr/>
@@ -9497,6 +9500,835 @@ go worker(ctx)</code></pre>
         <br/>
         <li><b>7. Test with race detector</b></li>
 <pre><code class="language-bash line-numbers">go test -race ./...</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="go-defer">Defer in Go</h3>
+<ol>
+
+    <li>What Is Defer?</li>
+    <br/>
+    <ul>
+        <li><b>Defer</b> schedules a function call to be executed when the surrounding function returns.</li>
+        <br/>
+        <li>Deferred calls are executed in <b>LIFO</b> (Last In, First Out) order.</li>
+        <br/>
+        <li>Defer is commonly used for cleanup tasks: closing files, unlocking mutexes, etc.</li>
+        <br/>
+        <li><b>Basic example:</b></li>
+<pre><code class="language-go line-numbers">func main() {
+    fmt.Println("Start")
+
+    defer fmt.Println("Deferred 1")
+    defer fmt.Println("Deferred 2")
+
+    fmt.Println("End")
+}
+
+// Output:
+// Start
+// End
+// Deferred 2
+// Deferred 1</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>How Defer Works</li>
+    <br/>
+    <ul>
+        <li><b>Execution order:</b></li>
+        <ol>
+            <li>Deferred function calls are pushed onto a stack</li>
+            <li>When the function returns, deferred calls execute in reverse order (LIFO)</li>
+            <li>Deferred calls run even if the function panics</li>
+        </ol>
+        <br/>
+        <li><b>Visual example:</b></li>
+<pre><code class="language-go line-numbers">func example() {
+    defer fmt.Println("1")  // Added to stack first
+    defer fmt.Println("2")  // Added second
+    defer fmt.Println("3")  // Added third
+
+    fmt.Println("Function body")
+}
+
+// Stack of deferred calls:
+// [3] <- Top (executes first)
+// [2]
+// [1] <- Bottom (executes last)
+
+// Output:
+// Function body
+// 3
+// 2
+// 1</code></pre>
+        <br/>
+        <li><b>Defer executes when function returns:</b></li>
+<pre><code class="language-go line-numbers">func example() int {
+    defer fmt.Println("Defer 1")
+
+    if true {
+        defer fmt.Println("Defer 2")
+        return 42
+        // Defers execute here, before return
+    }
+
+    defer fmt.Println("Defer 3")  // Never added to stack
+    return 0
+}
+
+// Output:
+// Defer 2
+// Defer 1
+// (Returns 42)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Use Cases</li>
+    <br/>
+    <ul>
+        <li><b>Use case 1: Closing files</b></li>
+<pre><code class="language-go line-numbers">func readFile(filename string) error {
+    file, err := os.Open(filename)
+    if err != nil {
+        return err
+    }
+    defer file.Close()  // ✓ Always closes, even if error occurs
+
+    // Read file
+    data := make([]byte, 100)
+    _, err = file.Read(data)
+    if err != nil {
+        return err  // file.Close() called before return
+    }
+
+    // Process data
+    fmt.Println(string(data))
+
+    return nil  // file.Close() called before return
+}</code></pre>
+        <br/>
+        <li><b>Use case 2: Unlocking mutexes</b></li>
+<pre><code class="language-go line-numbers">var mu sync.Mutex
+
+func criticalSection() {
+    mu.Lock()
+    defer mu.Unlock()  // ✓ Always unlocks, even if panic
+
+    // Critical section code
+    // If panic occurs, defer still runs
+    doWork()
+}</code></pre>
+        <br/>
+        <li><b>Use case 3: Timing function execution</b></li>
+<pre><code class="language-go line-numbers">func measure(name string) func() {
+    start := time.Now()
+    return func() {
+        fmt.Printf("%s took %v\n", name, time.Since(start))
+    }
+}
+
+func slowFunction() {
+    defer measure("slowFunction")()  // Note the () to call returned function
+
+    time.Sleep(2 * time.Second)
+    // Do work
+}
+
+func main() {
+    slowFunction()
+    // Output: slowFunction took 2.001s
+}</code></pre>
+        <br/>
+        <li><b>Use case 4: Database transactions</b></li>
+<pre><code class="language-go line-numbers">func updateUser(db *sql.DB, userID int, name string) error {
+    tx, err := db.Begin()
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback()  // Rollback if we don't commit
+
+    _, err = tx.Exec("UPDATE users SET name = ? WHERE id = ?", name, userID)
+    if err != nil {
+        return err  // Rollback happens here
+    }
+
+    return tx.Commit()  // Commit overrides rollback
+}</code></pre>
+        <br/>
+        <li><b>Use case 5: Cleanup temporary resources</b></li>
+<pre><code class="language-go line-numbers">func processData() error {
+    tempFile, err := os.CreateTemp("", "data-*.tmp")
+    if err != nil {
+        return err
+    }
+    defer os.Remove(tempFile.Name())  // Clean up temp file
+    defer tempFile.Close()            // Close file handle
+
+    // Use temp file
+    tempFile.Write([]byte("data"))
+
+    return nil
+    // File closed and deleted automatically
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defer with Function Arguments</li>
+    <br/>
+    <ul>
+        <li><b>Important:</b> Function arguments are evaluated immediately when defer is called!</li>
+<pre><code class="language-go line-numbers">func example() {
+    x := 1
+
+    defer fmt.Println(x)  // x is evaluated NOW (x = 1)
+
+    x = 2
+
+    fmt.Println("Function body:", x)
+}
+
+// Output:
+// Function body: 2
+// 1  (not 2!)</code></pre>
+        <br/>
+        <li><b>Using closures to capture current values:</b></li>
+<pre><code class="language-go line-numbers">func example() {
+    x := 1
+
+    // Closure captures x by reference
+    defer func() {
+        fmt.Println(x)  // x evaluated when defer runs
+    }()
+
+    x = 2
+
+    fmt.Println("Function body:", x)
+}
+
+// Output:
+// Function body: 2
+// 2  (uses current value!)</code></pre>
+        <br/>
+        <li><b>Practical example:</b></li>
+<pre><code class="language-go line-numbers">func printValues() {
+    for i := 0; i < 3; i++ {
+        // ❌ Wrong: i is evaluated immediately
+        defer fmt.Println(i)
+    }
+}
+
+func main() {
+    printValues()
+}
+
+// Output:
+// 2
+// 1
+// 0
+// (Prints in reverse, with final values)
+
+func printValuesCorrect() {
+    for i := 0; i < 3; i++ {
+        // ✓ Correct: capture i in closure
+        i := i  // Create new variable for each iteration
+        defer func() {
+            fmt.Println(i)
+        }()
+    }
+}
+
+func main() {
+    printValuesCorrect()
+}
+
+// Output:
+// 2
+// 1
+// 0</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multiple Defer Statements</li>
+    <br/>
+    <ul>
+        <li>Multiple defers execute in reverse order (LIFO - stack):</li>
+<pre><code class="language-go line-numbers">func multipleDefers() {
+    defer fmt.Println("First defer")
+    defer fmt.Println("Second defer")
+    defer fmt.Println("Third defer")
+
+    fmt.Println("Function body")
+}
+
+// Output:
+// Function body
+// Third defer
+// Second defer
+// First defer</code></pre>
+        <br/>
+        <li><b>Practical example: Nested resource cleanup</b></li>
+<pre><code class="language-go line-numbers">func process() error {
+    // Open database connection
+    db, err := openDB()
+    if err != nil {
+        return err
+    }
+    defer db.Close()  // Closes last
+
+    // Begin transaction
+    tx, err := db.Begin()
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback()  // Closes second (before db)
+
+    // Open file
+    file, err := os.Open("data.txt")
+    if err != nil {
+        return err
+    }
+    defer file.Close()  // Closes first
+
+    // Process
+    // ...
+
+    return tx.Commit()
+}
+
+// Cleanup order:
+// 1. file.Close()
+// 2. tx.Rollback()
+// 3. db.Close()</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defer in Loops</li>
+    <br/>
+    <ul>
+        <li><b>Common pitfall:</b> Defers in loops don't execute until function returns!</li>
+<pre><code class="language-go line-numbers">func processFiles(filenames []string) {
+    for _, filename := range filenames {
+        file, err := os.Open(filename)
+        if err != nil {
+            continue
+        }
+        defer file.Close()  // ❌ Problem: All defers wait until function ends!
+
+        // Process file
+    }
+
+    // All files stay open until here!
+    // Could run out of file descriptors
+}</code></pre>
+        <br/>
+        <li><b>Solution 1: Use a separate function</b></li>
+<pre><code class="language-go line-numbers">func processFile(filename string) error {
+    file, err := os.Open(filename)
+    if err != nil {
+        return err
+    }
+    defer file.Close()  // ✓ Closes when processFile returns
+
+    // Process file
+    return nil
+}
+
+func processFiles(filenames []string) {
+    for _, filename := range filenames {
+        processFile(filename)  // ✓ File closed after each iteration
+    }
+}</code></pre>
+        <br/>
+        <li><b>Solution 2: Use anonymous function</b></li>
+<pre><code class="language-go line-numbers">func processFiles(filenames []string) {
+    for _, filename := range filenames {
+        func() {
+            file, err := os.Open(filename)
+            if err != nil {
+                return
+            }
+            defer file.Close()  // ✓ Closes when anonymous function returns
+
+            // Process file
+        }()
+    }
+}</code></pre>
+        <br/>
+        <li><b>Solution 3: Manual cleanup (if appropriate)</b></li>
+<pre><code class="language-go line-numbers">func processFiles(filenames []string) {
+    for _, filename := range filenames {
+        file, err := os.Open(filename)
+        if err != nil {
+            continue
+        }
+
+        // Process file
+
+        file.Close()  // ✓ Close immediately after processing
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defer and Return Values</li>
+    <br/>
+    <ul>
+        <li>Defer can modify named return values:</li>
+<pre><code class="language-go line-numbers">func example() (result int) {
+    defer func() {
+        result++  // Modifies return value!
+    }()
+
+    return 41
+}
+
+func main() {
+    fmt.Println(example())  // 42 (not 41!)
+}</code></pre>
+        <br/>
+        <li><b>How it works:</b></li>
+<pre><code class="language-go line-numbers">func example() (result int) {
+    // Execution order:
+    // 1. Set result = 41
+    result = 41
+
+    // 2. Run deferred function (modifies result to 42)
+    defer func() {
+        result++
+    }()
+
+    // 3. Return result (which is now 42)
+    return result
+}</code></pre>
+        <br/>
+        <li><b>Practical use: Error handling</b></li>
+<pre><code class="language-go line-numbers">func doSomething() (err error) {
+    file, err := os.Open("file.txt")
+    if err != nil {
+        return err
+    }
+
+    defer func() {
+        closeErr := file.Close()
+        if err == nil {  // Only set error if no previous error
+            err = closeErr
+        }
+    }()
+
+    // Process file
+    // If error occurs here, it takes precedence
+    // If no error, close error is returned
+
+    return nil
+}</code></pre>
+        <br/>
+        <li><b>Without named returns (can't modify):</b></li>
+<pre><code class="language-go line-numbers">func example() int {
+    result := 41
+
+    defer func() {
+        result++  // Modifies local variable, not return value
+    }()
+
+    return result  // Returns 41
+}
+
+func main() {
+    fmt.Println(example())  // 41 (not modified)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defer with Panic and Recover</li>
+    <br/>
+    <ul>
+        <li>Defer runs even when panic occurs:</li>
+<pre><code class="language-go line-numbers">func example() {
+    defer fmt.Println("Defer 1")
+    defer fmt.Println("Defer 2")
+
+    fmt.Println("Before panic")
+    panic("Something went wrong!")
+
+    fmt.Println("After panic")  // Never executes
+}
+
+func main() {
+    example()
+}
+
+// Output:
+// Before panic
+// Defer 2
+// Defer 1
+// panic: Something went wrong!</code></pre>
+        <br/>
+        <li><b>Using recover in defer:</b></li>
+<pre><code class="language-go line-numbers">func safeDivide(a, b int) (result int, err error) {
+    defer func() {
+        if r := recover(); r != nil {
+            err = fmt.Errorf("panic occurred: %v", r)
+        }
+    }()
+
+    return a / b, nil  // May panic if b is 0
+}
+
+func main() {
+    result, err := safeDivide(10, 0)
+    if err != nil {
+        fmt.Println("Error:", err)  // Error: panic occurred: runtime error...
+    } else {
+        fmt.Println("Result:", result)
+    }
+}</code></pre>
+        <br/>
+        <li><b>Cleanup with panic protection:</b></li>
+<pre><code class="language-go line-numbers">func processWithCleanup() {
+    file, err := os.Create("output.txt")
+    if err != nil {
+        panic(err)
+    }
+    defer file.Close()  // ✓ Runs even if panic occurs below
+
+    // Risky operations
+    riskyOperation()  // Might panic
+
+    // file.Close() is guaranteed to run
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defer Performance</li>
+    <br/>
+    <ul>
+        <li>Defer has a small performance cost, but usually negligible:</li>
+<pre><code class="language-go line-numbers">// Benchmark results (approximate)
+func BenchmarkWithoutDefer(b *testing.B) {
+    for i := 0; i < b.N; i++ {
+        doWork()
+        cleanup()
+    }
+}
+// ~10 ns/op
+
+func BenchmarkWithDefer(b *testing.B) {
+    for i := 0; i < b.N; i++ {
+        defer cleanup()
+        doWork()
+    }
+}
+// ~20 ns/op
+
+// Defer is ~2x slower, but we're talking nanoseconds
+// The safety and code clarity is worth it!</code></pre>
+        <br/>
+        <li><b>When to avoid defer:</b></li>
+        <ul>
+            <li>Extremely tight loops (millions of iterations)</li>
+            <li>Hot paths in performance-critical code</li>
+            <li>When profiling shows defer is a bottleneck (rare)</li>
+        </ul>
+        <br/>
+        <li><b>Most of the time, use defer:</b></li>
+<pre><code class="language-go line-numbers">// ✓ Prefer this (cleaner, safer)
+func process() error {
+    mu.Lock()
+    defer mu.Unlock()
+
+    // Complex logic
+    // Multiple return paths
+    // Possible panics
+
+    return doWork()
+}
+
+// ❌ Avoid this (error-prone)
+func process() error {
+    mu.Lock()
+
+    err := doWork()
+    if err != nil {
+        mu.Unlock()  // Easy to forget!
+        return err
+    }
+
+    mu.Unlock()
+    return nil
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Pattern 1: Resource cleanup</b></li>
+<pre><code class="language-go line-numbers">func processData() error {
+    conn, err := getConnection()
+    if err != nil {
+        return err
+    }
+    defer conn.Close()
+
+    // Use connection
+    return conn.DoWork()
+}</code></pre>
+        <br/>
+        <li><b>Pattern 2: Mutex locking</b></li>
+<pre><code class="language-go line-numbers">func (s *SafeMap) Set(key string, value int) {
+    s.mu.Lock()
+    defer s.mu.Unlock()
+
+    s.data[key] = value
+}</code></pre>
+        <br/>
+        <li><b>Pattern 3: Tracing/logging</b></li>
+<pre><code class="language-go line-numbers">func trace(name string) func() {
+    fmt.Printf("Entering %s\n", name)
+    return func() {
+        fmt.Printf("Exiting %s\n", name)
+    }
+}
+
+func operation() {
+    defer trace("operation")()
+
+    // Do work
+    fmt.Println("Working...")
+}
+
+// Output:
+// Entering operation
+// Working...
+// Exiting operation</code></pre>
+        <br/>
+        <li><b>Pattern 4: Recovering from panics</b></li>
+<pre><code class="language-go line-numbers">func handler(w http.ResponseWriter, r *http.Request) {
+    defer func() {
+        if err := recover(); err != nil {
+            log.Printf("Panic: %v", err)
+            http.Error(w, "Internal Server Error", 500)
+        }
+    }()
+
+    // Handler code that might panic
+}</code></pre>
+        <br/>
+        <li><b>Pattern 5: Modifying return value</b></li>
+<pre><code class="language-go line-numbers">func operate() (err error) {
+    tx, err := db.Begin()
+    if err != nil {
+        return err
+    }
+
+    defer func() {
+        if err != nil {
+            tx.Rollback()
+        } else {
+            err = tx.Commit()
+        }
+    }()
+
+    // Do work
+    return doWork(tx)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Mistakes and How to Avoid Them</li>
+    <br/>
+    <ul>
+        <li><b>Mistake 1: Defer in loop without wrapper function</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: All files stay open until function ends
+for _, file := range files {
+    f, _ := os.Open(file)
+    defer f.Close()  // Stacks up!
+}
+
+// ✓ Correct: Close immediately
+for _, file := range files {
+    func() {
+        f, _ := os.Open(file)
+        defer f.Close()
+    }()
+}</code></pre>
+        <br/>
+        <li><b>Mistake 2: Ignoring defer's argument evaluation</b></li>
+<pre><code class="language-go line-numbers">func wrong() {
+    x := 1
+    defer fmt.Println(x)  // ❌ Prints 1, not 2
+    x = 2
+}
+
+func right() {
+    x := 1
+    defer func() {
+        fmt.Println(x)  // ✓ Prints 2
+    }()
+    x = 2
+}</code></pre>
+        <br/>
+        <li><b>Mistake 3: Deferring error-returning functions without checking</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: Ignores close error
+func bad() error {
+    f, err := os.Create("file.txt")
+    if err != nil {
+        return err
+    }
+    defer f.Close()  // Error is ignored!
+
+    return f.Write([]byte("data"))
+}
+
+// ✓ Better: Check close error
+func good() (err error) {
+    f, err := os.Create("file.txt")
+    if err != nil {
+        return err
+    }
+    defer func() {
+        if closeErr := f.Close(); closeErr != nil && err == nil {
+            err = closeErr
+        }
+    }()
+
+    return f.Write([]byte("data"))
+}</code></pre>
+        <br/>
+        <li><b>Mistake 4: Defer after error check that returns</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: defer never executes if err != nil
+func bad() error {
+    f, err := os.Open("file.txt")
+    if err != nil {
+        return err
+    }
+    defer f.Close()
+    // ...
+}
+
+// The above is actually CORRECT!
+// But make sure defer comes AFTER error check
+
+// ❌ REALLY wrong:
+func reallyBad() error {
+    f, err := os.Open("file.txt")
+    defer f.Close()  // ❌ Panics if f is nil!
+    if err != nil {
+        return err
+    }
+    // ...
+}</code></pre>
+        <br/>
+        <li><b>Mistake 5: Multiple defers when order matters</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong order
+func wrong() {
+    defer closeDatabase()  // Closes first!
+    defer commitTransaction()  // Commits second (after DB closed!)
+}
+
+// ✓ Correct order (remember: LIFO)
+func correct() {
+    defer closeDatabase()  // Closes last
+    defer commitTransaction()  // Commits first
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices</li>
+    <br/>
+    <ul>
+        <li><b>1. Always defer cleanup immediately after acquiring resource</b></li>
+<pre><code class="language-go line-numbers">f, err := os.Open(filename)
+if err != nil {
+    return err
+}
+defer f.Close()  // ✓ Right after acquiring</code></pre>
+        <br/>
+        <li><b>2. Use defer for all cleanup, even if unlikely to fail</b></li>
+<pre><code class="language-go line-numbers">mu.Lock()
+defer mu.Unlock()  // ✓ Always use defer, even for simple cases</code></pre>
+        <br/>
+        <li><b>3. Wrap defer in anonymous function in loops</b></li>
+<pre><code class="language-go line-numbers">for _, item := range items {
+    func() {
+        resource := acquire(item)
+        defer resource.Release()
+        // Process
+    }()
+}</code></pre>
+        <br/>
+        <li><b>4. Use closures to capture current values</b></li>
+<pre><code class="language-go line-numbers">defer func() {
+    // Captures current values
+}()</code></pre>
+        <br/>
+        <li><b>5. Consider error from deferred Close() calls</b></li>
+<pre><code class="language-go line-numbers">defer func() {
+    if err := resource.Close(); err != nil {
+        log.Printf("Close error: %v", err)
+    }
+}()</code></pre>
+        <br/>
+        <li><b>6. Don't panic about performance unless profiling shows issue</b></li>
+<pre><code class="language-go line-numbers">// ✓ Clarity and safety first
+defer cleanup()
+
+// Profile before optimizing away defer</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>When NOT to Use Defer</li>
+    <br/>
+    <ul>
+        <li><b>1. Long-running functions with early resource release</b></li>
+<pre><code class="language-go line-numbers">func process() {
+    file, _ := os.Open("small.txt")
+
+    // Process small file
+    data, _ := io.ReadAll(file)
+    file.Close()  // ✓ Close now, not at end
+
+    // Long computation that doesn't need file
+    time.Sleep(1 * time.Hour)
+}</code></pre>
+        <br/>
+        <li><b>2. Performance-critical tight loops</b></li>
+<pre><code class="language-go line-numbers">// Only if profiling shows defer is bottleneck
+for i := 0; i < 1000000; i++ {
+    mu.Lock()
+    data[i] = i
+    mu.Unlock()  // Manual unlock if defer is measured bottleneck
+}</code></pre>
+        <br/>
+        <li><b>3. When you need immediate cleanup</b></li>
+<pre><code class="language-go line-numbers">func streamProcess() {
+    for {
+        conn := accept()
+        data := conn.Read()
+        process(data)
+        conn.Close()  // ✓ Close immediately, don't accumulate
+    }
+}</code></pre>
     </ul>
     <br/><br/>
 </ol>
