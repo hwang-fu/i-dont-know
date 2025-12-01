@@ -166,6 +166,8 @@
         <li><a href="#go-interfaces">Interfaces</a></li>
         <li><a href="#go-concurrency">Concurrency</a></li>
         <li><a href="#go-defer">Defer</a></li>
+        <li><a href="#go-error-handling">Error Handling</a></li>
+        <li><a href="#go-"></a></li>
         <li><a href="#go-"></a></li>
     </ol>
     </ol>
@@ -10318,7 +10320,8 @@ for i := 0; i < 1000000; i++ {
     mu.Lock()
     data[i] = i
     mu.Unlock()  // Manual unlock if defer is measured bottleneck
-}</code></pre>
+}
+</code></pre>
         <br/>
         <li><b>3. When you need immediate cleanup</b></li>
 <pre><code class="language-go line-numbers">func streamProcess() {
@@ -10332,6 +10335,1109 @@ for i := 0; i < 1000000; i++ {
     </ul>
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="go-error-handling">Error Handling in Go</h3>
+<ol>
+
+    <li>Go's Error Philosophy</li>
+    <br/>
+    <ul>
+        <li>Go uses <b>explicit error handling</b> - no exceptions or try-catch.</li>
+        <br/>
+        <li>Errors are <b>values</b> that functions return, not thrown.</li>
+        <br/>
+        <li>The convention: last return value is an error.</li>
+        <br/>
+        <li>"Errors are values. Don't just check errors, handle them gracefully."</li>
+        <br/>
+        <li><b>Basic example:</b></li>
+<pre><code class="language-go line-numbers">func divide(a, b float64) (float64, error) {
+    if b == 0 {
+        return 0, errors.New("division by zero")
+    }
+    return a / b, nil
+}
+
+func main() {
+    result, err := divide(10, 0)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    fmt.Println("Result:", result)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The error Interface</li>
+    <br/>
+    <ul>
+        <li>The <code>error</code> type is a built-in interface:</li>
+<pre><code class="language-go line-numbers">type error interface {
+    Error() string
+}
+
+// Any type with an Error() string method implements error</code></pre>
+        <br/>
+        <li><b>nil means no error:</b></li>
+<pre><code class="language-go line-numbers">func doWork() error {
+    // If successful
+    return nil
+}
+
+func main() {
+    err := doWork()
+    if err != nil {
+        // Handle error
+    }
+    // Success
+}</code></pre>
+        <br/>
+        <li><b>Checking errors is idiomatic:</b></li>
+<pre><code class="language-go line-numbers">// Standard pattern
+result, err := someFunction()
+if err != nil {
+    // Handle error
+    return err
+}
+// Use result</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Errors</li>
+    <br/>
+    <ul>
+        <li><b>Method 1: errors.New (simple string)</b></li>
+<pre><code class="language-go line-numbers">import "errors"
+
+func validate(age int) error {
+    if age < 0 {
+        return errors.New("age cannot be negative")
+    }
+    return nil
+}</code></pre>
+        <br/>
+        <li><b>Method 2: fmt.Errorf (formatted string)</b></li>
+<pre><code class="language-go line-numbers">import "fmt"
+
+func validate(name string, age int) error {
+    if age < 0 {
+        return fmt.Errorf("invalid age %d for user %s", age, name)
+    }
+    return nil
+}
+
+func main() {
+    err := validate("Alice", -5)
+    if err != nil {
+        fmt.Println(err)  // invalid age -5 for user Alice
+    }
+}</code></pre>
+        <br/>
+        <li><b>Method 3: Predefined errors (package-level)</b></li>
+<pre><code class="language-go line-numbers">var (
+    ErrNotFound    = errors.New("not found")
+    ErrInvalidData = errors.New("invalid data")
+    ErrTimeout     = errors.New("timeout")
+)
+
+func fetchUser(id int) (*User, error) {
+    if id < 0 {
+        return nil, ErrInvalidData
+    }
+
+    user := database.Find(id)
+    if user == nil {
+        return nil, ErrNotFound
+    }
+
+    return user, nil
+}
+
+// Caller can check specific errors
+user, err := fetchUser(123)
+if err == ErrNotFound {
+    fmt.Println("User not found")
+}</code></pre>
+        <br/>
+        <li><b>Method 4: Custom error types</b></li>
+<pre><code class="language-go line-numbers">type ValidationError struct {
+    Field   string
+    Message string
+}
+
+func (e ValidationError) Error() string {
+    return fmt.Sprintf("validation error on field '%s': %s", e.Field, e.Message)
+}
+
+func validateEmail(email string) error {
+    if !strings.Contains(email, "@") {
+        return ValidationError{
+            Field:   "email",
+            Message: "must contain @ symbol",
+        }
+    }
+    return nil
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Wrapping (Go 1.13+)</li>
+    <br/>
+    <ul>
+        <li>Error wrapping adds context while preserving the original error:</li>
+<pre><code class="language-go line-numbers">// Wrap with %w verb
+func readConfig(filename string) error {
+    file, err := os.Open(filename)
+    if err != nil {
+        return fmt.Errorf("failed to read config: %w", err)
+    }
+    defer file.Close()
+
+    // Process file
+    return nil
+}
+
+func main() {
+    err := readConfig("config.yaml")
+    if err != nil {
+        fmt.Println(err)
+        // Output: failed to read config: open config.yaml: no such file or directory
+    }
+}</code></pre>
+        <br/>
+        <li><b>Difference between %v and %w:</b></li>
+<pre><code class="language-go line-numbers">originalErr := errors.New("original error")
+
+// %v - formats error but doesn't wrap
+err1 := fmt.Errorf("context: %v", originalErr)
+// Cannot unwrap to get originalErr
+
+// %w - wraps error
+err2 := fmt.Errorf("context: %w", originalErr)
+// Can unwrap to get originalErr</code></pre>
+        <br/>
+        <li><b>Why wrap errors?</b></li>
+        <ul>
+            <li>Add context to errors as they bubble up</li>
+            <li>Preserve original error for inspection</li>
+            <li>Create error chains with full context</li>
+        </ul>
+<pre><code class="language-go line-numbers">func loadUser(id int) (*User, error) {
+    data, err := database.Query(id)
+    if err != nil {
+        return nil, fmt.Errorf("loading user %d: %w", id, err)
+    }
+
+    user, err := parseUser(data)
+    if err != nil {
+        return nil, fmt.Errorf("parsing user data: %w", err)
+    }
+
+    return user, nil
+}
+
+// Error chain:
+// parsing user data: invalid JSON: unexpected token at position 10</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Checking Wrapped Errors: errors.Is</li>
+    <br/>
+    <ul>
+        <li><b>errors.Is</b> checks if an error matches a target, even if wrapped:</li>
+<pre><code class="language-go line-numbers">var ErrNotFound = errors.New("not found")
+
+func getUser(id int) error {
+    // ... some code
+    return fmt.Errorf("user lookup failed: %w", ErrNotFound)
+}
+
+func main() {
+    err := getUser(123)
+
+    // ❌ Wrong: doesn't work with wrapped errors
+    if err == ErrNotFound {
+        fmt.Println("Not found")  // Won't print!
+    }
+
+    // ✓ Correct: works with wrapped errors
+    if errors.Is(err, ErrNotFound) {
+        fmt.Println("Not found")  // Prints!
+    }
+}</code></pre>
+        <br/>
+        <li><b>errors.Is unwraps the error chain:</b></li>
+<pre><code class="language-go line-numbers">baseErr := errors.New("base error")
+wrappedErr := fmt.Errorf("layer 1: %w", baseErr)
+doubleWrapped := fmt.Errorf("layer 2: %w", wrappedErr)
+
+// errors.Is checks the entire chain
+fmt.Println(errors.Is(doubleWrapped, baseErr))  // true</code></pre>
+        <br/>
+        <li><b>Standard library errors:</b></li>
+<pre><code class="language-go line-numbers">import "os"
+
+_, err := os.Open("nonexistent.txt")
+if errors.Is(err, os.ErrNotExist) {
+    fmt.Println("File doesn't exist")
+}
+
+_, err = os.Open("/readonly/file.txt")
+if errors.Is(err, os.ErrPermission) {
+    fmt.Println("Permission denied")
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Extracting Error Types: errors.As</li>
+    <br/>
+    <ul>
+        <li><b>errors.As</b> extracts a specific error type from a wrapped error:</li>
+<pre><code class="language-go line-numbers">type ValidationError struct {
+    Field   string
+    Message string
+}
+
+func (e ValidationError) Error() string {
+    return fmt.Sprintf("%s: %s", e.Field, e.Message)
+}
+
+func validate(email string) error {
+    if !strings.Contains(email, "@") {
+        return ValidationError{
+            Field:   "email",
+            Message: "invalid format",
+        }
+    }
+    return nil
+}
+
+func processUser(email string) error {
+    err := validate(email)
+    if err != nil {
+        return fmt.Errorf("user validation failed: %w", err)
+    }
+    return nil
+}
+
+func main() {
+    err := processUser("invalid")
+
+    // Extract ValidationError from wrapped error
+    var validationErr ValidationError
+    if errors.As(err, &validationErr) {
+        fmt.Printf("Field: %s, Message: %s\n",
+            validationErr.Field, validationErr.Message)
+        // Field: email, Message: invalid format
+    }
+}</code></pre>
+        <br/>
+        <li><b>errors.As vs type assertion:</b></li>
+<pre><code class="language-go line-numbers">// ❌ Type assertion - doesn't work with wrapped errors
+if validationErr, ok := err.(ValidationError); ok {
+    // Won't work if error is wrapped
+}
+
+// ✓ errors.As - works with wrapped errors
+var validationErr ValidationError
+if errors.As(err, &validationErr) {
+    // Works even if error is wrapped
+}</code></pre>
+        <br/>
+        <li><b>Common pattern: Custom error handling</b></li>
+<pre><code class="language-go line-numbers">type NetworkError struct {
+    Code    int
+    Message string
+}
+
+func (e NetworkError) Error() string {
+    return fmt.Sprintf("network error %d: %s", e.Code, e.Message)
+}
+
+func handleError(err error) {
+    var netErr NetworkError
+    if errors.As(err, &netErr) {
+        if netErr.Code >= 500 {
+            log.Printf("Server error: %v", netErr)
+        } else if netErr.Code >= 400 {
+            log.Printf("Client error: %v", netErr)
+        }
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Error Types</li>
+    <br/>
+    <ul>
+        <li><b>Simple custom error:</b></li>
+<pre><code class="language-go line-numbers">type NotFoundError struct {
+    Resource string
+    ID       int
+}
+
+func (e NotFoundError) Error() string {
+    return fmt.Sprintf("%s with ID %d not found", e.Resource, e.ID)
+}
+
+func getUser(id int) (*User, error) {
+    user := database.Find(id)
+    if user == nil {
+        return nil, NotFoundError{Resource: "User", ID: id}
+    }
+    return user, nil
+}</code></pre>
+        <br/>
+        <li><b>Error with multiple fields:</b></li>
+<pre><code class="language-go line-numbers">type ValidationError struct {
+    Field   string
+    Value   interface{}
+    Message string
+}
+
+func (e ValidationError) Error() string {
+    return fmt.Sprintf("validation failed for field '%s' with value '%v': %s",
+        e.Field, e.Value, e.Message)
+}
+
+func validateAge(age int) error {
+    if age < 0 || age > 150 {
+        return ValidationError{
+            Field:   "age",
+            Value:   age,
+            Message: "must be between 0 and 150",
+        }
+    }
+    return nil
+}</code></pre>
+        <br/>
+        <li><b>Error with context and cause:</b></li>
+<pre><code class="language-go line-numbers">type ServiceError struct {
+    Op      string  // Operation that failed
+    Service string  // Service name
+    Err     error   // Underlying error
+}
+
+func (e *ServiceError) Error() string {
+    return fmt.Sprintf("%s: %s failed: %v", e.Service, e.Op, e.Err)
+}
+
+func (e *ServiceError) Unwrap() error {
+    return e.Err  // Allows errors.Is and errors.As to work
+}
+
+func fetchData() error {
+    err := networkCall()
+    if err != nil {
+        return &ServiceError{
+            Op:      "fetch",
+            Service: "UserService",
+            Err:     err,
+        }
+    }
+    return nil
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Handling Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Pattern 1: Early return</b></li>
+<pre><code class="language-go line-numbers">func process() error {
+    data, err := fetchData()
+    if err != nil {
+        return fmt.Errorf("fetch failed: %w", err)
+    }
+
+    err = validate(data)
+    if err != nil {
+        return fmt.Errorf("validation failed: %w", err)
+    }
+
+    err = save(data)
+    if err != nil {
+        return fmt.Errorf("save failed: %w", err)
+    }
+
+    return nil
+}</code></pre>
+        <br/>
+        <li><b>Pattern 2: Error aggregation</b></li>
+<pre><code class="language-go line-numbers">func processAll(items []Item) error {
+    var errors []error
+
+    for _, item := range items {
+        if err := process(item); err != nil {
+            errors = append(errors, err)
+        }
+    }
+
+    if len(errors) > 0 {
+        return fmt.Errorf("failed to process %d items: %v",
+            len(errors), errors)
+    }
+
+    return nil
+}</code></pre>
+        <br/>
+        <li><b>Pattern 3: Retry with error</b></li>
+<pre><code class="language-go line-numbers">func retryOperation(maxRetries int) error {
+    var lastErr error
+
+    for i := 0; i < maxRetries; i++ {
+        err := attemptOperation()
+        if err == nil {
+            return nil
+        }
+
+        lastErr = err
+        log.Printf("Attempt %d failed: %v", i+1, err)
+        time.Sleep(time.Second * time.Duration(i+1))
+    }
+
+    return fmt.Errorf("operation failed after %d retries: %w",
+        maxRetries, lastErr)
+}</code></pre>
+        <br/>
+        <li><b>Pattern 4: Fallback on error</b></li>
+<pre><code class="language-go line-numbers">func getData() (string, error) {
+    // Try primary source
+    data, err := getPrimaryData()
+    if err == nil {
+        return data, nil
+    }
+
+    log.Printf("Primary source failed: %v, trying fallback", err)
+
+    // Try fallback source
+    data, err = getFallbackData()
+    if err != nil {
+        return "", fmt.Errorf("all sources failed: %w", err)
+    }
+
+    return data, nil
+}</code></pre>
+        <br/>
+        <li><b>Pattern 5: Named return for cleanup</b></li>
+<pre><code class="language-go line-numbers">func processFile(filename string) (err error) {
+    file, err := os.Open(filename)
+    if err != nil {
+        return fmt.Errorf("open file: %w", err)
+    }
+
+    defer func() {
+        closeErr := file.Close()
+        if err == nil {
+            err = closeErr
+        }
+    }()
+
+    // Process file
+    return nil
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Panic and Recover</li>
+    <br/>
+    <ul>
+        <li><b>Panic</b> is for unrecoverable errors (not normal error handling):</li>
+<pre><code class="language-go line-numbers">func mustConnect() *Database {
+    db, err := connect()
+    if err != nil {
+        panic(fmt.Sprintf("cannot connect to database: %v", err))
+    }
+    return db
+}
+
+// Panic should only be used for:
+// - Programmer errors (bugs)
+// - Initialization failures that make program unusable
+// - Impossible situations that indicate bugs</code></pre>
+        <br/>
+        <li><b>Recover</b> catches panics (use sparingly):</li>
+<pre><code class="language-go line-numbers">func safeHandler(w http.ResponseWriter, r *http.Request) {
+    defer func() {
+        if err := recover(); err != nil {
+            log.Printf("Panic: %v", err)
+            http.Error(w, "Internal Server Error", 500)
+        }
+    }()
+
+    // Handler code that might panic
+    riskyOperation()
+}</code></pre>
+        <br/>
+        <li><b>Converting panic to error:</b></li>
+<pre><code class="language-go line-numbers">func safeDivide(a, b int) (result int, err error) {
+    defer func() {
+        if r := recover(); r != nil {
+            err = fmt.Errorf("panic occurred: %v", r)
+        }
+    }()
+
+    result = a / b  // May panic if b == 0
+    return result, nil
+}
+
+func main() {
+    result, err := safeDivide(10, 0)
+    if err != nil {
+        fmt.Println("Error:", err)  // Error: panic occurred: runtime error...
+    }
+}</code></pre>
+        <br/>
+        <li><b>When to use panic vs error:</b></li>
+<table>
+    <thead>
+        <tr>
+            <th>Situation</th>
+            <th>Use</th>
+            <th>Reason</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Expected errors (file not found, network timeout)</td>
+            <td>error</td>
+            <td>Caller should handle</td>
+        </tr>
+        <tr>
+            <td>Invalid input from user</td>
+            <td>error</td>
+            <td>Expected, recoverable</td>
+        </tr>
+        <tr>
+            <td>Initialization failure (can't continue)</td>
+            <td>panic</td>
+            <td>Program can't function</td>
+        </tr>
+        <tr>
+            <td>Programmer error (nil pointer, out of bounds)</td>
+            <td>panic</td>
+            <td>Indicates a bug</td>
+        </tr>
+        <tr>
+            <td>Configuration error at startup</td>
+            <td>panic or error</td>
+            <td>Depends on severity</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multiple Return Values</li>
+    <br/>
+    <ul>
+        <li>Go functions commonly return result and error:</li>
+<pre><code class="language-go line-numbers">// Standard pattern: (result, error)
+func fetchUser(id int) (*User, error) {
+    if id < 0 {
+        return nil, errors.New("invalid ID")
+    }
+
+    user := database.Find(id)
+    if user == nil {
+        return nil, ErrNotFound
+    }
+
+    return user, nil
+}</code></pre>
+        <br/>
+        <li><b>Multiple results with error:</b></li>
+<pre><code class="language-go line-numbers">func parseCoordinates(s string) (lat, lng float64, err error) {
+    parts := strings.Split(s, ",")
+    if len(parts) != 2 {
+        return 0, 0, errors.New("invalid format")
+    }
+
+    lat, err = strconv.ParseFloat(parts[0], 64)
+    if err != nil {
+        return 0, 0, fmt.Errorf("invalid latitude: %w", err)
+    }
+
+    lng, err = strconv.ParseFloat(parts[1], 64)
+    if err != nil {
+        return 0, 0, fmt.Errorf("invalid longitude: %w", err)
+    }
+
+    return lat, lng, nil
+}
+
+func main() {
+    lat, lng, err := parseCoordinates("40.7128,-74.0060")
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf("Lat: %f, Lng: %f\n", lat, lng)
+}</code></pre>
+        <br/>
+        <li><b>Boolean + error pattern:</b></li>
+<pre><code class="language-go line-numbers">// Found/not found with error
+func findUser(id int) (*User, bool, error) {
+    if id < 0 {
+        return nil, false, errors.New("invalid ID")
+    }
+
+    user := database.Find(id)
+    if user == nil {
+        return nil, false, nil  // Not found, no error
+    }
+
+    return user, true, nil  // Found
+}
+
+func main() {
+    user, found, err := findUser(123)
+    if err != nil {
+        log.Fatal(err)
+    }
+    if !found {
+        fmt.Println("User not found")
+        return
+    }
+    fmt.Println("User:", user.Name)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sentinel Errors</li>
+    <br/>
+    <ul>
+        <li>Sentinel errors are predefined package-level error values:</li>
+<pre><code class="language-go line-numbers">package user
+
+import "errors"
+
+// Sentinel errors
+var (
+    ErrNotFound      = errors.New("user not found")
+    ErrAlreadyExists = errors.New("user already exists")
+    ErrInvalidInput  = errors.New("invalid input")
+)
+
+func GetUser(id int) (*User, error) {
+    user := database.Find(id)
+    if user == nil {
+        return nil, ErrNotFound
+    }
+    return user, nil
+}
+
+// Caller can check specific errors
+import "user"
+
+u, err := user.GetUser(123)
+if err == user.ErrNotFound {
+    // Handle not found case
+}</code></pre>
+        <br/>
+        <li><b>Standard library sentinel errors:</b></li>
+<pre><code class="language-go line-numbers">import (
+    "io"
+    "os"
+)
+
+// io package
+if err == io.EOF {
+    // End of file
+}
+
+if err == io.ErrUnexpectedEOF {
+    // Unexpected end
+}
+
+// os package
+if errors.Is(err, os.ErrNotExist) {
+    // File doesn't exist
+}
+
+if errors.Is(err, os.ErrPermission) {
+    // Permission denied
+}
+
+if errors.Is(err, os.ErrExist) {
+    // File already exists
+}</code></pre>
+        <br/>
+        <li><b>Naming convention:</b></li>
+        <ul>
+            <li>Start with <code>Err</code> prefix: <code>ErrNotFound</code></li>
+            <li>Export for package-level errors: <code>ErrTimeout</code></li>
+            <li>Use descriptive names: <code>ErrConnectionClosed</code></li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Logging and Debugging</li>
+    <br/>
+    <ul>
+        <li><b>Basic error logging:</b></li>
+<pre><code class="language-go line-numbers">import "log"
+
+func process() error {
+    err := doWork()
+    if err != nil {
+        log.Printf("Error in process: %v", err)
+        return err
+    }
+    return nil
+}</code></pre>
+        <br/>
+        <li><b>Structured logging with context:</b></li>
+<pre><code class="language-go line-numbers">func handleRequest(userID int, action string) error {
+    err := performAction(userID, action)
+    if err != nil {
+        log.Printf("Action failed: user=%d action=%s error=%v",
+            userID, action, err)
+        return err
+    }
+    return nil
+}</code></pre>
+        <br/>
+        <li><b>Error with stack trace (using pkg/errors):</b></li>
+<pre><code class="language-go line-numbers">// Using github.com/pkg/errors (deprecated but still common)
+import "github.com/pkg/errors"
+
+func deepFunction() error {
+    return errors.New("something went wrong")
+}
+
+func middleFunction() error {
+    err := deepFunction()
+    if err != nil {
+        return errors.Wrap(err, "middle function failed")
+    }
+    return nil
+}
+
+func topFunction() error {
+    err := middleFunction()
+    if err != nil {
+        return errors.Wrap(err, "top function failed")
+    }
+    return nil
+}
+
+func main() {
+    err := topFunction()
+    if err != nil {
+        fmt.Printf("%+v\n", err)  // Prints with stack trace
+    }
+}</code></pre>
+        <br/>
+        <li><b>Debug printing:</b></li>
+<pre><code class="language-go line-numbers">err := someOperation()
+if err != nil {
+    // %v - default format
+    fmt.Printf("%v\n", err)
+
+    // %+v - detailed format (may include stack trace)
+    fmt.Printf("%+v\n", err)
+
+    // %#v - Go syntax representation
+    fmt.Printf("%#v\n", err)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Mistakes and How to Avoid Them</li>
+    <br/>
+    <ul>
+        <li><b>Mistake 1: Ignoring errors</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: ignoring error
+file, _ := os.Open("file.txt")
+file.Read(data)  // Will panic if file is nil!
+
+// ✓ Correct: check error
+file, err := os.Open("file.txt")
+if err != nil {
+    return err
+}
+defer file.Close()
+file.Read(data)</code></pre>
+        <br/>
+        <li><b>Mistake 2: Not adding context to errors</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: losing context
+func loadConfig() error {
+    _, err := os.Open("config.yaml")
+    if err != nil {
+        return err  // Just "no such file", but which file?
+    }
+    return nil
+}
+
+// ✓ Correct: add context
+func loadConfig() error {
+    _, err := os.Open("config.yaml")
+    if err != nil {
+        return fmt.Errorf("loading config: %w", err)
+    }
+    return nil
+}</code></pre>
+        <br/>
+        <li><b>Mistake 3: Using == with wrapped errors</b></li>
+<pre><code class="language-go line-numbers">wrappedErr := fmt.Errorf("context: %w", ErrNotFound)
+
+// ❌ Wrong: doesn't work with wrapped errors
+if wrappedErr == ErrNotFound {
+    // Won't match!
+}
+
+// ✓ Correct: use errors.Is
+if errors.Is(wrappedErr, ErrNotFound) {
+    // Matches!
+}</code></pre>
+        <br/>
+        <li><b>Mistake 4: Type assertion on wrapped errors</b></li>
+<pre><code class="language-go line-numbers">type MyError struct{ Code int }
+func (e MyError) Error() string { return fmt.Sprintf("error %d", e.Code) }
+
+wrappedErr := fmt.Errorf("wrapped: %w", MyError{Code: 404})
+
+// ❌ Wrong: type assertion doesn't unwrap
+if myErr, ok := wrappedErr.(MyError); ok {
+    // Won't work!
+}
+
+// ✓ Correct: use errors.As
+var myErr MyError
+if errors.As(wrappedErr, &myErr) {
+    fmt.Println("Code:", myErr.Code)  // Works!
+}</code></pre>
+        <br/>
+        <li><b>Mistake 5: Not using defer for cleanup on error</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: resource leak on error
+func process() error {
+    file, err := os.Open("file.txt")
+    if err != nil {
+        return err
+    }
+
+    data, err := readData(file)
+    if err != nil {
+        return err  // File never closed!
+    }
+
+    file.Close()
+    return nil
+}
+
+// ✓ Correct: defer cleanup
+func process() error {
+    file, err := os.Open("file.txt")
+    if err != nil {
+        return err
+    }
+    defer file.Close()  // Always closes
+
+    data, err := readData(file)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}</code></pre>
+        <br/>
+        <li><b>Mistake 6: Using panic for normal errors</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: panic for expected errors
+func getUser(id int) *User {
+    user := database.Find(id)
+    if user == nil {
+        panic("user not found")  // Don't do this!
+    }
+    return user
+}
+
+// ✓ Correct: return error
+func getUser(id int) (*User, error) {
+    user := database.Find(id)
+    if user == nil {
+        return nil, ErrNotFound
+    }
+    return user, nil
+}</code></pre>
+        <br/>
+        <li><b>Mistake 7: Returning error and non-nil value</b></li>
+<pre><code class="language-go line-numbers">// ❌ Wrong: confusing return values
+func getUser(id int) (*User, error) {
+    user := database.Find(id)
+    if user == nil {
+        return user, ErrNotFound  // Returns non-nil error with non-nil user?
+    }
+    return user, nil
+}
+
+// ✓ Correct: nil value on error
+func getUser(id int) (*User, error) {
+    user := database.Find(id)
+    if user == nil {
+        return nil, ErrNotFound  // Clear: error = no user
+    }
+    return user, nil  // Clear: no error = valid user
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices</li>
+    <br/>
+    <ul>
+        <li><b>1. Always check errors</b></li>
+<pre><code class="language-go line-numbers">result, err := operation()
+if err != nil {
+    // Handle error
+}</code></pre>
+        <br/>
+        <li><b>2. Add context when wrapping errors</b></li>
+<pre><code class="language-go line-numbers">if err != nil {
+    return fmt.Errorf("operation failed: %w", err)
+}</code></pre>
+        <br/>
+        <li><b>3. Use errors.Is and errors.As for checking</b></li>
+<pre><code class="language-go line-numbers">if errors.Is(err, ErrNotFound) { }
+var myErr MyError
+if errors.As(err, &myErr) { }</code></pre>
+        <br/>
+        <li><b>4. Return errors, don't panic</b></li>
+<pre><code class="language-go line-numbers">// Prefer returning errors over panic
+func process() error {
+    return ErrInvalidInput  // Not: panic("invalid input")
+}</code></pre>
+        <br/>
+        <li><b>5. Error messages should be lowercase and not end with punctuation</b></li>
+<pre><code class="language-go line-numbers">// ✓ Good
+errors.New("failed to connect to database")
+
+// ❌ Avoid
+errors.New("Failed to connect to database.")
+errors.New("Failed To Connect")</code></pre>
+        <br/>
+        <li><b>6. Use defer for cleanup</b></li>
+<pre><code class="language-go line-numbers">file, err := os.Open(filename)
+if err != nil {
+    return err
+}
+defer file.Close()</code></pre>
+        <br/>
+        <li><b>7. Keep error handling simple</b></li>
+<pre><code class="language-go line-numbers">// Simple and clear
+if err != nil {
+    return err
+}
+
+// Don't over-complicate
+if err != nil {
+    if err == ErrSpecific {
+        // ...
+    } else if anotherCheck {
+        // ...
+    }
+    // Keep it simple when possible
+}</code></pre>
+        <br/>
+        <li><b>8. Name errors clearly</b></li>
+<pre><code class="language-go line-numbers">var (
+    ErrUserNotFound     = errors.New("user not found")
+    ErrInvalidEmail     = errors.New("invalid email")
+    ErrDatabaseTimeout  = errors.New("database timeout")
+)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Testing Error Handling</li>
+    <br/>
+    <ul>
+        <li><b>Testing error cases:</b></li>
+<pre><code class="language-go line-numbers">func TestGetUser(t *testing.T) {
+    tests := []struct {
+        name    string
+        userID  int
+        want    *User
+        wantErr error
+    }{
+        {
+            name:    "valid user",
+            userID:  1,
+            want:    &User{ID: 1, Name: "Alice"},
+            wantErr: nil,
+        },
+        {
+            name:    "user not found",
+            userID:  999,
+            want:    nil,
+            wantErr: ErrNotFound,
+        },
+        {
+            name:    "invalid ID",
+            userID:  -1,
+            want:    nil,
+            wantErr: ErrInvalidInput,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            got, err := GetUser(tt.userID)
+
+            if !errors.Is(err, tt.wantErr) {
+                t.Errorf("GetUser() error = %v, want %v", err, tt.wantErr)
+                return
+            }
+
+            if !reflect.DeepEqual(got, tt.want) {
+                t.Errorf("GetUser() = %v, want %v", got, tt.want)
+            }
+        })
+    }
+}</code></pre>
+        <br/>
+        <li><b>Testing custom error types:</b></li>
+<pre><code class="language-go line-numbers">func TestValidationError(t *testing.T) {
+    err := validateEmail("invalid")
+
+    var validationErr ValidationError
+    if !errors.As(err, &validationErr) {
+        t.Fatal("expected ValidationError")
+    }
+
+    if validationErr.Field != "email" {
+        t.Errorf("got field %s, want email", validationErr.Field)
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
