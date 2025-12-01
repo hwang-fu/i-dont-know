@@ -184,6 +184,7 @@
         <li><a href="#haskell-infix-operators-fixity">Infix Operators Fixity</a></li>
         <li><a href="#haskell-language-extensions">LANGUAGE Extensions</a></li>
         <li><a href="#ghc-non-language-pragmas">GHC Non-LANGUAGE Pragmas</a></li>
+        <li><a href="#haskell-map-implementation">The Beauty of Map Implementation in Haskell</a></li>
     </ol>
 </nav>
 <hr/>
@@ -10003,7 +10004,7 @@ ones = xs
     <br/>
     <ul>
         <li>The general form is:
-<pre><code>infixl &lt;precedence&gt; op1, op2, op3
+<pre><code class="language-haskell line-numbers">infixl &lt;precedence&gt; op1, op2, op3
 infixr &lt;precedence&gt; op
 infix  &lt;precedence&gt; op
 </code></pre>
@@ -10026,7 +10027,7 @@ infix  &lt;precedence&gt; op
     <br/>
     <ul>
         <li>In <code>Data.Map</code>, these operators are declared:
-<pre><code>infixl 9 !,!?,\\
+<pre><code class="language-haskell line-numbers">infixl 9 !,!?,\\
 </code></pre>
         </li>
         <li>This means:
@@ -10037,7 +10038,7 @@ infix  &lt;precedence&gt; op
             </ul>
         </li>
         <li>So:
-<pre><code>m1 \\ m2 \\ m3 == (m1 \\ m2) \\ m3
+<pre><code class="language-haskell line-numbers">m1 \\ m2 \\ m3 == (m1 \\ m2) \\ m3
 m ! k1 ! k2    == (m ! k1) ! k2
 </code></pre>
         </li>
@@ -10049,15 +10050,15 @@ m ! k1 ! k2    == (m ! k1) ! k2
     <br/>
     <ul>
         <li>Left-associative (infixl):
-<pre><code>a ! b ! c  ==  (a ! b) ! c
+<pre><code class="language-haskell line-numbers">a ! b ! c  ==  (a ! b) ! c
 </code></pre>
         </li>
         <li>Right-associative (infixr):
-<pre><code>a : b : c  ==  a : (b : c)
+<pre><code class="language-haskell line-numbers">a : b : c  ==  a : (b : c)
 </code></pre>
         </li>
         <li>Non-associative (infix):
-<pre><code>a == b == c  -- Syntax error, requires parentheses
+<pre><code class="language-haskell line-numbers">a == b == c  -- Syntax error, requires parentheses
 </code></pre>
         </li>
     </ul>
@@ -10080,17 +10081,17 @@ m ! k1 ! k2    == (m ! k1) ! k2
         </li>
         <br/>
         <li>Example:
-<pre><code>3 + 4 * 5
+<pre><code class="language-haskell line-numbers">3 + 4 * 5
 </code></pre>
             Because <code>*</code> has higher precedence than <code>+</code>, this parses as:
-<pre><code>3 + (4 * 5)
+<pre><code class="language-haskell line-numbers">3 + (4 * 5)
 </code></pre>
         </li>
         <li>Example with Map:
-<pre><code>f m ! k
+<pre><code class="language-haskell line-numbers">f m ! k
 </code></pre>
             Parses as:
-<pre><code>(f m) ! k
+<pre><code class="language-haskell line-numbers">(f m) ! k
 </code></pre>
             because:
             <ul>
@@ -10107,13 +10108,13 @@ m ! k1 ! k2    == (m ! k1) ! k2
     <br/>
     <ul>
         <li>You can define your own symbolic operators:
-<pre><code>(***) :: Int -&gt; Int -&gt; Int
+<pre><code class="language-haskell line-numbers">(***) :: Int -&gt; Int -&gt; Int
 a *** b = a * 1000 + b
 infixl 7 ***
 </code></pre>
         </li>
         <li>Now:
-<pre><code>2 + 3 *** 4     == 2 + (3 *** 4)
+<pre><code class="language-haskell line-numbers">2 + 3 *** 4     == 2 + (3 *** 4)
 </code></pre>
             because <code>***</code> has precedence 7, higher than <code>+</code> (6).</li>
     </ul>
@@ -10125,7 +10126,7 @@ infixl 7 ***
     <br/>
     <ul>
         <li>Some examples from the Prelude:
-<pre><code>infixl 9 .         -- function composition
+<pre><code class="language-haskell line-numbers">infixl 9 .         -- function composition
 infixl 9 !!        -- list indexing
 infixr 5 :         -- cons
 infixl 6 +, -
@@ -10136,10 +10137,10 @@ infixr 0 $         -- lowest precedence
         </li>
 
         <li>Because <code>$</code> has precedence 0, this:
-<pre><code>f $ g $ h x
+<pre><code class="language-haskell line-numbers">f $ g $ h x
 </code></pre>
             means:
-<pre><code>f $ (g $ (h x))
+<pre><code class="language-haskell line-numbers">f $ (g $ (h x))
 </code></pre>
         </li>
     </ul>
@@ -10151,7 +10152,7 @@ infixr 0 $         -- lowest precedence
     <br/>
     <ul>
         <li>A line like:
-<pre><code>infixr 6 &lt;&gt;, &lt;+&gt;
+<pre><code class="language-haskell line-numbers">infixr 6 &lt;&gt;, &lt;+&gt;
 </code></pre>
         </li>
         <li>Should be read as:
@@ -10163,11 +10164,11 @@ infixr 0 $         -- lowest precedence
         </li>
         <br/>
         <li>This helps when reading expressions like:
-<pre><code>a <> b &lt;+&gt; c
+<pre><code class="language-haskell line-numbers">a <> b &lt;+&gt; c
 </code></pre>
         </li>
         <li>Which parses as:
-<pre><code>a <> (b &lt;+&gt; c)
+<pre><code class="language-haskell line-numbers">a <> (b &lt;+&gt; c)
 </code></pre>
             because both are right-associative, and <code><+></code> has equal or greater precedence.</li>
     </ul>
@@ -10189,12 +10190,12 @@ infixr 0 $         -- lowest precedence
         <li>Haskell files can begin with LANGUAGE pragmas that enable optional features provided by GHC.</li>
         <br/>
         <li>The syntax is:
-<pre><code>{-# LANGUAGE ExtensionName #-}
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE ExtensionName #-}
 </code></pre>
         </li>
         <br/>
         <li>Multiple pragmas may appear in one file:
-<pre><code>{-# LANGUAGE OverloadedStrings, LambdaCase, DeriveFunctor #-}
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE OverloadedStrings, LambdaCase, DeriveFunctor #-}
 </code></pre>
         </li>
         <br/>
@@ -10218,12 +10219,12 @@ infixr 0 $         -- lowest precedence
     <br/>
     <ul>
         <li>Pragmas must appear <b>before</b> module declaration:
-<pre><code>{-# LANGUAGE LambdaCase #-}
+<pre><code class="language-haskell line-numbers">{-# LANGUAGE LambdaCase #-}
 module MyMod where
 </code></pre>
         </li>
         <li>Or can be passed via command-line:
-<pre><code>ghc -XLambdaCase MyMod.hs
+<pre><code class="language-haskell line-numbers">ghc -XLambdaCase MyMod.hs
 </code></pre>
         </li>
         <li>Some tools (Stack, Cabal) allow extension defaults in config files.</li>
@@ -10246,7 +10247,7 @@ module MyMod where
                     <li>custom config DSLs</li>
                 </ul>
             </li>
-<pre><code>"abc" :: Text
+<pre><code class="language-haskell line-numbers">"abc" :: Text
 "abc" :: ByteString
 </code></pre>
         </ul>
@@ -10256,7 +10257,7 @@ module MyMod where
         <br/>
         <ul>
             <li>Allows anonymous case expressions:
-<pre><code>\case
+<pre><code class="language-haskell line-numbers">\case
     Just x  -&gt; x
     Nothing -&gt; 0
 </code></pre>
@@ -10269,7 +10270,7 @@ module MyMod where
         <br/>
         <ul>
             <li>Allows automatic deriving of <code>Functor</code> for appropriate data types.</li>
-<pre><code>data Tree a = Leaf a | Node (Tree a) (Tree a)
+<pre><code class="language-haskell line-numbers">data Tree a = Leaf a | Node (Tree a) (Tree a)
   deriving Functor
 </code></pre>
         </ul>
@@ -10286,7 +10287,7 @@ module MyMod where
         <br/>
         <ul>
             <li>Allows explicit selection of derivation strategies:
-<pre><code>deriving stock (Show)
+<pre><code class="language-haskell line-numbers">deriving stock (Show)
 deriving newtype (Eq)
 deriving via Custom (Ord)
 </code></pre>
@@ -10297,7 +10298,7 @@ deriving via Custom (Ord)
         <br/>
         <ul>
             <li>Allows newtypes to automatically derive instances from underlying types.</li>
-<pre><code>newtype Age = Age Int
+<pre><code class="language-haskell line-numbers">newtype Age = Age Int
   deriving (Eq, Ord, Num)
 </code></pre>
         </ul>
@@ -10307,7 +10308,7 @@ deriving via Custom (Ord)
         <br/>
         <ul>
             <li>Allows:
-<pre><code>deriving instance Show a =&gt; Show (Tree a)
+<pre><code class="language-haskell line-numbers">deriving instance Show a =&gt; Show (Tree a)
 </code></pre>
             </li>
         </ul>
@@ -10317,7 +10318,7 @@ deriving via Custom (Ord)
         <br/>
         <ul>
             <li>Allows instance heads not restricted by Haskell 98 rules:
-<pre><code>instance Show (a -&gt; b) where ...
+<pre><code class="language-haskell line-numbers">instance Show (a -&gt; b) where ...
 </code></pre>
             </li>
         </ul>
@@ -10327,7 +10328,7 @@ deriving via Custom (Ord)
         <br/>
         <ul>
             <li>Allows arbitrary constraints:
-<pre><code>foo :: (MonadIO m, Show (m a)) =&gt; ...
+<pre><code class="language-haskell line-numbers">foo :: (MonadIO m, Show (m a)) =&gt; ...
 </code></pre>
             </li>
         </ul>
@@ -10337,7 +10338,7 @@ deriving via Custom (Ord)
         <br/>
         <ul>
             <li>Allows passing types explicitly:
-<pre><code>read @Int "123"
+<pre><code class="language-haskell line-numbers">read @Int "123"
 </code></pre>
             </li>
         </ul>
@@ -10347,7 +10348,7 @@ deriving via Custom (Ord)
         <br/>
         <ul>
             <li>Allows explicit <code>forall</code> to scope type variables across functions.</li>
-<pre><code>foo :: forall a. [a] -&gt; a
+<pre><code class="language-haskell line-numbers">foo :: forall a. [a] -&gt; a
 foo xs = head (xs :: [a])
 </code></pre>
         </ul>
@@ -10357,7 +10358,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>Enables associated types:
-<pre><code>type family Elem c :: *
+<pre><code class="language-haskell line-numbers">type family Elem c :: *
 </code></pre>
             </li>
         </ul>
@@ -10367,7 +10368,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>Allows type classes with more than one parameter:
-<pre><code>class Convertible a b where ...
+<pre><code class="language-haskell line-numbers">class Convertible a b where ...
 </code></pre>
             </li>
         </ul>
@@ -10377,7 +10378,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>Works with multi-parameter classes to control type inference:
-<pre><code>class Convert a b | a -&gt; b where ...
+<pre><code class="language-haskell line-numbers">class Convert a b | a -&gt; b where ...
 </code></pre>
             </li>
         </ul>
@@ -10387,7 +10388,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>Allows strict patterns via <code>!</code> in bindings:
-<pre><code>f !x = x + 1
+<pre><code class="language-haskell line-numbers">f !x = x + 1
 </code></pre>
         </ul>
         <br/>
@@ -10396,7 +10397,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>Allows matching based on transformation results:
-<pre><code>f (reverse -&gt; x:xs) = ...
+<pre><code class="language-haskell line-numbers">f (reverse -&gt; x:xs) = ...
 </code></pre>
         </ul>
         <br/>
@@ -10405,7 +10406,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>Define custom patterns that behave like constructors.</li>
-<pre><code>pattern Zero <- 0 where Zero = 0
+<pre><code class="language-haskell line-numbers">pattern Zero <- 0 where Zero = 0
 </code></pre>
         </ul>
         <br/>
@@ -10414,7 +10415,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>Enables generalized algebraic data types:
-<pre><code>data Expr a where
+<pre><code class="language-haskell line-numbers">data Expr a where
   Lit  :: Int -&gt; Expr Int
   IsZero :: Expr Int -&gt; Expr Bool
 </code></pre>
@@ -10427,7 +10428,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>Allows hiding type variables inside constructors:
-<pre><code>data Box = forall a. Show a =&gt; MkBox a
+<pre><code class="language-haskell line-numbers">data Box = forall a. Show a =&gt; MkBox a
 </code></pre>
             </li>
         </ul>
@@ -10437,7 +10438,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>Allows universal quantifiers anywhere in types:
-<pre><code>foo :: (forall a. a -&gt; a) -&gt; (Int, Bool)
+<pre><code class="language-haskell line-numbers">foo :: (forall a. a -&gt; a) -&gt; (Int, Bool)
 </code></pre>
             </li>
             <li>Enables higher-rank functions.</li>
@@ -10456,7 +10457,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>List literals become polymorphic via <code>IsList</code>:
-<pre><code>[1,2,3] :: Set Int
+<pre><code class="language-haskell line-numbers">[1,2,3] :: Set Int
 </code></pre>
         </ul>
         <br/>
@@ -10465,7 +10466,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>Allows:
-<pre><code>foo Person{..} = name ++ show age
+<pre><code class="language-haskell line-numbers">foo Person{..} = name ++ show age
 </code></pre>
             </li>
         </ul>
@@ -10475,7 +10476,7 @@ foo xs = head (xs :: [a])
         <br/>
         <ul>
             <li>Enables:
-<pre><code>person.name
+<pre><code class="language-haskell line-numbers">person.name
 person.address.city
 </code></pre>
             </li>
@@ -10486,7 +10487,7 @@ person.address.city
         <br/>
         <ul>
             <li>Allows:
-<pre><code>foo Person{name} = ...
+<pre><code class="language-haskell line-numbers">foo Person{name} = ...
 </code></pre>
                 instead of <code>foo Person{name = name}</code></li>
         </ul>
@@ -10496,7 +10497,7 @@ person.address.city
         <br/>
         <ul>
             <li>Allows:
-<pre><code>withFile "a.txt" ReadMode \h -&gt; do ...
+<pre><code class="language-haskell line-numbers">withFile "a.txt" ReadMode \h -&gt; do ...
 </code></pre>
             </li>
         </ul>
@@ -10506,7 +10507,7 @@ person.address.city
         <br/>
         <ul>
             <li>Allows:
-<pre><code>(,3)    -- \x -&gt; (x,3)
+<pre><code class="language-haskell line-numbers">(,3)    -- \x -&gt; (x,3)
 (1,)    -- \y -&gt; (1,y)
 </code></pre>
             </li>
@@ -10517,7 +10518,7 @@ person.address.city
         <br/>
         <ul>
             <li>Enable tuples without pointer indirection:
-<pre><code>(# x, y #)
+<pre><code class="language-haskell line-numbers">(# x, y #)
 </code></pre>
             </li>
         </ul>
@@ -10527,7 +10528,7 @@ person.address.city
         <br/>
         <ul>
             <li>Allows unboxed literals:
-<pre><code>42#    -- Int#
+<pre><code class="language-haskell line-numbers">42#    -- Int#
 3.14## -- Double#
 </code></pre>
         </ul>
@@ -10537,7 +10538,7 @@ person.address.city
         <br/>
         <ul>
             <li>Explicit control over instance derivation:
-<pre><code>deriving via (Sum Int) instance Monoid MyType
+<pre><code class="language-haskell line-numbers">deriving via (Sum Int) instance Monoid MyType
 </code></pre>
         </ul>
         <br/>
@@ -10549,7 +10550,7 @@ person.address.city
     <br/>
     <ul>
         <li>GHCi:
-<pre><code>:show language
+<pre><code class="language-haskell line-numbers">:show language
 </code></pre>
         </li>
         <li>Check your .cabal or package.yaml file for defaults.</li>
@@ -10571,7 +10572,7 @@ person.address.city
     <ul>
         <br/>
         <li>These pragmas use the same syntax:
-<pre><code>{-# SOME_PRAGMA stuff #-}</code></pre>
+<pre><code class="language-haskell line-numbers">{-# SOME_PRAGMA stuff #-}</code></pre>
     but they are <u>not</u> language extensions.</li>
 
         <br/>
@@ -10605,7 +10606,7 @@ person.address.city
         <li><code>INLINE</code> tells GHC to inline a function after optimization phases.</li>
 
         <li>Example:
-<pre><code>{-# INLINE f #-}
+<pre><code class="language-haskell line-numbers">{-# INLINE f #-}
 f :: Int -&gt; Int
 f x = x + 1
 </code></pre>
@@ -10621,13 +10622,13 @@ f x = x + 1
         <br/>
 
         <li>Example from <code>Data.Map</code>:
-<pre><code>{-# INLINE (\\) #-}</code></pre>
+<pre><code class="language-haskell line-numbers">{-# INLINE (\\) #-}</code></pre>
     means: inline the operator <code>(\\)</code>.
         </li>
         <br/>
 
         <li><code>NOINLINE</code> forces GHC NOT to inline a function:
-<pre><code>{-# NOINLINE unsafePerformIO #-}
+<pre><code class="language-haskell line-numbers">{-# NOINLINE unsafePerformIO #-}
 </code></pre>
         </li>
     </ul>
@@ -10642,7 +10643,7 @@ f x = x + 1
         <li><code>INLINABLE</code> → export the function’s core code so other modules may inline it.</li>
         <br/>
         <li>Useful for libraries.</li>
-<pre><code>{-# INLINABLE f #-}
+<pre><code class="language-haskell line-numbers">{-# INLINABLE f #-}
 </code></pre>
     </ul>
     <br/>
@@ -10653,7 +10654,7 @@ f x = x + 1
     <ul>
         <li><code>UNPACK</code> controls how fields inside constructors are laid out in memory.</li>
         <li>Example:
-<pre><code>data Pair = Pair {-# UNPACK #-} !Int {-# UNPACK #-} !Int
+<pre><code class="language-haskell line-numbers">data Pair = Pair {-# UNPACK #-} !Int {-# UNPACK #-} !Int
 </code></pre>
         </li>
 
@@ -10691,7 +10692,7 @@ f x = x + 1
     <ul>
         <li>Creates optimized versions of polymorphic functions.</li>
         <li>Example:
-<pre><code>{-# SPECIALIZE foo :: Int -&gt; Int #-}
+<pre><code class="language-haskell line-numbers">{-# SPECIALIZE foo :: Int -&gt; Int #-}
 </code></pre>
         </li>
 
@@ -10708,7 +10709,7 @@ f x = x + 1
         <li>Lets you define custom optimizer rewrite transformations.</li>
 
         <li>Example from <code>Prelude</code>:
-<pre><code>{-# RULES
+<pre><code class="language-haskell line-numbers">{-# RULES
 "map/map" forall f g xs. map f (map g xs) = map (f . g) xs
 #-}
 </code></pre>
@@ -10734,7 +10735,7 @@ f x = x + 1
         <li><code>INLINEABLE</code> exposes function body to other modules.</li>
         <li><code>SPECIALIZE</code> ensures monomorphic compiled versions exist.</li>
 
-<pre><code>{-# INLINEABLE f #-}
+<pre><code class="language-haskell line-numbers">{-# INLINEABLE f #-}
 {-# SPECIALIZE f :: Int -&gt; Int #-}
 </code></pre>
 
@@ -10749,7 +10750,7 @@ f x = x + 1
     <ul>
         <li>Allows defining custom “complete pattern sets” for pattern matching.</li>
 
-<pre><code>{-# COMPLETE Nil, Cons #-}
+<pre><code class="language-haskell line-numbers">{-# COMPLETE Nil, Cons #-}
 </code></pre>
 
         <li>Useful when defining your own pattern synonyms.</li>
@@ -10763,7 +10764,7 @@ f x = x + 1
     <ul>
         <li>Attach compile-time warnings to definitions.</li>
 
-<pre><code>{-# DEPRECATED foo "Use bar instead" #-}
+<pre><code class="language-haskell line-numbers">{-# DEPRECATED foo "Use bar instead" #-}
 foo = ...
 </code></pre>
 
@@ -10778,7 +10779,7 @@ foo = ...
     <ul>
         <li>Controls import priority when modules have multiple versions.</li>
 
-<pre><code>import {-# SOURCE #-} ModuleA
+<pre><code class="language-haskell line-numbers">import {-# SOURCE #-} ModuleA
 </code></pre>
 
         <li>Used to break recursive import cycles.</li>
@@ -10791,11 +10792,832 @@ foo = ...
     <br/>
     <ul>
         <li>Operators require parentheses:
-<pre><code>{-# INLINE (&gt;&gt;=) #-}
+<pre><code class="language-haskell line-numbers">{-# INLINE (&gt;&gt;=) #-}
 </code></pre>
         </li>
     </ul>
     <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="haskell-map-implementation">The Beauty of Map Implementation in Haskell</h3>
+<ol>
+
+    <li>Introduction to Data.Map</li>
+    <br/>
+    <ul>
+        <li><code>Data.Map</code> is Haskell's efficient key-value data structure, implemented as a <b>size-balanced binary tree</b>.</li>
+        <br/>
+        <li>Unlike imperative hash maps, this purely functional approach maintains immutability while achieving <code>O(log n)</code> performance.</li>
+        <br/>
+        <li>The elegance lies in how functional programming principles naturally express tree operations without mutation.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Why Balanced Binary Trees?</li>
+    <br/>
+    <ul>
+        <li>In a functional setting, balanced trees offer several advantages:</li>
+        <ul>
+            <br/>
+            <li><b>Structural sharing:</b> Modifications create new trees that share most structure with the old tree</li>
+            <br/>
+            <li><b>Persistent data:</b> Old versions remain accessible after updates</li>
+            <br/>
+            <li><b>Predictable performance:</b> O(log n) for lookup, insert, and delete</li>
+            <br/>
+            <li><b>Pure functions:</b> All operations are referentially transparent</li>
+        </ul>
+        <br/>
+        <li>The implementation uses <b>size-balanced trees</b>, a variant that maintains balance using node sizes rather than heights.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Map Structure</li>
+    <br/>
+    <ul>
+        <li>The Map type is defined recursively as a binary tree:</li>
+<pre><code class="language-haskell line-numbers">data Map k v
+    = Tip                                    -- Empty tree
+    | Bin !Size !k v !(Map k v) !(Map k v)  -- Node with size, key, value, left, right
+
+type Size = Int</code></pre>
+        <br/>
+        <li>Each <code>Bin</code> node contains:</li>
+        <ul>
+            <li><code>Size</code>: The number of elements in this subtree (cached for O(1) size queries)</li>
+            <li><code>k</code>: The key stored at this node</li>
+            <li><code>v</code>: The value associated with the key</li>
+            <li>Left subtree: All keys smaller than this key</li>
+            <li>Right subtree: All keys larger than this key</li>
+        </ul>
+        <br/>
+        <li>The <code>!</code> marks indicate <b>strictness</b>, forcing immediate evaluation to prevent space leaks.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Maps</li>
+    <br/>
+    <ul>
+        <li><b>Empty map:</b></li>
+<pre><code class="language-haskell line-numbers">import qualified Data.Map as M
+
+emptyMap :: M.Map String Int
+emptyMap = M.empty  -- Creates Tip</code></pre>
+        <br/>
+        <li><b>Singleton map:</b></li>
+<pre><code class="language-haskell line-numbers">singleMap :: M.Map String Int
+singleMap = M.singleton "answer" 42
+-- Creates: Bin 1 "answer" 42 Tip Tip</code></pre>
+        <br/>
+        <li><b>From list:</b></li>
+<pre><code class="language-haskell line-numbers">scores :: M.Map String Int
+scores = M.fromList [("Alice", 95), ("Bob", 87), ("Carol", 92)]
+
+-- Internally builds a balanced tree:
+--        ("Bob", 87)
+--       /            \
+--  ("Alice", 95)  ("Carol", 92)</code></pre>
+        <br/>
+        <li><b>Using insert:</b></li>
+<pre><code class="language-haskell line-numbers">buildMap :: M.Map String Int
+buildMap = M.insert "third" 3
+         $ M.insert "second" 2
+         $ M.insert "first" 1
+         $ M.empty</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Beauty of Functional Lookup</li>
+    <br/>
+    <ul>
+        <li>The lookup operation elegantly expresses tree traversal:</li>
+<pre><code class="language-haskell line-numbers">lookup :: Ord k => k -> Map k v -> Maybe v
+lookup _ Tip = Nothing
+lookup k (Bin _ kx x l r) =
+    case compare k kx of
+        LT -> lookup k l  -- Search left subtree
+        GT -> lookup k r  -- Search right subtree
+        EQ -> Just x      -- Found it!</code></pre>
+        <br/>
+        <li>This pure recursive definition is remarkably clear:</li>
+        <ul>
+            <li>Base case: Empty tree returns <code>Nothing</code></li>
+            <li>Recursive case: Compare and traverse left or right</li>
+            <li>No mutation, no side effects, just pure computation</li>
+        </ul>
+        <br/>
+        <li><b>Usage examples:</b></li>
+<pre><code class="language-haskell line-numbers">scores :: M.Map String Int
+scores = M.fromList [("Alice", 95), ("Bob", 87), ("Carol", 92)]
+
+-- Basic lookup
+M.lookup "Alice" scores   -- Just 95
+M.lookup "David" scores   -- Nothing
+
+-- With default value
+M.findWithDefault 0 "Alice" scores  -- 95
+M.findWithDefault 0 "David" scores  -- 0
+
+-- Check membership
+M.member "Bob" scores     -- True
+M.notMember "Eve" scores  -- True</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Insertion: Creating New Trees</li>
+    <br/>
+    <ul>
+        <li>The <code>insert</code> function showcases functional programming's elegance:</li>
+<pre><code class="language-haskell line-numbers">insert :: Ord k => k -> v -> Map k v -> Map k v
+insert kx x Tip = Bin 1 kx x Tip Tip
+insert kx x (Bin sz ky y l r) =
+    case compare kx ky of
+        LT -> balance ky y (insert kx x l) r
+        GT -> balance ky y l (insert kx x r)
+        EQ -> Bin sz kx x l r  -- Update value</code></pre>
+        <br/>
+        <li>Key observations:</li>
+        <ul>
+            <li><b>No mutation:</b> Creates a new tree path from root to insertion point</li>
+            <li><b>Structural sharing:</b> Unmodified subtrees are reused</li>
+            <li><b>Automatic balancing:</b> The <code>balance</code> function maintains tree balance</li>
+        </ul>
+        <br/>
+        <li><b>Structural sharing visualization:</b></li>
+<pre><code class="language-haskell line-numbers">-- Original tree:
+--      5
+--     / \
+--    3   7
+--   / \
+--  1   4
+
+-- After inserting 6:
+--      5
+--     / \
+--    3   7      <- 7's subtree is shared
+--   / \  /
+--  1  4 6       <- Only new path from root is created
+
+-- The nodes for 1, 4, and the right subtree of 7
+-- are shared between old and new versions!</code></pre>
+        <br/>
+        <li><b>Usage examples:</b></li>
+<pre><code class="language-haskell line-numbers">-- Single insertion
+inventory :: M.Map String Int
+inventory = M.insert "apples" 10 M.empty
+
+-- Multiple insertions
+inventory2 = M.insert "oranges" 15
+           $ M.insert "bananas" 8
+           $ M.insert "apples" 10
+           $ M.empty
+
+-- Update existing key
+inventory3 = M.insert "apples" 20 inventory2  -- Replaces 10 with 20
+
+-- Insert with combining function
+incrementCount = M.insertWith (+) "apples" 5 inventory2
+-- If "apples" exists, adds 5 to existing value</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Balance Function: Maintaining Tree Health</li>
+    <br/>
+    <ul>
+        <li>Size-balanced trees use a clever balancing strategy based on subtree sizes:</li>
+<pre><code class="language-haskell line-numbers">-- Balancing constant
+delta, ratio :: Int
+delta = 3  -- Size ratio limit
+ratio = 2  -- Size ratio for single vs double rotation
+
+balance :: k -> v -> Map k v -> Map k v -> Map k v
+balance k x l r
+    | sizeL + sizeR <= 1 = Bin (sizeL + sizeR + 1) k x l r
+    | sizeR > delta * sizeL = rotateL k x l r
+    | sizeL > delta * sizeR = rotateR k x l r
+    | otherwise = Bin (sizeL + sizeR + 1) k x l r
+    where
+        sizeL = size l
+        sizeR = size r</code></pre>
+        <br/>
+        <li>The beauty of this approach:</li>
+        <ul>
+            <li><b>Simple invariant:</b> No subtree is more than 3× larger than its sibling</li>
+            <li><b>Efficient:</b> Most operations don't require rebalancing</li>
+            <li><b>Predictable:</b> Guarantees O(log n) height</li>
+        </ul>
+        <br/>
+        <li><b>Rotation functions:</b></li>
+<pre><code class="language-haskell line-numbers">-- Left rotation
+rotateL :: k -> v -> Map k v -> Map k v -> Map k v
+rotateL k x l r@(Bin _ ky y ly ry)
+    | size ly < ratio * size ry = singleL k x l r
+    | otherwise = doubleL k x l r
+
+-- Single left rotation:
+--      k              ky
+--     / \            /  \
+--    l   ky    =>   k    ry
+--       /  \       / \
+--      ly  ry     l  ly
+
+singleL :: k -> v -> Map k v -> Map k v -> Map k v
+singleL k x l (Bin _ ky y ly ry) =
+    Bin (size l + size ly + size ry + 1) ky y
+        (Bin (size l + size ly + 1) k x l ly) ry</code></pre>
+        <br/>
+        <li>Rotations preserve the binary search tree property while rebalancing the tree.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deletion: Elegant Recursion</li>
+    <br/>
+    <ul>
+        <li>Deletion demonstrates how FP handles complex operations elegantly:</li>
+<pre><code class="language-haskell line-numbers">delete :: Ord k => k -> Map k v -> Map k v
+delete _ Tip = Tip
+delete k (Bin _ kx x l r) =
+    case compare k kx of
+        LT -> balance kx x (delete k l) r
+        GT -> balance kx x l (delete k r)
+        EQ -> glue l r  -- Remove this node
+
+-- Glue combines two subtrees after deletion
+glue :: Map k v -> Map k v -> Map k v
+glue Tip r = r
+glue l Tip = l
+glue l r
+    | size l > size r =
+        let (km, vm, l') = deleteFindMax l
+        in balance km vm l' r
+    | otherwise =
+        let (km, vm, r') = deleteFindMin r
+        in balance km vm l r'</code></pre>
+        <br/>
+        <li>The <code>glue</code> function beautifully handles the tricky case:</li>
+        <ul>
+            <li>When deleting a node with two children</li>
+            <li>Takes the maximum from left or minimum from right</li>
+            <li>Promotes it to replace the deleted node</li>
+            <li>Recursively balances the result</li>
+        </ul>
+        <br/>
+        <li><b>Usage examples:</b></li>
+<pre><code class="language-haskell line-numbers">scores :: M.Map String Int
+scores = M.fromList [("Alice", 95), ("Bob", 87), ("Carol", 92)]
+
+-- Delete a key
+scores' = M.delete "Bob" scores
+-- Result: fromList [("Alice", 95), ("Carol", 92)]
+
+-- Delete non-existent key (safe, returns unchanged map)
+scores'' = M.delete "David" scores
+
+-- Adjust or delete conditionally
+scores''' = M.update (\v -> if v < 90 then Nothing else Just v) "Bob" scores
+-- Removes Bob because his score is < 90</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Map Operations: Functional Beauty</li>
+    <br/>
+    <ul>
+        <li><b>Mapping over values:</b></li>
+<pre><code class="language-haskell line-numbers">map :: (a -> b) -> Map k a -> Map k b
+map _ Tip = Tip
+map f (Bin sx kx x l r) = Bin sx kx (f x) (map f l) (map f r)
+
+-- Example: double all values
+scores = M.fromList [("Alice", 95), ("Bob", 87)]
+doubled = M.map (*2) scores
+-- Result: fromList [("Alice", 190), ("Bob", 174)]</code></pre>
+        <br/>
+        <li><b>Mapping with keys:</b></li>
+<pre><code class="language-haskell line-numbers">mapWithKey :: (k -> a -> b) -> Map k a -> Map k b
+
+-- Example: format grade strings
+grades = M.fromList [("Alice", 95), ("Bob", 87)]
+formatted = M.mapWithKey (\name score -> name ++ ": " ++ show score) grades
+-- Result: fromList [("Alice", "Alice: 95"), ("Bob", "Bob: 87")]</code></pre>
+        <br/>
+        <li><b>Folding (reducing):</b></li>
+<pre><code class="language-haskell line-numbers">foldr :: (a -> b -> b) -> b -> Map k a -> b
+foldr _ z Tip = z
+foldr f z (Bin _ _ x l r) = foldr f (f x (foldr f z r)) l
+
+-- Example: sum all values
+scores = M.fromList [("Alice", 95), ("Bob", 87), ("Carol", 92)]
+total = M.foldr (+) 0 scores  -- 274
+
+-- Example: collect all passing scores
+passing = M.foldr (\score acc -> if score >= 90 then score:acc else acc) [] scores
+-- Result: [95, 92]</code></pre>
+        <br/>
+        <li><b>Filtering:</b></li>
+<pre><code class="language-haskell line-numbers">filter :: (a -> Bool) -> Map k a -> Map k a
+
+-- Example: keep only high scores
+highScores = M.filter (>= 90) scores
+-- Result: fromList [("Alice", 95), ("Carol", 92)]
+
+-- With keys
+topStudents = M.filterWithKey (\name score -> name /= "Bob" && score >= 90) scores</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Set Operations on Maps</li>
+    <br/>
+    <ul>
+        <li><b>Union (merge maps):</b></li>
+<pre><code class="language-haskell line-numbers">union :: Ord k => Map k a -> Map k a -> Map k a
+union Tip r = r
+union l Tip = l
+union l r = hedgeUnion NothingS NothingS l r
+-- Uses efficient hedge algorithm to merge trees
+
+-- Example
+map1 = M.fromList [("a", 1), ("b", 2)]
+map2 = M.fromList [("b", 3), ("c", 4)]
+
+result = M.union map1 map2
+-- fromList [("a", 1), ("b", 2), ("c", 4)]
+-- Left-biased: keeps values from first map for duplicate keys
+
+-- Union with combining function
+combined = M.unionWith (+) map1 map2
+-- fromList [("a", 1), ("b", 5), ("c", 4)]</code></pre>
+        <br/>
+        <li><b>Intersection:</b></li>
+<pre><code class="language-haskell line-numbers">intersection :: Ord k => Map k a -> Map k b -> Map k a
+intersection Tip _ = Tip
+intersection _ Tip = Tip
+intersection l r = hedgeInt NothingS NothingS l r
+
+-- Example
+map1 = M.fromList [("a", 1), ("b", 2), ("c", 3)]
+map2 = M.fromList [("b", 20), ("c", 30), ("d", 40)]
+
+common = M.intersection map1 map2
+-- fromList [("b", 2), ("c", 3)]
+
+-- Intersection with combining function
+combined = M.intersectionWith (*) map1 map2
+-- fromList [("b", 40), ("c", 90)]</code></pre>
+        <br/>
+        <li><b>Difference:</b></li>
+<pre><code class="language-haskell line-numbers">difference :: Ord k => Map k a -> Map k b -> Map k a
+
+-- Example
+map1 = M.fromList [("a", 1), ("b", 2), ("c", 3)]
+map2 = M.fromList [("b", 20), ("d", 40)]
+
+diff = M.difference map1 map2
+-- fromList [("a", 1), ("c", 3)]
+-- Keeps keys only in first map</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Conversion Functions</li>
+    <br/>
+    <ul>
+        <li><b>To/from lists:</b></li>
+<pre><code class="language-haskell line-numbers">-- Convert to list
+scores = M.fromList [("Alice", 95), ("Bob", 87)]
+pairs = M.toList scores  -- [("Alice", 95), ("Bob", 87)]
+keys = M.keys scores     -- ["Alice", "Bob"]
+values = M.elems scores  -- [95, 87]
+
+-- Convert from list
+scores' = M.fromList [("Carol", 92), ("David", 88)]
+
+-- From list with combining function for duplicates
+pairs = [("a", 1), ("b", 2), ("a", 3)]
+result = M.fromListWith (+) pairs  -- fromList [("a", 4), ("b", 2)]</code></pre>
+        <br/>
+        <li><b>To/from ascending lists (O(n)):</b></li>
+<pre><code class="language-haskell line-numbers">-- More efficient if list is already sorted
+sortedPairs = [("Alice", 95), ("Bob", 87), ("Carol", 92)]
+scores = M.fromAscList sortedPairs  -- O(n) instead of O(n log n)
+
+-- Check if valid for fromAscList
+isValidAsc = all (\(a,b) -> fst a < fst b) $ zip sortedPairs (tail sortedPairs)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Performance Characteristics</li>
+    <br/>
+    <ul>
+        <li>Understanding the costs of operations:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Operation</th>
+            <th>Time Complexity</th>
+            <th>Notes</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>lookup</code></td>
+            <td>O(log n)</td>
+            <td>Binary search through tree</td>
+        </tr>
+        <tr>
+            <td><code>insert</code></td>
+            <td>O(log n)</td>
+            <td>Search + possible rebalancing</td>
+        </tr>
+        <tr>
+            <td><code>delete</code></td>
+            <td>O(log n)</td>
+            <td>Search + glue + rebalancing</td>
+        </tr>
+        <tr>
+            <td><code>member</code></td>
+            <td>O(log n)</td>
+            <td>Similar to lookup</td>
+        </tr>
+        <tr>
+            <td><code>size</code></td>
+            <td>O(1)</td>
+            <td>Cached in each node</td>
+        </tr>
+        <tr>
+            <td><code>union</code></td>
+            <td>O(m log(n/m + 1))</td>
+            <td>Where m ≤ n; efficient merge</td>
+        </tr>
+        <tr>
+            <td><code>intersection</code></td>
+            <td>O(m log(n/m + 1))</td>
+            <td>Where m ≤ n</td>
+        </tr>
+        <tr>
+            <td><code>map</code></td>
+            <td>O(n)</td>
+            <td>Must visit every node</td>
+        </tr>
+        <tr>
+            <td><code>foldr/foldl</code></td>
+            <td>O(n)</td>
+            <td>Must visit every node</td>
+        </tr>
+        <tr>
+            <td><code>fromList</code></td>
+            <td>O(n log n)</td>
+            <td>Build balanced tree</td>
+        </tr>
+        <tr>
+            <td><code>fromAscList</code></td>
+            <td>O(n)</td>
+            <td>Linear if already sorted</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>Space efficiency:</b></li>
+        <ul>
+            <li>Each node requires: key + value + 2 pointers + size = ~5 words</li>
+            <li>Structural sharing means modifications only copy O(log n) nodes</li>
+            <li>Old versions remain accessible without duplicating entire tree</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Why This Implementation is Beautiful</li>
+    <br/>
+    <ul>
+        <li><b>Immutability as a feature:</b></li>
+        <ul>
+            <li>No defensive copying needed</li>
+            <li>Thread-safe by default</li>
+            <li>Enables time-travel debugging and undo/redo</li>
+            <li>Makes reasoning about code dramatically simpler</li>
+        </ul>
+        <br/>
+        <li><b>Structural sharing is elegant:</b></li>
+<pre><code class="language-haskell line-numbers">-- Creating multiple versions is cheap
+let v1 = M.insert "x" 1 original
+    v2 = M.insert "y" 2 original
+    v3 = M.insert "z" 3 original
+-- All three versions share most of the original tree!</code></pre>
+        <br/>
+        <li><b>Composability:</b></li>
+<pre><code class="language-haskell line-numbers">-- Operations compose naturally
+result = M.map (*2)           -- double values
+       $ M.filter (>10)       -- keep only large values
+       $ M.insert "new" 15    -- add new entry
+       $ M.delete "old"       -- remove old entry
+       $ originalMap
+
+-- Each step returns a new map, no mutation</code></pre>
+        <br/>
+        <li><b>Type safety:</b></li>
+<pre><code class="language-haskell line-numbers">-- Keys must be comparable
+scores :: M.Map String Int     -- String keys, Int values
+ages :: M.Map Int String       -- Int keys, String values
+
+-- Compiler prevents mixing incompatible types
+-- M.union scores ages  -- Type error!
+
+-- Polymorphism enables generic operations
+process :: Ord k => M.Map k Int -> M.Map k Int
+process = M.map (*2) . M.filter (>0)</code></pre>
+        <br/>
+        <li><b>Lazy evaluation synergy:</b></li>
+<pre><code class="language-haskell line-numbers">-- Build map lazily
+infiniteMap = M.fromList [(n, n*n) | n <- [1..]]
+-- Only evaluates elements as needed
+
+-- Take first few squares
+firstSquares = M.toList $ M.filterWithKey (\k _ -> k <= 10) infiniteMap
+
+-- Fusion optimizations eliminate intermediate maps
+optimized = M.map (+1) . M.map (*2) $ original
+-- GHC can fuse these into a single traversal</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Practical Examples</li>
+    <br/>
+    <ul>
+        <li><b>Word frequency counter:</b></li>
+<pre><code class="language-haskell line-numbers">import qualified Data.Map as M
+import Data.Char (toLower)
+import Data.List (words)
+
+wordFrequency :: String -> M.Map String Int
+wordFrequency text =
+    M.fromListWith (+)
+    $ map (\w -> (w, 1))
+    $ words
+    $ map toLower text
+
+-- Usage
+countWords = wordFrequency "hello world hello Haskell world"
+-- Result: fromList [("haskell",1),("hello",2),("world",2)]</code></pre>
+        <br/>
+        <li><b>Graph represented as adjacency map:</b></li>
+<pre><code class="language-haskell line-numbers">type Graph = M.Map String [String]
+
+graph :: Graph
+graph = M.fromList
+    [ ("A", ["B", "C"])
+    , ("B", ["C", "D"])
+    , ("C", ["D"])
+    , ("D", [])
+    ]
+
+-- Get neighbors
+neighbors :: String -> Graph -> [String]
+neighbors node g = M.findWithDefault [] node g
+
+-- Add edge
+addEdge :: String -> String -> Graph -> Graph
+addEdge from to = M.insertWith (++) from [to]</code></pre>
+        <br/>
+        <li><b>Caching/memoization:</b></li>
+<pre><code class="language-haskell line-numbers">import qualified Data.Map as M
+
+-- Fibonacci with memoization
+fib :: Int -> Integer
+fib n = fibMemo M.! n
+  where
+    fibMemo = M.fromList [(i, fibCalc i) | i <- [0..n]]
+    fibCalc 0 = 0
+    fibCalc 1 = 1
+    fibCalc i = fibMemo M.! (i-1) + fibMemo M.! (i-2)
+
+-- The map caches all intermediate results</code></pre>
+        <br/>
+        <li><b>Configuration management:</b></li>
+<pre><code class="language-haskell line-numbers">type Config = M.Map String String
+
+defaultConfig :: Config
+defaultConfig = M.fromList
+    [ ("host", "localhost")
+    , ("port", "8080")
+    , ("timeout", "30")
+    ]
+
+-- Merge user config with defaults
+loadConfig :: [(String, String)] -> Config
+loadConfig userSettings = M.union userConfig defaultConfig
+  where userConfig = M.fromList userSettings
+
+-- Get config value with default
+getConfig :: String -> Config -> String
+getConfig key cfg = M.findWithDefault "" key cfg</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Advanced Patterns</li>
+    <br/>
+    <ul>
+        <li><b>Merging with custom strategies:</b></li>
+<pre><code class="language-haskell line-numbers">-- Keep maximum value for duplicate keys
+mergeMax :: M.Map String Int -> M.Map String Int -> M.Map String Int
+mergeMax = M.unionWith max
+
+-- Concatenate lists for duplicate keys
+mergeLists :: M.Map String [Int] -> M.Map String [Int] -> M.Map String [Int]
+mergeLists = M.unionWith (++)
+
+-- Merge with awareness of both values
+mergeCustom :: M.Map k a -> M.Map k a -> M.Map k a
+mergeCustom = M.mergeWithKey
+    (\_ x y -> Just (combine x y))  -- Both present
+    id                               -- Only in left
+    id                               -- Only in right
+  where combine x y = x  -- Custom logic here</code></pre>
+        <br/>
+        <li><b>Grouping operations:</b></li>
+<pre><code class="language-haskell line-numbers">-- Group items by a key function
+groupBy :: Ord k => (a -> k) -> [a] -> M.Map k [a]
+groupBy f = M.fromListWith (++) . map (\x -> (f x, [x]))
+
+-- Example: group words by length
+words = ["cat", "dog", "bird", "ant", "elephant"]
+byLength = groupBy length words
+-- fromList [(3,["cat","dog","ant"]),(4,["bird"]),(8,["elephant"])]
+
+-- Example: group students by grade
+students = [("Alice", 95), ("Bob", 87), ("Carol", 95), ("David", 87)]
+byGrade = groupBy snd students
+-- fromList [(87,[("Bob",87),("David",87)]),(95,[("Alice",95),("Carol",95)])]</code></pre>
+        <br/>
+        <li><b>Nested maps:</b></li>
+<pre><code class="language-haskell line-numbers">-- Two-level lookup: country -> city -> population
+type CityData = M.Map String (M.Map String Int)
+
+worldCities :: CityData
+worldCities = M.fromList
+    [ ("USA", M.fromList [("NYC", 8000000), ("LA", 4000000)])
+    , ("Japan", M.fromList [("Tokyo", 14000000), ("Osaka", 2700000)])
+    ]
+
+-- Nested lookup
+lookupCity :: String -> String -> CityData -> Maybe Int
+lookupCity country city db = do
+    cities <- M.lookup country db
+    M.lookup city cities
+
+-- Example
+tokyo = lookupCity "Japan" "Tokyo" worldCities  -- Just 14000000</code></pre>
+        <br/>
+        <li><b>Difference tracking:</b></li>
+<pre><code class="language-haskell line-numbers">-- Track changes between two maps
+data Change a = Added a | Removed a | Modified a a
+    deriving (Show, Eq)
+
+changes :: (Ord k, Eq v) => M.Map k v -> M.Map k v -> M.Map k (Change v)
+changes old new =
+    let added = M.map Added $ M.difference new old
+        removed = M.map Removed $ M.difference old new
+        modified = M.intersectionWith compareValues old new
+    in M.unions [added, removed, modified]
+  where
+    compareValues oldV newV
+        | oldV == newV = Modified oldV newV  -- No change actually
+        | otherwise = Modified oldV newV</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Comparison with Other Approaches</li>
+    <br/>
+    <ul>
+        <li><b>vs Hash Tables:</b></li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>Balanced Tree (Map)</th>
+            <th>Hash Table</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><b>Lookup</b></td>
+            <td>O(log n) - predictable</td>
+            <td>O(1) average, O(n) worst</td>
+        </tr>
+        <tr>
+            <td><b>Insert</b></td>
+            <td>O(log n) - predictable</td>
+            <td>O(1) average, O(n) worst</td>
+        </tr>
+        <tr>
+            <td><b>Immutability</b></td>
+            <td>Natural with structural sharing</td>
+            <td>Requires copying entire table</td>
+        </tr>
+        <tr>
+            <td><b>Ordered iteration</b></td>
+            <td>O(n) in sorted order</td>
+            <td>O(n) in arbitrary order</td>
+        </tr>
+        <tr>
+            <td><b>Memory</b></td>
+            <td>~5 words per entry</td>
+            <td>~3 words per entry + array</td>
+        </tr>
+        <tr>
+            <td><b>Thread safety</b></td>
+            <td>Implicit (immutable)</td>
+            <td>Requires explicit locking</td>
+        </tr>
+        <tr>
+            <td><b>Predictability</b></td>
+            <td>Always O(log n)</td>
+            <td>Can degrade to O(n)</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li><b>vs Association Lists:</b></li>
+<pre><code class="language-haskell line-numbers">-- Association list: [(k, v)]
+type AssocList k v = [(k, v)]
+
+-- Simple but slow
+lookupAssoc :: Eq k => k -> [(k, v)] -> Maybe v
+lookupAssoc k = lookup k  -- O(n) linear search
+
+-- Map is dramatically faster for large datasets
+-- But assoc lists are simpler for small collections (< 10 items)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Pitfalls and Best Practices</li>
+    <br/>
+    <ul>
+        <li><b>Don't nest lookups deeply:</b></li>
+<pre><code class="language-haskell line-numbers">-- Bad: deeply nested Maybe
+badLookup m k1 k2 k3 = do
+    m1 <- M.lookup k1 m
+    m2 <- M.lookup k2 m1
+    M.lookup k3 m2
+
+-- Better: flatten structure or use lenses</code></pre>
+        <br/>
+        <li><b>Use strict operations when appropriate:</b></li>
+<pre><code class="language-haskell line-numbers">import qualified Data.Map.Strict as MS
+
+-- Strict insert avoids space leaks
+strictMap = MS.fromList [(1, expensiveComputation 1)]
+
+-- Strict version forces evaluation of values immediately</code></pre>
+        <br/>
+        <li><b>Prefer fromAscList when possible:</b></li>
+<pre><code class="language-haskell line-numbers">-- If data is already sorted, use O(n) construction
+sortedData = [(1, "a"), (2, "b"), (3, "c")]
+fastMap = M.fromAscList sortedData  -- O(n)
+
+-- Instead of
+slowMap = M.fromList sortedData  -- O(n log n)</code></pre>
+        <br/>
+        <li><b>Use specialized combining functions:</b></li>
+<pre><code class="language-haskell line-numbers">-- Incrementing counters
+-- Good
+counts = M.insertWith (+) key 1 oldCounts
+
+-- Better
+counts = M.alter incrementOrInsert key oldCounts
+  where incrementOrInsert Nothing = Just 1
+        incrementOrInsert (Just n) = Just (n + 1)</code></pre>
+        <br/>
+        <li><b>Remember maps are ordered:</b></li>
+<pre><code class="language-haskell line-numbers">-- Take advantage of ordering
+smallest = M.lookupMin myMap  -- O(log n)
+largest = M.lookupMax myMap   -- O(log n)
+
+-- Range queries are efficient
+range = M.filterWithKey (\k _ -> k >= minKey && k <= maxKey) myMap</code></pre>
+    </ul>
+    <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
