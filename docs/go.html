@@ -7668,7 +7668,736 @@ func main() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-interfaces">Interfaces in Go</h3>
+<ol>
 
+    <li>What Are Interfaces?</li>
+    <br/>
+    <ul>
+        <li>An <code>interface</code> is a type that specifies a set of method signatures.</li>
+        <br/>
+        <li>Any type that implements all the methods automatically satisfies the interface (<b>implicit implementation</b>).</li>
+        <br/>
+        <li>Interfaces enable polymorphism and abstraction in Go.</li>
+        <br/>
+        <li><b>Key difference from other languages:</b> No explicit "implements" keyword needed!</li>
+        <br/>
+        <li>Basic example:</li>
+<pre><code class="language-go line-numbers">// Define an interface
+type Speaker interface {
+    Speak() string
+}
+
+// Dog implements Speaker (implicitly)
+type Dog struct {
+    Name string
+}
+
+func (d Dog) Speak() string {
+    return "Woof!"
+}
+
+// Cat implements Speaker (implicitly)
+type Cat struct {
+    Name string
+}
+
+func (c Cat) Speak() string {
+    return "Meow!"
+}
+
+// Function that accepts any Speaker
+func MakeSound(s Speaker) {
+    fmt.Println(s.Speak())
+}
+
+func main() {
+    dog := Dog{Name: "Buddy"}
+    cat := Cat{Name: "Whiskers"}
+
+    MakeSound(dog)  // "Woof!"
+    MakeSound(cat)  // "Meow!"
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Defining Interfaces</li>
+    <br/>
+    <ul>
+        <li>Basic interface syntax:</li>
+<pre><code class="language-go line-numbers">type InterfaceName interface {
+    MethodName1(params) returnType
+    MethodName2(params) returnType
+}
+
+// Examples
+type Reader interface {
+    Read(p []byte) (n int, err error)
+}
+
+type Writer interface {
+    Write(p []byte) (n int, err error)
+}
+
+type Closer interface {
+    Close() error
+}</code></pre>
+        <br/>
+        <li>Interface naming conventions:</li>
+        <ul>
+            <li>Single-method interfaces often end in "-er": <code>Reader</code>, <code>Writer</code>, <code>Closer</code></li>
+            <li>Use descriptive names for multi-method interfaces: <code>FileSystem</code>, <code>DataStore</code></li>
+        </ul>
+        <br/>
+        <li>Empty interface (accepts any type):</li>
+<pre><code class="language-go line-numbers">// Empty interface (old style)
+interface{}
+
+// Empty interface (Go 1.18+ style)
+any  // alias for interface{}
+
+// Can hold any value
+var x interface{}
+x = 42
+x = "hello"
+x = []int{1, 2, 3}
+
+var y any
+y = 3.14
+y = true
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Implementing Interfaces</li>
+    <br/>
+    <ul>
+        <li>A type implements an interface by implementing all its methods:</li>
+<pre><code class="language-go line-numbers">type Writer interface {
+    Write(p []byte) (n int, err error)
+}
+
+// MyWriter implements Writer
+type MyWriter struct{}
+
+func (w MyWriter) Write(p []byte) (n int, err error) {
+    fmt.Println(string(p))
+    return len(p), nil
+}
+
+func main() {
+    var w Writer = MyWriter{}  // ✓ MyWriter implements Writer
+    w.Write([]byte("Hello"))
+}</code></pre>
+        <br/>
+        <li>No explicit declaration needed:</li>
+<pre><code class="language-go line-numbers">// Don't need to write:
+// type Dog implements Speaker  // ❌ Not valid Go
+
+// Just implement the methods:
+type Dog struct{}
+
+func (d Dog) Speak() string {
+    return "Woof!"
+}
+// Dog now automatically implements Speaker!</code></pre>
+        <br/>
+        <li>Multiple types implementing same interface:</li>
+<pre><code class="language-go line-numbers">type Shape interface {
+    Area() float64
+}
+
+type Rectangle struct {
+    Width, Height float64
+}
+
+func (r Rectangle) Area() float64 {
+    return r.Width * r.Height
+}
+
+type Circle struct {
+    Radius float64
+}
+
+func (c Circle) Area() float64 {
+    return math.Pi * c.Radius * c.Radius
+}
+
+func PrintArea(s Shape) {
+    fmt.Printf("Area: %.2f\n", s.Area())
+}
+
+func main() {
+    rect := Rectangle{Width: 10, Height: 5}
+    circle := Circle{Radius: 3}
+
+    PrintArea(rect)    // Area: 50.00
+    PrintArea(circle)  // Area: 28.27
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Interface Values</li>
+    <br/>
+    <ul>
+        <li>An interface value holds both a concrete type and a value of that type:</li>
+<pre><code class="language-go line-numbers">type Speaker interface {
+    Speak() string
+}
+
+type Dog struct{}
+
+func (d Dog) Speak() string {
+    return "Woof!"
+}
+
+func main() {
+    var s Speaker
+    fmt.Printf("Value: %v, Type: %T\n", s, s)
+    // Value: <nil>, Type: <nil>
+
+    s = Dog{}
+    fmt.Printf("Value: %v, Type: %T\n", s, s)
+    // Value: {}, Type: main.Dog
+
+    // Interface value contains:
+    // 1. Type information (Dog)
+    // 2. Value ({})
+}</code></pre>
+        <br/>
+        <li><code>nil</code> interfaces:</li>
+<pre><code class="language-go line-numbers">var s Speaker  // nil interface
+
+if s == nil {
+    fmt.Println("s is nil")  // This prints
+}
+
+// ❌ Calling method on nil interface panics
+// s.Speak()  // panic: nil pointer dereference</code></pre>
+        <br/>
+        <li>Interface with <code>nil</code> value (not <code>nil</code> interface):</li>
+<pre><code class="language-go line-numbers">type Speaker interface {
+    Speak() string
+}
+
+type Dog struct {
+    Name string
+}
+
+func (d *Dog) Speak() string {
+    if d == nil {
+        return "..."
+    }
+    return "Woof! I'm " + d.Name
+}
+
+func main() {
+    var d *Dog  // nil pointer
+    var s Speaker = d  // Interface holds nil value
+
+    // Interface itself is NOT nil
+    fmt.Println(s == nil)  // false!
+
+    // But the value inside is nil
+    s.Speak()  // "..." (method handles nil receiver)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Assertions</li>
+    <br/>
+    <ul>
+        <li>Type assertions extract the concrete value from an interface:</li>
+<pre><code class="language-go line-numbers">var i interface{} = "hello"
+
+// Type assertion
+s := i.(string)
+fmt.Println(s)  // "hello"
+
+// Wrong type assertion panics
+// n := i.(int)  // panic: interface conversion
+
+// Safe type assertion (two-value form)
+s, ok := i.(string)
+if ok {
+    fmt.Println("String:", s)  // String: hello
+}
+
+n, ok := i.(int)
+if ok {
+    fmt.Println("Int:", n)
+} else {
+    fmt.Println("Not an int")  // Not an int
+}</code></pre>
+        <br/>
+        <li>Practical example:</li>
+<pre><code class="language-go line-numbers">type Animal interface {
+    Speak() string
+}
+
+type Dog struct {
+    Name string
+}
+
+func (d Dog) Speak() string {
+    return "Woof!"
+}
+
+func (d Dog) Fetch() string {
+    return "Fetching!"
+}
+
+func main() {
+    var animal Animal = Dog{Name: "Buddy"}
+
+    // Can call interface methods
+    fmt.Println(animal.Speak())  // "Woof!"
+
+    // ❌ Can't call non-interface methods
+    // fmt.Println(animal.Fetch())  // Error: Fetch not in Animal
+
+    // ✓ Use type assertion to access Dog-specific methods
+    if dog, ok := animal.(Dog); ok {
+        fmt.Println(dog.Fetch())  // "Fetching!"
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Switches</li>
+    <br/>
+    <ul>
+        <li>Type switches allow checking and handling multiple types:</li>
+<pre><code class="language-go line-numbers">func describe(i interface{}) {
+    switch v := i.(type) {
+    case int:
+        fmt.Printf("Integer: %d\n", v)
+    case string:
+        fmt.Printf("String: %s\n", v)
+    case bool:
+        fmt.Printf("Boolean: %t\n", v)
+    case nil:
+        fmt.Println("Nil value")
+    default:
+        fmt.Printf("Unknown type: %T\n", v)
+    }
+}
+
+func main() {
+    describe(42)        // Integer: 42
+    describe("hello")   // String: hello
+    describe(true)      // Boolean: true
+    describe(3.14)      // Unknown type: float64
+    describe(nil)       // Nil value
+}</code></pre>
+        <br/>
+        <li>Type switch with multiple types per case:</li>
+<pre><code class="language-go line-numbers">func processValue(i interface{}) {
+    switch v := i.(type) {
+    case int, int32, int64:
+        fmt.Println("Some kind of int:", v)
+    case float32, float64:
+        fmt.Println("Some kind of float:", v)
+    case string:
+        fmt.Println("String:", v)
+    default:
+        fmt.Println("Unknown type")
+    }
+}</code></pre>
+        <br/>
+        <li>Type switch with interface types:</li>
+<pre><code class="language-go line-numbers">func processReader(r interface{}) {
+    switch v := r.(type) {
+    case io.Reader:
+        fmt.Println("It's a Reader")
+        // Can use v as io.Reader
+    case io.Writer:
+        fmt.Println("It's a Writer")
+    case io.ReadWriter:
+        fmt.Println("It's both Reader and Writer")
+    default:
+        fmt.Println("Not a Reader or Writer")
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Empty Interface and any</li>
+    <br/>
+    <ul>
+        <li>The empty interface can hold values of any type:</li>
+<pre><code class="language-go line-numbers">func printAnything(val interface{}) {
+    fmt.Println(val)
+}
+
+// Or with Go 1.18+
+func printAnything(val any) {
+    fmt.Println(val)
+}
+
+func main() {
+    printAnything(42)
+    printAnything("hello")
+    printAnything([]int{1, 2, 3})
+    printAnything(struct{ X int }{X: 10})
+}</code></pre>
+        <br/>
+        <li>Use cases for empty interface:</li>
+<pre><code class="language-go line-numbers">// 1. Generic data structures (before generics)
+type Box struct {
+    Value interface{}
+}
+
+// 2. JSON unmarshaling to unknown structure
+var data interface{}
+json.Unmarshal(jsonBytes, &amp;data)
+
+// 3. fmt.Println accepts any
+fmt.Println("Can print", 42, true, []int{1, 2})
+
+// 4. Storing heterogeneous data
+items := []interface{}{42, "hello", 3.14, true}</code></pre>
+        <br/>
+        <li>Limitations - need type assertions:</li>
+<pre><code class="language-go line-numbers">var x interface{} = 42
+
+// ❌ Can't do arithmetic directly
+// result := x + 10  // Error
+
+// ✓ Need type assertion
+if num, ok := x.(int); ok {
+    result := num + 10
+    fmt.Println(result)  // 52
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Standard Library Interfaces</li>
+    <br/>
+    <ul>
+        <li><code>io.Reader</code> and <code>io.Writer</code>:</li>
+<pre><code class="language-go line-numbers">type Reader interface {
+    Read(p []byte) (n int, err error)
+}
+
+type Writer interface {
+    Write(p []byte) (n int, err error)
+}
+
+// Example: Custom reader
+type StringReader struct {
+    data string
+    pos  int
+}
+
+func (r *StringReader) Read(p []byte) (n int, err error) {
+    if r.pos &gt;= len(r.data) {
+        return 0, io.EOF
+    }
+
+    n = copy(p, r.data[r.pos:])
+    r.pos += n
+    return n, nil
+}
+
+func main() {
+    reader := &amp;StringReader{data: "Hello, World!"}
+    buf := make([]byte, 5)
+
+    for {
+        n, err := reader.Read(buf)
+        if err == io.EOF {
+            break
+        }
+        fmt.Print(string(buf[:n]))
+    }
+    // Output: Hello, World!
+}</code></pre>
+        <br/>
+        <li>error interface:</li>
+<pre><code class="language-go line-numbers">type error interface {
+    Error() string
+}
+
+// Custom error type
+type ValidationError struct {
+    Field   string
+    Message string
+}
+
+func (e ValidationError) Error() string {
+    return fmt.Sprintf("%s: %s", e.Field, e.Message)
+}
+
+func validateAge(age int) error {
+    if age &lt; 0 {
+        return ValidationError{
+            Field:   "age",
+            Message: "must be non-negative",
+        }
+    }
+    return nil
+}
+
+func main() {
+    if err := validateAge(-5); err != nil {
+        fmt.Println(err)  // age: must be non-negative
+    }
+}</code></pre>
+        <br/>
+        <li><code>fmt.Stringer</code>:</li>
+<pre><code class="language-go line-numbers">type Stringer interface {
+    String() string
+}
+
+type Person struct {
+    Name string
+    Age  int
+}
+
+func (p Person) String() string {
+    return fmt.Sprintf("%s (%d years old)", p.Name, p.Age)
+}
+
+func main() {
+    p := Person{Name: "Alice", Age: 30}
+    fmt.Println(p)  // Alice (30 years old)
+    // fmt.Println automatically calls String() method
+}</code></pre>
+        <br/>
+        <li><code>sort.Interface</code>:</li>
+<pre><code class="language-go line-numbers">type Interface interface {
+    Len() int
+    Less(i, j int) bool
+    Swap(i, j int)
+}
+
+type ByAge []Person
+
+func (a ByAge) Len() int           { return len(a) }
+func (a ByAge) Less(i, j int) bool { return a[i].Age &lt; a[j].Age }
+func (a ByAge) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
+func main() {
+    people := []Person{
+        {"Bob", 30},
+        {"Alice", 25},
+        {"Carol", 35},
+    }
+
+    sort.Sort(ByAge(people))
+    fmt.Println(people)  // [{Alice 25} {Bob 30} {Carol 35}]
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Interface Composition</li>
+    <br/>
+    <ul>
+        <li>Interfaces can be composed of other interfaces:</li>
+<pre><code class="language-go line-numbers">type Reader interface {
+    Read(p []byte) (n int, err error)
+}
+
+type Writer interface {
+    Write(p []byte) (n int, err error)
+}
+
+type Closer interface {
+    Close() error
+}
+
+// Composed interface
+type ReadWriter interface {
+    Reader
+    Writer
+}
+
+// Another composed interface
+type ReadWriteCloser interface {
+    Reader
+    Writer
+    Closer
+}</code></pre>
+        <br/>
+        <li>Standard library examples:</li>
+<pre><code class="language-go line-numbers">// io.ReadWriteCloser
+type ReadWriteCloser interface {
+    io.Reader
+    io.Writer
+    io.Closer
+}
+
+// io.ReadSeeker
+type ReadSeeker interface {
+    io.Reader
+    io.Seeker
+}</code></pre>
+        <br/>
+        <li>Implementing composed interfaces:</li>
+<pre><code class="language-go line-numbers">type File struct {
+    data []byte
+    pos  int
+}
+
+func (f *File) Read(p []byte) (n int, err error) {
+    // ... implementation
+}
+
+func (f *File) Write(p []byte) (n int, err error) {
+    // ... implementation
+}
+
+func (f *File) Close() error {
+    // ... implementation
+}
+
+// File automatically implements ReadWriteCloser
+func useReadWriteCloser(rwc io.ReadWriteCloser) {
+    // Can use rwc
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Pointer vs Value Receivers</li>
+    <br/>
+    <ul>
+        <li>Value receiver: Type and pointer to type both satisfy interface</li>
+<pre><code class="language-go line-numbers">type Speaker interface {
+    Speak() string
+}
+
+type Dog struct{}
+
+// Value receiver
+func (d Dog) Speak() string {
+    return "Woof!"
+}
+
+func main() {
+    dog := Dog{}
+    ptr := &amp;Dog{}
+
+    var s1 Speaker = dog  // ✓ Works
+    var s2 Speaker = ptr  // ✓ Also works
+
+    s1.Speak()
+    s2.Speak()
+}</code></pre>
+        <br/>
+        <li>Pointer receiver: Only pointer to type satisfies interface</li>
+<pre><code class="language-go line-numbers">type Counter interface {
+    Increment()
+    GetCount() int
+}
+
+type MyCounter struct {
+    count int
+}
+
+// Pointer receiver
+func (c *MyCounter) Increment() {
+    c.count++
+}
+
+func (c *MyCounter) GetCount() int {
+    return c.count
+}
+
+func main() {
+    counter := MyCounter{}
+    ptr := &amp;MyCounter{}
+
+    // ❌ Error: MyCounter doesn't implement Counter
+    // var c1 Counter = counter
+
+    // ✓ Works
+    var c2 Counter = ptr
+
+    c2.Increment()
+    fmt.Println(c2.GetCount())  // 1
+}</code></pre>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Method Receiver</th>
+            <th>Type T satisfies interface?</th>
+            <th>*T satisfies interface?</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Value (T)</td>
+            <td>✓ Yes</td>
+            <td>✓ Yes</td>
+        </tr>
+        <tr>
+            <td>Pointer (*T)</td>
+            <td>❌ No</td>
+            <td>✓ Yes</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Interface Design Guidelines</li>
+    <br/>
+    <ul>
+        <li>The "Rule of Least Power":</li>
+<pre><code class="language-go line-numbers">// ✓ Good: Only require what you need
+func CountBytes(r io.Reader) (int, error) {
+    // Only needs Read()
+}
+
+// ❌ Avoid: Requiring more than needed
+func CountBytes(f *os.File) (int, error) {
+    // Unnecessarily requires os.File
+}</code></pre>
+        <br/>
+        <li>Interface size guideline:</li>
+        <ul>
+            <li>0 methods: Empty interface <code>any</code> - use sparingly</li>
+            <li>1 method: Perfect! Most Go interfaces have 1 method</li>
+            <li>2-3 methods: Still good, if closely related</li>
+            <li>4+ methods: Consider splitting</li>
+        </ul>
+        <br/>
+        <li>Where to define interfaces:</li>
+<pre><code class="language-go line-numbers">// ✓ Define in package that uses it
+package consumer
+
+type DataStore interface {
+    Save(data string) error
+}
+
+func Process(store DataStore) {
+    // Use interface
+}
+
+// ❌ Don't define in package that implements it
+package provider
+
+type DataStore interface {
+    Save(data string) error
+}
+
+type MySQLStore struct{}
+func (m MySQLStore) Save(data string) error { /* ... */ }</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
