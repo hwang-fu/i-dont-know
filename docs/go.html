@@ -162,6 +162,8 @@
         <li><a href="#go-maps">Maps</a></li>
         <li><a href="#go-strings">Strings</a></li>
         <li><a href="#go-pointers">Pointers</a></li>
+        <li><a href="#go-structs">Structs</a></li>
+        <li><a href="#go-interfaces">Interfaces</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3896,9 +3898,9 @@ numbers := make([]int, 5, 10)   // Length 5, capacity 10</code></pre>
 <pre><code class="language-go line-numbers">array := [5]int{1, 2, 3, 4, 5}
 slice := array[1:4]  // [2, 3, 4]</code></pre>
         <br/>
-        <li>Empty slice vs nil slice:</li>
-<pre><code class="language-go line-numbers">var nilSlice []int           // nil
-emptySlice := []int{}        // not nil, but length 0
+        <li>Empty slice vs <code>nil</code> slice:</li>
+<pre><code class="language-go line-numbers">var nilSlice []int            // nil
+emptySlice := []int{}         // not nil, but length 0
 emptySlice2 := make([]int, 0) // not nil, but length 0
 
 fmt.Println(nilSlice == nil)    // true
@@ -3910,11 +3912,11 @@ fmt.Println(emptySlice == nil)  // false</code></pre>
     <li>Slice Length and Capacity</li>
     <br/>
     <ul>
-        <li><b>Length</b> - number of elements in the slice:</li>
+        <li>Length - number of elements in the slice:</li>
 <pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
 fmt.Println(len(numbers))  // 5</code></pre>
         <br/>
-        <li><b>Capacity</b> - number of elements in the underlying array (from the first element of the slice):</li>
+        <li>Capacity - number of elements in the underlying array (from the first element of the slice):</li>
 <pre><code class="language-go line-numbers">numbers := []int{1, 2, 3, 4, 5}
 fmt.Println(cap(numbers))  // 5</code></pre>
         <br/>
@@ -4003,7 +4005,6 @@ fmt.Printf("Len: %d, Cap: %d\n", len(numbers), cap(numbers))  // Len: 2, Cap: 2
 
 numbers = append(numbers, 3)  // Triggers reallocation
 fmt.Printf("Len: %d, Cap: %d\n", len(numbers), cap(numbers))  // Len: 3, Cap: 4</code></pre>
-        <br/>
         <li>When capacity is exceeded, Go allocates a new underlying array (typically double the size).</li>
     </ul>
     <br/><br/>
@@ -6770,7 +6771,896 @@ func main() {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="go-structs">Structs in Go</h3>
+<ol>
 
+    <li>What Are Structs?</li>
+    <br/>
+    <ul>
+        <li>A <code>struct</code> is a composite data type that groups together variables (fields) under a single name.</li>
+        <br/>
+        <li>Basic example:</li>
+<pre><code class="language-go line-numbers">// Define a struct type
+type Person struct{
+    Name string
+    Age  int
+}
+
+// Create and use a struct
+func main() {
+    p := Person {
+        Name: "Alice",
+        Age:  30,
+    }
+
+    fmt.Println(p.Name)  // "Alice"
+    fmt.Println(p.Age)   // 30
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Declaring Structs</li>
+    <br/>
+    <ul>
+        <li>Basic struct declaration:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name string
+    Age  int
+    City string
+}
+
+type Point struct {
+    X float64
+    Y float64
+}
+
+type Rectangle struct {
+    Width  float64
+    Height float64
+}</code></pre>
+        <br/>
+        <li>Fields with same type on one line:</li>
+<pre><code class="language-go line-numbers">type Point struct {
+    X, Y float64  // Both are float64
+}
+
+type Person struct {
+    FirstName, LastName string  // Both are string
+    Age                 int
+}</code></pre>
+        <br/>
+        <li>Exported vs unexported fields:</li>
+<pre><code class="language-go line-numbers">type User struct {
+    Name     string  // Exported (starts with capital letter)
+    Email    string  // Exported
+    password string  // Unexported (starts with lowercase)
+}
+
+// From another package:
+// u.Name = "Alice"     // ✓ Works
+// u.password = "123"   // ❌ Error: unexported field</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Struct Instances</li>
+    <br/>
+    <ul>
+        <li>Method 1: Struct literal with field names</li>
+<pre><code class="language-go line-numbers">p := Person{
+    Name: "Alice",
+    Age:  30,
+    City: "NYC",
+}
+
+// Order doesn't matter with field names
+p2 := Person{
+    Age:  25,
+    City: "LA",
+    Name: "Bob",
+}
+</code></pre>
+        <br/>
+        <li>Method 2: Struct literal without field names</li>
+<pre><code class="language-go line-numbers">// Must provide all fields in order
+p := Person{"Alice", 30, "NYC"}
+
+// ❌ Error if fields missing or wrong order
+// p := Person{"Alice", 30}  // Missing City
+// p := Person{30, "Alice", "NYC"}  // Wrong order
+</code></pre>
+        <br/>
+        <li>Method 3: Zero value (var declaration)</li>
+<pre><code class="language-go line-numbers">var p Person
+// p.Name = ""  (zero value for string)
+// p.Age  = 0   (zero value for int)
+// p.City = ""  (zero value for string)
+
+fmt.Printf("%+v\n", p)  // {Name: Age:0 City:}
+</code></pre>
+        <br/>
+        <li>Method 4: Using new</li>
+<pre><code class="language-go line-numbers">p := new(Person)  // Returns *Person (pointer)
+// All fields are zero values
+
+p.Name = "Alice"
+p.Age = 30
+
+fmt.Printf("%+v\n", p)  // &amp;{Name:Alice Age:30 City:}
+</code></pre>
+        <br/>
+        <li>Method 5: Partial initialization</li>
+<pre><code class="language-go line-numbers">p := Person{
+    Name: "Alice",
+    // Age and City get zero values
+}
+
+fmt.Printf("%+v\n", p)  // {Name:Alice Age:0 City:}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing and Modifying Fields</li>
+    <br/>
+    <ul>
+        <li>Dot notation for field access:</li>
+<pre><code class="language-go line-numbers">p := Person{
+    Name: "Alice",
+    Age:  30,
+}
+
+// Read fields
+name := p.Name
+age := p.Age
+
+// Modify fields
+p.Name = "Bob"
+p.Age = 31
+
+fmt.Println(p)  // {Bob 31 }</code></pre>
+        <br/>
+        <li>Accessing through pointers:</li>
+<pre><code class="language-go line-numbers">p := Person{Name: "Alice", Age: 30}
+ptr := &amp;p
+
+// Go automatically dereferences
+ptr.Name = "Bob"     // Same as (*ptr).Name = "Bob"
+ptr.Age = 31         // Same as (*ptr).Age = 31
+
+// Both syntaxes work
+(*ptr).Name = "Carol"  // Explicit dereference
+ptr.Name = "David"     // Automatic dereference
+
+fmt.Println(p)  // {David 31 }</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Anonymous Structs</li>
+    <br/>
+    <ul>
+        <li>Structs without a named type, useful for one-time use:</li>
+<pre><code class="language-go line-numbers">// Declare and initialize in one step
+person := struct {
+    Name string
+    Age  int
+}{
+    Name: "Alice",
+    Age:  30,
+}
+
+fmt.Println(person.Name)  // "Alice"</code></pre>
+        <br/>
+        <li>Common use case: Table-driven tests</li>
+<pre><code class="language-go line-numbers">tests := []struct {
+    input    int
+    expected int
+}{
+    {input: 2, expected: 4},
+    {input: 3, expected: 9},
+    {input: 4, expected: 16},
+}
+
+for _, test := range tests {
+    result := square(test.input)
+    if result != test.expected {
+        t.Errorf("square(%d) = %d; want %d",
+            test.input, result, test.expected)
+    }
+}</code></pre>
+        <br/>
+        <li>Use case: Grouping related variables</li>
+<pre><code class="language-go line-numbers">func processData() {
+    stats := struct {
+        Total   int
+        Success int
+        Failed  int
+    }{
+        Total:   100,
+        Success: 95,
+        Failed:  5,
+    }
+
+    fmt.Printf("Success rate: %.1f%%\n",
+        float64(stats.Success)/float64(stats.Total)*100)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Nested Structs</li>
+    <br/>
+    <ul>
+        <li>Structs can contain other structs as fields:</li>
+<pre><code class="language-go line-numbers">type Address struct {
+    Street  string
+    City    string
+    ZipCode string
+}
+
+type Person struct {
+    Name    string
+    Age     int
+    Address Address  // Nested struct
+}
+
+func main() {
+    p := Person{
+        Name: "Alice",
+        Age:  30,
+        Address: Address{
+            Street:  "123 Main St",
+            City:    "NYC",
+            ZipCode: "10001",
+        },
+    }
+
+    // Access nested fields
+    fmt.Println(p.Address.City)      // "NYC"
+    fmt.Println(p.Address.ZipCode)   // "10001"
+}</code></pre>
+        <br/>
+        <li>Multiple levels of nesting:</li>
+<pre><code class="language-go line-numbers">type Coordinates struct {
+    Latitude  float64
+    Longitude float64
+}
+
+type Address struct {
+    Street      string
+    City        string
+    Coordinates Coordinates
+}
+
+type Person struct {
+    Name    string
+    Address Address
+}
+
+func main() {
+    p := Person{
+        Name: "Alice",
+        Address: Address{
+            City: "NYC",
+            Coordinates: Coordinates{
+                Latitude:  40.7128,
+                Longitude: -74.0060,
+            },
+        },
+    }
+
+    // Access deeply nested fields
+    fmt.Println(p.Address.Coordinates.Latitude)  // 40.7128
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Embedded Structs (Composition)</li>
+    <br/>
+    <ul>
+        <li>Go supports composition through struct embedding (no inheritance):</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name string
+    Age  int
+}
+
+type Employee struct {
+    Person      // Embedded struct (no field name)
+    EmployeeID int
+    Department string
+}
+
+func main() {
+    e := Employee{
+        Person: Person{
+            Name: "Alice",
+            Age:  30,
+        },
+        EmployeeID: 12345,
+        Department: "Engineering",
+    }
+
+    // Can access embedded fields directly
+    fmt.Println(e.Name)        // "Alice" (promoted field)
+    fmt.Println(e.Person.Name) // "Alice" (explicit)
+    fmt.Println(e.EmployeeID)  // 12345
+}</code></pre>
+        <br/>
+        <li>Field promotion:</li>
+<pre><code class="language-go line-numbers">type Address struct {
+    City string
+    Zip  string
+}
+
+type Person struct {
+    Name string
+    Address  // Embedded
+}
+
+func main() {
+    p := Person{
+        Name: "Alice",
+        Address: Address{
+            City: "NYC",
+            Zip:  "10001",
+        },
+    }
+
+    // Both work - field promotion
+    fmt.Println(p.City)         // "NYC"
+    fmt.Println(p.Address.City) // "NYC"
+}</code></pre>
+        <br/>
+        <li>Method promotion:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name string
+}
+
+func (p Person) Greet() string {
+    return "Hello, I'm " + p.Name
+}
+
+type Employee struct {
+    Person  // Embedded
+    JobTitle string
+}
+
+func main() {
+    e := Employee{
+        Person:   Person{Name: "Alice"},
+        JobTitle: "Engineer",
+    }
+
+    // Method is promoted from Person
+    fmt.Println(e.Greet())  // "Hello, I'm Alice"
+}</code></pre>
+        <br/>
+        <li>Handling name conflicts:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name string
+}
+
+type Company struct {
+    Name string
+}
+
+type Employee struct {
+    Person
+    Company
+}
+
+func main() {
+    e := Employee{
+        Person:  Person{Name: "Alice"},
+        Company: Company{Name: "Acme Corp"},
+    }
+
+    // ❌ Ambiguous
+    // fmt.Println(e.Name)  // Error: ambiguous selector e.Name
+
+    // ✓ Must be explicit
+    fmt.Println(e.Person.Name)   // "Alice"
+    fmt.Println(e.Company.Name)  // "Acme Corp"
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Methods on Structs</li>
+    <br/>
+    <ul>
+        <li>Functions can be attached to structs as methods:</li>
+<pre><code class="language-go line-numbers">type Rectangle struct {
+    Width  float64
+    Height float64
+}
+
+// Method with value receiver
+func (r Rectangle) Area() float64 {
+    return r.Width * r.Height
+}
+
+// Method with pointer receiver
+func (r *Rectangle) Scale(factor float64) {
+    r.Width *= factor
+    r.Height *= factor
+}
+
+func main() {
+    rect := Rectangle{Width: 10, Height: 5}
+
+    fmt.Println(rect.Area())  // 50
+
+    rect.Scale(2)
+    fmt.Println(rect.Area())  // 200 (scaled)
+}</code></pre>
+        <br/>
+        <li>Value receiver vs pointer receiver:</li>
+<pre><code class="language-go line-numbers">type Counter struct {
+    count int
+}
+
+// Value receiver - works on copy
+func (c Counter) GetCount() int {
+    return c.count
+}
+
+// Value receiver - DOESN'T modify original
+func (c Counter) IncrementBad() {
+    c.count++  // Modifies copy
+}
+
+// Pointer receiver - modifies original
+func (c *Counter) Increment() {
+    c.count++  // Modifies original
+}
+
+func main() {
+    counter := Counter{}
+
+    counter.IncrementBad()
+    fmt.Println(counter.GetCount())  // 0 (unchanged)
+
+    counter.Increment()
+    counter.Increment()
+    fmt.Println(counter.GetCount())  // 2
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Struct Tags</li>
+    <br/>
+    <ul>
+        <li>Struct tags provide metadata about fields, used by packages like <code>encoding/json</code>:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name  string `json:"name"`
+    Age   int    `json:"age"`
+    Email string `json:"email,omitempty"`  // Omit if empty
+}
+
+func main() {
+    p := Person{
+        Name:  "Alice",
+        Age:   30,
+        Email: "alice@example.com",
+    }
+
+    // Marshal to JSON
+    data, _ := json.Marshal(p)
+    fmt.Println(string(data))
+    // {"name":"Alice","age":30,"email":"alice@example.com"}
+
+    // Unmarshal from JSON
+    jsonStr := `{"name":"Bob","age":25}`
+    var p2 Person
+    json.Unmarshal([]byte(jsonStr), &amp;p2)
+    fmt.Printf("%+v\n", p2)  // {Name:Bob Age:25 Email:}
+}</code></pre>
+        <br/>
+        <li>Common tag options:</li>
+<pre><code class="language-go line-numbers">type User struct {
+    ID       int    `json:"id"`
+    Name     string `json:"name"`
+    Email    string `json:"email,omitempty"`    // Omit if empty
+    Password string `json:"-"`                  // Never include
+    Age      int    `json:"age,string"`         // Convert to string
+    Created  int64  `json:"created,omitempty"`
+}</code></pre>
+        <br/>
+        <li>Multiple tags:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name  string `json:"name" xml:"name" db:"full_name"`
+    Age   int    `json:"age" xml:"age" db:"person_age"`
+    Email string `json:"email,omitempty" xml:"email" db:"email_address"`
+}</code></pre>
+        <br/>
+        <li>Using reflect to read tags:</li>
+<pre><code class="language-go line-numbers">import "reflect"
+
+type Person struct {
+    Name string `json:"name" required:"true"`
+}
+
+func main() {
+    t := reflect.TypeOf(Person{})
+    field, _ := t.FieldByName("Name")
+
+    jsonTag := field.Tag.Get("json")
+    requiredTag := field.Tag.Get("required")
+
+    fmt.Println(jsonTag)     // "name"
+    fmt.Println(requiredTag) // "true"
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Comparing Structs</li>
+    <br/>
+    <ul>
+        <li>Structs can be compared with <code>==</code> and <code>!=</code> if all fields are comparable:</li>
+<pre><code class="language-go line-numbers">type Point struct {
+    X, Y int
+}
+
+func main() {
+    p1 := Point{X: 1, Y: 2}
+    p2 := Point{X: 1, Y: 2}
+    p3 := Point{X: 3, Y: 4}
+
+    fmt.Println(p1 == p2)  // true
+    fmt.Println(p1 == p3)  // false
+    fmt.Println(p1 != p3)  // true
+}</code></pre>
+        <br/>
+        <li>Structs with uncomparable fields:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name   string
+    Emails []string  // Slices are not comparable
+}
+
+func main() {
+    p1 := Person{Name: "Alice", Emails: []string{"a@test.com"}}
+    p2 := Person{Name: "Alice", Emails: []string{"a@test.com"}}
+
+    // ❌ Compile error: invalid operation
+    // fmt.Println(p1 == p2)
+
+    // ✓ Must compare manually
+    equals := p1.Name == p2.Name &&
+              len(p1.Emails) == len(p2.Emails)
+    // ... compare slice elements
+}</code></pre>
+        <br/>
+        <li>Using <code>reflect.DeepEqual</code> for complex structs:</li>
+<pre><code class="language-go line-numbers">import "reflect"
+
+type Person struct {
+    Name   string
+    Emails []string
+}
+
+func main() {
+    p1 := Person{Name: "Alice", Emails: []string{"a@test.com"}}
+    p2 := Person{Name: "Alice", Emails: []string{"a@test.com"}}
+
+    equal := reflect.DeepEqual(p1, p2)
+    fmt.Println(equal)  // true
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Copying Structs</li>
+    <br/>
+    <ul>
+        <li>Structs are copied by value in assignments:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name string
+    Age  int
+}
+
+func main() {
+    p1 := Person{Name: "Alice", Age: 30}
+    p2 := p1  // Copy of p1
+
+    p2.Name = "Bob"
+    p2.Age = 25
+
+    fmt.Println(p1)  // {Alice 30} (unchanged)
+    fmt.Println(p2)  // {Bob 25}
+}</code></pre>
+        <br/>
+        <li>Shallow copy with slices/maps:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name   string
+    Emails []string  // Reference type
+}
+
+func main() {
+    p1 := Person{
+        Name:   "Alice",
+        Emails: []string{"alice@test.com"},
+    }
+
+    p2 := p1  // Shallow copy
+
+    // Slice is shared!
+    p2.Emails[0] = "bob@test.com"
+
+    fmt.Println(p1.Emails[0])  // "bob@test.com" (changed!)
+    fmt.Println(p2.Emails[0])  // "bob@test.com"
+}</code></pre>
+        <br/>
+        <li>Deep copy with slices/maps:</li>
+<pre><code class="language-go line-numbers">func main() {
+    p1 := Person{
+        Name:   "Alice",
+        Emails: []string{"alice@test.com"},
+    }
+
+    // Deep copy
+    p2 := Person{
+        Name:   p1.Name,
+        Emails: make([]string, len(p1.Emails)),
+    }
+    copy(p2.Emails, p1.Emails)
+
+    // Now independent
+    p2.Emails[0] = "bob@test.com"
+
+    fmt.Println(p1.Emails[0])  // "alice@test.com" (unchanged)
+    fmt.Println(p2.Emails[0])  // "bob@test.com"
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Empty Structs</li>
+    <br/>
+    <ul>
+        <li>Empty structs have zero size, useful for signaling:</li>
+<pre><code class="language-go line-numbers">type Empty struct{}
+
+// Size of empty struct
+var e Empty
+fmt.Println(unsafe.Sizeof(e))  // 0 bytes
+
+// Common use: Set implementation
+type Set map[string]struct{}
+
+func main() {
+    set := make(Set)
+
+    // Add elements
+    set["apple"] = struct{}{}
+    set["banana"] = struct{}{}
+
+    // Check membership
+    if _, exists := set["apple"]; exists {
+        fmt.Println("apple is in set")
+    }
+
+    // Delete
+    delete(set, "apple")
+}</code></pre>
+        <br/>
+        <li><b>Use case: Channel signaling</b></li>
+<pre><code class="language-go line-numbers">done := make(chan struct{})
+
+go func() {
+    // Do work
+    time.Sleep(2 * time.Second)
+
+    // Signal completion
+    close(done)
+}()
+
+// Wait for signal
+<-done
+fmt.Println("Done!")</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Constructor Functions</li>
+    <br/>
+    <ul>
+        <li>Go doesn't have constructors, but you can create factory functions:</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name  string
+    Age   int
+    Email string
+}
+
+// Constructor function (convention: New + TypeName)
+func NewPerson(name string, age int) *Person {
+    return &Person{
+        Name:  name,
+        Age:   age,
+        Email: strings.ToLower(name) + "@example.com",
+    }
+}
+
+func main() {
+    p := NewPerson("Alice", 30)
+    fmt.Printf("%+v\n", p)
+    // &{Name:Alice Age:30 Email:alice@example.com}
+}</code></pre>
+        <br/>
+        <li>Constructor with validation:</li>
+<pre><code class="language-go line-numbers">func NewPerson(name string, age int) (*Person, error) {
+    if name == "" {
+        return nil, errors.New("name cannot be empty")
+    }
+    if age < 0 || age > 150 {
+        return nil, errors.New("invalid age")
+    }
+
+    return &Person{
+        Name: name,
+        Age:  age,
+    }, nil
+}
+
+func main() {
+    p, err := NewPerson("Alice", 30)
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(p.Name)
+}</code></pre>
+        <br/>
+        <li>Constructor with options (functional options pattern):</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    Name  string
+    Age   int
+    Email string
+}
+
+type Option func(*Person)
+
+func WithEmail(email string) Option {
+    return func(p *Person) {
+        p.Email = email
+    }
+}
+
+func WithAge(age int) Option {
+    return func(p *Person) {
+        p.Age = age
+    }
+}
+
+func NewPerson(name string, opts ...Option) *Person {
+    p := &Person{Name: name}
+
+    for _, opt := range opts {
+        opt(p)
+    }
+
+    return p
+}
+
+func main() {
+    p := NewPerson("Alice", WithAge(30), WithEmail("alice@test.com"))
+    fmt.Printf("%+v\n", p)
+}</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Patterns</li>
+    <br/>
+    <ul>
+        <li>Pattern 1: Builder pattern</li>
+<pre><code class="language-go line-numbers">type QueryBuilder struct {
+    table  string
+    fields []string
+    where  string
+    limit  int
+}
+
+func NewQueryBuilder(table string) *QueryBuilder {
+    return &QueryBuilder{table: table}
+}
+
+func (q *QueryBuilder) Select(fields ...string) *QueryBuilder {
+    q.fields = fields
+    return q
+}
+
+func (q *QueryBuilder) Where(condition string) *QueryBuilder {
+    q.where = condition
+    return q
+}
+
+func (q *QueryBuilder) Limit(n int) *QueryBuilder {
+    q.limit = n
+    return q
+}
+
+func (q *QueryBuilder) Build() string {
+    return fmt.Sprintf("SELECT %s FROM %s WHERE %s LIMIT %d",
+        strings.Join(q.fields, ", "), q.table, q.where, q.limit)
+}
+
+func main() {
+    query := NewQueryBuilder("users").
+        Select("id", "name", "email").
+        Where("age > 18").
+        Limit(10).
+        Build()
+
+    fmt.Println(query)
+}</code></pre>
+        <br/>
+        <li>Pattern 2: Getter/Setter methods</li>
+<pre><code class="language-go line-numbers">type Person struct {
+    name string  // Unexported
+    age  int     // Unexported
+}
+
+// Getter (no "Get" prefix)
+func (p *Person) Name() string {
+    return p.name
+}
+
+// Setter (use "Set" prefix)
+func (p *Person) SetName(name string) {
+    p.name = name
+}
+
+func (p *Person) Age() int {
+    return p.age
+}
+
+func (p *Person) SetAge(age int) error {
+    if age < 0 || age > 150 {
+        return errors.New("invalid age")
+    }
+    p.age = age
+    return nil
+}</code></pre>
+        <br/>
+        <li>Pattern 3: Implementing interfaces</li>
+<pre><code class="language-go line-numbers">type Animal interface {
+    Speak() string
+}
+
+type Dog struct {
+    Name string
+}
+
+func (d Dog) Speak() string {
+    return "Woof!"
+}
+
+type Cat struct {
+    Name string
+}
+
+func (c Cat) Speak() string {
+    return "Meow!"
+}
+
+func main() {
+    animals := []Animal{
+        Dog{Name: "Buddy"},
+        Cat{Name: "Whiskers"},
+    }
+
+    for _, animal := range animals {
+        fmt.Println(animal.Speak())
+    }
+}</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
