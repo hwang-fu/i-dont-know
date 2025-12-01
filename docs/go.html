@@ -154,6 +154,7 @@
         <li><a href="#go-variables">Variables and Data Types</a></li>
         <li><a href="#go-functions">Functions</a></li>
         <li><a href="#go-packages">Packages</a></li>
+        <li><a href="#go-module-naming">Understanding Go Module Names and Project Naming</a></li>
         <li><a href="#go-control-flow">Control Flow</a></li>
         <li><a href="#go-arrays-slices">Arrays and Slices</a></li>
     </ol>
@@ -2662,6 +2663,386 @@ func main() {
 
     stdSQL "database/sql"  // If needed
 )</code></pre>
+    </ul>
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="go-module-naming">Understanding Go Module Names and Project Naming</h3>
+<ol>
+
+    <li>What is a Module Path?</li>
+    <br/>
+    <ul>
+        <li>In Go, every project has a <b>module path</b> - a unique identifier for your project.</li>
+        <br/>
+        <li>The module path looks like a URL: <code>example.com/user/project</code></li>
+        <br/>
+        <li>This appears in your <code>go.mod</code> file:</li>
+<pre><code class="language-go line-numbers">module github.com/alice/myproject
+
+go 1.21</code></pre>
+        <br/>
+        <li>The module path does <u>not</u> have to be a real website - it's just a naming convention!</li>
+        <br/>
+        <li>However, if you plan to share your code, using a real repository URL makes it importable by others.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>The Structure of Module Paths</li>
+    <br/>
+    <ul>
+        <li>A typical module path has three parts:</li>
+<pre><code class="language-plaintext line-numbers">domain.com  /  username  /  project-name
+    ↓              ↓              ↓
+  hosting      namespace      project</code></pre>
+        <br/>
+        <li><b>Examples from real projects:</b></li>
+<pre><code class="language-go line-numbers">// GitHub projects
+github.com/gorilla/mux           // Gorilla web toolkit's router
+github.com/spf13/cobra           // CLI framework
+github.com/docker/docker         // Docker engine
+
+// Official Go projects
+golang.org/x/tools               // Go tools
+golang.org/x/crypto              // Cryptography packages
+
+// Company projects
+go.uber.org/zap                  // Uber's logging library
+cloud.google.com/go/storage      // Google Cloud Storage client
+github.com/aws/aws-sdk-go        // AWS SDK</code></pre>
+        <br/>
+        <li>The path can be deeper with subpackages:</li>
+<pre><code class="language-go line-numbers">github.com/myuser/myproject              // Root module
+github.com/myuser/myproject/api          // Subpackage
+github.com/myuser/myproject/api/v2       // Version-specific subpackage
+github.com/myuser/myproject/internal     // Internal package (not importable outside)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Naming for Different Scenarios</li>
+    <br/>
+    <ul>
+        <li><b>Scenario 1: Public project on GitHub</b></li>
+        <br/>
+        <ul>
+            <li>Use your GitHub repository URL:</li>
+<pre><code class="language-bash line-numbers">$ mkdir myproject
+$ cd myproject
+$ go mod init github.com/yourusername/myproject</code></pre>
+            <li>This allows others to import your code:</li>
+<pre><code class="language-bash line-numbers">$ go get github.com/yourusername/myproject</code></pre>
+        </ul>
+        <br/>
+        <br/>
+        <li><b>Scenario 2: Private/local project (not shared)</b></li>
+        <br/>
+        <ul>
+            <li>Use any domain-like name you want:</li>
+<pre><code class="language-bash line-numbers">$ go mod init mycompany.local/myproject
+$ go mod init example.com/learning/hello
+$ go mod init local/myapp</code></pre>
+            <li>These won't work with <code>go get</code>, but that's fine for personal projects!</li>
+        </ul>
+        <br/>
+        <br/>
+        <li><b>Scenario 3: Company internal project</b></li>
+        <br/>
+        <ul>
+            <li>Use your company's domain:</li>
+<pre><code class="language-bash line-numbers">$ go mod init acme.com/internal/billing
+$ go mod init mycompany.io/services/auth</code></pre>
+            <li>Can configure private repositories:</li>
+<pre><code class="language-bash line-numbers"># Tell Go this is a private module
+$ export GOPRIVATE=acme.com/*
+$ go get acme.com/internal/shared</code></pre>
+        </ul>
+        <br/>
+        <br/>
+        <li><b>Scenario 4: Learning/experimentation</b></li>
+        <br/>
+        <ul>
+            <li>Use simple names for quick projects:</li>
+<pre><code class="language-bash line-numbers">$ go mod init hello
+$ go mod init calculator
+$ go mod init example.com/tutorial</code></pre>
+            <li>Perfect for following tutorials or testing ideas!</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Domain Patterns</li>
+    <br/>
+    <ul>
+        <li><b>GitHub (most common):</b></li>
+<pre><code class="language-plaintext line-numbers">github.com/username/project-name
+
+Examples:
+github.com/alice/todo-api
+github.com/bob/image-processor
+github.com/teamname/backend-services</code></pre>
+        <br/>
+        <li><b>GitLab:</b></li>
+<pre><code class="language-plaintext line-numbers">gitlab.com/username/project-name
+
+Examples:
+gitlab.com/devteam/microservices
+gitlab.com/alice/web-scraper</code></pre>
+        <br/>
+        <li><b>Bitbucket:</b></li>
+<pre><code class="language-plaintext line-numbers">bitbucket.org/username/project-name</code></pre>
+        <br/>
+        <li><b>Custom domains:</b></li>
+<pre><code class="language-plaintext line-numbers">yourname.dev/project
+code.yourcompany.com/team/project
+pkg.mysite.io/library</code></pre>
+        <br/>
+        <li><b>Official Go packages:</b></li>
+<pre><code class="language-plaintext line-numbers">golang.org/x/...         # Extended Go libraries
+go.googlesource.com/...  # Google's Go repositories</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Your First Module</li>
+<pre><code class="language-bash line-numbers"># 1. Create project directory
+$ mkdir hello-world
+$ cd hello-world
+
+# 2. Initialize Go module with a name
+$ go mod init github.com/yourusername/hello-world
+
+# This creates go.mod file:
+# module github.com/yourusername/hello-world
+#
+# go 1.21
+
+# 3. Create your Go file
+$ cat &gt; main.go &lt;&lt; 'EOF'
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, World!")
+}
+EOF
+
+# 4. Run it
+$ go run main.go
+Hello, World!
+
+# 5. Build executable
+$ go build
+$ ./hello-world
+Hello, World!
+</code></pre>
+    <br/><br/>
+
+
+    <li>The go.mod File Explained</li>
+    <br/>
+    <ul>
+        <li>After <code>go mod init</code>, you get a <code>go.mod</code> file:</li>
+<pre><code class="language-go line-numbers">module github.com/alice/myproject
+
+go 1.21
+
+require (
+    github.com/gin-gonic/gin v1.9.1
+    golang.org/x/crypto v0.14.0
+)
+
+replace github.com/old/package =&gt; github.com/new/package v1.2.3
+</code></pre>
+        <br/>
+        <li><b>Key sections:</b></li>
+        <ul>
+            <br/>
+            <li><code>module</code>: Your project's module path (the name you chose)</li>
+            <br/>
+            <li><code>go</code>: Minimum Go version required</li>
+            <br/>
+            <li><code>require</code>: Dependencies your project needs</li>
+            <br/>
+            <li><code>replace</code>: Override dependency locations (optional)</li>
+        </ul>
+        <br/>
+        <li>Dependencies are added automatically when you import and build:</li>
+<pre><code class="language-bash line-numbers"># Import a package in your code
+import "github.com/gin-gonic/gin"
+
+# Build or run - Go automatically adds to go.mod
+$ go build
+go: downloading github.com/gin-gonic/gin v1.9.1
+go: downloading github.com/gin-contrib/sse v0.1.0
+...</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Importing Your Own Packages</li>
+    <br/>
+    <ul>
+        <li>Once you have a module name, you can create subpackages:</li>
+<pre><code class="language-plaintext line-numbers">myproject/
+  go.mod                    # module github.com/alice/myproject
+  main.go
+  utils/
+    helpers.go
+  api/
+    handlers.go
+    routes.go</code></pre>
+        <br/>
+        <li><b>In helpers.go:</b></li>
+<pre><code class="language-go line-numbers">package utils
+
+func FormatName(first, last string) string {
+    return first + " " + last
+}</code></pre>
+        <br/>
+        <li><b>In main.go:</b></li>
+<pre><code class="language-go line-numbers">package main
+
+import (
+    "fmt"
+    "github.com/alice/myproject/utils"  // Import your own package
+    "github.com/alice/myproject/api"
+)
+
+func main() {
+    name := utils.FormatName("Alice", "Smith")
+    fmt.Println(name)
+}</code></pre>
+        <br/>
+        <li><b>Key rule:</b> Import paths = module path + subdirectory path</li>
+<pre><code class="language-plaintext line-numbers">Module path:  github.com/alice/myproject
+Subdirectory: utils/
+Import path:  github.com/alice/myproject/utils</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Versioning in Module Names</li>
+    <br/>
+    <ul>
+        <li>For version 2 and above, include version in module path:</li>
+<pre><code class="language-go line-numbers">// Version 1.x
+module github.com/alice/myproject
+
+// Version 2.x and above
+module github.com/alice/myproject/v2
+
+// Version 3.x
+module github.com/alice/myproject/v3</code></pre>
+        <br/>
+        <li>This allows multiple major versions to coexist:</li>
+<pre><code class="language-go line-numbers">import (
+    v1 "github.com/alice/myproject"
+    v2 "github.com/alice/myproject/v2"
+)
+
+func main() {
+    // Use both versions in same program
+    v1.DoSomething()
+    v2.DoSomething()
+}</code></pre>
+        <br/>
+        <li><b>Directory structure for versioned modules:</b></li>
+<pre><code class="language-plaintext line-numbers">myproject/
+  go.mod              # module github.com/alice/myproject (v1)
+  main.go
+  v2/
+    go.mod            # module github.com/alice/myproject/v2
+    main.go
+  v3/
+    go.mod            # module github.com/alice/myproject/v3
+    main.go</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Working with Local Modules (Development)</li>
+    <br/>
+    <ul>
+        <li>When developing multiple modules locally, use <code>replace</code> directive:</li>
+<pre><code class="language-plaintext line-numbers">Projects/
+  myapp/
+    go.mod          # module github.com/alice/myapp
+    main.go
+  mylib/
+    go.mod          # module github.com/alice/mylib
+    lib.go</code></pre>
+        <br/>
+        <li><b>In myapp/go.mod:</b></li>
+<pre><code class="language-go line-numbers">module github.com/alice/myapp
+
+go 1.21
+
+require github.com/alice/mylib v0.0.0
+
+// Point to local directory during development
+replace github.com/alice/mylib => ../mylib</code></pre>
+        <br/>
+        <li><b>In myapp/main.go:</b></li>
+<pre><code class="language-go line-numbers">package main
+
+import "github.com/alice/mylib"
+
+func main() {
+    mylib.DoSomething()
+}</code></pre>
+        <br/>
+        <li>The <code>replace</code> directive lets you test local changes before publishing!</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices</li>
+    <br/>
+    <ul>
+        <li><b>Use lowercase:</b> Module paths should be lowercase</li>
+<pre><code class="language-bash line-numbers"># Good
+$ go mod init github.com/alice/my-project
+
+# Avoid (even if GitHub allows it)
+$ go mod init github.com/Alice/My-Project</code></pre>
+        <br/>
+        <li><b>Use hyphens, not underscores:</b></li>
+<pre><code class="language-bash line-numbers"># Preferred
+github.com/alice/todo-list
+
+# Less common
+github.com/alice/todo_list</code></pre>
+        <br/>
+        <li><b>Match your repository name exactly:</b></li>
+<pre><code class="language-bash line-numbers"># If GitHub repo is "my-awesome-project"
+$ go mod init github.com/alice/my-awesome-project
+
+# Not
+$ go mod init github.com/alice/myawesomeproject</code></pre>
+        <br/>
+        <li><b>Keep names descriptive but concise:</b></li>
+<pre><code class="language-bash line-numbers"># Good
+github.com/alice/http-router
+github.com/alice/json-validator
+
+# Too generic
+github.com/alice/utils
+github.com/alice/tools</code></pre>
+        <br/>
+        <li><b>For organization projects, use organization name:</b></li>
+<pre><code class="language-bash line-numbers">github.com/myorg/project
+github.com/google/go-cloud
+github.com/kubernetes/kubernetes</code></pre>
     </ul>
     <br/><br/>
 </ol>
