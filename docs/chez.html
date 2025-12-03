@@ -159,6 +159,9 @@
         <li><a href="#scm-debugging">Debugging</a></li>
         <li><a href="#scm-foreign-interface">Foreign Interface</a></li>
         <li><a href="#scm-binding-forms">Binding Forms</a></li>
+        <li><a href="#scm-control-structures">Control Structures</a></li>
+        <li><a href="#scm-"></a></li>
+        <li><a href="#scm-"></a></li>
     </ol>
 </nav>
 <hr/>
@@ -7807,6 +7810,1241 @@ counter                     ; 0 (restored)
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-control-structures">Control Structures in Chez Scheme</h3>
+<ol>
+
+    <li>Conditionals</li>
+    <br/>
+    <ul>
+        <li><code>if</code> is the fundamental conditional:</li>
+<pre><code class="language-scheme line-numbers">; Basic if with two branches
+(if (> 5 3)
+    'yes
+    'no)                    ; yes
+
+; Without else branch (returns unspecified if false)
+(if (> 5 3)
+    (display "5 is greater"))
+
+; Multiple expressions require begin
+(if (even? 4)
+    (begin
+      (display "It's even")
+      (newline)
+      'even)
+    (begin
+      (display "It's odd")
+      (newline)
+      'odd))
+
+; Nested if
+(define (sign n)
+  (if (> n 0)
+      'positive
+      (if (< n 0)
+          'negative
+          'zero)))</code></pre>
+        <br/>
+        <li><code>cond</code> handles multiple conditions:</li>
+<pre><code class="language-scheme line-numbers">; Basic cond
+(define (grade score)
+  (cond
+    [(>= score 90) 'A]
+    [(>= score 80) 'B]
+    [(>= score 70) 'C]
+    [(>= score 60) 'D]
+    [else 'F]))
+
+(grade 85)                  ; B
+
+; Multiple expressions per clause (implicit begin)
+(cond
+  [(assq 'name data)
+   => (lambda (pair)
+        (display "Found: ")
+        (display (cdr pair))
+        (cdr pair))]
+  [else
+   (display "Not found")
+   #f])
+
+; Using => with procedure
+(cond
+  [(assoc 'key alist) => cdr]  ; Apply cdr to result if truthy
+  [else 'not-found])
+
+; Guard expressions
+(define (safe-divide a b)
+  (cond
+    [(zero? b) 'division-by-zero]
+    [(and (integer? a) (integer? b)) (quotient a b)]
+    [else (/ a b)]))</code></pre>
+        <br/>
+        <li><code>case</code> dispatches on values:</li>
+<pre><code class="language-scheme line-numbers">; Basic case
+(define (day-type day)
+  (case day
+    [(saturday sunday) 'weekend]
+    [(monday tuesday wednesday thursday friday) 'weekday]
+    [else 'unknown]))
+
+(day-type 'saturday)        ; weekend
+(day-type 'monday)          ; weekday
+
+; Multiple values per clause
+(define (vowel? c)
+  (case c
+    [(#\a #\e #\i #\o #\u
+      #\A #\E #\I #\O #\U) #t]
+    [else #f]))
+
+; case uses eqv? for comparison
+(case (+ 1 1)
+  [(1) 'one]
+  [(2) 'two]
+  [(3) 'three]
+  [else 'many])             ; two
+
+; Numeric dispatch
+(define (month-name n)
+  (case n
+    [(1) "January"]
+    [(2) "February"]
+    [(3) "March"]
+    [(4) "April"]
+    [(5) "May"]
+    [(6) "June"]
+    [(7) "July"]
+    [(8) "August"]
+    [(9) "September"]
+    [(10) "October"]
+    [(11) "November"]
+    [(12) "December"]
+    [else "Invalid month"]))</code></pre>
+        <br/>
+        <li><code>when</code> and <code>unless</code> for one-sided conditionals:</li>
+<pre><code class="language-scheme line-numbers">; when executes body if test is true
+(when (> x 0)
+  (display "Positive")
+  (newline)
+  (process-positive x))
+
+; Equivalent to:
+(if (> x 0)
+    (begin
+      (display "Positive")
+      (newline)
+      (process-positive x)))
+
+; unless executes body if test is false
+(unless (null? lst)
+  (display "Processing: ")
+  (display (car lst))
+  (newline))
+
+; Equivalent to:
+(when (not (null? lst))
+  ...)
+
+; Common patterns
+(define (ensure-positive x)
+  (unless (positive? x)
+    (error 'ensure-positive "expected positive number" x))
+  x)
+
+(define (maybe-log message)
+  (when (current-debug-mode)
+    (fprintf (current-error-port) "DEBUG: ~a~n" message)))</code></pre>
+        <br/>
+        <li><code>and</code> and <code>or</code> with short-circuit evaluation:</li>
+<pre><code class="language-scheme line-numbers">; and returns first false value or last value
+(and #t #t #t)              ; #t
+(and #t #f #t)              ; #f
+(and 1 2 3)                 ; 3
+(and)                       ; #t
+
+; Short-circuit: stops at first false
+(and (pair? x)
+     (number? (car x))
+     (> (car x) 0))         ; Safe - checks pair? first
+
+; or returns first true value or last value
+(or #f #f #t)               ; #t
+(or #f #f #f)               ; #f
+(or 1 2 3)                  ; 1
+(or #f 'default)            ; default
+(or)                        ; #f
+
+; Short-circuit: stops at first true
+(or (cached-value key)
+    (compute-expensive-value key))
+
+; Default values pattern
+(define (greet name)
+  (printf "Hello, ~a!~n" (or name "World")))
+
+(greet "Alice")             ; Hello, Alice!
+(greet #f)                  ; Hello, World!
+
+; Validation chains
+(define (valid-input? x)
+  (and (string? x)
+       (> (string-length x) 0)
+       (< (string-length x) 100)
+       (string-alphabetic? x)))</code></pre>
+        <br/>
+        <li><code>not</code> and <code>boolean</code> conversions:</li>
+<pre><code class="language-scheme line-numbers">; not negates boolean
+(not #f)                    ; #t
+(not #t)                    ; #f
+(not '())                   ; #f (only #f is false)
+(not 0)                     ; #f (only #f is false)
+
+; Double negation for boolean conversion
+(not (not 'anything))       ; #t
+(not (not #f))              ; #f
+
+; Explicit boolean check
+(define (boolean-value x)
+  (if x #t #f))
+
+; In Scheme, only #f is false
+(if '() 'true 'false)       ; true
+(if 0 'true 'false)         ; true
+(if "" 'true 'false)        ; true</code></pre>
+        <br/>
+        <li><code>exclusive-cond</code> (Chez extension) for exhaustive cases:</li>
+<pre><code class="language-scheme line-numbers">; exclusive-cond requires exactly one clause to match
+; Useful for ensuring complete case coverage
+
+(define (classify n)
+  (exclusive-cond
+    [(negative? n) 'negative]
+    [(zero? n) 'zero]
+    [(positive? n) 'positive]))
+
+; Raises exception if no clause matches or multiple match</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Mapping and Folding</li>
+    <br/>
+    <ul>
+        <li><code>map</code> applies a procedure to each element:</li>
+<pre><code class="language-scheme line-numbers">; Single list
+(map add1 '(1 2 3 4 5))     ; (2 3 4 5 6)
+
+(map (lambda (x) (* x x)) '(1 2 3 4))
+; (1 4 9 16)
+
+; Multiple lists (must be same length)
+(map + '(1 2 3) '(10 20 30))
+; (11 22 33)
+
+(map cons '(a b c) '(1 2 3))
+; ((a . 1) (b . 2) (c . 3))
+
+(map (lambda (x y z) (+ x y z))
+     '(1 2 3)
+     '(4 5 6)
+     '(7 8 9))
+; (12 15 18)
+
+; map preserves list structure
+(map list '(a b c) '(1 2 3))
+; ((a 1) (b 2) (c 3))
+
+; Nested mapping
+(map (lambda (row)
+       (map (lambda (x) (* x 2)) row))
+     '((1 2 3) (4 5 6)))
+; ((2 4 6) (8 10 12))</code></pre>
+        <br/>
+        <li><code>for-each</code> for side effects:</li>
+<pre><code class="language-scheme line-numbers">; Like map but doesn't collect results
+(for-each display '(1 2 3 4 5))
+; Prints: 12345
+
+(for-each
+  (lambda (x)
+    (printf "Processing ~a~n" x))
+  '(a b c))
+; Processing a
+; Processing b
+; Processing c
+
+; Multiple lists
+(for-each
+  (lambda (name age)
+    (printf "~a is ~a years old~n" name age))
+  '("Alice" "Bob" "Carol")
+  '(30 25 35))
+
+; Returns unspecified value
+(for-each display '(1 2 3))  ; Returns #<void></code></pre>
+        <br/>
+        <li><code>fold-left</code> accumulates left to right:</li>
+<pre><code class="language-scheme line-numbers">; (fold-left proc init list)
+; Computes: (proc (proc (proc init e1) e2) e3) ...
+
+; Sum of list
+(fold-left + 0 '(1 2 3 4 5))  ; 15
+
+; Product
+(fold-left * 1 '(1 2 3 4 5))  ; 120
+
+; Building a list (reverses)
+(fold-left (lambda (acc x) (cons x acc))
+           '()
+           '(1 2 3))        ; (3 2 1)
+
+; Finding maximum
+(fold-left max -inf.0 '(3 1 4 1 5 9 2 6))  ; 9
+
+; Counting elements
+(fold-left (lambda (count x)
+             (if (even? x) (+ count 1) count))
+           0
+           '(1 2 3 4 5 6))  ; 3
+
+; Multiple lists
+(fold-left (lambda (acc x y) (+ acc (* x y)))
+           0
+           '(1 2 3)
+           '(4 5 6))        ; 32 = 1*4 + 2*5 + 3*6
+
+; Association list from two lists
+(fold-left (lambda (acc k v) (cons (cons k v) acc))
+           '()
+           '(a b c)
+           '(1 2 3))        ; ((c . 3) (b . 2) (a . 1))</code></pre>
+        <br/>
+        <li><code>fold-right</code> accumulates right to left:</li>
+<pre><code class="language-scheme line-numbers">; (fold-right proc init list)
+; Computes: (proc e1 (proc e2 (proc e3 init))) ...
+
+; Building a list (preserves order)
+(fold-right cons '() '(1 2 3))
+; (1 2 3)
+
+; Append implementation
+(define (my-append lst1 lst2)
+  (fold-right cons lst2 lst1))
+
+(my-append '(1 2 3) '(4 5 6))  ; (1 2 3 4 5 6)
+
+; Flatten one level
+(fold-right append '() '((1 2) (3 4) (5 6)))
+; (1 2 3 4 5 6)
+
+; Filter implementation
+(define (my-filter pred lst)
+  (fold-right
+    (lambda (x acc)
+      (if (pred x) (cons x acc) acc))
+    '()
+    lst))
+
+(my-filter even? '(1 2 3 4 5 6))  ; (2 4 6)
+
+; Map implementation
+(define (my-map proc lst)
+  (fold-right
+    (lambda (x acc)
+      (cons (proc x) acc))
+    '()
+    lst))
+
+(my-map add1 '(1 2 3))      ; (2 3 4)</code></pre>
+        <br/>
+        <li><code>filter</code>, <code>partition</code>, and <code>remove</code>:</li>
+<pre><code class="language-scheme line-numbers">; filter keeps elements satisfying predicate
+(filter even? '(1 2 3 4 5 6))
+; (2 4 6)
+
+(filter (lambda (x) (> x 3)) '(1 2 3 4 5))
+; (4 5)
+
+(filter string? '(1 "a" 2 "b" 3))
+; ("a" "b")
+
+; partition splits into matching and non-matching
+(partition even? '(1 2 3 4 5 6))
+; Returns two values: (2 4 6) and (1 3 5)
+
+(let-values ([(evens odds) (partition even? '(1 2 3 4 5 6))])
+  (printf "Evens: ~a, Odds: ~a~n" evens odds))
+
+; remove/remp removes elements
+(remove 3 '(1 2 3 4 3 5))   ; (1 2 4 5) - uses equal?
+(remv 3 '(1 2 3 4 3 5))     ; (1 2 4 5) - uses eqv?
+(remq 'a '(a b a c a))      ; (b c) - uses eq?
+
+(remp even? '(1 2 3 4 5 6)) ; (1 3 5) - removes if pred true
+
+; remove duplicates (Chez extension)
+(remove-duplicates '(1 2 1 3 2 4))  ; (1 2 3 4)</code></pre>
+        <br/>
+        <li><code>find</code>, <code>exists</code>, and <code>for-all</code>:</li>
+<pre><code class="language-scheme line-numbers">; find returns first match or #f
+(find even? '(1 3 5 6 7))   ; 6
+(find even? '(1 3 5 7))     ; #f
+
+(find (lambda (x) (> x 10)) '(5 8 12 3))  ; 12
+
+; exists checks if any element satisfies predicate
+(exists even? '(1 3 5 6 7)) ; #t
+(exists even? '(1 3 5 7 9)) ; #f
+
+; Multiple lists - true if any tuple satisfies
+(exists < '(1 2 3) '(2 2 2))  ; #t (1 < 2)
+
+; for-all checks if all elements satisfy predicate
+(for-all even? '(2 4 6 8))  ; #t
+(for-all even? '(2 4 5 8))  ; #f
+
+; Multiple lists
+(for-all < '(1 2 3) '(2 3 4))  ; #t (all pairs satisfy <)
+
+; Short-circuit behavior
+(for-all
+  (lambda (x)
+    (printf "Checking ~a~n" x)
+    (even? x))
+  '(2 4 5 8))
+; Prints: Checking 2, Checking 4, Checking 5
+; Returns: #f (stops at first failure)</code></pre>
+        <br/>
+        <li><code>map</code> variants and <code>andmap</code>/<code>ormap</code>:</li>
+<pre><code class="language-scheme line-numbers">; andmap - like for-all but returns last value
+(andmap even? '(2 4 6))     ; #t
+(andmap values '(1 2 3))    ; 3
+
+; ormap - like exists but returns the actual value
+(ormap (lambda (x) (and (even? x) x))
+       '(1 3 5 6 7))        ; 6
+
+; vector-map for vectors
+(vector-map add1 '#(1 2 3 4))
+; #(2 3 4 5)
+
+(vector-map + '#(1 2 3) '#(10 20 30))
+; #(11 22 33)
+
+; string-map for strings (character by character)
+(define (string-map proc str)
+  (list->string
+    (map proc (string->list str))))
+
+; hash table mapping
+(define ht (make-eq-hashtable))
+(hashtable-set! ht 'a 1)
+(hashtable-set! ht 'b 2)
+
+(vector-map
+  (lambda (k) (cons k (hashtable-ref ht k #f)))
+  (hashtable-keys ht))</code></pre>
+        <br/>
+        <li>List comprehension patterns:</li>
+<pre><code class="language-scheme line-numbers">; Cartesian product
+(define (cartesian-product lst1 lst2)
+  (apply append
+    (map (lambda (x)
+           (map (lambda (y) (list x y))
+                lst2))
+         lst1)))
+
+(cartesian-product '(a b) '(1 2 3))
+; ((a 1) (a 2) (a 3) (b 1) (b 2) (b 3))
+
+; Filter-map (map + filter)
+(define (filter-map proc lst)
+  (fold-right
+    (lambda (x acc)
+      (let ([result (proc x)])
+        (if result
+            (cons result acc)
+            acc)))
+    '()
+    lst))
+
+(filter-map (lambda (x)
+              (and (even? x) (* x 2)))
+            '(1 2 3 4 5))   ; (4 8)
+
+; Zip multiple lists
+(define (zip . lists)
+  (apply map list lists))
+
+(zip '(1 2 3) '(a b c) '(x y z))
+; ((1 a x) (2 b y) (3 c z))
+
+; Enumerate with index
+(define (enumerate lst)
+  (let loop ([lst lst] [i 0])
+    (if (null? lst)
+        '()
+        (cons (cons i (car lst))
+              (loop (cdr lst) (+ i 1))))))
+
+(enumerate '(a b c))        ; ((0 . a) (1 . b) (2 . c))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Continuations</li>
+    <br/>
+    <ul>
+        <li><code>call/cc</code> (call-with-current-continuation) captures control:</li>
+<pre><code class="language-scheme line-numbers">; Basic call/cc
+(call/cc
+  (lambda (k)
+    (+ 1 (k 42))))          ; 42 (jumps out, skipping + 1)
+
+; Early exit from recursion
+(define (find-first pred lst)
+  (call/cc
+    (lambda (return)
+      (for-each
+        (lambda (x)
+          (when (pred x)
+            (return x)))
+        lst)
+      #f)))
+
+(find-first even? '(1 3 5 6 7 8))  ; 6
+
+; The continuation represents "the rest of the computation"
+(+ 1 (call/cc (lambda (k) (* 2 (k 3)))))
+; k is "add 1 to the result"
+; (k 3) means "add 1 to 3" = 4</code></pre>
+        <br/>
+        <li>Saving and reusing continuations:</li>
+<pre><code class="language-scheme line-numbers">; Store continuation for later use
+(define saved-k #f)
+
+(+ 1 (call/cc
+       (lambda (k)
+         (set! saved-k k)
+         2)))               ; 3
+
+; Resume the computation with different value
+(saved-k 10)                ; 11
+(saved-k 100)               ; 101
+
+; Continuations can be called multiple times
+(define (make-generator lst)
+  (define current lst)
+  (lambda ()
+    (call/cc
+      (lambda (return)
+        (for-each
+          (lambda (x)
+            (call/cc
+              (lambda (resume)
+                (set! current resume)
+                (return x))))
+          current)
+        (return 'done)))))
+
+(define gen (make-generator '(1 2 3)))
+(gen)                       ; 1
+(gen)                       ; 2
+(gen)                       ; 3
+(gen)                       ; done</code></pre>
+        <br/>
+        <li>Implementing control structures with continuations:</li>
+<pre><code class="language-scheme line-numbers">; Return (early exit)
+(define (process-items items)
+  (call/cc
+    (lambda (return)
+      (for-each
+        (lambda (item)
+          (when (error-item? item)
+            (return 'error))
+          (process item))
+        items)
+      'success)))
+
+; Break and continue for loops
+(define-syntax while-break
+  (syntax-rules ()
+    [(_ test body ...)
+     (call/cc
+       (lambda (break)
+         (let loop ()
+           (when test
+             body ...
+             (loop)))))]))
+
+; Exception-like behavior
+(define (with-exception-handler handler thunk)
+  (call/cc
+    (lambda (k)
+      (let ([raise (lambda (exn) (k (handler exn)))])
+        (thunk raise)))))
+
+(with-exception-handler
+  (lambda (e) (printf "Error: ~a~n" e) 'error)
+  (lambda (raise)
+    (raise "something went wrong")
+    'never-reached))</code></pre>
+        <br/>
+        <li><code>call/1cc</code> for one-shot continuations:</li>
+<pre><code class="language-scheme line-numbers">; call/1cc creates a one-shot continuation (more efficient)
+(call/1cc
+  (lambda (k)
+    (k 42)))                ; 42
+
+; One-shot means it can only be called once
+(define one-shot-k #f)
+
+(call/1cc
+  (lambda (k)
+    (set! one-shot-k k)
+    'initial))              ; initial
+
+(one-shot-k 'resumed)       ; resumed
+; (one-shot-k 'again)       ; ERROR: already used
+
+; Use call/1cc when you only need escape continuation
+(define (find-first-1cc pred lst)
+  (call/1cc
+    (lambda (return)
+      (for-each
+        (lambda (x)
+          (when (pred x) (return x)))
+        lst)
+      #f)))</code></pre>
+        <br/>
+        <li><code>dynamic-wind</code> for guaranteed cleanup:</li>
+<pre><code class="language-scheme line-numbers">; (dynamic-wind before thunk after)
+; before and after run on entry/exit, even with continuations
+
+(dynamic-wind
+  (lambda () (display "entering\n"))
+  (lambda () (display "body\n") 42)
+  (lambda () (display "leaving\n")))
+; Prints: entering, body, leaving
+; Returns: 42
+
+; Resource management
+(define (with-file filename proc)
+  (let ([port #f])
+    (dynamic-wind
+      (lambda () (set! port (open-input-file filename)))
+      (lambda () (proc port))
+      (lambda () (close-port port)))))
+
+(with-file "data.txt"
+  (lambda (port)
+    (get-line port)))
+
+; Re-entry also triggers before/after
+(define k #f)
+(dynamic-wind
+  (lambda () (printf "enter~n"))
+  (lambda ()
+    (call/cc (lambda (c) (set! k c)))
+    (printf "body~n"))
+  (lambda () (printf "exit~n")))
+; First: enter, body, exit
+
+(k 'resume)
+; Re-entry: enter, body, exit</code></pre>
+        <br/>
+        <li>Continuation marks (for stack inspection):</li>
+<pre><code class="language-scheme line-numbers">; Continuation marks attach data to continuations
+(define trace-key (make-continuation-mark-key 'trace))
+
+(define (traced-call name thunk)
+  (with-continuation-mark trace-key name
+    (thunk)))
+
+(define (get-trace)
+  (continuation-mark-set->list
+    (current-continuation-marks)
+    trace-key))
+
+(traced-call 'outer
+  (lambda ()
+    (traced-call 'middle
+      (lambda ()
+        (traced-call 'inner
+          (lambda ()
+            (get-trace)))))))
+; (inner middle outer)
+
+; Useful for debugging, profiling, dynamic scope</code></pre>
+        <br/>
+        <li><code>let/cc</code> and <code>let/1cc</code> shorthand:</li>
+<pre><code class="language-scheme line-numbers">; Chez provides convenient shorthand
+(let/cc k
+  (+ 1 (k 42)))             ; 42
+
+; Equivalent to:
+(call/cc (lambda (k) (+ 1 (k 42))))
+
+; One-shot version
+(let/1cc k
+  (when (problem?)
+    (k 'error))
+  'success)
+
+; Common idiom: early return
+(define (validate data)
+  (let/cc return
+    (unless (list? data)
+      (return "must be a list"))
+    (unless (> (length data) 0)
+      (return "must be non-empty"))
+    (unless (for-all number? data)
+      (return "must contain only numbers"))
+    #t))</code></pre>
+        <br/>
+        <li>Coroutines with continuations:</li>
+<pre><code class="language-scheme line-numbers">; Simple coroutine implementation
+(define (make-coroutine proc)
+  (let ([local-cont #f]
+        [resume-cont #f])
+
+    (define (yield value)
+      (call/cc
+        (lambda (k)
+          (set! local-cont k)
+          (resume-cont value))))
+
+    (define (resume value)
+      (call/cc
+        (lambda (k)
+          (set! resume-cont k)
+          (if local-cont
+              (local-cont value)
+              (proc yield)))))
+
+    resume))
+
+; Usage
+(define counter
+  (make-coroutine
+    (lambda (yield)
+      (let loop ([n 0])
+        (yield n)
+        (loop (+ n 1))))))
+
+(counter 'start)            ; 0
+(counter 'next)             ; 1
+(counter 'next)             ; 2</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Engines</li>
+    <br/>
+    <ul>
+        <li>Engines provide timed preemption for computations:</li>
+<pre><code class="language-scheme line-numbers">; (make-engine thunk) creates an engine
+; An engine is a computation with a fuel limit
+
+(define eng
+  (make-engine
+    (lambda ()
+      (let loop ([n 0])
+        (loop (+ n 1))))))  ; Infinite loop
+
+; Run engine with fuel (ticks)
+; Returns via complete or expire procedure
+(eng 1000
+     (lambda (ticks value)     ; complete: finished with fuel left
+       (printf "Completed with ~a ticks, value: ~a~n" ticks value))
+     (lambda (new-engine)      ; expire: ran out of fuel
+       (printf "Expired, can resume~n")
+       new-engine))
+
+; The engine mechanism:
+; - Allocate fuel (ticks)
+; - Run until fuel exhausted or computation completes
+; - If expired, get new engine to continue</code></pre>
+        <br/>
+        <li>Basic engine usage:</li>
+<pre><code class="language-scheme line-numbers">; Engine that completes
+(define eng1
+  (make-engine
+    (lambda ()
+      (+ 1 2 3))))
+
+(eng1 100
+      (lambda (ticks val)
+        (printf "Done! Result: ~a, Remaining: ~a~n" val ticks))
+      (lambda (e)
+        (printf "Expired~n")))
+; Done! Result: 6, Remaining: ~90
+
+; Engine that needs more fuel
+(define eng2
+  (make-engine
+    (lambda ()
+      (let loop ([n 0] [sum 0])
+        (if (= n 1000000)
+            sum
+            (loop (+ n 1) (+ sum n)))))))
+
+; May need multiple runs
+(define (run-to-completion engine fuel)
+  (engine fuel
+          (lambda (ticks value)
+            (printf "Complete: ~a~n" value)
+            value)
+          (lambda (new-engine)
+            (printf "Continuing...~n")
+            (run-to-completion new-engine fuel))))
+
+(run-to-completion eng2 10000)</code></pre>
+        <br/>
+        <li>Implementing timeouts with engines:</li>
+<pre><code class="language-scheme line-numbers">; Run computation with timeout
+(define (with-timeout fuel thunk default)
+  ((make-engine thunk)
+   fuel
+   (lambda (ticks value) value)
+   (lambda (engine) default)))
+
+; Examples
+(with-timeout 1000
+              (lambda () (+ 1 2 3))
+              'timeout)     ; 6
+
+(with-timeout 100
+              (lambda ()
+                (let loop () (loop)))
+              'timeout)     ; timeout
+
+; Timeout with continuation for resumption
+(define (with-timeout/resume fuel thunk)
+  (let ([result #f]
+        [remaining-engine #f])
+    ((make-engine thunk)
+     fuel
+     (lambda (ticks value)
+       (set! result (cons 'complete value)))
+     (lambda (engine)
+       (set! result 'expired)
+       (set! remaining-engine engine)))
+    (values result remaining-engine)))</code></pre>
+        <br/>
+        <li>Nested engines:</li>
+<pre><code class="language-scheme line-numbers">; Engines can be nested
+(define outer-engine
+  (make-engine
+    (lambda ()
+      (define inner-engine
+        (make-engine
+          (lambda ()
+            (let loop ([n 0])
+              (if (= n 100)
+                  'inner-done
+                  (loop (+ n 1)))))))
+
+      ; Run inner engine with portion of outer's fuel
+      (inner-engine 50
+                    (lambda (t v) (cons 'inner-complete v))
+                    (lambda (e) 'inner-expired)))))
+
+; Timer ticks are shared hierarchically
+(outer-engine 200
+              (lambda (t v) (printf "Outer complete: ~a~n" v))
+              (lambda (e) (printf "Outer expired~n")))</code></pre>
+        <br/>
+        <li>Engine-based round-robin scheduler:</li>
+<pre><code class="language-scheme line-numbers">; Simple cooperative multitasking
+(define (make-scheduler quantum)
+  (let ([ready-queue '()])
+
+    (define (add-task thunk)
+      (set! ready-queue
+            (append ready-queue
+                    (list (make-engine thunk)))))
+
+    (define (run)
+      (unless (null? ready-queue)
+        (let ([current (car ready-queue)])
+          (set! ready-queue (cdr ready-queue))
+          (current quantum
+                   (lambda (ticks value)
+                     (printf "Task completed: ~a~n" value)
+                     (run))
+                   (lambda (new-engine)
+                     (set! ready-queue
+                           (append ready-queue (list new-engine)))
+                     (run))))))
+
+    (values add-task run)))
+
+; Usage
+(define-values (add-task run-scheduler)
+  (make-scheduler 100))
+
+(add-task (lambda () (printf "Task 1 running~n") 'task1))
+(add-task (lambda () (printf "Task 2 running~n") 'task2))
+(add-task (lambda ()
+            (let loop ([n 3])
+              (when (> n 0)
+                (printf "Task 3 iteration ~a~n" n)
+                (loop (- n 1))))
+            'task3))
+
+(run-scheduler)</code></pre>
+        <br/>
+        <li><code>engine-block</code> for voluntary yielding:</li>
+<pre><code class="language-scheme line-numbers">; engine-block causes immediate expiration
+(define yielding-engine
+  (make-engine
+    (lambda ()
+      (printf "Phase 1~n")
+      (engine-block)        ; Yield to scheduler
+      (printf "Phase 2~n")
+      (engine-block)
+      (printf "Phase 3~n")
+      'done)))
+
+; Each run does one phase
+(define (step engine)
+  (engine 1000000           ; Plenty of fuel
+          (lambda (t v) (printf "Complete: ~a~n" v) #f)
+          (lambda (e) (printf "Yielded~n") e)))
+
+(define e1 (step yielding-engine))  ; Phase 1, Yielded
+(define e2 (step e1))               ; Phase 2, Yielded
+(define e3 (step e2))               ; Phase 3, Complete: done</code></pre>
+        <br/>
+        <li><code>engine-return</code> for early completion:</li>
+<pre><code class="language-scheme line-numbers">; engine-return immediately completes with value
+(define early-exit-engine
+  (make-engine
+    (lambda ()
+      (let loop ([n 0])
+        (when (= n 50)
+          (engine-return 'found-it))
+        (loop (+ n 1))))))
+
+(early-exit-engine 10000
+                   (lambda (t v) (printf "Result: ~a~n" v))
+                   (lambda (e) (printf "Expired~n")))
+; Result: found-it</code></pre>
+        <br/>
+        <li>Timed computations with engines:</li>
+<pre><code class="language-scheme line-numbers">; Benchmark with fixed fuel
+(define (benchmark-ticks fuel thunk)
+  (let ([start-fuel fuel])
+    ((make-engine thunk)
+     fuel
+     (lambda (remaining-ticks value)
+       (values value (- start-fuel remaining-ticks)))
+     (lambda (engine)
+       (values 'incomplete fuel)))))
+
+(let-values ([(result ticks) (benchmark-ticks 10000
+                                               (lambda ()
+                                                 (fold-left + 0
+                                                            (iota 1000))))])
+  (printf "Result: ~a, Ticks used: ~a~n" result ticks))
+
+; Adaptive execution - run until consistent result
+(define (stable-compute thunk max-fuel tolerance)
+  (let loop ([fuel 100])
+    (if (> fuel max-fuel)
+        'no-stable-result
+        (let-values ([(r1 t1) (benchmark-ticks fuel thunk)]
+                     [(r2 t2) (benchmark-ticks fuel thunk)])
+          (if (and (not (eq? r1 'incomplete))
+                   (not (eq? r2 'incomplete))
+                   (equal? r1 r2))
+              r1
+              (loop (* fuel 2)))))))</code></pre>
+        <br/>
+        <li>Comparing engines with threads:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Feature</th>
+            <th>Engines</th>
+            <th>Threads</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Preemption</td>
+            <td>Tick-based (deterministic)</td>
+            <td>Time-based (non-deterministic)</td>
+        </tr>
+        <tr>
+            <td>Scheduling</td>
+            <td>Explicit in Scheme</td>
+            <td>OS/runtime managed</td>
+        </tr>
+        <tr>
+            <td>Parallelism</td>
+            <td>None (cooperative)</td>
+            <td>True parallelism possible</td>
+        </tr>
+        <tr>
+            <td>State sharing</td>
+            <td>Sequential access</td>
+            <td>Concurrent (needs synchronization)</td>
+        </tr>
+        <tr>
+            <td>Debugging</td>
+            <td>Deterministic, reproducible</td>
+            <td>Race conditions possible</td>
+        </tr>
+        <tr>
+            <td>Use case</td>
+            <td>Timeouts, simulation, fair scheduling</td>
+            <td>I/O parallelism, CPU parallelism</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sequencing and Iteration</li>
+    <br/>
+    <ul>
+        <li><code>begin</code> sequences expressions:</li>
+<pre><code class="language-scheme line-numbers">; begin evaluates expressions in order, returns last
+(begin
+  (display "First")
+  (newline)
+  (display "Second")
+  (newline)
+  42)                       ; Returns 42
+
+; Implicit begin in lambda body
+(lambda (x)
+  (display "Computing...")
+  (newline)
+  (* x x))
+
+; Implicit begin in cond/case clauses
+(cond
+  [(positive? x)
+   (display "positive")
+   x]
+  [else
+   (display "non-positive")
+   0])</code></pre>
+        <br/>
+        <li><code>begin0</code> returns first value:</li>
+<pre><code class="language-scheme line-numbers">; begin0 evaluates all but returns first value
+(begin0
+  (compute-result)
+  (cleanup)
+  (log-completion))
+
+; Useful for returning value before side effects
+(define (pop! stack-ref)
+  (begin0
+    (car (stack-ref))       ; Return this
+    (stack-ref (cdr (stack-ref)))))  ; Then modify
+
+; Compare:
+(begin 1 2 3)               ; 3
+(begin0 1 2 3)              ; 1</code></pre>
+        <br/>
+        <li><code>do</code> loop:</li>
+<pre><code class="language-scheme line-numbers">; (do ((var init step) ...) (test result ...) body ...)
+
+; Factorial
+(do ([n 5 (- n 1)]
+     [acc 1 (* acc n)])
+    ((zero? n) acc))        ; 120
+
+; Build reversed list
+(do ([lst '(1 2 3 4 5) (cdr lst)]
+     [result '() (cons (car lst) result)])
+    ((null? lst) result))   ; (5 4 3 2 1)
+
+; With body for side effects
+(do ([i 0 (+ i 1)])
+    ((= i 5))
+  (printf "i = ~a~n" i))
+
+; Nested loops
+(do ([i 0 (+ i 1)])
+    ((= i 3))
+  (do ([j 0 (+ j 1)])
+      ((= j 3))
+    (printf "(~a,~a) " i j))
+  (newline))</code></pre>
+        <br/>
+        <li>Recursion patterns:</li>
+<pre><code class="language-scheme line-numbers">; Named let for tail-recursive loops
+(let loop ([n 10] [acc 0])
+  (if (zero? n)
+      acc
+      (loop (- n 1) (+ acc n))))  ; 55
+
+; Mutual recursion
+(letrec ([process-list
+          (lambda (lst)
+            (if (null? lst)
+                '()
+                (cons (process-item (car lst))
+                      (process-list (cdr lst)))))]
+         [process-item
+          (lambda (item)
+            (if (list? item)
+                (process-list item)
+                (* item 2)))])
+  (process-list '(1 (2 3) 4)))  ; (2 (4 6) 8)
+
+; Accumulator pattern
+(define (reverse-acc lst)
+  (let loop ([lst lst] [acc '()])
+    (if (null? lst)
+        acc
+        (loop (cdr lst) (cons (car lst) acc)))))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Delayed Evaluation</li>
+    <br/>
+    <ul>
+        <li><code>delay</code> and <code>force</code> for lazy evaluation:</li>
+<pre><code class="language-scheme line-numbers">; delay creates a promise
+(define p (delay (begin (display "Computing!") (+ 1 2))))
+; Nothing printed yet
+
+; force evaluates the promise
+(force p)                   ; Prints "Computing!", returns 3
+(force p)                   ; Returns 3 (cached, no recomputation)
+
+; Lazy infinite sequences
+(define (integers-from n)
+  (cons n (delay (integers-from (+ n 1)))))
+
+(define naturals (integers-from 0))
+
+(car naturals)              ; 0
+(car (force (cdr naturals))) ; 1
+(car (force (cdr (force (cdr naturals))))) ; 2
+
+; Take from lazy list
+(define (take-lazy n lazy-list)
+  (if (zero? n)
+      '()
+      (cons (car lazy-list)
+            (take-lazy (- n 1) (force (cdr lazy-list))))))
+
+(take-lazy 10 naturals)     ; (0 1 2 3 4 5 6 7 8 9)</code></pre>
+        <br/>
+        <li>Streams (SRFI-41 style):</li>
+<pre><code class="language-scheme line-numbers">; Stream primitives
+(define-syntax stream-cons
+  (syntax-rules ()
+    [(_ a b) (cons a (delay b))]))
+
+(define stream-car car)
+(define (stream-cdr s) (force (cdr s)))
+(define stream-null '())
+(define stream-null? null?)
+
+; Infinite stream of ones
+(define ones (stream-cons 1 ones))
+
+; Fibonacci stream
+(define fibs
+  (stream-cons 0
+    (stream-cons 1
+      (let loop ([a 0] [b 1])
+        (let ([c (+ a b)])
+          (stream-cons c (loop b c)))))))
+
+; Stream operations
+(define (stream-take n s)
+  (if (or (zero? n) (stream-null? s))
+      '()
+      (cons (stream-car s)
+            (stream-take (- n 1) (stream-cdr s)))))
+
+(define (stream-filter pred s)
+  (cond
+    [(stream-null? s) stream-null]
+    [(pred (stream-car s))
+     (stream-cons (stream-car s)
+                  (stream-filter pred (stream-cdr s)))]
+    [else (stream-filter pred (stream-cdr s))]))
+
+(stream-take 10 fibs)       ; (0 1 1 2 3 5 8 13 21 34)
+(stream-take 5 (stream-filter even? fibs))  ; (0 2 8 34 144)</code></pre>
+        <br/>
+        <li>Memoization patterns:</li>
+<pre><code class="language-scheme line-numbers">; Simple memoization with delay
+(define (memoize thunk)
+  (let ([promise (delay (thunk))])
+    (lambda () (force promise))))
+
+; Memoized expensive computation
+(define expensive
+  (memoize
+    (lambda ()
+      (display "Computing expensive result...")
+      (newline)
+      (fold-left + 0 (iota 1000000)))))
+
+(expensive)                 ; Computes first time
+(expensive)                 ; Returns cached value
+
+; Memoization with arguments
+(define (memoize-proc proc)
+  (let ([cache (make-hashtable equal-hash equal?)])
+    (lambda args
+      (let ([cached (hashtable-ref cache args 'not-found)])
+        (if (eq? cached 'not-found)
+            (let ([result (apply proc args)])
+              (hashtable-set! cache args result)
+              result)
+            cached)))))
+
+(define fib
+  (memoize-proc
+    (lambda (n)
+      (if (< n 2)
+          n
+          (+ (fib (- n 1)) (fib (- n 2)))))))
+
+(fib 100)                   ; Fast due to memoization</code></pre>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
