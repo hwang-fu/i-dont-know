@@ -160,8 +160,8 @@
         <li><a href="#scm-foreign-interface">Foreign Interface</a></li>
         <li><a href="#scm-binding-forms">Binding Forms</a></li>
         <li><a href="#scm-control-structures">Control Structures</a></li>
-        <li><a href="#scm-"></a></li>
-        <li><a href="#scm-"></a></li>
+        <li><a href="#scm-operations-objects">Operations on Objects</a></li>
+        <li><a href="#scm-numeric-operations">Numeric Operations</a></li>
     </ol>
 </nav>
 <hr/>
@@ -9036,7 +9036,1726 @@ counter                     ; 0 (restored)
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-operations-objects">Operations on Objects in Chez Scheme</h3>
+<ol>
 
+    <li>Missing R6RS Type Predicates</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme provides additional type predicates beyond R6RS:</li>
+<pre><code class="language-scheme line-numbers">; Atom predicate (not a pair)
+(atom? 'x)                  ; #t
+(atom? 5)                   ; #t
+(atom? '())                 ; #t
+(atom? '(a b))              ; #f
+
+; List predicates
+(list? '(1 2 3))            ; #t
+(list? '(1 . 2))            ; #f (improper list)
+(list? '())                 ; #t
+
+; Proper list check (terminates with null)
+(proper-list? '(1 2 3))     ; #t (from Chez, not in all Schemes)
+
+; Chez-specific gensym predicate
+(gensym? (gensym))          ; #t
+(gensym? 'regular)          ; #f
+
+; Mutable vs immutable
+(mutable-string? (string #\a #\b))  ; #t
+(immutable-string? "hello")         ; #t (literal strings)
+(mutable-vector? (vector 1 2 3))    ; #t
+(mutable-bytevector? (make-bytevector 10))  ; #t</code></pre>
+        <br/>
+        <li>Numeric type predicates:</li>
+<pre><code class="language-scheme line-numbers">; Fixnum - small exact integers (fast)
+(fixnum? 42)                ; #t
+(fixnum? (expt 2 100))      ; #f (bignum)
+
+; Bignum - arbitrary precision integers
+(bignum? (expt 2 100))      ; #t
+(bignum? 42)                ; #f
+
+; Ratnum - exact rationals
+(ratnum? 3/4)               ; #t
+(ratnum? 0.75)              ; #f (flonum)
+
+; Flonum - floating point
+(flonum? 3.14)              ; #t
+(flonum? 3)                 ; #f
+
+; Cflonum - complex with flonum parts
+(cflonum? 1.0+2.0i)         ; #t
+(cflonum? 1+2i)             ; #f (exact complex)
+
+; Fixnum range
+(greatest-fixnum)           ; Platform dependent (e.g., 1152921504606846975)
+(least-fixnum)              ; Platform dependent (e.g., -1152921504606846976)
+(fixnum-width)              ; Usually 61 on 64-bit systems</code></pre>
+        <br/>
+        <li>Port and procedure predicates:</li>
+<pre><code class="language-scheme line-numbers">; Port predicates
+(port? (current-input-port))         ; #t
+(input-port? (current-input-port))   ; #t
+(output-port? (current-output-port)) ; #t
+(binary-port? (open-bytevector-input-port #vu8()))  ; #t
+(textual-port? (current-input-port)) ; #t
+
+; Procedure predicates
+(procedure? car)            ; #t
+(procedure? (lambda (x) x)) ; #t
+(procedure? 'car)           ; #f
+
+; Code object (compiled procedure)
+(code? (closure-code car))  ; #t
+
+; Continuation predicates
+(continuation? (call/cc values))  ; #t</code></pre>
+        <br/>
+        <li>Record and ftype predicates:</li>
+<pre><code class="language-scheme line-numbers">; General record predicate
+(record? (make-point 1 2))  ; #t (if point is a record type)
+
+; Record-type descriptor
+(record-type-descriptor? (record-rtd some-record))  ; #t
+
+; Ftype pointer
+(ftype-pointer? ptr)        ; #t if ftype pointer
+
+; Condition predicates (from exception system)
+(condition? (make-who-condition 'test))  ; #t
+(who-condition? (make-who-condition 'test))  ; #t</code></pre>
+        <br/>
+        <li>Miscellaneous predicates:</li>
+<pre><code class="language-scheme line-numbers">; Eq-hashtable vs general hashtable
+(eq-hashtable? (make-eq-hashtable))       ; #t
+(hashtable? (make-eq-hashtable))          ; #t
+(hashtable? (make-hashtable equal-hash equal?))  ; #t
+
+; Box predicate
+(box? (box 42))             ; #t
+(box? 42)                   ; #f
+
+; Weak pair
+(weak-pair? (weak-cons 'a 'b))  ; #t
+(weak-pair? (cons 'a 'b))       ; #f
+
+; Ephemeron
+(ephemeron-pair? (ephemeron-cons 'key 'value))  ; #t
+
+; Thread predicates
+(thread? (fork-thread (lambda () #t)))  ; #t (in threaded Chez)
+(mutex? (make-mutex))       ; #t
+(condition? (make-condition))  ; #t (thread condition, not exception)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Pairs and Lists</li>
+    <br/>
+    <ul>
+        <li>Basic pair operations:</li>
+<pre><code class="language-scheme line-numbers">; Construction
+(cons 'a 'b)                ; (a . b)
+(cons 1 (cons 2 (cons 3 '())))  ; (1 2 3)
+
+; Access
+(car '(a b c))              ; a
+(cdr '(a b c))              ; (b c)
+
+; Mutation
+(define p (cons 1 2))
+(set-car! p 10)
+p                           ; (10 . 2)
+(set-cdr! p 20)
+p                           ; (10 . 20)
+
+; Composition accessors
+(caar '((a b) c))           ; a
+(cadr '(a b c))             ; b
+(cdar '((a b) c))           ; (b)
+(cddr '(a b c))             ; (c)
+
+; Up to four levels
+(caaddr '(a (b (c d))))     ; c
+(cddddr '(1 2 3 4 5 6))     ; (5 6)</code></pre>
+        <br/>
+        <li>List construction:</li>
+<pre><code class="language-scheme line-numbers">; list creates a proper list
+(list 1 2 3)                ; (1 2 3)
+(list)                      ; ()
+(list 'a (+ 1 2) "hello")   ; (a 3 "hello")
+
+; list* creates improper list (last element is cdr)
+(list* 1 2 3)               ; (1 2 . 3)
+(list* 1 2 '(3 4))          ; (1 2 3 4)
+(list* 'a)                  ; a
+
+; cons* is alias for list*
+(cons* 1 2 3 '())           ; (1 2 3)
+
+; make-list creates list of repeated elements
+(make-list 5 'x)            ; (x x x x x)
+(make-list 3 0)             ; (0 0 0)
+
+; iota creates numeric sequence (Chez extension)
+(iota 5)                    ; (0 1 2 3 4)
+(iota 5 1)                  ; (1 2 3 4 5)
+(iota 5 0 2)                ; (0 2 4 6 8) - start, step</code></pre>
+        <br/>
+        <li>List access and search:</li>
+<pre><code class="language-scheme line-numbers">; Length
+(length '(a b c d))         ; 4
+(length '())                ; 0
+
+; Indexing
+(list-ref '(a b c d) 2)     ; c
+(list-tail '(a b c d) 2)    ; (c d)
+
+; First and last
+(car '(a b c))              ; a
+(last-pair '(a b c))        ; (c)
+(list-head '(a b c d) 2)    ; (a b) - Chez extension
+
+; Membership (returns tail starting at match)
+(memq 'b '(a b c))          ; (b c)
+(memv 2 '(1 2 3))           ; (2 3)
+(member "b" '("a" "b" "c")) ; ("b" "c")
+
+(memp even? '(1 3 4 5))     ; (4 5)
+
+; Association lists
+(assq 'b '((a . 1) (b . 2) (c . 3)))   ; (b . 2)
+(assv 2 '((1 . a) (2 . b) (3 . c)))    ; (2 . b)
+(assoc "b" '(("a" . 1) ("b" . 2)))     ; ("b" . 2)
+
+(assp (lambda (x) (> x 5)) '((3 . a) (7 . b) (2 . c)))  ; (7 . b)</code></pre>
+        <br/>
+        <li>List manipulation:</li>
+<pre><code class="language-scheme line-numbers">; Append (creates new pairs except last)
+(append '(a b) '(c d))      ; (a b c d)
+(append '(a) '(b) '(c))     ; (a b c)
+(append '(a b) 'c)          ; (a b . c)
+
+; Reverse
+(reverse '(a b c))          ; (c b a)
+
+; Copy
+(list-copy '(a b c))        ; New copy of list
+
+; Sublist operations (Chez extensions)
+(sublist '(a b c d e) 1 4)  ; (b c d)
+
+; Remove elements
+(remq 'b '(a b c b d))      ; (a c d)
+(remv 2 '(1 2 3 2 4))       ; (1 3 4)
+(remove "b" '("a" "b" "c")) ; ("a" "c")
+(remp odd? '(1 2 3 4 5))    ; (2 4)
+
+; Remove duplicates
+(remq-duplicates '(a b a c b))  ; (a b c) - Chez extension</code></pre>
+        <br/>
+        <li>List transformation:</li>
+<pre><code class="language-scheme line-numbers">; Flatten (Chez extension)
+(flatten '((a b) (c (d e)) f))  ; (a b c d e f)
+
+; Transpose
+(define (transpose matrix)
+  (apply map list matrix))
+(transpose '((1 2 3) (4 5 6)))  ; ((1 4) (2 5) (3 6))
+
+; Partition
+(partition even? '(1 2 3 4 5 6))
+; Values: (2 4 6) (1 3 5)
+
+; Split at index
+(split-at '(a b c d e) 3)   ; Values: (a b c) (d e) - SRFI-1 style
+
+; Take and drop
+(define (take lst n)
+  (if (or (zero? n) (null? lst))
+      '()
+      (cons (car lst) (take (cdr lst) (- n 1)))))
+
+(define (drop lst n)
+  (if (or (zero? n) (null? lst))
+      lst
+      (drop (cdr lst) (- n 1))))
+
+(take '(a b c d e) 3)       ; (a b c)
+(drop '(a b c d e) 3)       ; (d e)</code></pre>
+        <br/>
+        <li>Weak pairs and ephemerons:</li>
+<pre><code class="language-scheme line-numbers">; Weak pairs - car can be collected if not referenced elsewhere
+(define wp (weak-cons 'key 'value))
+(weak-pair? wp)             ; #t
+(car wp)                    ; key (or #!bwp if collected)
+(cdr wp)                    ; value
+(bwp-object? (car wp))      ; #t if car was collected
+
+; Ephemerons - value kept alive only if key is alive
+(define ep (ephemeron-cons 'key 'value))
+(ephemeron-pair? ep)        ; #t
+(car ep)                    ; key
+(cdr ep)                    ; value (collected with key)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Characters</li>
+    <br/>
+    <ul>
+        <li>Character predicates:</li>
+<pre><code class="language-scheme line-numbers">; Basic predicate
+(char? #\a)                 ; #t
+(char? "a")                 ; #f
+
+; Classification
+(char-alphabetic? #\a)      ; #t
+(char-numeric? #\5)         ; #t
+(char-whitespace? #\space)  ; #t
+(char-whitespace? #\tab)    ; #t
+(char-whitespace? #\newline) ; #t
+
+(char-upper-case? #\A)      ; #t
+(char-lower-case? #\a)      ; #t
+(char-title-case? #\x01C5)  ; #t (Unicode titlecase)
+
+; General category
+(char-general-category #\a) ; Ll (lowercase letter)
+(char-general-category #\A) ; Lu (uppercase letter)
+(char-general-category #\5) ; Nd (decimal number)
+(char-general-category #\space)  ; Zs (space separator)</code></pre>
+        <br/>
+        <li>Character comparison:</li>
+<pre><code class="language-scheme line-numbers">; Case-sensitive
+(char=? #\a #\a)            ; #t
+(char<? #\a #\b)            ; #t
+(char<=? #\a #\a)           ; #t
+(char>? #\b #\a)            ; #t
+(char>=? #\b #\a)           ; #t
+
+; Multiple arguments
+(char<? #\a #\b #\c)        ; #t
+
+; Case-insensitive
+(char-ci=? #\a #\A)         ; #t
+(char-ci<? #\a #\B)         ; #t
+(char-ci<=? #\A #\a)        ; #t
+(char-ci>? #\B #\a)         ; #t
+(char-ci>=? #\A #\a)        ; #t</code></pre>
+        <br/>
+        <li>Character conversion:</li>
+<pre><code class="language-scheme line-numbers">; Case conversion
+(char-upcase #\a)           ; #\A
+(char-downcase #\A)         ; #\a
+(char-titlecase #\a)        ; #\A
+(char-foldcase #\A)         ; #\a
+
+; Integer conversion (Unicode code point)
+(char->integer #\a)         ; 97
+(char->integer #\λ)         ; 955
+(integer->char 97)          ; #\a
+(integer->char 955)         ; #\λ
+
+; Common conversions
+(char->integer #\0)         ; 48
+(char->integer #\9)         ; 57
+(char->integer #\A)         ; 65
+(char->integer #\Z)         ; 90
+(char->integer #\a)         ; 97
+(char->integer #\z)         ; 122
+
+; Digit conversion helper
+(define (char->digit c)
+  (- (char->integer c) (char->integer #\0)))
+(char->digit #\7)           ; 7</code></pre>
+        <br/>
+        <li>Special character literals:</li>
+<pre><code class="language-scheme line-numbers">; Named characters
+#\nul                       ; Null (0)
+#\alarm                     ; Bell (7)
+#\backspace                 ; Backspace (8)
+#\tab                       ; Tab (9)
+#\linefeed                  ; Newline (10)
+#\newline                   ; Newline (10)
+#\vtab                      ; Vertical tab (11)
+#\page                      ; Form feed (12)
+#\return                    ; Carriage return (13)
+#\esc                       ; Escape (27)
+#\space                     ; Space (32)
+#\delete                    ; Delete (127)
+
+; Hex notation
+#\x41                       ; #\A
+#\x03BB                     ; #\λ (lambda)
+#\x1F600                    ; 😀 (emoji)
+
+; Unicode names (Chez extension)
+#\GREEK_SMALL_LETTER_LAMBDA ; #\λ</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Strings</li>
+    <br/>
+    <ul>
+        <li>String construction:</li>
+<pre><code class="language-scheme line-numbers">; Literal strings (immutable)
+"hello"
+"hello\nworld"              ; With newline
+"tab\there"                 ; With tab
+"quote: \"text\""           ; With escaped quotes
+
+; Make mutable string
+(make-string 5 #\x)         ; "xxxxx"
+(make-string 10)            ; 10 unspecified chars
+
+; From characters
+(string #\h #\e #\l #\l #\o)  ; "hello"
+
+; From list
+(list->string '(#\a #\b #\c))  ; "abc"
+
+; Copy (creates mutable copy)
+(string-copy "hello")       ; "hello" (mutable)
+
+; Substring
+(substring "hello world" 0 5)  ; "hello"
+(substring "hello world" 6 11) ; "world"</code></pre>
+        <br/>
+        <li>String access and modification:</li>
+<pre><code class="language-scheme line-numbers">; Length
+(string-length "hello")     ; 5
+
+; Access
+(string-ref "hello" 1)      ; #\e
+
+; Mutation (mutable strings only)
+(define s (string-copy "hello"))
+(string-set! s 0 #\H)
+s                           ; "Hello"
+
+; Fill
+(define s (make-string 5))
+(string-fill! s #\x)
+s                           ; "xxxxx"
+
+; Copy region
+(define src "source")
+(define dst (make-string 10 #\-))
+(string-copy! src 0 dst 2 6)
+dst                         ; "--source--"</code></pre>
+        <br/>
+        <li>String comparison:</li>
+<pre><code class="language-scheme line-numbers">; Case-sensitive
+(string=? "hello" "hello")  ; #t
+(string<? "abc" "abd")      ; #t
+(string<=? "abc" "abc")     ; #t
+(string>? "xyz" "abc")      ; #t
+(string>=? "xyz" "xyz")     ; #t
+
+; Case-insensitive
+(string-ci=? "Hello" "hello")  ; #t
+(string-ci<? "ABC" "abd")      ; #t
+
+; Multiple arguments
+(string<? "a" "b" "c")      ; #t</code></pre>
+        <br/>
+        <li>String searching and manipulation:</li>
+<pre><code class="language-scheme line-numbers">; Append
+(string-append "hello" " " "world")  ; "hello world"
+
+; Concatenate (from list)
+(apply string-append '("a" "b" "c"))  ; "abc"
+
+; Case conversion
+(string-upcase "hello")     ; "HELLO"
+(string-downcase "HELLO")   ; "hello"
+(string-titlecase "hello world")  ; "Hello World"
+(string-foldcase "Hello")   ; "hello"
+
+; Trimming (Chez extensions)
+(string-trim "  hello  ")   ; "hello"
+(string-trim-left "  hello")   ; "hello"
+(string-trim-right "hello  ")  ; "hello"
+
+; Searching
+(define (string-contains haystack needle)
+  (let ([h-len (string-length haystack)]
+        [n-len (string-length needle)])
+    (let loop ([i 0])
+      (cond
+        [(> (+ i n-len) h-len) #f]
+        [(string=? (substring haystack i (+ i n-len)) needle) i]
+        [else (loop (+ i 1))]))))
+
+(string-contains "hello world" "wor")  ; 6</code></pre>
+        <br/>
+        <li>String conversion:</li>
+<pre><code class="language-scheme line-numbers">; To/from list
+(string->list "hello")      ; (#\h #\e #\l #\l #\o)
+(list->string '(#\a #\b #\c))  ; "abc"
+
+; To/from symbol
+(string->symbol "hello")    ; hello
+(symbol->string 'hello)     ; "hello"
+
+; To/from number
+(string->number "123")      ; 123
+(string->number "3.14")     ; 3.14
+(string->number "ff" 16)    ; 255
+(string->number "101" 2)    ; 5
+(string->number "not-a-number")  ; #f
+
+(number->string 123)        ; "123"
+(number->string 255 16)     ; "ff"
+(number->string 5 2)        ; "101"
+
+; Format to string
+(format "~a + ~a = ~a" 1 2 3)  ; "1 + 2 = 3"</code></pre>
+        <br/>
+        <li>String encoding:</li>
+<pre><code class="language-scheme line-numbers">; UTF-8
+(string->utf8 "hello")      ; #vu8(104 101 108 108 111)
+(utf8->string #vu8(104 101 108 108 111))  ; "hello"
+
+; UTF-16
+(string->utf16 "hello" 'little)  ; Little-endian
+(string->utf16 "hello" 'big)     ; Big-endian
+(utf16->string bv 'little)
+
+; UTF-32
+(string->utf32 "hello" 'little)
+(utf32->string bv 'little)
+
+; Latin-1 (Chez extension)
+(string->bytevector "hello" (make-transcoder (latin-1-codec)))
+(bytevector->string bv (make-transcoder (latin-1-codec)))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Vectors</li>
+    <br/>
+    <ul>
+        <li>Vector construction:</li>
+<pre><code class="language-scheme line-numbers">; Literal vector
+'#(1 2 3)                   ; #(1 2 3)
+#(a b c)                    ; #(a b c)
+
+; Make vector
+(make-vector 5)             ; #(0 0 0 0 0) or unspecified
+(make-vector 5 'x)          ; #(x x x x x)
+
+; From elements
+(vector 1 2 3)              ; #(1 2 3)
+(vector 'a (+ 1 2) "hello") ; #(a 3 "hello")
+
+; From list
+(list->vector '(a b c))     ; #(a b c)
+
+; Copy
+(vector-copy '#(1 2 3))     ; #(1 2 3) (mutable)</code></pre>
+        <br/>
+        <li>Vector access and modification:</li>
+<pre><code class="language-scheme line-numbers">; Length
+(vector-length '#(a b c d)) ; 4
+
+; Access
+(vector-ref '#(a b c d) 2)  ; c
+
+; Mutation
+(define v (vector 1 2 3))
+(vector-set! v 1 'x)
+v                           ; #(1 x 3)
+
+; Fill
+(define v (make-vector 5))
+(vector-fill! v 'z)
+v                           ; #(z z z z z)
+
+; Copy region
+(define src '#(a b c d e))
+(define dst (make-vector 5 '-))
+(vector-copy! src 1 dst 2 3)
+dst                         ; #(- - b c d)</code></pre>
+        <br/>
+        <li>Vector operations:</li>
+<pre><code class="language-scheme line-numbers">; Append (Chez extension)
+(vector-append '#(1 2) '#(3 4))  ; #(1 2 3 4)
+
+; To/from list
+(vector->list '#(a b c))    ; (a b c)
+(list->vector '(1 2 3))     ; #(1 2 3)
+
+; Map (R6RS)
+(vector-map add1 '#(1 2 3)) ; #(2 3 4)
+(vector-map + '#(1 2 3) '#(10 20 30))  ; #(11 22 33)
+
+; For-each
+(vector-for-each
+  (lambda (x) (printf "~a " x))
+  '#(a b c))                ; Prints: a b c
+
+; Sort (Chez extension)
+(vector-sort < '#(3 1 4 1 5))  ; #(1 1 3 4 5)
+(vector-sort! < (vector 3 1 4 1 5))  ; Sorts in place
+
+; Subvector (Chez extension)
+(subvector '#(a b c d e) 1 4)  ; #(b c d)</code></pre>
+        <br/>
+        <li>Immutable vectors:</li>
+<pre><code class="language-scheme line-numbers">; Check mutability
+(mutable-vector? (vector 1 2 3))      ; #t
+(immutable-vector? '#(1 2 3))         ; Depends on context
+
+; Create immutable copy
+(vector->immutable-vector (vector 1 2 3))
+
+; Attempting to mutate immutable vector raises exception
+; (vector-set! '#(1 2 3) 0 'x)  ; Error</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Bytevectors</li>
+    <br/>
+    <ul>
+        <li>Bytevector construction:</li>
+<pre><code class="language-scheme line-numbers">; Literal
+#vu8(1 2 3 255)             ; Bytevector of 4 bytes
+
+; Make bytevector
+(make-bytevector 10)        ; 10 bytes, unspecified values
+(make-bytevector 10 0)      ; 10 zero bytes
+
+; From u8 list
+(u8-list->bytevector '(1 2 3 4))  ; #vu8(1 2 3 4)
+
+; Copy
+(bytevector-copy #vu8(1 2 3))</code></pre>
+        <br/>
+        <li>Single-byte access:</li>
+<pre><code class="language-scheme line-numbers">; Length
+(bytevector-length #vu8(1 2 3 4))  ; 4
+
+; Unsigned byte access (0-255)
+(bytevector-u8-ref #vu8(1 2 255) 2)   ; 255
+(define bv (make-bytevector 4 0))
+(bytevector-u8-set! bv 0 255)
+bv                          ; #vu8(255 0 0 0)
+
+; Signed byte access (-128 to 127)
+(bytevector-s8-ref #vu8(255) 0)  ; -1 (two's complement)
+(bytevector-s8-set! bv 1 -1)
+bv                          ; #vu8(255 255 0 0)</code></pre>
+        <br/>
+        <li>Multi-byte access:</li>
+<pre><code class="language-scheme line-numbers">; 16-bit access
+(define bv (make-bytevector 8 0))
+
+; Native endianness
+(bytevector-u16-native-set! bv 0 1000)
+(bytevector-u16-native-ref bv 0)   ; 1000
+
+; Explicit endianness
+(bytevector-u16-set! bv 2 1000 'little)
+(bytevector-u16-set! bv 4 1000 'big)
+(bytevector-u16-ref bv 2 'little)  ; 1000
+(bytevector-u16-ref bv 4 'big)     ; 1000
+
+; Signed 16-bit
+(bytevector-s16-ref bv 0 'little)
+(bytevector-s16-set! bv 0 -1000 'little)
+
+; 32-bit and 64-bit similar
+(bytevector-u32-ref bv 0 'little)
+(bytevector-u32-set! bv 0 value 'little)
+(bytevector-u64-ref bv 0 'little)
+(bytevector-u64-set! bv 0 value 'little)
+
+; Floating point
+(bytevector-ieee-single-ref bv 0 'little)
+(bytevector-ieee-single-set! bv 0 3.14 'little)
+(bytevector-ieee-double-ref bv 0 'little)
+(bytevector-ieee-double-set! bv 0 3.14159 'little)</code></pre>
+        <br/>
+        <li>Bytevector operations:</li>
+<pre><code class="language-scheme line-numbers">; Copy region
+(define src #vu8(1 2 3 4 5))
+(define dst (make-bytevector 10 0))
+(bytevector-copy! src 0 dst 5 5)
+dst                         ; #vu8(0 0 0 0 0 1 2 3 4 5)
+
+; Fill
+(bytevector-fill! dst 255)
+dst                         ; All 255s
+
+; Equality
+(bytevector=? #vu8(1 2 3) #vu8(1 2 3))  ; #t
+
+; Conversion to/from list
+(bytevector->u8-list #vu8(1 2 3))  ; (1 2 3)
+(u8-list->bytevector '(1 2 3))    ; #vu8(1 2 3)
+
+; Append (Chez extension)
+(bytevector-append #vu8(1 2) #vu8(3 4))  ; #vu8(1 2 3 4)
+
+; Truncate/extend (Chez extension)
+(bytevector-truncate! bv 5)  ; Shorten to 5 bytes</code></pre>
+        <br/>
+        <li>Bytevector compression (Chez extension):</li>
+<pre><code class="language-scheme line-numbers">; Compress bytevector
+(define data #vu8(1 2 3 4 5 1 2 3 4 5 1 2 3 4 5))
+(define compressed (bytevector-compress data))
+
+; Uncompress
+(define restored (bytevector-uncompress compressed))
+(bytevector=? data restored)  ; #t</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Stencil Vectors</li>
+    <br/>
+    <ul>
+        <li>Stencil vectors are specialized sparse vectors:</li>
+<pre><code class="language-scheme line-numbers">; Stencil vectors store only non-default elements
+; The "stencil" is a bitmask indicating which positions have values
+
+; Create stencil vector
+; Mask indicates which of 0-57 positions have values
+(define sv (stencil-vector #b10101 'a 'b 'c))
+; Positions 0, 2, 4 have values 'a, 'b, 'c
+
+; Check if stencil vector
+(stencil-vector? sv)        ; #t
+
+; Get the mask
+(stencil-vector-mask sv)    ; #b10101 = 21
+
+; Length (number of actual values stored)
+(stencil-vector-length sv)  ; 3
+
+; Reference by stencil bit position
+(stencil-vector-ref sv #b00001)  ; 'a (bit 0)
+(stencil-vector-ref sv #b00100)  ; 'b (bit 2)
+(stencil-vector-ref sv #b10000)  ; 'c (bit 4)</code></pre>
+        <br/>
+        <li>Stencil vector operations:</li>
+<pre><code class="language-scheme line-numbers">; Update creates new stencil vector (immutable style)
+(define sv2 (stencil-vector-update sv #b00010 'new))
+; Now has values at positions 0, 1, 2, 4
+
+; Truncate mask (remove positions)
+(define sv3 (stencil-vector-truncate sv #b00101))
+; Only positions 0 and 2 remain
+
+; Check for specific bits
+(fxlogbit? 0 (stencil-vector-mask sv))  ; #t
+(fxlogbit? 1 (stencil-vector-mask sv))  ; #f
+(fxlogbit? 2 (stencil-vector-mask sv))  ; #t
+
+; Iterate over stencil vector
+(define (stencil-vector-for-each proc sv)
+  (let ([mask (stencil-vector-mask sv)])
+    (let loop ([bit 0] [idx 0])
+      (when (< bit 58)
+        (when (fxlogbit? bit mask)
+          (proc bit (stencil-vector-ref sv (fxsll 1 bit)))
+          (loop (+ bit 1) (+ idx 1)))
+        (unless (fxlogbit? bit mask)
+          (loop (+ bit 1) idx))))))</code></pre>
+        <br/>
+        <li>Use cases for stencil vectors:</li>
+<pre><code class="language-scheme line-numbers">; Stencil vectors are useful for:
+; - Sparse data with known position range (0-57)
+; - Record-like structures with optional fields
+; - Compact representation of small sets
+
+; Example: optional configuration fields
+(define config-keys
+  '((debug . 0) (verbose . 1) (output-file . 2)
+    (input-file . 3) (timeout . 4)))
+
+(define (make-config . options)
+  (let loop ([opts options] [mask 0] [values '()])
+    (if (null? opts)
+        (apply stencil-vector mask (reverse values))
+        (let* ([key (caar opts)]
+               [val (cdar opts)]
+               [bit (cdr (assq key config-keys))])
+          (loop (cdr opts)
+                (fxlogior mask (fxsll 1 bit))
+                (cons val values))))))
+
+(define cfg (make-config '(debug . #t) '(timeout . 30)))
+(stencil-vector-mask cfg)   ; Shows which options are set</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Boxes</li>
+    <br/>
+    <ul>
+        <li>Boxes are single-element mutable containers:</li>
+<pre><code class="language-scheme line-numbers">; Create box
+(box 42)                    ; #&42
+(box 'hello)                ; #&hello
+(box (list 1 2 3))          ; #&(1 2 3)
+
+; Check if box
+(box? (box 42))             ; #t
+(box? 42)                   ; #f
+
+; Access content
+(unbox (box 42))            ; 42
+
+; Modify content
+(define b (box 1))
+(set-box! b 2)
+(unbox b)                   ; 2</code></pre>
+        <br/>
+        <li>Boxes for mutable state:</li>
+<pre><code class="language-scheme line-numbers">; Counter using box
+(define (make-counter)
+  (let ([count (box 0)])
+    (lambda ()
+      (let ([current (unbox count)])
+        (set-box! count (+ current 1))
+        current))))
+
+(define counter (make-counter))
+(counter)                   ; 0
+(counter)                   ; 1
+(counter)                   ; 2
+
+; Memoization cell
+(define (make-lazy thunk)
+  (let ([cell (box #f)]
+        [computed? (box #f)])
+    (lambda ()
+      (unless (unbox computed?)
+        (set-box! cell (thunk))
+        (set-box! computed? #t))
+      (unbox cell))))
+
+(define expensive
+  (make-lazy
+    (lambda ()
+      (display "Computing...")
+      42)))
+
+(expensive)                 ; Computing... 42
+(expensive)                 ; 42 (cached)</code></pre>
+        <br/>
+        <li>Immutable boxes (Chez extension):</li>
+<pre><code class="language-scheme line-numbers">; Create immutable box
+(define ib (box-immutable 42))
+
+; Check
+(box? ib)                   ; #t
+(immutable-box? ib)         ; #t
+(mutable-box? ib)           ; #f
+
+; Unbox works
+(unbox ib)                  ; 42
+
+; set-box! would raise exception
+; (set-box! ib 100)         ; Error</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Symbols</li>
+    <br/>
+    <ul>
+        <li>Symbol basics:</li>
+<pre><code class="language-scheme line-numbers">; Symbol literals
+'hello                      ; hello
+'with-hyphen                ; with-hyphen
+'CamelCase                  ; CamelCase (case preserved)
+'|with spaces|              ; |with spaces|
+'|has "quotes"|             ; |has "quotes"|
+
+; Check if symbol
+(symbol? 'hello)            ; #t
+(symbol? "hello")           ; #f
+
+; Convert to/from string
+(symbol->string 'hello)     ; "hello"
+(string->symbol "hello")    ; hello
+
+; Symbols are interned (eq? comparable)
+(eq? 'hello 'hello)         ; #t
+(eq? (string->symbol "hello")
+     (string->symbol "hello"))  ; #t</code></pre>
+        <br/>
+        <li>Gensyms (unique symbols):</li>
+<pre><code class="language-scheme line-numbers">; Generate unique symbol
+(gensym)                    ; #{g0}
+(gensym)                    ; #{g1}
+
+; With prefix
+(gensym "temp")             ; #{temp2}
+
+; With specific name
+(gensym "x" "unique-id")    ; #{x unique-id}
+
+; Check if gensym
+(gensym? (gensym))          ; #t
+(gensym? 'regular)          ; #f
+
+; Gensyms are unique
+(eq? (gensym) (gensym))     ; #f
+
+; Get gensym components
+(define g (gensym "prefix"))
+(gensym->unique-string g)   ; The unique identifier part
+
+; Gensyms in macros (hygiene)
+(define-syntax with-temp
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ body ...)
+       (with-syntax ([temp (datum->syntax #'body (gensym "temp"))])
+         #'(let ([temp #f])
+             body ...))])))</code></pre>
+        <br/>
+        <li>Symbol properties (Chez extension):</li>
+<pre><code class="language-scheme line-numbers">; Attach property to symbol
+(putprop 'my-symbol 'color 'red)
+(putprop 'my-symbol 'size 42)
+
+; Retrieve property
+(getprop 'my-symbol 'color)  ; red
+(getprop 'my-symbol 'size)   ; 42
+(getprop 'my-symbol 'missing)  ; #f
+
+; Remove property
+(remprop 'my-symbol 'color)
+(getprop 'my-symbol 'color)  ; #f
+
+; List all properties
+(property-list 'my-symbol)  ; ((size . 42))
+
+; Use case: metadata storage
+(define (define-type name . properties)
+  (for-each
+    (lambda (prop)
+      (putprop name (car prop) (cdr prop)))
+    properties))
+
+(define-type 'person
+  '(fields . (name age))
+  '(constructor . make-person))</code></pre>
+        <br/>
+        <li>Oblist (symbol table):</li>
+<pre><code class="language-scheme line-numbers">; Access all interned symbols
+(oblist)                    ; List of all symbols
+
+; Find symbols matching pattern
+(define (find-symbols pred)
+  (filter pred (oblist)))
+
+(find-symbols
+  (lambda (s)
+    (let ([str (symbol->string s)])
+      (and (> (string-length str) 5)
+           (char=? (string-ref str 0) #\m)))))
+; All symbols starting with 'm' longer than 5 chars</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Void</li>
+    <br/>
+    <ul>
+        <li>The void object represents "no useful value":</li>
+<pre><code class="language-scheme line-numbers">; Void is the return value of side-effecting procedures
+(void)                      ; #<void>
+(display "hi")              ; Returns #<void>
+(set! x 10)                 ; Returns #<void>
+(vector-set! v 0 'x)        ; Returns #<void>
+
+; Check for void
+(void? (void))              ; #t (Chez extension)
+(void? 42)                  ; #f
+(void? #f)                  ; #f
+
+; Create void explicitly
+(void)                      ; #<void>
+
+; Note: void is NOT false
+(if (void) 'yes 'no)        ; yes
+(not (void))                ; #f
+
+; Common pattern: suppress return value
+(define (do-something)
+  (perform-action)
+  (void))  ; Explicitly return void</code></pre>
+        <br/>
+        <li>Void vs other "nothing" values:</li>
+<pre><code class="language-scheme line-numbers">; Different "empty" values
+(void)                      ; #<void> - no return value
+'()                         ; () - empty list
+#f                          ; #f - boolean false
+(eof-object)                ; #!eof - end of file
+
+; All are distinct
+(eq? (void) '())            ; #f
+(eq? (void) #f)             ; #f
+(null? (void))              ; #f
+(not (void))                ; #f (void is truthy!)
+
+; Only #f is false in conditionals
+(if (void) 'truthy 'falsy)       ; truthy
+(if '() 'truthy 'falsy)          ; truthy
+(if #f 'truthy 'falsy)           ; falsy
+(if (eof-object) 'truthy 'falsy) ; truthy</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sorting</li>
+    <br/>
+    <ul>
+        <li>List sorting:</li>
+<pre><code class="language-scheme line-numbers">; sort (stable sort)
+(sort < '(3 1 4 1 5 9 2 6)) ; (1 1 2 3 4 5 6 9)
+(sort > '(3 1 4 1 5 9 2 6)) ; (9 6 5 4 3 2 1 1)
+
+; With custom comparator
+(sort (lambda (a b) (< (abs a) (abs b)))
+      '(3 -1 4 -1 5 -9 2 6))
+; (-1 -1 2 3 4 5 6 -9)
+
+; Sort strings
+(sort string<? '("banana" "apple" "cherry"))
+; ("apple" "banana" "cherry")
+
+(sort string-ci<? '("Banana" "apple" "CHERRY"))
+; ("apple" "Banana" "CHERRY")
+
+; Sort by key
+(define (sort-by key lst)
+  (sort (lambda (a b) (< (key a) (key b))) lst))
+
+(sort-by car '((3 a) (1 b) (2 c)))
+; ((1 b) (2 c) (3 a))
+
+(sort-by string-length '("aaa" "b" "cc"))
+; ("b" "cc" "aaa")</code></pre>
+        <br/>
+        <li>Vector sorting:</li>
+<pre><code class="language-scheme line-numbers">; vector-sort returns new sorted vector
+(vector-sort < '#(3 1 4 1 5 9 2 6))
+; #(1 1 2 3 4 5 6 9)
+
+; vector-sort! sorts in place
+(define v (vector 3 1 4 1 5 9 2 6))
+(vector-sort! < v)
+v                           ; #(1 1 2 3 4 5 6 9)
+
+; Partial sort (Chez extension)
+(define v (vector 5 3 8 1 9 2 7 4 6))
+(vector-sort! < v 2 7)      ; Sort only indices 2-6
+v                           ; #(5 3 1 2 7 8 9 4 6)</code></pre>
+        <br/>
+        <li>Merge operations:</li>
+<pre><code class="language-scheme line-numbers">; merge combines two sorted lists
+(merge < '(1 3 5 7) '(2 4 6 8))
+; (1 2 3 4 5 6 7 8)
+
+; merge! destructively merges (Chez extension)
+(define lst1 (list 1 3 5))
+(define lst2 (list 2 4 6))
+(merge! < lst1 lst2)        ; (1 2 3 4 5 6)
+
+; Merge sort implementation
+(define (merge-sort lst)
+  (if (or (null? lst) (null? (cdr lst)))
+      lst
+      (let-values ([(left right) (split-list lst)])
+        (merge < (merge-sort left) (merge-sort right)))))
+
+(define (split-list lst)
+  (let loop ([slow lst] [fast lst] [acc '()])
+    (if (or (null? fast) (null? (cdr fast)))
+        (values (reverse acc) slow)
+        (loop (cdr slow) (cddr fast) (cons (car slow) acc)))))</code></pre>
+        <br/>
+        <li>Sorting stability:</li>
+<pre><code class="language-scheme line-numbers">; Chez's sort is stable - equal elements maintain order
+(sort (lambda (a b) (< (car a) (car b)))
+      '((1 first) (2 second) (1 third) (2 fourth)))
+; ((1 first) (1 third) (2 second) (2 fourth))
+
+; Use for multi-key sorting
+(define (multi-sort comparators lst)
+  (fold-right
+    (lambda (cmp lst)
+      (sort cmp lst))
+    lst
+    comparators))
+
+; Sort by name, then by age
+(define people
+  '((alice 30) (bob 25) (alice 25) (bob 30)))
+
+(multi-sort
+  (list (lambda (a b) (< (cadr a) (cadr b)))      ; age
+        (lambda (a b) (string<? (symbol->string (car a))
+                                (symbol->string (car b))))) ; name
+  people)
+; ((alice 25) (alice 30) (bob 25) (bob 30))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Hashtables</li>
+    <br/>
+    <ul>
+        <li>Creating hashtables:</li>
+<pre><code class="language-scheme line-numbers">; Eq hashtable (uses eq? for comparison)
+(define ht-eq (make-eq-hashtable))
+
+; Eqv hashtable (uses eqv?)
+(define ht-eqv (make-eqv-hashtable))
+
+; General hashtable (custom hash and equal)
+(define ht-equal
+  (make-hashtable equal-hash equal?))
+
+; String hashtable
+(define ht-string
+  (make-hashtable string-hash string=?))
+
+; Case-insensitive string hashtable
+(define ht-ci
+  (make-hashtable string-ci-hash string-ci=?))
+
+; Symbol hashtable (Chez extension)
+(define ht-sym (make-eq-hashtable))  ; Use eq? for symbols
+
+; With initial size hint
+(make-eq-hashtable 1000)    ; Preallocate for ~1000 entries</code></pre>
+        <br/>
+        <li>Basic operations:</li>
+<pre><code class="language-scheme line-numbers">; Set value
+(hashtable-set! ht 'key 'value)
+(hashtable-set! ht "name" "Alice")
+(hashtable-set! ht 42 "forty-two")
+
+; Get value
+(hashtable-ref ht 'key #f)  ; value or #f
+(hashtable-ref ht 'missing #f)  ; #f
+(hashtable-ref ht 'missing 'default)  ; default
+
+; Check existence
+(hashtable-contains? ht 'key)  ; #t
+(hashtable-contains? ht 'missing)  ; #f
+
+; Delete
+(hashtable-delete! ht 'key)
+
+; Size
+(hashtable-size ht)         ; Number of entries
+
+; Clear
+(hashtable-clear! ht)</code></pre>
+        <br/>
+        <li>Hashtable iteration:</li>
+<pre><code class="language-scheme line-numbers">; Get all keys
+(hashtable-keys ht)         ; Returns vector of keys
+
+; Get all values
+(hashtable-values ht)       ; Returns vector of values
+
+; Get entries (keys and values)
+(hashtable-entries ht)      ; Returns 2 values: keys-vec, values-vec
+
+; Iterate with for-each
+(let-values ([(keys vals) (hashtable-entries ht)])
+  (vector-for-each
+    (lambda (k v)
+      (printf "~a: ~a~n" k v))
+    keys vals))
+
+; Convert to association list
+(define (hashtable->alist ht)
+  (let-values ([(keys vals) (hashtable-entries ht)])
+    (vector->list
+      (vector-map cons keys vals))))
+
+; Create from association list
+(define (alist->hashtable alist)
+  (let ([ht (make-eq-hashtable)])
+    (for-each
+      (lambda (pair)
+        (hashtable-set! ht (car pair) (cdr pair)))
+      alist)
+    ht))</code></pre>
+        <br/>
+        <li>Update operations:</li>
+<pre><code class="language-scheme line-numbers">; Update with procedure
+(hashtable-update! ht 'count add1 0)
+; If exists: apply add1 to current value
+; If missing: use 0 as initial value
+
+; Increment counter pattern
+(define (increment-count! ht key)
+  (hashtable-update! ht key add1 0))
+
+(define counts (make-eq-hashtable))
+(increment-count! counts 'a)  ; 1
+(increment-count! counts 'a)  ; 2
+(increment-count! counts 'b)  ; 1
+
+; Accumulate in list
+(define (add-to-list! ht key value)
+  (hashtable-update! ht key
+    (lambda (lst) (cons value lst))
+    '()))
+
+; Set if absent (Chez extension)
+(hashtable-ref-cell ht 'key)  ; Returns cell or #f
+
+; Cell operations for atomic updates
+(define cell (hashtable-cell ht 'key 'default))
+(car cell)                  ; key
+(cdr cell)                  ; value
+(set-cdr! cell 'new-value)  ; Update atomically</code></pre>
+        <br/>
+        <li>Weak and ephemeron hashtables:</li>
+<pre><code class="language-scheme line-numbers">; Weak hashtable - keys can be garbage collected
+(define wht (make-weak-eq-hashtable))
+(hashtable-set! wht some-key 'value)
+; If some-key becomes unreachable, entry is removed
+
+; Weak-eqv hashtable
+(define wht-eqv (make-weak-eqv-hashtable))
+
+; Ephemeron hashtable - values kept only if keys alive
+(define eht (make-ephemeron-eq-hashtable))
+(define eht-eqv (make-ephemeron-eqv-hashtable))
+
+; Use case: caching with automatic cleanup
+(define cache (make-weak-eq-hashtable))
+
+(define (cached-compute key compute-proc)
+  (or (hashtable-ref cache key #f)
+      (let ([result (compute-proc key)])
+        (hashtable-set! cache key result)
+        result)))</code></pre>
+        <br/>
+        <li>Hashtable copying and equivalence:</li>
+<pre><code class="language-scheme line-numbers">; Copy hashtable
+(hashtable-copy ht)         ; Immutable copy
+(hashtable-copy ht #t)      ; Mutable copy
+
+; Check equivalence
+(hashtable-equivalence-function ht)  ; Returns equal?
+(hashtable-hash-function ht)         ; Returns hash proc
+
+; Check mutability
+(hashtable-mutable? ht)     ; #t or #f
+
+; Hashtable type predicates
+(hashtable? ht)             ; #t
+(eq-hashtable? ht-eq)       ; #t
+(eqv-hashtable? ht-eqv)     ; #t (Chez extension)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Record Types</li>
+    <br/>
+    <ul>
+        <li>R6RS syntactic layer records:</li>
+<pre><code class="language-scheme line-numbers">; Basic record definition
+(define-record-type point
+  (fields x y))
+
+; Create instance
+(make-point 3 4)            ; #<point>
+
+; Access fields
+(point-x (make-point 3 4))  ; 3
+(point-y (make-point 3 4))  ; 4
+
+; Predicate
+(point? (make-point 3 4))   ; #t
+
+; With mutable fields
+(define-record-type mpoint
+  (fields (mutable x)
+          (mutable y)))
+
+(define p (make-mpoint 1 2))
+(mpoint-x-set! p 10)
+(mpoint-x p)                ; 10</code></pre>
+        <br/>
+        <li>Record inheritance:</li>
+<pre><code class="language-scheme line-numbers">; Parent record
+(define-record-type shape
+  (fields (immutable color)))
+
+; Child record
+(define-record-type (circle shape)
+  (fields (immutable radius)))
+
+(define c (make-circle 'red 5))
+(shape-color c)             ; red
+(circle-radius c)           ; 5
+(shape? c)                  ; #t
+(circle? c)                 ; #t
+
+; Multiple inheritance levels
+(define-record-type (filled-circle circle)
+  (fields (immutable fill-pattern)))
+
+(define fc (make-filled-circle 'blue 10 'solid))
+(shape-color fc)            ; blue
+(circle-radius fc)          ; 10
+(filled-circle-fill-pattern fc)  ; solid</code></pre>
+        <br/>
+        <li>Custom constructors and protocols:</li>
+<pre><code class="language-scheme line-numbers">; Custom constructor with protocol
+(define-record-type point3d
+  (fields x y z)
+  (protocol
+    (lambda (new)
+      (case-lambda
+        [(x y) (new x y 0)]         ; Default z to 0
+        [(x y z) (new x y z)]))))
+
+(make-point3d 1 2)          ; z defaults to 0
+(make-point3d 1 2 3)        ; All specified
+
+; Protocol with parent
+(define-record-type (named-point point)
+  (fields name)
+  (protocol
+    (lambda (pnew)
+      (lambda (name x y)
+        ((pnew x y) name)))))
+
+(define np (make-named-point "origin" 0 0))
+(point-x np)                ; 0
+(named-point-name np)       ; "origin"
+
+; Validation in protocol
+(define-record-type positive-point
+  (fields x y)
+  (protocol
+    (lambda (new)
+      (lambda (x y)
+        (unless (and (positive? x) (positive? y))
+          (error 'make-positive-point "values must be positive"))
+        (new x y)))))</code></pre>
+        <br/>
+        <li>Nongenerative and sealed records:</li>
+<pre><code class="language-scheme line-numbers">; Nongenerative - same definition produces same type
+(define-record-type point-ng
+  (nongenerative point-ng-uid)
+  (fields x y))
+
+; Two definitions with same UID are the same type
+; Useful for separate compilation
+
+; Sealed - cannot be inherited
+(define-record-type final-record
+  (sealed #t)
+  (fields value))
+
+; (define-record-type (child final-record) ...)  ; Error!
+
+; Opaque - internal structure hidden
+(define-record-type opaque-record
+  (opaque #t)
+  (fields secret))
+
+; record? returns #f for opaque records
+; But type predicate still works</code></pre>
+        <br/>
+        <li>Chez Scheme record extensions:</li>
+<pre><code class="language-scheme line-numbers">; Define-record (Chez legacy syntax)
+(define-record person (name age))
+
+; Automatically creates:
+; make-person, person?, person-name, person-age
+; set-person-name!, set-person-age! (mutable by default)
+
+; Record type descriptors
+(define rtd (record-type-descriptor person))
+(record-type-name rtd)      ; person
+(record-type-parent rtd)    ; #f
+(record-type-field-names rtd)  ; (name age)
+
+; Reflection
+(record-rtd (make-person "Alice" 30))  ; Get RTD from instance
+
+; Create record dynamically
+(define p ((record-constructor rtd) "Bob" 25))
+((record-accessor rtd 0) p) ; "Bob"
+((record-mutator rtd 1) p 26)  ; Set age to 26</code></pre>
+        <br/>
+        <li>Record printing (Chez extension):</li>
+<pre><code class="language-scheme line-numbers">; Custom record writer
+(define-record-type point
+  (fields x y))
+
+(record-writer (record-type-descriptor point)
+  (lambda (r port write?)
+    (fprintf port "#<point ~a,~a>"
+             (point-x r) (point-y r))))
+
+(make-point 3 4)            ; #<point 3,4>
+
+; Generic record printing
+(record-print-procedure)    ; Current print procedure
+(parameterize ([print-record #t])
+  (printf "~s" (make-point 3 4)))  ; Shows structure</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Record Equality and Hashing</li>
+    <br/>
+    <ul>
+        <li>Default record equality:</li>
+<pre><code class="language-scheme line-numbers">; By default, records use eq? (identity)
+(define-record-type point (fields x y))
+
+(define p1 (make-point 3 4))
+(define p2 (make-point 3 4))
+
+(eq? p1 p1)                 ; #t
+(eq? p1 p2)                 ; #f (different objects)
+(eqv? p1 p2)                ; #f
+(equal? p1 p2)              ; #f (by default)</code></pre>
+        <br/>
+        <li>Custom equality with record-equal-procedure:</li>
+<pre><code class="language-scheme line-numbers">; Set custom equality for record type
+(define-record-type point
+  (fields x y))
+
+(record-type-equal-procedure
+  (record-type-descriptor point)
+  (lambda (p1 p2 equal?)
+    (and (equal? (point-x p1) (point-x p2))
+         (equal? (point-y p1) (point-y p2)))))
+
+; Now equal? works on points
+(define p1 (make-point 3 4))
+(define p2 (make-point 3 4))
+(equal? p1 p2)              ; #t
+
+; Recursive equality with equal? parameter
+(define-record-type tree
+  (fields value left right))
+
+(record-type-equal-procedure
+  (record-type-descriptor tree)
+  (lambda (t1 t2 equal?)
+    (and (equal? (tree-value t1) (tree-value t2))
+         (equal? (tree-left t1) (tree-left t2))
+         (equal? (tree-right t1) (tree-right t2)))))</code></pre>
+        <br/>
+        <li>Custom hashing with record-hash-procedure:</li>
+<pre><code class="language-scheme line-numbers">; Set custom hash for record type
+(record-type-hash-procedure
+  (record-type-descriptor point)
+  (lambda (p hash)
+    (fxxor (hash (point-x p))
+           (fxsll (hash (point-y p)) 16))))
+
+; Now points can be hashtable keys with equal-hash
+(define ht (make-hashtable equal-hash equal?))
+(hashtable-set! ht (make-point 1 2) 'value)
+(hashtable-ref ht (make-point 1 2) #f)  ; 'value
+
+; Combined equal and hash for complex record
+(define-record-type person
+  (fields name age address))
+
+(record-type-equal-procedure
+  (record-type-descriptor person)
+  (lambda (p1 p2 equal?)
+    (and (equal? (person-name p1) (person-name p2))
+         (equal? (person-age p1) (person-age p2))
+         (equal? (person-address p1) (person-address p2)))))
+
+(record-type-hash-procedure
+  (record-type-descriptor person)
+  (lambda (p hash)
+    (fxxor (hash (person-name p))
+           (fxxor (hash (person-age p))
+                  (hash (person-address p))))))</code></pre>
+        <br/>
+        <li>Generic record comparison helpers:</li>
+<pre><code class="language-scheme line-numbers">; Helper to compare all fields
+(define (make-record-equal rtd)
+  (let ([accessors (map (lambda (i)
+                          (record-accessor rtd i))
+                        (iota (length (record-type-field-names rtd))))])
+    (lambda (r1 r2 equal?)
+      (for-all (lambda (acc)
+                 (equal? (acc r1) (acc r2)))
+               accessors))))
+
+; Helper to hash all fields
+(define (make-record-hash rtd)
+  (let ([accessors (map (lambda (i)
+                          (record-accessor rtd i))
+                        (iota (length (record-type-field-names rtd))))])
+    (lambda (r hash)
+      (fold-left (lambda (h acc)
+                   (fxxor h (hash (acc r))))
+                 0
+                 accessors))))
+
+; Apply to a record type
+(let ([rtd (record-type-descriptor my-record)])
+  (record-type-equal-procedure rtd (make-record-equal rtd))
+  (record-type-hash-procedure rtd (make-record-hash rtd)))</code></pre>
+        <br/>
+        <li>Structural equality considerations:</li>
+<pre><code class="language-scheme line-numbers">; Be careful with mutable fields
+(define-record-type mutable-point
+  (fields (mutable x) (mutable y)))
+
+; If using as hashtable key, mutating changes hash!
+(define ht (make-hashtable equal-hash equal?))
+(define mp (make-mutable-point 1 2))
+
+(hashtable-set! ht mp 'value)
+(hashtable-ref ht mp #f)    ; 'value
+
+(mutable-point-x-set! mp 100)  ; Mutation!
+(hashtable-ref ht mp #f)    ; #f - hash changed!
+
+; Solution: use immutable records as keys, or
+; hash only immutable fields</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Procedures</li>
+    <br/>
+    <ul>
+        <li>Procedure basics:</li>
+<pre><code class="language-scheme line-numbers">; Check if procedure
+(procedure? car)            ; #t
+(procedure? (lambda (x) x)) ; #t
+(procedure? '+)             ; #f (symbol, not procedure)
+(procedure? +)              ; #t
+
+; Apply procedure
+(apply + '(1 2 3))          ; 6
+(apply + 1 2 '(3 4))        ; 10
+(apply list 'a 'b '(c d))   ; (a b c d)
+
+; Procedure arity (Chez extension)
+(procedure-arity car)       ; 1
+(procedure-arity cons)      ; 2
+(procedure-arity list)      ; -1 (variadic)
+(procedure-arity +)         ; -1</code></pre>
+        <br/>
+        <li>Procedure introspection (Chez extensions):</li>
+<pre><code class="language-scheme line-numbers">; Get procedure name
+(define (my-proc x) x)
+(#%$procedure-name my-proc)  ; my-proc (internal)
+
+; Procedure source information
+(#%$procedure-source-object my-proc)
+
+; Get code object
+(closure-code my-proc)      ; #<code>
+
+; Code object properties
+(define code (closure-code car))
+(code? code)                ; #t
+
+; Inspect closure variables
+(define (make-adder n)
+  (lambda (x) (+ x n)))
+
+(define add5 (make-adder 5))
+; add5 closes over n=5</code></pre>
+        <br/>
+        <li>Procedure composition:</li>
+<pre><code class="language-scheme line-numbers">; Compose procedures (right to left)
+(define (compose . procs)
+  (if (null? procs)
+      values
+      (let ([proc (car procs)]
+            [rest (apply compose (cdr procs))])
+        (lambda args
+          (call-with-values
+            (lambda () (apply rest args))
+            proc)))))
+
+(define add1-then-double
+  (compose (lambda (x) (* x 2)) add1))
+
+(add1-then-double 5)        ; 12 = (5+1)*2
+
+; Pipeline (left to right)
+(define (pipe . procs)
+  (apply compose (reverse procs)))
+
+(define process
+  (pipe string->list
+        (lambda (lst) (filter char-alphabetic? lst))
+        list->string
+        string-upcase))
+
+(process "Hello, World! 123")  ; "HELLOWORLD"</code></pre>
+        <br/>
+        <li>Currying and partial application:</li>
+<pre><code class="language-scheme line-numbers">; Curry a binary procedure
+(define (curry2 proc)
+  (lambda (x)
+    (lambda (y)
+      (proc x y))))
+
+(define currried-add (curry2 +))
+((curried-add 3) 4)         ; 7
+
+; Partial application
+(define (partial proc . args)
+  (lambda more-args
+    (apply proc (append args more-args))))
+
+(define add10 (partial + 10))
+(add10 5)                   ; 15
+
+(define greet (partial format "Hello, ~a!"))
+(greet "World")             ; "Hello, World!"
+
+; Right partial application
+(define (partial-right proc . args)
+  (lambda more-args
+    (apply proc (append more-args args))))
+
+(define halve (partial-right / 2))
+(halve 10)                  ; 5</code></pre>
+        <br/>
+        <li>Higher-order procedure utilities:</li>
+<pre><code class="language-scheme line-numbers">; Negate a predicate
+(define (negate pred)
+  (lambda args
+    (not (apply pred args))))
+
+(define not-null? (negate null?))
+(not-null? '(1 2))          ; #t
+(not-null? '())             ; #f
+
+; Complement (alias for negate)
+(define complement negate)
+
+; Conjoin predicates (and)
+(define (conjoin . preds)
+  (lambda (x)
+    (for-all (lambda (p) (p x)) preds)))
+
+(define positive-even?
+  (conjoin positive? even?))
+
+(positive-even? 4)          ; #t
+(positive-even? -4)         ; #f
+
+; Disjoin predicates (or)
+(define (disjoin . preds)
+  (lambda (x)
+    (exists (lambda (p) (p x)) preds)))
+
+(define number-or-string?
+  (disjoin number? string?))
+
+(number-or-string? 42)      ; #t
+(number-or-string? "hi")    ; #t
+(number-or-string? 'sym)    ; #f</code></pre>
+        <br/>
+        <li>Procedure caching and memoization:</li>
+<pre><code class="language-scheme line-numbers">; Simple memoization
+(define (memoize proc)
+  (let ([cache (make-hashtable equal-hash equal?)])
+    (lambda args
+      (let ([cached (hashtable-ref cache args 'not-found)])
+        (if (eq? cached 'not-found)
+            (let ([result (apply proc args)])
+              (hashtable-set! cache args result)
+              result)
+            cached)))))
+
+(define slow-fib
+  (lambda (n)
+    (if (< n 2)
+        n
+        (+ (slow-fib (- n 1))
+           (slow-fib (- n 2))))))
+
+(define fast-fib (memoize slow-fib))
+
+(time (slow-fib 35))        ; Slow
+(time (fast-fib 35))        ; Fast (cached)
+
+; Memoization with weak references
+(define (memoize-weak proc)
+  (let ([cache (make-weak-eq-hashtable)])
+    (lambda args
+      (let ([key (if (= (length args) 1)
+                     (car args)
+                     args)])
+        (or (hashtable-ref cache key #f)
+            (let ([result (apply proc args)])
+              (hashtable-set! cache key result)
+              result))))))</code></pre>
+        <br/>
+        <li>Procedure tracing and debugging:</li>
+<pre><code class="language-scheme line-numbers">; Wrap procedure with tracing
+(define (trace-proc name proc)
+  (lambda args
+    (printf "~a called with ~s~n" name args)
+    (let ([result (apply proc args)])
+      (printf "~a returned ~s~n" name result)
+      result)))
+
+(define traced-add (trace-proc 'add +))
+(traced-add 1 2 3)
+; add called with (1 2 3)
+; add returned 6
+
+; Built-in trace (Chez)
+(trace +)                   ; Enable tracing
+(+ 1 2 3)                   ; Shows trace
+(untrace +)                 ; Disable tracing
+
+; Trace multiple
+(trace car cdr cons)
+(untrace car cdr cons)
+
+; Count calls
+(define (counted proc)
+  (let ([count (box 0)])
+    (values
+      (lambda args
+        (set-box! count (+ (unbox count) 1))
+        (apply proc args))
+      (lambda () (unbox count)))))
+
+(define-values (counted-add get-count) (counted +))
+(counted-add 1 2)
+(counted-add 3 4)
+(get-count)                 ; 2</code></pre>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
