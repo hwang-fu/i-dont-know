@@ -165,7 +165,7 @@
         <li><a href="#scm-input-output">Input / Output</a></li>
         <li><a href="#scm-libraries-programs">Libraries and Top-level Programs</a></li>
         <li><a href="#scm-syntactic-extension">Syntactic Extension and Modules</a></li>
-        <li><a href="#scm-"></a></li>
+        <li><a href="#scm-system-operations">System Operations</a></li>
         <li><a href="#scm-"></a></li>
     </ol>
 </nav>
@@ -15672,7 +15672,7 @@ clean:
         <li>Syntax manipulation procedures:</li>
 <pre><code class="language-scheme line-numbers">; Convert between syntax and data
 (syntax-&gt;datum #'(a b c))   ; (a b c)
-(datum-&gt;syntax #'here '(a b c))  ; #<syntax (a b c)&gt;
+(datum-&gt;syntax #'here '(a b c))  ; #&lt;syntax (a b c)&gt;
 
 ; Check syntax object type
 (identifier? #'foo)         ; #t
@@ -15683,7 +15683,7 @@ clean:
 (bound-identifier=? #'x #'x)      ; #t in same binding
 
 ; Generate unique identifier
-(generate-temporaries '(a b c))  ; (#<syntax t1&gt; #<syntax t2&gt; #<syntax t3&gt;)
+(generate-temporaries '(a b c))  ; (#&lt;syntax t1&gt; #&lt;syntax t2&gt; #&lt;syntax t3&gt;)
 
 ; Syntax lists
 (syntax-&gt;list #'(a b c))    ; (#&lt;syntax a&gt; #&lt;syntax b&gt; #&lt;syntax c&gt;)
@@ -17115,7 +17115,1866 @@ copied                      ; 42 (separate copy)
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-system-operations">System Operations in Chez Scheme</h3>
+<ol>
 
+    <li>Exceptions</li>
+    <br/>
+    <ul>
+        <li>Raising exceptions:</li>
+<pre><code class="language-scheme line-numbers">; raise signals an exception
+(raise 'error-symbol)       ; Raise any value
+(raise (make-error))        ; Raise condition
+
+; raise-continuable allows handler to return
+(raise-continuable 'warning)
+
+; error convenience procedure
+(error 'who "message" irritant ...)
+(error 'divide "division by zero" 0)
+
+; assertion-violation for contract violations
+(assertion-violation 'proc "expected positive" -1)
+
+; syntax-violation for macro errors
+(syntax-violation 'my-macro "invalid syntax" form subform)
+
+; Chez-specific error procedures
+(errorf 'who "format ~a" arg)      ; With format string
+(warningf 'who "warning: ~a" arg)  ; Warning message
+(assertion-violationf 'who "bad: ~a" arg)</code></pre>
+        <br/>
+        <li>Handling exceptions with guard:</li>
+<pre><code class="language-scheme line-numbers">; guard provides structured exception handling
+(guard (condition
+        [(error? condition)
+         (display "Error occurred\n")
+         'error-result]
+        [(warning? condition)
+         (display "Warning\n")
+         'warning-result]
+        [else
+         (display "Unknown exception\n")
+         (raise condition)])  ; Re-raise
+  ; Protected body
+  (risky-operation))
+
+; Multiple condition checks
+(guard (c
+        [(and (who-condition? c) (message-condition? c))
+         (printf "~a: ~a~n"
+                 (condition-who c)
+                 (condition-message c))]
+        [(message-condition? c)
+         (display (condition-message c))]
+        [else (raise c)])
+  (error 'my-proc "something went wrong"))
+
+; Nested guards
+(guard (outer [(error? outer) 'outer-error])
+  (guard (inner [(warning? inner) 'inner-warning])
+    (error 'test "error")))</code></pre>
+        <br/>
+        <li>Exception handlers:</li>
+<pre><code class="language-scheme line-numbers">; with-exception-handler for low-level handling
+(with-exception-handler
+  (lambda (condition)
+    (display "Exception caught\n")
+    (display condition)
+    (newline))
+  (lambda ()
+    (raise 'my-exception)))
+
+; Handler must handle or re-raise
+(with-exception-handler
+  (lambda (c)
+    (if (warning? c)
+        (begin
+          (display "Ignoring warning\n")
+          42)                ; Return value for continuable
+        (raise c)))          ; Re-raise others
+  (lambda ()
+    (raise-continuable (make-warning))))
+
+; Nested handlers
+(with-exception-handler
+  (lambda (c) (printf "Outer: ~a~n" c))
+  (lambda ()
+    (with-exception-handler
+      (lambda (c)
+        (printf "Inner: ~a~n" c)
+        (raise c))           ; Pass to outer
+      (lambda ()
+        (raise 'test)))))</code></pre>
+        <br/>
+        <li>Condition types:</li>
+<pre><code class="language-scheme line-numbers">; R6RS standard conditions
+(make-error)                ; General error
+(make-assertion-violation)  ; Assertion failure
+(make-violation)            ; Contract violation
+(make-warning)              ; Warning
+(make-serious-condition)    ; Serious condition
+(make-irritants-condition '(1 2 3))
+(make-who-condition 'my-proc)
+(make-message-condition "error message")
+
+; Compound conditions
+(condition
+  (make-error)
+  (make-who-condition 'divide)
+  (make-message-condition "division by zero")
+  (make-irritants-condition '(0)))
+
+; Condition predicates
+(error? c)
+(warning? c)
+(serious-condition? c)
+(violation? c)
+(assertion-violation? c)
+(irritants-condition? c)
+(who-condition? c)
+(message-condition? c)
+
+; Condition accessors
+(condition-who c)           ; Get who
+(condition-message c)       ; Get message
+(condition-irritants c)     ; Get irritants</code></pre>
+        <br/>
+        <li>Defining custom conditions:</li>
+<pre><code class="language-scheme line-numbers">; Define new condition type
+(define-condition-type &my-error
+  &error                    ; Parent type
+  make-my-error             ; Constructor
+  my-error?                 ; Predicate
+  (code my-error-code)      ; Field
+  (data my-error-data))
+
+; Use custom condition
+(define (signal-my-error code data)
+  (raise (condition
+           (make-my-error code data)
+           (make-who-condition 'my-proc)
+           (make-message-condition "custom error"))))
+
+; Handle custom condition
+(guard (c
+        [(my-error? c)
+         (printf "Code: ~a, Data: ~a~n"
+                 (my-error-code c)
+                 (my-error-data c))])
+  (signal-my-error 404 "not found"))
+
+; Chez-specific: display-condition
+(guard (c [else (display-condition c)])
+  (error 'test "message" 'irritant))</code></pre>
+        <br/>
+        <li>Debug on exception:</li>
+<pre><code class="language-scheme line-numbers">; Enter debugger on unhandled exceptions
+(debug-on-exception #t)
+
+; When enabled, unhandled exceptions enter inspector
+; Type ? for help in inspector
+
+; Reset handler (Chez extension)
+(reset-handler)             ; Get current
+(reset-handler (lambda () (exit 1)))  ; Set
+
+; Abort handler
+(abort-handler)             ; Get current
+(abort-handler (lambda () (reset)))
+
+; Base exception handler
+(base-exception-handler)
+(base-exception-handler
+  (lambda (c)
+    (display-condition c)
+    (reset)))
+
+; Exit on exception (useful for scripts)
+(parameterize ([reset-handler exit]
+               [abort-handler exit])
+  (run-main-program))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Interrupts</li>
+    <br/>
+    <ul>
+        <li>Keyboard interrupts:</li>
+<pre><code class="language-scheme line-numbers">; keyboard-interrupt-handler handles Ctrl+C
+(keyboard-interrupt-handler)  ; Get current handler
+
+; Set custom handler
+(keyboard-interrupt-handler
+  (lambda ()
+    (display "\nInterrupted!\n")
+    (reset)))                 ; Return to REPL
+
+; Disable interrupts temporarily
+(let ([old-handler (keyboard-interrupt-handler)])
+  (keyboard-interrupt-handler void)
+  (critical-operation)
+  (keyboard-interrupt-handler old-handler))
+
+; Default behavior enters break handler
+; Type ? for options:
+; - e: exit
+; - r: reset
+; - a: abort
+; - n: new cafe
+; - i: inspect
+; - s: statistics</code></pre>
+        <br/>
+        <li>Timer interrupts:</li>
+<pre><code class="language-scheme line-numbers">; set-timer sets timer interrupt
+(set-timer ticks)           ; Returns previous value
+
+; Timer interrupt handler
+(timer-interrupt-handler)   ; Get current
+(timer-interrupt-handler
+  (lambda ()
+    (display "Tick!\n")
+    (set-timer 1000000)))   ; Reset timer
+
+; Disable timer
+(set-timer 0)               ; Disable timer
+
+; Example: timeout mechanism
+(define (with-timeout seconds thunk)
+  (let ([done #f]
+        [result #f])
+    (let ([old-handler (timer-interrupt-handler)])
+      (timer-interrupt-handler
+        (lambda ()
+          (unless done
+            (error 'timeout "operation timed out"))))
+      (set-timer (* seconds 1000000))
+      (set! result (thunk))
+      (set! done #t)
+      (set-timer 0)
+      (timer-interrupt-handler old-handler)
+      result)))
+
+(with-timeout 5
+  (lambda ()
+    (expensive-computation)))</code></pre>
+        <br/>
+        <li>Signal handling (Unix):</li>
+<pre><code class="language-scheme line-numbers">; register-signal-handler for Unix signals
+(register-signal-handler signal-number handler)
+
+; Common signals
+(define SIGINT 2)
+(define SIGTERM 15)
+(define SIGUSR1 10)
+(define SIGUSR2 12)
+(define SIGALRM 14)
+
+; Handle SIGTERM for graceful shutdown
+(register-signal-handler SIGTERM
+  (lambda (sig)
+    (display "Received SIGTERM, shutting down...\n")
+    (cleanup)
+    (exit 0)))
+
+; Handle SIGUSR1 for status
+(register-signal-handler SIGUSR1
+  (lambda (sig)
+    (display-status)))
+
+; Default signal behavior
+(register-signal-handler SIGINT #f)  ; Default handling
+
+; Get current handler
+(define old-handler (register-signal-handler SIGINT #f))
+(register-signal-handler SIGINT old-handler)</code></pre>
+        <br/>
+        <li>Disabling and enabling interrupts:</li>
+<pre><code class="language-scheme line-numbers">; critical-section disables interrupts
+(critical-section
+  ; Code here won't be interrupted
+  (sensitive-operation))
+
+; disable-interrupts / enable-interrupts (low-level)
+(disable-interrupts)
+(try
+  (critical-code)
+  (finally (enable-interrupts)))
+
+; with-interrupts-disabled (Chez extension)
+(define-syntax with-interrupts-disabled
+  (syntax-rules ()
+    [(_ body ...)
+     (begin
+       (disable-interrupts)
+       (let ([result (begin body ...)])
+         (enable-interrupts)
+         result))]))
+
+; Interrupt status
+(interrupts-disabled?)      ; Check current state
+
+; Deferred interrupts
+; Interrupts are deferred, not lost, during critical sections</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Environments</li>
+    <br/>
+    <ul>
+        <li>Environment basics:</li>
+<pre><code class="language-scheme line-numbers">; Environments are first-class in Chez Scheme
+(interaction-environment)   ; REPL environment
+(scheme-report-environment 5)  ; R5RS environment
+(null-environment 5)        ; Syntax only, no procedures
+
+; Create copy of environment
+(copy-environment (interaction-environment))
+
+; Check if environment
+(environment? (interaction-environment))  ; #t
+
+; Standard R6RS environment
+(environment '(rnrs))       ; R6RS bindings
+(environment '(rnrs) '(rnrs lists))  ; Multiple libs
+
+; Chez scheme environment
+(environment '(chezscheme))</code></pre>
+        <br/>
+        <li>Evaluating in environments:</li>
+<pre><code class="language-scheme line-numbers">; eval with environment
+(eval '(+ 1 2) (interaction-environment))  ; 3
+
+(eval '(define x 42) (interaction-environment))
+(eval 'x (interaction-environment))  ; 42
+
+; Create isolated environment
+(let ([env (copy-environment (scheme-report-environment 5))])
+  (eval '(define my-var 100) env)
+  (eval 'my-var env))       ; 100
+; my-var not defined here
+
+; Evaluate in fresh environment
+(let ([env (environment '(rnrs))])
+  (eval '(fold-left + 0 '(1 2 3 4 5)) env))  ; 15
+
+; environment-symbols: list defined symbols
+(environment-symbols (interaction-environment))</code></pre>
+        <br/>
+        <li>Top-level bindings:</li>
+<pre><code class="language-scheme line-numbers">; Access top-level value
+(top-level-value 'cons)     ; #<procedure cons>
+
+; Check if bound
+(top-level-bound? 'cons)    ; #t
+(top-level-bound? 'undefined-var)  ; #f
+
+; Set top-level value
+(set-top-level-value! 'my-global 42)
+(top-level-value 'my-global)  ; 42
+
+; Define top-level value (creates if not exists)
+(define-top-level-value 'new-var 100)
+
+; In specific environment
+(top-level-value 'x env)
+(set-top-level-value! 'x 10 env)
+(top-level-bound? 'x env)
+
+; Top-level syntax
+(top-level-syntax? 'lambda) ; #t
+(top-level-syntax? 'cons)   ; #f
+
+; Get syntax transformer
+(top-level-syntax 'when)    ; Returns transformer</code></pre>
+        <br/>
+        <li>Environment manipulation:</li>
+<pre><code class="language-scheme line-numbers">; environment-mutable? checks if can modify
+(environment-mutable? (interaction-environment))  ; #t
+(environment-mutable? (scheme-report-environment 5))  ; #f
+
+; Make sandbox environment
+(define (make-sandbox)
+  (let ([env (copy-environment (environment '(rnrs)))])
+    ; Remove dangerous procedures
+    (set-top-level-value! 'delete-file
+      (lambda (f) (error 'sandbox "not allowed")) env)
+    (set-top-level-value! 'system
+      (lambda (cmd) (error 'sandbox "not allowed")) env)
+    env))
+
+; Evaluate user code in sandbox
+(define (safe-eval expr)
+  (eval expr (make-sandbox)))
+
+; Import into environment
+(environment-symbols (environment '(rnrs lists)))
+; (find for-all exists ...)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Compilation, Evaluation, and Loading</li>
+    <br/>
+    <ul>
+        <li>Basic evaluation:</li>
+<pre><code class="language-scheme line-numbers">; eval evaluates expression
+(eval '(+ 1 2))             ; 3
+(eval '(+ 1 2) (interaction-environment))
+
+; Compile expression
+(compile '(lambda (x) (* x x)))  ; Returns compiled procedure
+
+; Interpret expression (no compilation)
+(interpret '(lambda (x) (* x x)))
+
+; interpret is slower but uses less memory
+
+; expand macro
+(expand '(when #t (display "yes")))
+; (if #t (begin (display "yes")))
+
+; sc-expand for syntax-case expansion
+(sc-expand '(let ([x 1]) x))</code></pre>
+        <br/>
+        <li>Loading files:</li>
+<pre><code class="language-scheme line-numbers">; load evaluates file contents
+(load "myfile.ss")
+(load "myfile.so")          ; Load compiled
+
+; load-library loads library definition
+(load-library "mylib.ss")
+
+; load-program loads top-level program
+(load-program "program.ss")
+
+; Load with specific environment
+(load "file.ss" (interaction-environment))
+
+; Portable load (searches source-directories)
+(load "relative/path.ss")
+
+; Load compiled object file
+(load-shared-object "mylib.so")
+
+; visit loads syntax only (for macros)
+(visit "macros.so")
+
+; revisit reloads
+(revisit "macros.so")</code></pre>
+        <br/>
+        <li>Compiling files:</li>
+<pre><code class="language-scheme line-numbers">; compile-file compiles source to object
+(compile-file "source.ss")        ; Creates source.so
+(compile-file "source.ss" "out.so")  ; Custom output
+
+; compile-library for libraries
+(compile-library "mylib.ss")
+(compile-library "mylib.ss" "mylib.so")
+
+; compile-program for programs
+(compile-program "main.ss")
+
+; compile-script for scripts
+(compile-script "script.ss")
+
+; compile-whole-program for optimization
+(compile-whole-program "input.wpo" "output.so")
+
+; compile-whole-library
+(compile-whole-library "lib.wpo" "lib.so")
+
+; Compile with import
+(parameterize ([compile-imported-libraries #t])
+  (compile-program "main.ss"))
+
+; maybe-compile: compile if source newer
+(maybe-compile-library "mylib.ss")
+(maybe-compile-file "source.ss")</code></pre>
+        <br/>
+        <li>Compilation options:</li>
+<pre><code class="language-scheme line-numbers">; compile-compressed: compress output
+(parameterize ([compile-compressed #t])
+  (compile-file "large-file.ss"))
+
+; generate-wpo-files: for whole-program optimization
+(parameterize ([generate-wpo-files #t])
+  (compile-library "mylib.ss"))
+
+; compile-profile: enable profiling
+(parameterize ([compile-profile #t])
+  (compile-file "profile-me.ss"))
+
+; generate-inspector-information
+(parameterize ([generate-inspector-information #t])
+  (compile-file "debug.ss"))
+
+; generate-procedure-source-information
+(parameterize ([generate-procedure-source-information #t])
+  (compile-file "source.ss"))
+
+; generate-allocation-counts
+(parameterize ([generate-allocation-counts #t])
+  (compile-file "analyze.ss"))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Source Directories and Files</li>
+    <br/>
+    <ul>
+        <li>Source directories:</li>
+<pre><code class="language-scheme line-numbers">; source-directories controls where to find source
+(source-directories)        ; Get current list
+; (".")
+
+; Add directories
+(source-directories
+  (append '("./src" "./lib" "/usr/local/scheme/lib")
+          (source-directories)))
+
+; Source search order
+; 1. Current directory (if relative path)
+; 2. Each directory in source-directories
+
+; Absolute paths bypass search
+(load "/absolute/path/to/file.ss")
+
+; For libraries
+(library-directories)       ; List of (source . object) pairs
+(library-directories
+  '(("src" . "build")
+    ("." . ".")))</code></pre>
+        <br/>
+        <li>Library file locations:</li>
+<pre><code class="language-scheme line-numbers">; library-extensions: file extensions to try
+(library-extensions)
+; ((".chezscheme.sls" . ".chezscheme.so")
+;  (".ss" . ".so")
+;  (".sls" . ".so")
+;  (".scm" . ".so"))
+
+; Add extension
+(library-extensions
+  (cons '(".scheme" . ".so")
+        (library-extensions)))
+
+; Library search process for (my lib):
+; 1. Try each (src . obj) in library-directories
+; 2. For each, try extensions: my/lib.ss, my/lib.sls, etc.
+; 3. Check if object file exists and is newer
+; 4. Load object or compile source
+
+; library-object-filename: find compiled library
+(library-object-filename '(rnrs))
+
+; library-search-handler: customize search
+(library-search-handler
+  (lambda (who path dir*)
+    (default-library-search-handler who path dir*)))</code></pre>
+        <br/>
+        <li>File operations during load:</li>
+<pre><code class="language-scheme line-numbers">; source-file-descriptor during read
+(make-source-file-descriptor filename port)
+
+; Get source info
+(current-source-file)       ; During load
+
+; locate-source-file: find file in source-directories
+(define (locate-source-file filename)
+  (let loop ([dirs (source-directories)])
+    (if (null? dirs)
+        #f
+        (let ([path (string-append (car dirs) "/" filename)])
+          (if (file-exists? path)
+              path
+              (loop (cdr dirs)))))))
+
+; compile-imported-libraries: auto-compile
+(compile-imported-libraries #t)
+
+; import-notify: print imports
+(import-notify #t)
+; > (import (my-library))
+; compiling my-library.ss with output to my-library.so</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Compiler Controls</li>
+    <br/>
+    <ul>
+        <li>Optimization levels:</li>
+<pre><code class="language-scheme line-numbers">; optimize-level controls optimization aggressiveness
+(optimize-level)            ; Get current (0-3)
+(optimize-level 2)          ; Set level
+
+; Level 0: No optimization (fastest compile, debugging)
+; Level 1: Light optimization
+; Level 2: Standard optimization (default)
+; Level 3: Aggressive optimization (may change semantics)
+
+; Level 3 enables unsafe operations
+(parameterize ([optimize-level 3])
+  (compile-file "performance-critical.ss"))
+
+; debug-level: inverse of optimize
+(debug-level)               ; Get current
+(debug-level 3)             ; Maximum debugging
+
+; Compile for debugging
+(parameterize ([debug-level 3]
+               [optimize-level 0]
+               [generate-inspector-information #t])
+  (compile-file "debug-me.ss"))</code></pre>
+        <br/>
+        <li>Inlining and integration:</li>
+<pre><code class="language-scheme line-numbers">; cp0-effort-limit: expansion limit
+(cp0-effort-limit)          ; Default 200
+(cp0-effort-limit 1000)     ; Allow more expansion
+
+; cp0-score-limit: code growth limit
+(cp0-score-limit)           ; Default 20
+(cp0-score-limit 50)        ; Allow more growth
+
+; cp0-outer-unroll-limit: loop unrolling
+(cp0-outer-unroll-limit)    ; Default 1
+
+; run-cp0: enable/disable optimizer
+(run-cp0)                   ; #t by default
+
+; Enable integration of safe primitives at level 3
+; car, cdr, etc. become unsafe (no checks)
+
+; Prevent integration of specific procedures
+(define-syntax my-car
+  (identifier-syntax car))  ; Wrapper prevents integration</code></pre>
+        <br/>
+        <li>Code generation options:</li>
+<pre><code class="language-scheme line-numbers">; generate-interrupt-trap: overflow checks
+(generate-interrupt-trap)   ; #t by default
+(generate-interrupt-trap #f)  ; Disable for speed (risky)
+
+; generate-allocation-counts
+(generate-allocation-counts)
+(generate-allocation-counts #t)  ; Enable counting
+
+; enable-cross-library-optimization
+(enable-cross-library-optimization)
+(enable-cross-library-optimization #t)
+
+; fasl-compressed: compress fasl output
+(fasl-compressed)           ; Get
+(fasl-compressed #t)        ; Enable
+
+; compile-interpret-simple: interpret simple expressions
+(compile-interpret-simple)  ; #t by default
+
+; internal-defines-as-letrec*
+(internal-defines-as-letrec*)  ; #t (R6RS compliant)</code></pre>
+        <br/>
+        <li>Compile-time features:</li>
+<pre><code class="language-scheme line-numbers">; enable-type-recovery: infer types
+(enable-type-recovery)      ; #t default
+(enable-type-recovery #t)
+
+; enable-error-source-expression
+(enable-error-source-expression)
+(enable-error-source-expression #t)
+
+; compile-time-value-paths: for cached data
+(expand/optimize expr env)  ; Expand and optimize
+
+; Check compiler version
+(scheme-version)            ; "9.5.8"
+(scheme-version-number)     ; #(9 5 8)
+
+; Machine-specific compilation
+(machine-type)              ; 'a6osx, 'ta6le, etc.
+(native-code)               ; #t for native code generation
+
+; Whole-program optimization workflow
+(parameterize ([generate-wpo-files #t])
+  (compile-library "lib1.ss")
+  (compile-library "lib2.ss")
+  (compile-program "main.ss"))
+(compile-whole-program "main.wpo" "app.so")</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Profiling</li>
+    <br/>
+    <ul>
+        <li>Basic profiling:</li>
+<pre><code class="language-scheme line-numbers">; Enable profiling for source file
+(profile-clear)             ; Clear existing data
+(profile "myfile.ss")       ; Enable profiling
+
+; Compile with profiling enabled
+(parameterize ([compile-profile #t])
+  (compile-file "myfile.ss"))
+
+; Run profiled code
+(load "myfile.so")
+(run-my-functions)
+
+; View profile results
+(profile-dump)              ; Print to stdout
+(profile-dump-list)         ; Return as list
+(profile-dump-html "profile.html")  ; HTML report
+(profile-dump-html "profile.html" separate-files: #t)
+
+; Profile data includes:
+; - Call counts
+; - Execution time
+; - Source locations</code></pre>
+        <br/>
+        <li>Profile control:</li>
+<pre><code class="language-scheme line-numbers">; profile-release-counters: free memory
+(profile-release-counters)
+
+; Check if profiling active
+; No direct predicate, use profile-dump-list
+
+; Selective profiling
+(profile "critical-module.ss")  ; Only this file
+
+; Multiple files
+(profile "module1.ss")
+(profile "module2.ss")
+
+; Profile all loaded code
+(compile-profile #t)        ; Global enable
+
+; Disable profiling
+(compile-profile #f)
+
+; Profile parameters
+(profile-line-tracking)     ; Track line numbers
+(profile-line-tracking #t)</code></pre>
+        <br/>
+        <li>Analyzing profile data:</li>
+<pre><code class="language-scheme line-numbers">; profile-dump-list returns structured data
+(define profile-data (profile-dump-list))
+
+; Each entry: (source-info count time)
+(for-each
+  (lambda (entry)
+    (let ([source (car entry)]
+          [count (cadr entry)]
+          [time (caddr entry)])
+      (when (> count 1000)
+        (printf "Hot spot: ~a (~a calls)~n" source count))))
+  profile-data)
+
+; Find hottest functions
+(define (top-n-by-count data n)
+  (take (sort (lambda (a b) (> (cadr a) (cadr b))) data) n))
+
+(define (top-n-by-time data n)
+  (take (sort (lambda (a b) (> (caddr a) (caddr b))) data) n))
+
+; Display summary
+(printf "Top 10 by call count:~n")
+(for-each
+  (lambda (e)
+    (printf "  ~a: ~a calls~n" (car e) (cadr e)))
+  (top-n-by-count profile-data 10))</code></pre>
+        <br/>
+        <li>HTML profile report:</li>
+<pre><code class="language-scheme line-numbers">; Generate HTML profile
+(profile-dump-html "profile.html")
+
+; Options
+(profile-dump-html "profile.html"
+  separate-files: #t         ; Separate file per source
+  dump-counts: #t           ; Include call counts
+  dump-times: #t)           ; Include timing
+
+; HTML report shows:
+; - Source code with annotations
+; - Call counts per line
+; - Time spent per line
+; - Heat map coloring
+
+; Custom HTML generation
+(define (profile->custom-report data filename)
+  (call-with-output-file filename
+    (lambda (port)
+      (fprintf port "<html><body><table>~n")
+      (for-each
+        (lambda (e)
+          (fprintf port "<tr><td>~a</td><td>~a</td><td>~a</td></tr>~n"
+                   (car e) (cadr e) (caddr e)))
+        data)
+      (fprintf port "</table></body></html>~n"))
+    '(replace)))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Waiter Customization</li>
+    <br/>
+    <ul>
+        <li>Waiter basics:</li>
+<pre><code class="language-scheme line-numbers">; The waiter is the REPL read-eval-print loop
+; new-cafe starts new waiter level
+(new-cafe)                  ; New REPL level
+(new-cafe eval)             ; With custom evaluator
+
+; Exit current level
+(exit)                      ; Exit cafe
+(reset)                     ; Reset to base level
+
+; Cafe depth
+(cafe-level)                ; Current nesting depth
+
+; Custom REPL
+(new-cafe
+  (lambda (x)
+    (printf "Evaluating: ~a~n" x)
+    (eval x)))</code></pre>
+        <br/>
+        <li>Waiter prompts:</li>
+<pre><code class="language-scheme line-numbers">; waiter-prompt-string controls prompt
+(waiter-prompt-string)      ; Get current
+(waiter-prompt-string "λ> ")  ; Custom prompt
+
+; waiter-prompt-and-read: full control
+(waiter-prompt-and-read)    ; Get current
+(waiter-prompt-and-read
+  (lambda (level)
+    (printf "[~a]> " level)
+    (flush-output-port)
+    (read)))
+
+; Multi-line prompt
+(waiter-prompt-and-read
+  (lambda (level)
+    (if (= level 0)
+        (display "scheme> ")
+        (printf "~a> " level))
+    (flush-output-port)
+    (read)))
+
+; With line editing
+; Chez uses GNU readline if available</code></pre>
+        <br/>
+        <li>REPL hooks:</li>
+<pre><code class="language-scheme line-numbers">; waiter-write: control output format
+(waiter-write)              ; Get current
+(waiter-write
+  (lambda (x)
+    (unless (eq? x (void))
+      (pretty-print x))))
+
+; Custom output formatting
+(waiter-write
+  (lambda (x)
+    (cond
+      [(eq? x (void)) (void)]
+      [(procedure? x)
+       (printf "#<procedure>~n")]
+      [else
+       (write x)
+       (newline)])))
+
+; waiter-evaluator: control evaluation
+(waiter-evaluator)          ; Get current
+(waiter-evaluator
+  (lambda (x)
+    (let ([start (current-time)])
+      (let ([result (eval x)])
+        (printf "; ~a ms~n"
+          (time-difference (current-time) start))
+        result))))</code></pre>
+        <br/>
+        <li>REPL utilities:</li>
+<pre><code class="language-scheme line-numbers">; abort returns to top level
+(abort)
+
+; break enters break handler
+(break)
+
+; inspect starts inspector
+(inspect value)
+
+; trace procedures
+(trace procedure-name)
+(trace factorial)
+
+(factorial 5)
+; |(factorial 5)
+; | (factorial 4)
+; | |(factorial 3)
+; ...
+
+(untrace factorial)
+
+; trace-define
+(trace-define (my-proc x)
+  (* x 2))
+
+; Debug with continuation inspector
+(debug-on-exception #t)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Transcript Files</li>
+    <br/>
+    <ul>
+        <li>Basic transcript:</li>
+<pre><code class="language-scheme line-numbers">; transcript-on starts recording
+(transcript-on "session.log")
+
+; All input and output recorded
+(+ 1 2)                     ; Recorded
+(display "hello")           ; Recorded
+
+; transcript-off stops recording
+(transcript-off)
+
+; Transcript includes:
+; - All expressions typed
+; - All results
+; - All printed output
+
+; Append to existing transcript
+(transcript-on "session.log")  ; Appends if exists</code></pre>
+        <br/>
+        <li>Transcript file format:</li>
+<pre><code class="language-scheme line-numbers">; Example transcript content:
+; > (define (square x) (* x x))
+; > (square 5)
+; 25
+; > (map square '(1 2 3 4 5))
+; (1 4 9 16 25)
+; > (display "Hello\n")
+; Hello
+
+; Transcripts are human-readable
+; Can be loaded as source (with care)
+
+; Transcript for debugging
+(transcript-on "debug-session.log")
+(load "problem-code.ss")
+(test-function)
+(transcript-off)
+; Review debug-session.log to see what happened</code></pre>
+        <br/>
+        <li>Programmatic transcript control:</li>
+<pre><code class="language-scheme line-numbers">; transcript-cafe: record single cafe session
+(transcript-cafe "session.log")
+
+; Run code with transcript
+(define (with-transcript filename thunk)
+  (transcript-on filename)
+  (guard (c [else
+             (transcript-off)
+             (raise c)])
+    (let ([result (thunk)])
+      (transcript-off)
+      result)))
+
+; Timestamped transcript
+(define (transcript-on/timestamp prefix)
+  (let ([filename (format "~a-~a.log"
+                          prefix
+                          (date-and-time))])
+    (transcript-on filename)
+    filename))
+
+; Auto-transcript on startup (in .schemerc)
+(unless (top-level-bound? 'no-transcript)
+  (transcript-on
+    (format "~a/scheme-~a.log"
+            (getenv "HOME")
+            (date-and-time))))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Times and Dates</li>
+    <br/>
+    <ul>
+        <li>Time objects:</li>
+<pre><code class="language-scheme line-numbers">; current-time returns time object
+(current-time)              ; Time since epoch
+(current-time 'time-utc)    ; UTC time
+(current-time 'time-monotonic)  ; Monotonic (for measuring)
+(current-time 'time-process)    ; Process time
+(current-time 'time-thread)     ; Thread time
+
+; Time predicates
+(time? (current-time))      ; #t
+(time=? t1 t2)
+(time&lt;? t1 t2)
+(time&lt;=? t1 t2)
+(time&gt;? t1 t2)
+(time&gt;=? t1 t2)
+
+; Time arithmetic
+(time-difference t1 t2)     ; Returns time duration
+(add-duration t duration)
+
+; Time components
+(time-second t)             ; Seconds part
+(time-nanosecond t)         ; Nanoseconds part
+(time-type t)               ; 'time-utc, etc.</code></pre>
+        <br/>
+        <li>Date operations:</li>
+<pre><code class="language-scheme line-numbers">; date-and-time returns formatted string
+(date-and-time)             ; "Wed Dec 4 10:30:45 2024"
+
+; current-date returns date object
+(current-date)              ; Date object
+(current-date 0)            ; UTC date
+
+; Date components
+(date-year d)               ; e.g., 2024
+(date-month d)              ; 1-12
+(date-day d)                ; 1-31
+(date-hour d)               ; 0-23
+(date-minute d)             ; 0-59
+(date-second d)             ; 0-60 (leap second)
+(date-nanosecond d)         ; 0-999999999
+(date-zone-offset d)        ; Seconds from UTC
+(date-week-day d)           ; 0-6 (Sunday = 0)
+(date-year-day d)           ; 1-366
+
+; Create date
+(make-date nsec sec min hour day month year zone-offset)</code></pre>
+        <br/>
+        <li>Time/date conversions:</li>
+<pre><code class="language-scheme line-numbers">; Time to date
+(time-utc->date (current-time))
+(time-utc->date (current-time) 0)  ; With zone offset
+
+; Date to time
+(date->time-utc date)
+(date->time-monotonic date)
+
+; String formatting
+(date->string date)         ; Default format
+(date->string date "~Y-~m-~d ~H:~M:~S")
+
+; Format codes:
+; ~Y - 4-digit year
+; ~m - month (01-12)
+; ~d - day (01-31)
+; ~H - hour (00-23)
+; ~M - minute (00-59)
+; ~S - second (00-60)
+; ~N - nanosecond
+; ~z - timezone offset
+
+; Parse string to date
+(string->date "2024-12-04" "~Y-~m-~d")
+
+; Julian day conversions
+(date->julian-day date)
+(julian-day->date jd)
+(julian-day->time-utc jd)</code></pre>
+        <br/>
+        <li>Practical time utilities:</li>
+<pre><code class="language-scheme line-numbers">; Measure elapsed time
+(define (time-it thunk)
+  (let* ([start (current-time 'time-monotonic)]
+         [result (thunk)]
+         [end (current-time 'time-monotonic)])
+    (values result (time-difference end start))))
+
+(let-values ([(result duration) (time-it expensive-computation)])
+  (printf "Took ~a seconds~n"
+          (+ (time-second duration)
+             (/ (time-nanosecond duration) 1e9))))
+
+; Format duration
+(define (format-duration t)
+  (let ([secs (time-second t)]
+        [nsecs (time-nanosecond t)])
+    (cond
+      [(< secs 1) (format "~,3fms" (/ nsecs 1e6))]
+      [(< secs 60) (format "~,2fs" (+ secs (/ nsecs 1e9)))]
+      [else (format "~am ~as" (quotient secs 60) (modulo secs 60))])))
+
+; Timestamp string
+(define (timestamp)
+  (date->string (current-date) "~Y~m~d-~H~M~S"))
+
+; ISO 8601 format
+(define (iso-timestamp)
+  (date->string (current-date) "~Y-~m-~dT~H:~M:~S~z"))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Timing and Statistics</li>
+    <br/>
+    <ul>
+        <li>The time form:</li>
+<pre><code class="language-scheme line-numbers">; time measures expression evaluation
+(time (factorial 10000))
+; (time (factorial 10000))
+;     2 collections
+;     32 ms elapsed cpu time, including 5 ms collecting
+;     35 ms elapsed real time
+;     5,234,567 bytes allocated
+
+; Returns the expression result
+(define result (time (heavy-computation)))
+
+; time reports:
+; - Number of GC collections
+; - CPU time (including GC)
+; - Real (wall clock) time
+; - Bytes allocated</code></pre>
+        <br/>
+        <li>Statistics procedures:</li>
+<pre><code class="language-scheme line-numbers">; statistics returns detailed info
+(statistics)
+; Returns:
+; ((time type . value) ...)
+
+; Specific statistics
+(cpu-time)                  ; CPU time in nanoseconds
+(real-time)                 ; Real time in nanoseconds
+(bytes-allocated)           ; Total bytes allocated
+(current-memory-bytes)      ; Current memory usage
+
+; Collections
+(collections)               ; Number of GC collections
+(collect-trip-bytes)        ; Bytes between collections
+
+; More detailed
+(sstats-cpu sstats)         ; CPU time from sstats
+(sstats-real sstats)        ; Real time
+(sstats-bytes sstats)       ; Bytes allocated
+(sstats-gc-count sstats)    ; GC count
+(sstats-gc-cpu sstats)      ; GC CPU time
+(sstats-gc-real sstats)     ; GC real time
+(sstats-gc-bytes sstats)    ; Bytes reclaimed</code></pre>
+        <br/>
+        <li>Statistics difference:</li>
+<pre><code class="language-scheme line-numbers">; sstats-difference for measuring
+(define (measure thunk)
+  (let ([before (statistics)])
+    (let ([result (thunk)])
+      (let ([after (statistics)])
+        (values result (sstats-difference after before))))))
+
+(let-values ([(result stats) (measure heavy-computation)])
+  (printf "CPU: ~a ms~n" (/ (sstats-cpu stats) 1e6))
+  (printf "Real: ~a ms~n" (/ (sstats-real stats) 1e6))
+  (printf "Allocated: ~a bytes~n" (sstats-bytes stats))
+  result)
+
+; Print statistics
+(sstats-print stats)
+(sstats-print stats (current-output-port))</code></pre>
+        <br/>
+        <li>GC statistics:</li>
+<pre><code class="language-scheme line-numbers">; collect performs garbage collection
+(collect)                   ; Full collection
+(collect 0)                 ; Generation 0 only
+(collect 1)                 ; Generations 0-1
+(collect (collect-maximum-generation))  ; Full
+
+; GC parameters
+(collect-maximum-generation)  ; Highest generation
+(collect-generation-radix)    ; Ratio between generations
+(collect-trip-bytes)          ; Bytes before next GC
+(collect-trip-bytes 10000000) ; Set to 10MB
+
+; Heap statistics
+(bytes-allocated)           ; Total ever allocated
+(current-memory-bytes)      ; Current heap size
+
+; GC notification
+(collect-notify #t)         ; Print on GC
+; gc: 0:1234567 (0:0) 2345ms @ 123456789
+
+; collect-request-handler
+(collect-request-handler)
+(collect-request-handler
+  (lambda ()
+    (display "GC requested\n")
+    (collect)))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Cost Centers</li>
+    <br/>
+    <ul>
+        <li>Cost center basics:</li>
+<pre><code class="language-scheme line-numbers">; Cost centers track resource usage
+(define cc (make-cost-center))
+
+; with-cost-center runs code in cost center
+(with-cost-center cc
+  (lambda ()
+    (heavy-computation)))
+
+; Get accumulated costs
+(cost-center-instruction-count cc)
+(cost-center-allocation-count cc)
+(cost-center-time cc)
+
+; Reset cost center
+(reset-cost-center! cc)
+
+; Example
+(define cc (make-cost-center))
+(with-cost-center cc
+  (lambda ()
+    (let loop ([n 1000000] [sum 0])
+      (if (zero? n)
+          sum
+          (loop (- n 1) (+ sum n))))))
+
+(printf "Instructions: ~a~n" (cost-center-instruction-count cc))
+(printf "Allocations: ~a~n" (cost-center-allocation-count cc))</code></pre>
+        <br/>
+        <li>Multiple cost centers:</li>
+<pre><code class="language-scheme line-numbers">; Track different parts of program
+(define cc-parse (make-cost-center))
+(define cc-eval (make-cost-center))
+(define cc-print (make-cost-center))
+
+(define (repl)
+  (let ([expr (with-cost-center cc-parse read)])
+    (let ([result (with-cost-center cc-eval
+                    (lambda () (eval expr)))])
+      (with-cost-center cc-print
+        (lambda () (write result) (newline))))))
+
+; Compare costs
+(printf "Parse: ~a~n" (cost-center-time cc-parse))
+(printf "Eval: ~a~n" (cost-center-time cc-eval))
+(printf "Print: ~a~n" (cost-center-time cc-print))</code></pre>
+        <br/>
+        <li>Cost center for profiling:</li>
+<pre><code class="language-scheme line-numbers">; Create cost centers for each function
+(define-syntax define/profiled
+  (syntax-rules ()
+    [(_ (name args ...) body ...)
+     (begin
+       (define cc (make-cost-center))
+       (define (name args ...)
+         (with-cost-center cc
+           (lambda () body ...)))
+       (set! profile-data
+             (cons (cons 'name cc) profile-data)))]))
+
+(define profile-data '())
+
+; Usage
+(define/profiled (factorial n)
+  (if (zero? n) 1 (* n (factorial (- n 1)))))
+
+; Report
+(define (print-profile)
+  (for-each
+    (lambda (entry)
+      (let ([name (car entry)]
+            [cc (cdr entry)])
+        (printf "~a: ~a instructions, ~a allocs~n"
+                name
+                (cost-center-instruction-count cc)
+                (cost-center-allocation-count cc))))
+    profile-data))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Parameters</li>
+    <br/>
+    <ul>
+        <li>Parameter basics:</li>
+<pre><code class="language-scheme line-numbers">; make-parameter creates dynamic parameter
+(define current-user (make-parameter "anonymous"))
+
+; Get value
+(current-user)              ; "anonymous"
+
+; Set value globally
+(current-user "alice")
+(current-user)              ; "alice"
+
+; parameterize for dynamic binding
+(parameterize ([current-user "bob"])
+  (current-user))           ; "bob"
+(current-user)              ; "alice" (restored)
+
+; Nested parameterize
+(parameterize ([current-user "bob"])
+  (parameterize ([current-user "charlie"])
+    (current-user)))        ; "charlie"</code></pre>
+        <br/>
+        <li>Parameters with guards:</li>
+<pre><code class="language-scheme line-numbers">; Guard function validates/transforms values
+(define current-count
+  (make-parameter 0
+    (lambda (v)
+      (unless (and (integer? v) (>= v 0))
+        (error 'current-count "expected non-negative integer" v))
+      v)))
+
+(current-count 10)          ; OK
+; (current-count -1)        ; Error
+
+; Transform value
+(define current-directory-param
+  (make-parameter "."
+    (lambda (v)
+      (if (absolute-path? v)
+          v
+          (string-append (current-directory) "/" v)))))
+
+; Multiple validation
+(define valid-port
+  (make-parameter 8080
+    (lambda (v)
+      (unless (and (integer? v) (<= 1 v 65535))
+        (error 'valid-port "invalid port number" v))
+      v)))</code></pre>
+        <br/>
+        <li>Built-in parameters:</li>
+<pre><code class="language-scheme line-numbers">; I/O parameters
+(current-input-port)
+(current-output-port)
+(current-error-port)
+
+; Compilation parameters
+(optimize-level)
+(debug-level)
+(compile-imported-libraries)
+(compile-profile)
+(generate-inspector-information)
+
+; Print parameters
+(print-level)               ; Depth limit
+(print-length)              ; Length limit
+(print-graph)               ; Show sharing
+(print-gensym)              ; Show gensyms
+(print-brackets)            ; Use [ ] syntax
+
+; Read parameters
+(case-sensitive)            ; Case sensitivity
+
+; Library parameters
+(library-directories)
+(library-extensions)
+(source-directories)
+
+; Evaluator parameters
+(eval-syntax-expanders-when)
+(interaction-environment)</code></pre>
+        <br/>
+        <li>Parameter interaction with threads:</li>
+<pre><code class="language-scheme line-numbers">; Parameters are thread-local
+(define my-param (make-parameter 0))
+
+(my-param 1)                ; Set in main thread
+
+(fork-thread
+  (lambda ()
+    (my-param)              ; 1 (inherited)
+    (my-param 2)            ; Set in child
+    (my-param)))            ; 2
+
+(my-param)                  ; Still 1 in main thread
+
+; parameterize in thread
+(fork-thread
+  (lambda ()
+    (parameterize ([my-param 100])
+      ; my-param is 100 in this thread
+      (work))))
+
+; Initial values for new threads
+(define (fork-thread/params thunk . param-vals)
+  (fork-thread
+    (lambda ()
+      (apply parameterize param-vals
+        thunk))))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Virtual Registers</li>
+    <br/>
+    <ul>
+        <li>Virtual register basics:</li>
+<pre><code class="language-scheme line-numbers">; Virtual registers are fast thread-local storage
+; Faster than parameters, no guard support
+
+; Number of available registers
+(virtual-register-count)    ; Implementation-dependent
+
+; Access virtual register
+(virtual-register 0)        ; Get register 0
+(set-virtual-register! 0 'value)  ; Set register 0
+
+; Example usage
+(set-virtual-register! 0 0)       ; Counter
+(set-virtual-register! 1 '())     ; Accumulator
+
+(define (fast-count!)
+  (set-virtual-register! 0 (+ (virtual-register 0) 1)))
+
+(define (fast-push! v)
+  (set-virtual-register! 1 (cons v (virtual-register 1))))</code></pre>
+        <br/>
+        <li>Virtual registers vs parameters:</li>
+<pre><code class="language-scheme line-numbers">; Parameters: safer, guard support, slightly slower
+(define my-param (make-parameter 0))
+(my-param)                  ; Read
+(my-param 1)                ; Write
+
+; Virtual registers: faster, no guards, raw access
+(virtual-register 0)        ; Read
+(set-virtual-register! 0 1) ; Write
+
+; Use virtual registers for:
+; - Performance-critical inner loops
+; - Simple values (no validation needed)
+; - Temporary storage
+
+; Use parameters for:
+; - Configuration settings
+; - Validated/transformed values
+; - External interfaces
+
+; Benchmark comparison
+(time
+  (do ([i 0 (+ i 1)])
+      ((= i 1000000))
+    (my-param (+ (my-param) 1))))
+
+(time
+  (do ([i 0 (+ i 1)])
+      ((= i 1000000))
+    (set-virtual-register! 0
+      (+ (virtual-register 0) 1))))
+</code></pre>
+        <br/>
+        <li>Thread safety:</li>
+<pre><code class="language-scheme line-numbers">; Virtual registers are thread-local
+(set-virtual-register! 0 'main)
+
+(fork-thread
+  (lambda ()
+    (set-virtual-register! 0 'child)
+    (virtual-register 0)))  ; 'child
+
+(virtual-register 0)        ; 'main (unchanged)
+
+; Each thread has own set of virtual registers
+; No synchronization needed
+
+; But be careful: values are not automatically copied
+; to new threads - they start uninitialized
+
+(define (init-thread-registers!)
+  (set-virtual-register! 0 0)
+  (set-virtual-register! 1 '())
+  (set-virtual-register! 2 (make-eq-hashtable)))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Environmental Queries and Settings</li>
+    <br/>
+    <ul>
+        <li>System information:</li>
+<pre><code class="language-scheme line-numbers">; Scheme version
+(scheme-version)            ; "9.5.8"
+(scheme-version-number)     ; #(9 5 8)
+(petite?)                   ; #t if Petite Chez Scheme
+
+; Machine information
+(machine-type)              ; 'a6osx, 'ta6le, 'arm64le, etc.
+(threaded?)                 ; #t if threaded build
+(native-code)               ; #t if native code generation
+
+; Endianness
+(native-endianness)         ; 'little or 'big
+
+; Chez Scheme directory
+(scheme-directory)          ; Installation directory
+
+; Features
+(machine-features)          ; List of features
+; (pthreads ieee-floating-point ...)
+</code></pre>
+        <br/>
+        <li>Environment variables:</li>
+<pre><code class="language-scheme line-numbers">; Get environment variable
+(getenv "HOME")             ; "/home/user"
+(getenv "UNDEFINED")        ; #f if not set
+
+; Set environment variable (Chez extension)
+(putenv "MY_VAR" "value")
+(getenv "MY_VAR")           ; "value"
+
+; Unset
+(putenv "MY_VAR" #f)        ; Remove variable
+
+; Common environment variables
+(getenv "PATH")
+(getenv "USER")
+(getenv "SHELL")
+(getenv "TERM")
+(getenv "SCHEMEHEAPDIRS")   ; Chez Scheme heap location
+
+; Get all environment variables
+; Not directly available, but can parse from (system "env")
+</code></pre>
+        <br/>
+        <li>Command line and process:</li>
+<pre><code class="language-scheme line-numbers">; Command line arguments
+(command-line)              ; All args including program name
+(command-line-arguments)    ; Just arguments
+
+; Process ID
+(getpid)                    ; Current process ID
+
+; Exit program
+(exit)                      ; Exit with status 0
+(exit 1)                    ; Exit with status 1
+
+; Scheme program/script name
+(car (command-line))        ; Program name
+
+; Working directory
+(current-directory)         ; Get
+(current-directory "/tmp")  ; Set
+(cd "/tmp")                 ; Alias
+
+; Host name
+(system "hostname")         ; Via shell
+; or use foreign function interface
+</code></pre>
+        <br/>
+        <li>Memory and heap:</li>
+<pre><code class="language-scheme line-numbers">; Heap information
+(bytes-allocated)           ; Total allocated
+(current-memory-bytes)      ; Current heap size
+
+; Heap directories (for boot files)
+(scheme-heap-path)          ; Where to find heaps
+
+; Memory limit (if supported)
+; Set via --heap-limit command line
+
+; Object counts (when enabled)
+(object-counts)             ; Association list of types and counts
+
+; Enable allocation counting
+(generate-allocation-counts #t)
+
+; Weak references and ephemerons
+; Interact with GC - see earlier chapters
+
+; Finalization
+(collect-rendezvous)        ; Wait for finalizers
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Subset Modes</li>
+    <br/>
+    <ul>
+        <li>Subset mode basics:</li>
+<pre><code class="language-scheme line-numbers">; subset-mode controls language dialect
+(subset-mode)               ; Get current mode
+
+; Available modes:
+; 'system - Full Chez Scheme (default)
+; 'r6rs - Strict R6RS compliance
+
+; Set mode
+(subset-mode 'r6rs)
+
+; In r6rs mode:
+; - Only R6RS syntax/procedures available
+; - Chez extensions disabled
+; - Stricter error checking
+
+; Reset to full mode
+(subset-mode 'system)
+
+; Check mode
+(eq? (subset-mode) 'r6rs)   ; #t if in R6RS mode
+</code></pre>
+        <br/>
+        <li>R6RS compliance:</li>
+<pre><code class="language-scheme line-numbers">; R6RS mode disables:
+; - printf, format extensions
+; - trace, inspect
+; - Chez-specific syntax
+; - Extended reader syntax
+
+; Example differences
+(subset-mode 'system)
+(printf "~a~n" 42)          ; Works
+
+(subset-mode 'r6rs)
+; (printf "~a~n" 42)        ; Error: printf not bound
+
+; Library differences
+; R6RS mode only allows R6RS libraries
+(import (rnrs))             ; OK in both modes
+; (import (chezscheme))     ; Error in R6RS mode
+
+; Use for testing portability
+(define (test-r6rs-compatible)
+  (parameterize ([subset-mode 'r6rs])
+    (load "my-library.ss")))
+</code></pre>
+        <br/>
+        <li>IEEE mode:</li>
+<pre><code class="language-scheme line-numbers">; ieee-mode for IEEE Scheme compliance
+(ieee-mode)                 ; Get current
+
+; Differences in IEEE mode:
+; - Implicit forcing of promises
+; - Different treatment of '() and #f
+; - Stricter type checking
+
+; Historical compatibility
+; Most code doesn't need this
+
+; Combining modes
+(subset-mode 'system)       ; Full Chez
+(ieee-mode #f)              ; No IEEE restrictions
+</code></pre>
+        <br/>
+        <li>Mode-specific code:</li>
+<pre><code class="language-scheme line-numbers">; Conditional on mode
+(define (portable-print x)
+  (if (eq? (subset-mode) 'r6rs)
+      (begin (display x) (newline))
+      (printf "~a~n" x)))
+
+; Provide fallbacks
+(define my-printf
+  (if (top-level-bound? 'printf)
+      printf
+      (lambda (fmt . args)
+        (display (apply format fmt args))
+        (newline))))
+
+; Library that works in both modes
+(library (my portable-lib)
+  (export my-proc)
+  (import (rnrs))           ; Only R6RS imports
+
+  ; Only R6RS forms in body
+  (define (my-proc x)
+    (let ([y (* x 2)])
+      y)))
+
+; Test in both modes
+(define (test-both-modes thunk)
+  (let ([system-result
+         (parameterize ([subset-mode 'system])
+           (thunk))]
+        [r6rs-result
+         (parameterize ([subset-mode 'r6rs])
+           (thunk))])
+    (list system-result r6rs-result)))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete System Example</li>
+    <br/>
+    <ul>
+        <li>Application framework:</li>
+<pre><code class="language-scheme line-numbers">; Complete application with system features
+(library (app framework)
+  (export
+    define-application
+    run-application
+    app-log
+    app-config
+    with-app-context)
+  (import (chezscheme))
+
+  ; Configuration parameter
+  (define app-config
+    (make-parameter
+      '((log-level . info)
+        (log-file . #f)
+        (debug . #f))))
+
+  ; Logging with timestamps
+  (define (app-log level msg . args)
+    (let ([config (app-config)])
+      (when (should-log? level (cdr (assq 'log-level config)))
+        (let ([formatted (apply format msg args)]
+              [timestamp (date-&gt;string (current-date)
+                          "~Y-~m-~d ~H:~M:~S")])
+          (let ([line (format "[~a] [~a] ~a~n"
+                              timestamp level formatted)])
+            (display line (current-error-port))
+            (let ([log-file (cdr (assq 'log-file config))])
+              (when log-file
+                (call-with-output-file log-file
+                  (lambda (p) (display line p))
+                  '(append)))))))))
+
+  (define (should-log? level min-level)
+    (let ([levels '((debug . 0) (info . 1)
+                    (warn . 2) (error . 3))])
+      (&gt;= (cdr (assq level levels))
+          (cdr (assq min-level levels)))))
+
+  ; Exception-safe context
+  (define (with-app-context thunk)
+    (guard (c
+            [(serious-condition? c)
+             (app-log 'error "Fatal error: ~a"
+                      (condition-message c))
+             (when (cdr (assq 'debug (app-config)))
+               (debug-on-exception #t)
+               (raise c))
+             (exit 1)]
+            [else
+             (app-log 'warn "Warning: ~a" c)])
+      (thunk)))
+
+  ; Application definition macro
+  (define-syntax define-application
+    (syntax-rules ()
+      [(_ name
+          (option opt-name opt-default) ...
+          body ...)
+       (define (name args)
+         (let ([config (parse-options args
+                         '((opt-name . opt-default) ...))])
+           (parameterize ([app-config config])
+             (with-app-context
+               (lambda () body ...)))))]))
+
+  (define (parse-options args defaults)
+    (let loop ([args args] [config defaults])
+      (cond
+        [(null? args) config]
+        [(string=? (car args) "--debug")
+         (loop (cdr args)
+               (cons '(debug . #t) config))]
+        [(and (pair? (cdr args))
+              (string-prefix? "--" (car args)))
+         (let ([key (string-&gt;symbol
+                      (substring (car args) 2
+                                (string-length (car args))))]
+               [val (cadr args)])
+           (loop (cddr args)
+                 (cons (cons key val) config)))]
+        [else (loop (cdr args) config)])))
+
+  ; Run application
+  (define (run-application app-proc)
+    (let ([args (command-line-arguments)])
+      (app-proc args))))
+</code></pre>
+        <br/>
+        <li>Using the framework:</li>
+<pre><code class="language-scheme line-numbers">(import (chezscheme) (app framework))
+
+(define-application my-app
+  (option log-level info)
+  (option log-file "app.log")
+  (option debug #f)
+
+  (app-log 'info "Application starting")
+  (app-log 'info "Config: ~a" (app-config))
+
+  ; Main logic
+  (let ([start (current-time 'time-monotonic)])
+    (do-work)
+    (let ([elapsed (time-difference
+                     (current-time 'time-monotonic) start)])
+      (app-log 'info "Completed in ~a ms"
+               (/ (time-nanosecond elapsed) 1e6))))
+
+  (app-log 'info "Application finished")
+  0)  ; Exit code
+
+; Run from command line
+(run-application my-app)
+
+; Or with options
+; scheme --script myapp.ss --log-level debug --debug</code></pre>
+        <br/>
+        <li>System monitoring utility:</li>
+<pre><code class="language-scheme line-numbers">; Monitor system resources
+(define (system-monitor interval iterations)
+  (let ([start-stats (statistics)])
+    (let loop ([i 0])
+      (when (&lt; i iterations)
+        (collect 0)  ; Minor GC to update stats
+        (let ([stats (statistics)])
+          (printf "~n=== Iteration ~a ===~n" i)
+          (printf "Memory: ~a MB~n"
+                  (/ (current-memory-bytes) 1e6))
+          (printf "Allocated: ~a MB~n"
+                  (/ (bytes-allocated) 1e6))
+          (printf "Collections: ~a~n" (collections))
+          (printf "CPU time: ~a ms~n" (/ (cpu-time) 1e6))
+          (printf "Real time: ~a ms~n" (/ (real-time) 1e6)))
+        (sleep (make-time 'time-duration 0 interval))
+        (loop (+ i 1))))))
+
+; Profile wrapper
+(define (profile-execution thunk)
+  (profile-clear)
+  (let ([result #f]
+        [stats #f])
+    (let ([before (statistics)])
+      (set! result (thunk))
+      (set! stats (sstats-difference (statistics) before)))
+    (printf "~nExecution Statistics:~n")
+    (sstats-print stats)
+    (printf "~nProfile Data:~n")
+    (for-each
+      (lambda (e)
+        (when (&gt; (cadr e) 100)  ; Only hot spots
+          (printf "  ~a: ~a calls~n" (car e) (cadr e))))
+      (profile-dump-list))
+    result))
+
+; Exception reporter
+(define (with-exception-report thunk)
+  (guard (c
+          [else
+           (printf "Exception occurred:~n")
+           (display-condition c)
+           (printf "~nStack trace:~n")
+           (parameterize ([print-level 5]
+                          [print-length 10])
+             (for-each
+               (lambda (frame)
+                 (printf "  ~a~n" frame))
+               (continuation-&gt;list (current-continuation))))
+           #f])
+    (thunk)))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
