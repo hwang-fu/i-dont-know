@@ -166,7 +166,7 @@
         <li><a href="#scm-libraries-programs">Libraries and Top-level Programs</a></li>
         <li><a href="#scm-syntactic-extension">Syntactic Extension and Modules</a></li>
         <li><a href="#scm-system-operations">System Operations</a></li>
-        <li><a href="#scm-"></a></li>
+        <li><a href="#scm-storage-management">Storage Management</a></li>
     </ol>
 </nav>
 <hr/>
@@ -17123,36 +17123,37 @@ copied                      ; 42 (separate copy)
     <ul>
         <li>Raising exceptions:</li>
 <pre><code class="language-scheme line-numbers">; raise signals an exception
-(raise 'error-symbol)       ; Raise any value
+(raise &apos;error-symbol)       ; Raise any value
 (raise (make-error))        ; Raise condition
 
 ; raise-continuable allows handler to return
-(raise-continuable 'warning)
+(raise-continuable &apos;warning)
 
 ; error convenience procedure
-(error 'who "message" irritant ...)
-(error 'divide "division by zero" 0)
+(error &apos;who "message" irritant ...)
+(error &apos;divide "division by zero" 0)
 
 ; assertion-violation for contract violations
-(assertion-violation 'proc "expected positive" -1)
+(assertion-violation &apos;proc "expected positive" -1)
 
 ; syntax-violation for macro errors
-(syntax-violation 'my-macro "invalid syntax" form subform)
+(syntax-violation &apos;my-macro "invalid syntax" form subform)
 
 ; Chez-specific error procedures
-(errorf 'who "format ~a" arg)      ; With format string
-(warningf 'who "warning: ~a" arg)  ; Warning message
-(assertion-violationf 'who "bad: ~a" arg)</code></pre>
+(errorf &apos;who "format ~a" arg)      ; With format string
+(warningf &apos;who "warning: ~a" arg)  ; Warning message
+(assertion-violationf &apos;who "bad: ~a" arg)
+</code></pre>
         <br/>
         <li>Handling exceptions with guard:</li>
 <pre><code class="language-scheme line-numbers">; guard provides structured exception handling
 (guard (condition
         [(error? condition)
          (display "Error occurred\n")
-         'error-result]
+         &apos;error-result]
         [(warning? condition)
          (display "Warning\n")
-         'warning-result]
+         &apos;warning-result]
         [else
          (display "Unknown exception\n")
          (raise condition)])  ; Re-raise
@@ -17168,12 +17169,13 @@ copied                      ; 42 (separate copy)
         [(message-condition? c)
          (display (condition-message c))]
         [else (raise c)])
-  (error 'my-proc "something went wrong"))
+  (error &apos;my-proc "something went wrong"))
 
 ; Nested guards
-(guard (outer [(error? outer) 'outer-error])
-  (guard (inner [(warning? inner) 'inner-warning])
-    (error 'test "error")))</code></pre>
+(guard (outer [(error? outer) &apos;outer-error])
+  (guard (inner [(warning? inner) &apos;inner-warning])
+    (error &apos;test "error")))
+</code></pre>
         <br/>
         <li>Exception handlers:</li>
 <pre><code class="language-scheme line-numbers">; with-exception-handler for low-level handling
@@ -17205,7 +17207,8 @@ copied                      ; 42 (separate copy)
         (printf "Inner: ~a~n" c)
         (raise c))           ; Pass to outer
       (lambda ()
-        (raise 'test)))))</code></pre>
+        (raise 'test)))))
+</code></pre>
         <br/>
         <li>Condition types:</li>
 <pre><code class="language-scheme line-numbers">; R6RS standard conditions
@@ -17214,16 +17217,16 @@ copied                      ; 42 (separate copy)
 (make-violation)            ; Contract violation
 (make-warning)              ; Warning
 (make-serious-condition)    ; Serious condition
-(make-irritants-condition '(1 2 3))
-(make-who-condition 'my-proc)
+(make-irritants-condition &apos;(1 2 3))
+(make-who-condition &apos;my-proc)
 (make-message-condition "error message")
 
 ; Compound conditions
 (condition
   (make-error)
-  (make-who-condition 'divide)
+  (make-who-condition &apos;divide)
   (make-message-condition "division by zero")
-  (make-irritants-condition '(0)))
+  (make-irritants-condition &apos;(0)))
 
 ; Condition predicates
 (error? c)
@@ -17238,12 +17241,13 @@ copied                      ; 42 (separate copy)
 ; Condition accessors
 (condition-who c)           ; Get who
 (condition-message c)       ; Get message
-(condition-irritants c)     ; Get irritants</code></pre>
+(condition-irritants c)     ; Get irritants
+</code></pre>
         <br/>
         <li>Defining custom conditions:</li>
 <pre><code class="language-scheme line-numbers">; Define new condition type
-(define-condition-type &my-error
-  &error                    ; Parent type
+(define-condition-type &amp;my-error
+  &amp;error                    ; Parent type
   make-my-error             ; Constructor
   my-error?                 ; Predicate
   (code my-error-code)      ; Field
@@ -17266,7 +17270,8 @@ copied                      ; 42 (separate copy)
 
 ; Chez-specific: display-condition
 (guard (c [else (display-condition c)])
-  (error 'test "message" 'irritant))</code></pre>
+  (error 'test "message" 'irritant))
+</code></pre>
         <br/>
         <li>Debug on exception:</li>
 <pre><code class="language-scheme line-numbers">; Enter debugger on unhandled exceptions
@@ -17293,7 +17298,8 @@ copied                      ; 42 (separate copy)
 ; Exit on exception (useful for scripts)
 (parameterize ([reset-handler exit]
                [abort-handler exit])
-  (run-main-program))</code></pre>
+  (run-main-program))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -17324,7 +17330,8 @@ copied                      ; 42 (separate copy)
 ; - a: abort
 ; - n: new cafe
 ; - i: inspect
-; - s: statistics</code></pre>
+; - s: statistics
+</code></pre>
         <br/>
         <li>Timer interrupts:</li>
 <pre><code class="language-scheme line-numbers">; set-timer sets timer interrupt
@@ -17358,7 +17365,8 @@ copied                      ; 42 (separate copy)
 
 (with-timeout 5
   (lambda ()
-    (expensive-computation)))</code></pre>
+    (expensive-computation)))
+</code></pre>
         <br/>
         <li>Signal handling (Unix):</li>
 <pre><code class="language-scheme line-numbers">; register-signal-handler for Unix signals
@@ -17388,7 +17396,8 @@ copied                      ; 42 (separate copy)
 
 ; Get current handler
 (define old-handler (register-signal-handler SIGINT #f))
-(register-signal-handler SIGINT old-handler)</code></pre>
+(register-signal-handler SIGINT old-handler)
+</code></pre>
         <br/>
         <li>Disabling and enabling interrupts:</li>
 <pre><code class="language-scheme line-numbers">; critical-section disables interrupts
@@ -17416,7 +17425,8 @@ copied                      ; 42 (separate copy)
 (interrupts-disabled?)      ; Check current state
 
 ; Deferred interrupts
-; Interrupts are deferred, not lost, during critical sections</code></pre>
+; Interrupts are deferred, not lost, during critical sections
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -17437,58 +17447,61 @@ copied                      ; 42 (separate copy)
 (environment? (interaction-environment))  ; #t
 
 ; Standard R6RS environment
-(environment '(rnrs))       ; R6RS bindings
-(environment '(rnrs) '(rnrs lists))  ; Multiple libs
+(environment &apos;(rnrs))       ; R6RS bindings
+(environment &apos;(rnrs) &apos;(rnrs lists))  ; Multiple libs
 
 ; Chez scheme environment
-(environment '(chezscheme))</code></pre>
+(environment &apos;(chezscheme))
+</code></pre>
         <br/>
         <li>Evaluating in environments:</li>
 <pre><code class="language-scheme line-numbers">; eval with environment
-(eval '(+ 1 2) (interaction-environment))  ; 3
+(eval &apos;(+ 1 2) (interaction-environment))  ; 3
 
-(eval '(define x 42) (interaction-environment))
-(eval 'x (interaction-environment))  ; 42
+(eval &apos;(define x 42) (interaction-environment))
+(eval &apos;x (interaction-environment))  ; 42
 
 ; Create isolated environment
 (let ([env (copy-environment (scheme-report-environment 5))])
-  (eval '(define my-var 100) env)
-  (eval 'my-var env))       ; 100
+  (eval &apos;(define my-var 100) env)
+  (eval &apos;my-var env))       ; 100
 ; my-var not defined here
 
 ; Evaluate in fresh environment
-(let ([env (environment '(rnrs))])
-  (eval '(fold-left + 0 '(1 2 3 4 5)) env))  ; 15
+(let ([env (environment &apos;(rnrs))])
+  (eval &apos;(fold-left + 0 &apos;(1 2 3 4 5)) env))  ; 15
 
 ; environment-symbols: list defined symbols
-(environment-symbols (interaction-environment))</code></pre>
+(environment-symbols (interaction-environment))
+</code></pre>
         <br/>
         <li>Top-level bindings:</li>
 <pre><code class="language-scheme line-numbers">; Access top-level value
-(top-level-value 'cons)     ; #<procedure cons>
+(top-level-value &apos;cons)     ; #&lt;procedure cons&gt;
 
 ; Check if bound
-(top-level-bound? 'cons)    ; #t
-(top-level-bound? 'undefined-var)  ; #f
+(top-level-bound? &apos;cons)    ; #t
+(top-level-bound? &apos;undefined-var)  ; #f
 
 ; Set top-level value
-(set-top-level-value! 'my-global 42)
-(top-level-value 'my-global)  ; 42
+(set-top-level-value! &apos;my-global 42)
+(top-level-value &apos;my-global)  ; 42
 
 ; Define top-level value (creates if not exists)
-(define-top-level-value 'new-var 100)
+(define-top-level-value &apos;new-var 100)
 
 ; In specific environment
-(top-level-value 'x env)
-(set-top-level-value! 'x 10 env)
-(top-level-bound? 'x env)
+(top-level-value &apos;x env)
+(set-top-level-value! &apos;x 10 env)
+(top-level-bound? &apos;x env)
 
 ; Top-level syntax
-(top-level-syntax? 'lambda) ; #t
-(top-level-syntax? 'cons)   ; #f
+(top-level-syntax? &apos;lambda) ; #t
+(top-level-syntax? &apos;cons)   ; #f
 
 ; Get syntax transformer
-(top-level-syntax 'when)    ; Returns transformer</code></pre>
+(top-level-syntax &apos;when)    ; Returns transformer
+</code></pre>
         <br/>
         <li>Environment manipulation:</li>
 <pre><code class="language-scheme line-numbers">; environment-mutable? checks if can modify
@@ -17497,12 +17510,12 @@ copied                      ; 42 (separate copy)
 
 ; Make sandbox environment
 (define (make-sandbox)
-  (let ([env (copy-environment (environment '(rnrs)))])
+  (let ([env (copy-environment (environment &apos;(rnrs)))])
     ; Remove dangerous procedures
-    (set-top-level-value! 'delete-file
-      (lambda (f) (error 'sandbox "not allowed")) env)
-    (set-top-level-value! 'system
-      (lambda (cmd) (error 'sandbox "not allowed")) env)
+    (set-top-level-value! &apos;delete-file
+      (lambda (f) (error &apos;sandbox "not allowed")) env)
+    (set-top-level-value! &apos;system
+      (lambda (cmd) (error &apos;sandbox "not allowed")) env)
     env))
 
 ; Evaluate user code in sandbox
@@ -17510,8 +17523,9 @@ copied                      ; 42 (separate copy)
   (eval expr (make-sandbox)))
 
 ; Import into environment
-(environment-symbols (environment '(rnrs lists)))
-; (find for-all exists ...)</code></pre>
+(environment-symbols (environment &apos;(rnrs lists)))
+; (find for-all exists ...)
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -17521,23 +17535,24 @@ copied                      ; 42 (separate copy)
     <ul>
         <li>Basic evaluation:</li>
 <pre><code class="language-scheme line-numbers">; eval evaluates expression
-(eval '(+ 1 2))             ; 3
-(eval '(+ 1 2) (interaction-environment))
+(eval &apos;(+ 1 2))             ; 3
+(eval &apos;(+ 1 2) (interaction-environment))
 
 ; Compile expression
-(compile '(lambda (x) (* x x)))  ; Returns compiled procedure
+(compile &apos;(lambda (x) (* x x)))  ; Returns compiled procedure
 
 ; Interpret expression (no compilation)
-(interpret '(lambda (x) (* x x)))
+(interpret &apos;(lambda (x) (* x x)))
 
 ; interpret is slower but uses less memory
 
 ; expand macro
-(expand '(when #t (display "yes")))
+(expand &apos;(when #t (display "yes")))
 ; (if #t (begin (display "yes")))
 
 ; sc-expand for syntax-case expansion
-(sc-expand '(let ([x 1]) x))</code></pre>
+(sc-expand &apos;(let ([x 1]) x))
+</code></pre>
         <br/>
         <li>Loading files:</li>
 <pre><code class="language-scheme line-numbers">; load evaluates file contents
@@ -17563,7 +17578,8 @@ copied                      ; 42 (separate copy)
 (visit "macros.so")
 
 ; revisit reloads
-(revisit "macros.so")</code></pre>
+(revisit "macros.so")
+</code></pre>
         <br/>
         <li>Compiling files:</li>
 <pre><code class="language-scheme line-numbers">; compile-file compiles source to object
@@ -17592,7 +17608,8 @@ copied                      ; 42 (separate copy)
 
 ; maybe-compile: compile if source newer
 (maybe-compile-library "mylib.ss")
-(maybe-compile-file "source.ss")</code></pre>
+(maybe-compile-file "source.ss")
+</code></pre>
         <br/>
         <li>Compilation options:</li>
 <pre><code class="language-scheme line-numbers">; compile-compressed: compress output
@@ -17617,7 +17634,8 @@ copied                      ; 42 (separate copy)
 
 ; generate-allocation-counts
 (parameterize ([generate-allocation-counts #t])
-  (compile-file "analyze.ss"))</code></pre>
+  (compile-file "analyze.ss"))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -17646,7 +17664,8 @@ copied                      ; 42 (separate copy)
 (library-directories)       ; List of (source . object) pairs
 (library-directories
   '(("src" . "build")
-    ("." . ".")))</code></pre>
+    ("." . ".")))
+</code></pre>
         <br/>
         <li>Library file locations:</li>
 <pre><code class="language-scheme line-numbers">; library-extensions: file extensions to try
@@ -17673,7 +17692,8 @@ copied                      ; 42 (separate copy)
 ; library-search-handler: customize search
 (library-search-handler
   (lambda (who path dir*)
-    (default-library-search-handler who path dir*)))</code></pre>
+    (default-library-search-handler who path dir*)))
+</code></pre>
         <br/>
         <li>File operations during load:</li>
 <pre><code class="language-scheme line-numbers">; source-file-descriptor during read
@@ -17697,8 +17717,9 @@ copied                      ; 42 (separate copy)
 
 ; import-notify: print imports
 (import-notify #t)
-; > (import (my-library))
-; compiling my-library.ss with output to my-library.so</code></pre>
+; &gt; (import (my-library))
+; compiling my-library.ss with output to my-library.so
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -17728,7 +17749,8 @@ copied                      ; 42 (separate copy)
 (parameterize ([debug-level 3]
                [optimize-level 0]
                [generate-inspector-information #t])
-  (compile-file "debug-me.ss"))</code></pre>
+  (compile-file "debug-me.ss"))
+</code></pre>
         <br/>
         <li>Inlining and integration:</li>
 <pre><code class="language-scheme line-numbers">; cp0-effort-limit: expansion limit
@@ -17750,7 +17772,8 @@ copied                      ; 42 (separate copy)
 
 ; Prevent integration of specific procedures
 (define-syntax my-car
-  (identifier-syntax car))  ; Wrapper prevents integration</code></pre>
+  (identifier-syntax car))  ; Wrapper prevents integration
+</code></pre>
         <br/>
         <li>Code generation options:</li>
 <pre><code class="language-scheme line-numbers">; generate-interrupt-trap: overflow checks
@@ -17773,7 +17796,8 @@ copied                      ; 42 (separate copy)
 (compile-interpret-simple)  ; #t by default
 
 ; internal-defines-as-letrec*
-(internal-defines-as-letrec*)  ; #t (R6RS compliant)</code></pre>
+(internal-defines-as-letrec*)  ; #t (R6RS compliant)
+</code></pre>
         <br/>
         <li>Compile-time features:</li>
 <pre><code class="language-scheme line-numbers">; enable-type-recovery: infer types
@@ -17800,7 +17824,8 @@ copied                      ; 42 (separate copy)
   (compile-library "lib1.ss")
   (compile-library "lib2.ss")
   (compile-program "main.ss"))
-(compile-whole-program "main.wpo" "app.so")</code></pre>
+(compile-whole-program "main.wpo" "app.so")
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -17830,7 +17855,8 @@ copied                      ; 42 (separate copy)
 ; Profile data includes:
 ; - Call counts
 ; - Execution time
-; - Source locations</code></pre>
+; - Source locations
+</code></pre>
         <br/>
         <li>Profile control:</li>
 <pre><code class="language-scheme line-numbers">; profile-release-counters: free memory
@@ -17854,7 +17880,8 @@ copied                      ; 42 (separate copy)
 
 ; Profile parameters
 (profile-line-tracking)     ; Track line numbers
-(profile-line-tracking #t)</code></pre>
+(profile-line-tracking #t)
+</code></pre>
         <br/>
         <li>Analyzing profile data:</li>
 <pre><code class="language-scheme line-numbers">; profile-dump-list returns structured data
@@ -17866,23 +17893,24 @@ copied                      ; 42 (separate copy)
     (let ([source (car entry)]
           [count (cadr entry)]
           [time (caddr entry)])
-      (when (> count 1000)
+      (when (&gt; count 1000)
         (printf "Hot spot: ~a (~a calls)~n" source count))))
   profile-data)
 
 ; Find hottest functions
 (define (top-n-by-count data n)
-  (take (sort (lambda (a b) (> (cadr a) (cadr b))) data) n))
+  (take (sort (lambda (a b) (&gt; (cadr a) (cadr b))) data) n))
 
 (define (top-n-by-time data n)
-  (take (sort (lambda (a b) (> (caddr a) (caddr b))) data) n))
+  (take (sort (lambda (a b) (&gt; (caddr a) (caddr b))) data) n))
 
 ; Display summary
 (printf "Top 10 by call count:~n")
 (for-each
   (lambda (e)
     (printf "  ~a: ~a calls~n" (car e) (cadr e)))
-  (top-n-by-count profile-data 10))</code></pre>
+  (top-n-by-count profile-data 10))
+</code></pre>
         <br/>
         <li>HTML profile report:</li>
 <pre><code class="language-scheme line-numbers">; Generate HTML profile
@@ -17901,17 +17929,18 @@ copied                      ; 42 (separate copy)
 ; - Heat map coloring
 
 ; Custom HTML generation
-(define (profile->custom-report data filename)
+(define (profile-&gt;custom-report data filename)
   (call-with-output-file filename
     (lambda (port)
-      (fprintf port "<html><body><table>~n")
+      (fprintf port "&lt;html&gt;&lt;body&gt;&lt;table&gt;~n")
       (for-each
         (lambda (e)
-          (fprintf port "<tr><td>~a</td><td>~a</td><td>~a</td></tr>~n"
+          (fprintf port "&lt;tr&gt;&lt;td&gt;~a&lt;/td&gt;&lt;td&gt;~a&lt;/td&gt;&lt;td&gt;~a&lt;/td&gt;&lt;/tr&gt;~n"
                    (car e) (cadr e) (caddr e)))
         data)
-      (fprintf port "</table></body></html>~n"))
-    '(replace)))</code></pre>
+      (fprintf port "&lt;/table&gt;&lt;/body&gt;&lt;/html&gt;~n"))
+    &apos;(replace)))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -17941,13 +17970,13 @@ copied                      ; 42 (separate copy)
         <li>Waiter prompts:</li>
 <pre><code class="language-scheme line-numbers">; waiter-prompt-string controls prompt
 (waiter-prompt-string)      ; Get current
-(waiter-prompt-string "λ> ")  ; Custom prompt
+(waiter-prompt-string "λ&gt; ")  ; Custom prompt
 
 ; waiter-prompt-and-read: full control
 (waiter-prompt-and-read)    ; Get current
 (waiter-prompt-and-read
   (lambda (level)
-    (printf "[~a]> " level)
+    (printf "[~a]&gt; " level)
     (flush-output-port)
     (read)))
 
@@ -17955,13 +17984,14 @@ copied                      ; 42 (separate copy)
 (waiter-prompt-and-read
   (lambda (level)
     (if (= level 0)
-        (display "scheme> ")
-        (printf "~a> " level))
+        (display "scheme&gt; ")
+        (printf "~a&gt; " level))
     (flush-output-port)
     (read)))
 
 ; With line editing
-; Chez uses GNU readline if available</code></pre>
+; Chez uses GNU readline if available
+</code></pre>
         <br/>
         <li>REPL hooks:</li>
 <pre><code class="language-scheme line-numbers">; waiter-write: control output format
@@ -17990,7 +18020,8 @@ copied                      ; 42 (separate copy)
       (let ([result (eval x)])
         (printf "; ~a ms~n"
           (time-difference (current-time) start))
-        result))))</code></pre>
+        result))))
+</code></pre>
         <br/>
         <li>REPL utilities:</li>
 <pre><code class="language-scheme line-numbers">; abort returns to top level
@@ -18019,7 +18050,8 @@ copied                      ; 42 (separate copy)
   (* x 2))
 
 ; Debug with continuation inspector
-(debug-on-exception #t)</code></pre>
+(debug-on-exception #t)
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -18044,16 +18076,17 @@ copied                      ; 42 (separate copy)
 ; - All printed output
 
 ; Append to existing transcript
-(transcript-on "session.log")  ; Appends if exists</code></pre>
+(transcript-on "session.log")  ; Appends if exists
+</code></pre>
         <br/>
         <li>Transcript file format:</li>
 <pre><code class="language-scheme line-numbers">; Example transcript content:
-; > (define (square x) (* x x))
-; > (square 5)
+; &gt; (define (square x) (* x x))
+; &gt; (square 5)
 ; 25
-; > (map square '(1 2 3 4 5))
+; &gt; (map square '(1 2 3 4 5))
 ; (1 4 9 16 25)
-; > (display "Hello\n")
+; &gt; (display "Hello\n")
 ; Hello
 
 ; Transcripts are human-readable
@@ -18064,7 +18097,8 @@ copied                      ; 42 (separate copy)
 (load "problem-code.ss")
 (test-function)
 (transcript-off)
-; Review debug-session.log to see what happened</code></pre>
+; Review debug-session.log to see what happened
+</code></pre>
         <br/>
         <li>Programmatic transcript control:</li>
 <pre><code class="language-scheme line-numbers">; transcript-cafe: record single cafe session
@@ -18093,7 +18127,8 @@ copied                      ; 42 (separate copy)
   (transcript-on
     (format "~a/scheme-~a.log"
             (getenv "HOME")
-            (date-and-time))))</code></pre>
+            (date-and-time))))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -18124,7 +18159,8 @@ copied                      ; 42 (separate copy)
 ; Time components
 (time-second t)             ; Seconds part
 (time-nanosecond t)         ; Nanoseconds part
-(time-type t)               ; 'time-utc, etc.</code></pre>
+(time-type t)               ; 'time-utc, etc.
+</code></pre>
         <br/>
         <li>Date operations:</li>
 <pre><code class="language-scheme line-numbers">; date-and-time returns formatted string
@@ -18147,20 +18183,21 @@ copied                      ; 42 (separate copy)
 (date-year-day d)           ; 1-366
 
 ; Create date
-(make-date nsec sec min hour day month year zone-offset)</code></pre>
+(make-date nsec sec min hour day month year zone-offset)
+</code></pre>
         <br/>
         <li>Time/date conversions:</li>
 <pre><code class="language-scheme line-numbers">; Time to date
-(time-utc->date (current-time))
-(time-utc->date (current-time) 0)  ; With zone offset
+(time-utc-&gt;date (current-time))
+(time-utc-&gt;date (current-time) 0)  ; With zone offset
 
 ; Date to time
-(date->time-utc date)
-(date->time-monotonic date)
+(date-&gt;time-utc date)
+(date-&gt;time-monotonic date)
 
 ; String formatting
-(date->string date)         ; Default format
-(date->string date "~Y-~m-~d ~H:~M:~S")
+(date-&gt;string date)         ; Default format
+(date-&gt;string date "~Y-~m-~d ~H:~M:~S")
 
 ; Format codes:
 ; ~Y - 4-digit year
@@ -18173,19 +18210,20 @@ copied                      ; 42 (separate copy)
 ; ~z - timezone offset
 
 ; Parse string to date
-(string->date "2024-12-04" "~Y-~m-~d")
+(string-&gt;date "2024-12-04" "~Y-~m-~d")
 
 ; Julian day conversions
-(date->julian-day date)
-(julian-day->date jd)
-(julian-day->time-utc jd)</code></pre>
+(date-&gt;julian-day date)
+(julian-day-&gt;date jd)
+(julian-day-&gt;time-utc jd)
+</code></pre>
         <br/>
         <li>Practical time utilities:</li>
 <pre><code class="language-scheme line-numbers">; Measure elapsed time
 (define (time-it thunk)
-  (let* ([start (current-time 'time-monotonic)]
+  (let* ([start (current-time &apos;time-monotonic)]
          [result (thunk)]
-         [end (current-time 'time-monotonic)])
+         [end (current-time &apos;time-monotonic)])
     (values result (time-difference end start))))
 
 (let-values ([(result duration) (time-it expensive-computation)])
@@ -18198,17 +18236,18 @@ copied                      ; 42 (separate copy)
   (let ([secs (time-second t)]
         [nsecs (time-nanosecond t)])
     (cond
-      [(< secs 1) (format "~,3fms" (/ nsecs 1e6))]
-      [(< secs 60) (format "~,2fs" (+ secs (/ nsecs 1e9)))]
+      [(&lt; secs 1) (format "~,3fms" (/ nsecs 1e6))]
+      [(&lt; secs 60) (format "~,2fs" (+ secs (/ nsecs 1e9)))]
       [else (format "~am ~as" (quotient secs 60) (modulo secs 60))])))
 
 ; Timestamp string
 (define (timestamp)
-  (date->string (current-date) "~Y~m~d-~H~M~S"))
+  (date-&gt;string (current-date) "~Y~m~d-~H~M~S"))
 
 ; ISO 8601 format
 (define (iso-timestamp)
-  (date->string (current-date) "~Y-~m-~dT~H:~M:~S~z"))</code></pre>
+  (date-&gt;string (current-date) "~Y-~m-~dT~H:~M:~S~z"))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -18232,7 +18271,8 @@ copied                      ; 42 (separate copy)
 ; - Number of GC collections
 ; - CPU time (including GC)
 ; - Real (wall clock) time
-; - Bytes allocated</code></pre>
+; - Bytes allocated
+</code></pre>
         <br/>
         <li>Statistics procedures:</li>
 <pre><code class="language-scheme line-numbers">; statistics returns detailed info
@@ -18257,7 +18297,8 @@ copied                      ; 42 (separate copy)
 (sstats-gc-count sstats)    ; GC count
 (sstats-gc-cpu sstats)      ; GC CPU time
 (sstats-gc-real sstats)     ; GC real time
-(sstats-gc-bytes sstats)    ; Bytes reclaimed</code></pre>
+(sstats-gc-bytes sstats)    ; Bytes reclaimed
+</code></pre>
         <br/>
         <li>Statistics difference:</li>
 <pre><code class="language-scheme line-numbers">; sstats-difference for measuring
@@ -18275,7 +18316,8 @@ copied                      ; 42 (separate copy)
 
 ; Print statistics
 (sstats-print stats)
-(sstats-print stats (current-output-port))</code></pre>
+(sstats-print stats (current-output-port))
+</code></pre>
         <br/>
         <li>GC statistics:</li>
 <pre><code class="language-scheme line-numbers">; collect performs garbage collection
@@ -18303,7 +18345,8 @@ copied                      ; 42 (separate copy)
 (collect-request-handler
   (lambda ()
     (display "GC requested\n")
-    (collect)))</code></pre>
+    (collect)))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -18338,7 +18381,8 @@ copied                      ; 42 (separate copy)
           (loop (- n 1) (+ sum n))))))
 
 (printf "Instructions: ~a~n" (cost-center-instruction-count cc))
-(printf "Allocations: ~a~n" (cost-center-allocation-count cc))</code></pre>
+(printf "Allocations: ~a~n" (cost-center-allocation-count cc))
+</code></pre>
         <br/>
         <li>Multiple cost centers:</li>
 <pre><code class="language-scheme line-numbers">; Track different parts of program
@@ -18356,7 +18400,8 @@ copied                      ; 42 (separate copy)
 ; Compare costs
 (printf "Parse: ~a~n" (cost-center-time cc-parse))
 (printf "Eval: ~a~n" (cost-center-time cc-eval))
-(printf "Print: ~a~n" (cost-center-time cc-print))</code></pre>
+(printf "Print: ~a~n" (cost-center-time cc-print))
+</code></pre>
         <br/>
         <li>Cost center for profiling:</li>
 <pre><code class="language-scheme line-numbers">; Create cost centers for each function
@@ -18387,7 +18432,8 @@ copied                      ; 42 (separate copy)
                 name
                 (cost-center-instruction-count cc)
                 (cost-center-allocation-count cc))))
-    profile-data))</code></pre>
+    profile-data))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -18414,15 +18460,16 @@ copied                      ; 42 (separate copy)
 ; Nested parameterize
 (parameterize ([current-user "bob"])
   (parameterize ([current-user "charlie"])
-    (current-user)))        ; "charlie"</code></pre>
+    (current-user)))        ; "charlie"
+</code></pre>
         <br/>
         <li>Parameters with guards:</li>
 <pre><code class="language-scheme line-numbers">; Guard function validates/transforms values
 (define current-count
   (make-parameter 0
     (lambda (v)
-      (unless (and (integer? v) (>= v 0))
-        (error 'current-count "expected non-negative integer" v))
+      (unless (and (integer? v) (&gt;= v 0))
+        (error &apos;current-count "expected non-negative integer" v))
       v)))
 
 (current-count 10)          ; OK
@@ -18441,8 +18488,9 @@ copied                      ; 42 (separate copy)
   (make-parameter 8080
     (lambda (v)
       (unless (and (integer? v) (<= 1 v 65535))
-        (error 'valid-port "invalid port number" v))
-      v)))</code></pre>
+        (error &apos;valid-port "invalid port number" v))
+      v)))
+</code></pre>
         <br/>
         <li>Built-in parameters:</li>
 <pre><code class="language-scheme line-numbers">; I/O parameters
@@ -18474,7 +18522,8 @@ copied                      ; 42 (separate copy)
 
 ; Evaluator parameters
 (eval-syntax-expanders-when)
-(interaction-environment)</code></pre>
+(interaction-environment)
+</code></pre>
         <br/>
         <li>Parameter interaction with threads:</li>
 <pre><code class="language-scheme line-numbers">; Parameters are thread-local
@@ -18519,17 +18568,18 @@ copied                      ; 42 (separate copy)
 
 ; Access virtual register
 (virtual-register 0)        ; Get register 0
-(set-virtual-register! 0 'value)  ; Set register 0
+(set-virtual-register! 0 &apos;value)  ; Set register 0
 
 ; Example usage
 (set-virtual-register! 0 0)       ; Counter
-(set-virtual-register! 1 '())     ; Accumulator
+(set-virtual-register! 1 &apos;())     ; Accumulator
 
 (define (fast-count!)
   (set-virtual-register! 0 (+ (virtual-register 0) 1)))
 
 (define (fast-push! v)
-  (set-virtual-register! 1 (cons v (virtual-register 1))))</code></pre>
+  (set-virtual-register! 1 (cons v (virtual-register 1))))
+</code></pre>
         <br/>
         <li>Virtual registers vs parameters:</li>
 <pre><code class="language-scheme line-numbers">; Parameters: safer, guard support, slightly slower
@@ -18566,14 +18616,14 @@ copied                      ; 42 (separate copy)
         <br/>
         <li>Thread safety:</li>
 <pre><code class="language-scheme line-numbers">; Virtual registers are thread-local
-(set-virtual-register! 0 'main)
+(set-virtual-register! 0 &apos;main)
 
 (fork-thread
   (lambda ()
-    (set-virtual-register! 0 'child)
-    (virtual-register 0)))  ; 'child
+    (set-virtual-register! 0 &apos;child)
+    (virtual-register 0)))  ; &apos;child
 
-(virtual-register 0)        ; 'main (unchanged)
+(virtual-register 0)        ; &apos;main (unchanged)
 
 ; Each thread has own set of virtual registers
 ; No synchronization needed
@@ -18583,7 +18633,7 @@ copied                      ; 42 (separate copy)
 
 (define (init-thread-registers!)
   (set-virtual-register! 0 0)
-  (set-virtual-register! 1 '())
+  (set-virtual-register! 1 &apos;())
   (set-virtual-register! 2 (make-eq-hashtable)))
 </code></pre>
     </ul>
@@ -18600,12 +18650,12 @@ copied                      ; 42 (separate copy)
 (petite?)                   ; #t if Petite Chez Scheme
 
 ; Machine information
-(machine-type)              ; 'a6osx, 'ta6le, 'arm64le, etc.
+(machine-type)              ; &apos;a6osx, &apos;ta6le, &apos;arm64le, etc.
 (threaded?)                 ; #t if threaded build
 (native-code)               ; #t if native code generation
 
 ; Endianness
-(native-endianness)         ; 'little or 'big
+(native-endianness)         ; &apos;little or &apos;big
 
 ; Chez Scheme directory
 (scheme-directory)          ; Installation directory
@@ -18975,6 +19025,1442 @@ copied                      ; 42 (separate copy)
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-storage-management">Storage Management in Chez Scheme</h3>
+<ol>
+
+    <li>Garbage Collection</li>
+    <br/>
+    <ul>
+        <li>Generational garbage collection overview:</li>
+<pre><code class="language-scheme line-numbers">; Chez Scheme uses generational garbage collection
+; Objects are allocated in generation 0 (youngest)
+; Surviving objects are promoted to older generations
+
+; Generation hierarchy:
+; - Generation 0: New objects (collected frequently)
+; - Generation 1: Survived one collection
+; - ...
+; - Generation N: Oldest (collected rarely)
+
+; Check maximum generation
+(collect-maximum-generation)  ; Returns highest generation number
+
+; Typical values: 4 or 5 generations
+; Generation 0 = nursery (very fast allocation)
+</code></pre>
+        <br/>
+        <li>Generational collection visualization:</li>
+        <svg width="600" height="280" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Generation boxes -->
+            <rect x="50" y="30" width="100" height="60" fill="#ffcccc" stroke="#cc0000" stroke-width="2"/>
+            <text x="100" y="55" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Gen 0</text>
+            <text x="100" y="75" text-anchor="middle" font-family="Times New Roman" font-size="9">(Nursery)</text>
+
+            <rect x="180" y="30" width="100" height="60" fill="#ffe6cc" stroke="#cc6600" stroke-width="2"/>
+            <text x="230" y="55" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Gen 1</text>
+            <text x="230" y="75" text-anchor="middle" font-family="Times New Roman" font-size="9">(Young)</text>
+
+            <rect x="310" y="30" width="100" height="60" fill="#ffffcc" stroke="#999900" stroke-width="2"/>
+            <text x="360" y="55" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Gen 2</text>
+            <text x="360" y="75" text-anchor="middle" font-family="Times New Roman" font-size="9">(Middle)</text>
+
+            <rect x="440" y="30" width="100" height="60" fill="#ccffcc" stroke="#009900" stroke-width="2"/>
+            <text x="490" y="55" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Gen 3+</text>
+            <text x="490" y="75" text-anchor="middle" font-family="Times New Roman" font-size="9">(Old)</text>
+
+            <!-- Arrows showing promotion -->
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <line x1="150" y1="60" x2="175" y2="60" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <line x1="280" y1="60" x2="305" y2="60" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <line x1="410" y1="60" x2="435" y2="60" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+            <!-- Collection frequency -->
+            <text x="100" y="115" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc0000">Very Frequent</text>
+            <text x="230" y="115" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc6600">Frequent</text>
+            <text x="360" y="115" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#999900">Occasional</text>
+            <text x="490" y="115" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#009900">Rare</text>
+
+            <!-- Legend -->
+            <rect x="50" y="140" width="500" height="120" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="5"/>
+            <text x="300" y="160" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Collection Process</text>
+
+            <text x="70" y="185" font-family="Times New Roman" font-size="10">1. New objects allocated in Gen 0 (fast bump allocation)</text>
+            <text x="70" y="205" font-family="Times New Roman" font-size="10">2. When Gen 0 fills, minor collection runs</text>
+            <text x="70" y="225" font-family="Times New Roman" font-size="10">3. Live objects promoted to Gen 1, dead objects reclaimed</text>
+            <text x="70" y="245" font-family="Times New Roman" font-size="10">4. Older generations collected less frequently (major GC)</text>
+        </svg>
+        <br/><br/>
+        <li>Manual garbage collection:</li>
+<pre><code class="language-scheme line-numbers">; collect triggers garbage collection
+(collect)                   ; Full collection (all generations)
+(collect 0)                 ; Collect generation 0 only
+(collect 1)                 ; Collect generations 0 and 1
+(collect 2)                 ; Collect generations 0, 1, and 2
+
+; Collect specific generation
+(collect (collect-maximum-generation))  ; Full collection
+
+; Example: force cleanup before measurement
+(collect)
+(collect)                   ; Run twice to ensure finalization
+(let ([mem-before (current-memory-bytes)])
+  (create-large-structure)
+  (collect)
+  (let ([mem-after (current-memory-bytes)])
+    (printf "Memory used: ~a bytes~n"
+            (- mem-after mem-before))))
+</code></pre>
+        <br/>
+        <li>GC parameters:</li>
+<pre><code class="language-scheme line-numbers">; collect-trip-bytes: bytes allocated before auto-collect
+(collect-trip-bytes)            ; Get current value
+(collect-trip-bytes 1000000)    ; Set to 1MB
+
+; Larger value = less frequent GC, more memory use
+; Smaller value = more frequent GC, less memory use
+
+; collect-generation-radix: size ratio between generations
+(collect-generation-radix)      ; Typically 4
+; Each generation is ~4x larger than previous
+
+; collect-maximum-generation: highest generation number
+(collect-maximum-generation)    ; Typically 4 or 5
+
+; release-minimum-generation: when to release memory to OS
+(release-minimum-generation)
+(release-minimum-generation 2)  ; Release after gen 2+ collection
+
+; heap-reserve-ratio: extra heap space to reserve
+(heap-reserve-ratio)            ; Default 1.0 (100% extra)
+</code></pre>
+        <br/>
+        <li>GC statistics and monitoring:</li>
+<pre><code class="language-scheme line-numbers">; Memory statistics
+(bytes-allocated)           ; Total bytes ever allocated
+(current-memory-bytes)      ; Current heap size
+(maximum-memory-bytes)      ; Peak memory usage
+
+; Collection count
+(collections)               ; Total collections performed
+
+; Statistics breakdown
+(statistics)                ; Detailed statistics
+
+; GC notification
+(collect-notify #t)         ; Enable GC notifications
+; Prints: gc: gen:bytes @ time
+
+; Example output:
+; gc: 0:123456 @ 1234567890
+; gc: 1:234567 (0:12345) @ 1234567900
+
+; Custom notification handler
+(collect-notify
+  (lambda (gen pre-bytes pre-time post-bytes post-time)
+    (printf "GC gen ~a: ~a -&gt; ~a bytes~n"
+            gen pre-bytes post-bytes)))
+
+; collect-request-handler: intercept GC requests
+(collect-request-handler
+  (lambda ()
+    (printf "GC requested~n")
+    (collect)))
+</code></pre>
+        <br/>
+        <li>GC tuning strategies:</li>
+<pre><code class="language-scheme line-numbers">; For throughput (batch processing)
+(collect-trip-bytes (* 64 1024 1024))  ; 64MB between collections
+(heap-reserve-ratio 2.0)               ; More headroom
+
+; For latency (interactive applications)
+(collect-trip-bytes (* 1 1024 1024))   ; 1MB - more frequent, shorter
+(release-minimum-generation 1)         ; Release memory sooner
+
+; For memory-constrained environments
+(collect-trip-bytes (* 256 1024))      ; 256KB
+(heap-reserve-ratio 0.5)               ; Less reserve
+
+; Disable automatic collection (use with care!)
+(let ([old-trip (collect-trip-bytes)])
+  (collect-trip-bytes (most-positive-fixnum))
+  ; ... critical section with no GC ...
+  (collect-trip-bytes old-trip)
+  (collect))                           ; Catch up
+
+; Measure GC impact
+(define (measure-gc-overhead thunk)
+  (let ([gc-before (collections)]
+        [time-before (cpu-time)])
+    (let ([result (thunk)])
+      (let ([gc-after (collections)]
+            [time-after (cpu-time)])
+        (printf "Collections: ~a~n" (- gc-after gc-before))
+        (printf "Time: ~a ms~n" (/ (- time-after time-before) 1e6))
+        result))))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Weak Pairs, Ephemeron Pairs, and Guardians</li>
+    <br/>
+    <ul>
+        <li>Weak pairs:</li>
+<pre><code class="language-scheme line-numbers">; Weak pairs hold car weakly - GC can collect it
+(define wp (weak-cons &apos;key &apos;value))
+
+; Access like normal pair
+(car wp)                    ; &apos;key
+(cdr wp)                    ; &apos;value
+
+; If car is only referenced through weak pairs,
+; it can be collected and replaced with #!bwp
+
+; Check for broken weak pointer
+(bwp-object? (car wp))      ; #f while key exists
+
+; After key is collected:
+(bwp-object? (car wp))      ; #t
+
+; Example: weak cache
+(define cache &apos;())
+
+(define (cache-put! key value)
+  (set! cache (cons (weak-cons key value) cache)))
+
+(define (cache-get key)
+  (let loop ([pairs cache])
+    (cond
+      [(null? pairs) #f]
+      [(bwp-object? (caar pairs))
+       ; Clean up broken entries
+       (loop (cdr pairs))]
+      [(eq? (caar pairs) key)
+       (cdar pairs)]
+      [else (loop (cdr pairs))])))
+
+; Clean broken weak pairs periodically
+(define (cache-clean!)
+  (set! cache
+    (filter (lambda (wp)
+              (not (bwp-object? (car wp))))
+            cache)))
+</code></pre>
+        <br/>
+        <li>Weak pair visualization:</li>
+        <svg width="550" height="200" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Strong pair -->
+            <text x="120" y="25" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Strong Pair (cons)</text>
+            <rect x="70" y="35" width="50" height="40" fill="#cce5ff" stroke="#0066cc" stroke-width="2"/>
+            <text x="95" y="60" text-anchor="middle" font-family="Times New Roman" font-size="10">car</text>
+            <rect x="120" y="35" width="50" height="40" fill="#cce5ff" stroke="#0066cc" stroke-width="2"/>
+            <text x="145" y="60" text-anchor="middle" font-family="Times New Roman" font-size="10">cdr</text>
+
+            <!-- Strong references -->
+            <line x1="95" y1="75" x2="95" y2="110" stroke="#0066cc" stroke-width="3" marker-end="url(#arrowhead)"/>
+            <rect x="70" y="115" width="50" height="30" fill="#99ccff" stroke="#0066cc" stroke-width="1"/>
+            <text x="95" y="135" text-anchor="middle" font-family="Times New Roman" font-size="9">Object</text>
+            <text x="95" y="160" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#0066cc">Strong ref</text>
+
+            <!-- Weak pair -->
+            <text x="380" y="25" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Weak Pair (weak-cons)</text>
+            <rect x="330" y="35" width="50" height="40" fill="#ffe6e6" stroke="#cc0000" stroke-width="2" stroke-dasharray="5,3"/>
+            <text x="355" y="60" text-anchor="middle" font-family="Times New Roman" font-size="10">car</text>
+            <rect x="380" y="35" width="50" height="40" fill="#cce5ff" stroke="#0066cc" stroke-width="2"/>
+            <text x="405" y="60" text-anchor="middle" font-family="Times New Roman" font-size="10">cdr</text>
+
+            <!-- Weak reference -->
+            <line x1="355" y1="75" x2="355" y2="110" stroke="#cc0000" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+            <rect x="330" y="115" width="50" height="30" fill="#ffcccc" stroke="#cc0000" stroke-width="1" stroke-dasharray="3,2"/>
+            <text x="355" y="135" text-anchor="middle" font-family="Times New Roman" font-size="9">Object</text>
+            <text x="355" y="160" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#cc0000">Weak ref</text>
+            <text x="355" y="175" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#666">(can be GC'd)</text>
+        </svg>
+        <br/><br/>
+        <li>Ephemeron pairs:</li>
+<pre><code class="language-scheme line-numbers">; Ephemerons: car is key, cdr kept alive only if car is alive
+(define ep (ephemeron-cons &apos;key &apos;value))
+
+; Similar to weak-cons but with important difference:
+; - weak-cons: cdr always kept alive
+; - ephemeron-cons: cdr collected when car is collected
+
+; This prevents memory leaks in certain scenarios
+(car ep)                    ; &apos;key
+(cdr ep)                    ; &apos;value
+
+; Check if broken
+(bwp-object? (car ep))      ; #f while key exists
+
+; Use case: associating data with objects without preventing GC
+(define object-metadata (make-eq-hashtable))
+
+; Problem with weak-cons in hashtable:
+; Key can be collected but value stays (memory leak)
+
+; Solution: use ephemeron hashtable
+(define object-metadata (make-ephemeron-eq-hashtable))
+
+; When key is collected, value is also eligible for collection
+</code></pre>
+        <br/>
+        <li>Ephemeron vs weak pair comparison:</li>
+        <svg width="600" height="280" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Weak pair scenario -->
+            <text x="150" y="25" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Weak Pair</text>
+
+            <rect x="100" y="40" width="45" height="35" fill="#ffe6e6" stroke="#cc0000" stroke-width="2" stroke-dasharray="5,3"/>
+            <text x="122" y="62" text-anchor="middle" font-family="Times New Roman" font-size="9">car</text>
+            <rect x="145" y="40" width="45" height="35" fill="#cce5ff" stroke="#0066cc" stroke-width="2"/>
+            <text x="167" y="62" text-anchor="middle" font-family="Times New Roman" font-size="9">cdr</text>
+
+            <line x1="122" y1="75" x2="122" y2="100" stroke="#cc0000" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+            <line x1="167" y1="75" x2="167" y2="100" stroke="#0066cc" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+            <rect x="95" y="105" width="55" height="25" fill="#ffcccc" stroke="#cc0000" stroke-width="1"/>
+            <text x="122" y="122" text-anchor="middle" font-family="Times New Roman" font-size="8">Key</text>
+
+            <rect x="140" y="105" width="55" height="25" fill="#cce5ff" stroke="#0066cc" stroke-width="1"/>
+            <text x="167" y="122" text-anchor="middle" font-family="Times New Roman" font-size="8">Value</text>
+
+            <!-- Arrow to large data -->
+            <line x1="167" y1="130" x2="167" y2="155" stroke="#0066cc" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <rect x="120" y="160" width="95" height="35" fill="#99ccff" stroke="#0066cc" stroke-width="1"/>
+            <text x="167" y="182" text-anchor="middle" font-family="Times New Roman" font-size="8">Large Data</text>
+
+            <text x="150" y="215" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc0000">If Key collected:</text>
+            <text x="150" y="230" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc0000">Value + Data KEPT</text>
+            <text x="150" y="245" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc0000">(potential leak!)</text>
+
+            <!-- Ephemeron scenario -->
+            <text x="450" y="25" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Ephemeron Pair</text>
+
+            <rect x="400" y="40" width="45" height="35" fill="#ffe6e6" stroke="#cc0000" stroke-width="2" stroke-dasharray="5,3"/>
+            <text x="422" y="62" text-anchor="middle" font-family="Times New Roman" font-size="9">car</text>
+            <rect x="445" y="40" width="45" height="35" fill="#e6ffe6" stroke="#009900" stroke-width="2" stroke-dasharray="5,3"/>
+            <text x="467" y="62" text-anchor="middle" font-family="Times New Roman" font-size="9">cdr</text>
+
+            <line x1="422" y1="75" x2="422" y2="100" stroke="#cc0000" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+            <line x1="467" y1="75" x2="467" y2="100" stroke="#009900" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+
+            <rect x="395" y="105" width="55" height="25" fill="#ffcccc" stroke="#cc0000" stroke-width="1"/>
+            <text x="422" y="122" text-anchor="middle" font-family="Times New Roman" font-size="8">Key</text>
+
+            <rect x="440" y="105" width="55" height="25" fill="#ccffcc" stroke="#009900" stroke-width="1" stroke-dasharray="3,2"/>
+            <text x="467" y="122" text-anchor="middle" font-family="Times New Roman" font-size="8">Value</text>
+
+            <line x1="467" y1="130" x2="467" y2="155" stroke="#009900" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+            <rect x="420" y="160" width="95" height="35" fill="#ccffcc" stroke="#009900" stroke-width="1" stroke-dasharray="3,2"/>
+            <text x="467" y="182" text-anchor="middle" font-family="Times New Roman" font-size="8">Large Data</text>
+
+            <text x="450" y="215" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#009900">If Key collected:</text>
+            <text x="450" y="230" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#009900">Value + Data FREED</text>
+            <text x="450" y="245" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#009900">(no leak)</text>
+
+            <!-- Dependency arrow -->
+            <text x="467" y="88" text-anchor="start" font-family="Times New Roman" font-size="7" fill="#666">depends on</text>
+            <path d="M 445 55 Q 425 30 435 55" stroke="#999" stroke-width="1" fill="none" stroke-dasharray="2,2"/>
+        </svg>
+        <br/><br/>
+        <li>Guardians:</li>
+<pre><code class="language-scheme line-numbers">; Guardians track when objects become unreachable
+(define g (make-guardian))
+
+; Register object with guardian
+(let ([obj (list 1 2 3)])
+  (g obj)                   ; Register
+  ; obj is now guarded
+  )
+
+; After GC, check for collected objects
+(collect)
+(g)                         ; Returns collected object or #f
+
+; Multiple registrations
+(define g (make-guardian))
+(g (cons 'a 'b))
+(g (vector 1 2 3))
+(g "temporary string")
+
+(collect)
+
+; Retrieve all collected objects
+(let loop ()
+  (let ([obj (g)])
+    (when obj
+      (printf "Collected: ~a~n" obj)
+      (loop))))
+
+; Use case: cleanup resources
+(define resource-guardian (make-guardian))
+
+(define (make-managed-resource)
+  (let ([resource (allocate-external-resource)])
+    (resource-guardian resource)
+    resource))
+
+; Periodic cleanup
+(define (cleanup-resources!)
+  (let loop ()
+    (let ([r (resource-guardian)])
+      (when r
+        (release-external-resource r)
+        (loop)))))
+</code></pre>
+        <br/>
+        <li>Guardian-based finalization:</li>
+<pre><code class="language-scheme line-numbers">; Implement finalizers using guardians
+(define finalizer-guardian (make-guardian))
+(define finalizer-table (make-eq-hashtable))
+
+(define (add-destructor! obj destructor)
+  (finalizer-guardian obj)
+  (hashtable-set! finalizer-table obj destructor))
+
+(define (run-finalizers!)
+  (let loop ()
+    (let ([obj (finalizer-guardian)])
+      (when obj
+        (let ([destructor (hashtable-ref finalizer-table obj #f)])
+          (when destructor
+            (guard (c [else (void)])  ; Ignore errors in finalizers
+              (destructor obj))
+            (hashtable-delete! finalizer-table obj)))
+        (loop)))))
+
+; Example: file handle with automatic close
+(define (open-managed-file filename)
+  (let ([port (open-input-file filename)])
+    (add-destructor! port
+      (lambda (p)
+        (printf "Auto-closing ~a~n" filename)
+        (close-port p)))
+    port))
+
+; Run finalizers after GC
+(collect-request-handler
+  (lambda ()
+    (collect)
+    (run-finalizers!)))
+</code></pre>
+        <br/>
+        <li>Weak and ephemeron hashtables:</li>
+<pre><code class="language-scheme line-numbers">; Weak hashtables: keys held weakly
+(define wht (make-weak-eq-hashtable))
+(define wht (make-weak-eqv-hashtable))
+
+; Ephemeron hashtables: both key and value can be collected
+(define eht (make-ephemeron-eq-hashtable))
+(define eht (make-ephemeron-eqv-hashtable))
+
+; Usage
+(let ([key (cons &apos;a &apos;b)])
+  (hashtable-set! wht key "value")
+  (hashtable-ref wht key #f))  ; "value"
+
+; After key becomes unreachable and GC runs:
+(collect)
+; Entry may be removed from weak hashtable
+
+; Practical example: memoization with weak keys
+(define (make-weak-memoize proc)
+  (let ([cache (make-weak-eq-hashtable)])
+    (lambda (arg)
+      (let ([cached (hashtable-ref cache arg &apos;not-found)])
+        (if (eq? cached &apos;not-found)
+            (let ([result (proc arg)])
+              (hashtable-set! cache arg result)
+              result)
+            cached)))))
+
+; Memoize without preventing GC of keys
+(define weak-memo-process
+  (make-weak-memoize expensive-process))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Locking Objects</li>
+    <br/>
+    <ul>
+        <li>Object locking basics:</li>
+<pre><code class="language-scheme line-numbers">; lock-object prevents GC from moving object
+(define obj (list 1 2 3))
+(lock-object obj)           ; Lock the object
+
+; Object is now:
+; 1. Protected from collection
+; 2. Fixed in memory (won't move)
+
+; Unlock when done
+(unlock-object obj)         ; Allow GC to manage again
+
+; Check if locked
+(locked-object? obj)        ; #t if locked
+
+; Use case: passing pointer to foreign code
+(define data (make-bytevector 1024))
+(lock-object data)
+; ... pass (bytevector-data data) to C function ...
+(unlock-object data)
+</code></pre>
+        <br/>
+        <li>Why locking is necessary:</li>
+        <svg width="600" height="320" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Before GC -->
+            <text x="150" y="25" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Without Locking</text>
+
+            <!-- Memory before -->
+            <rect x="50" y="40" width="200" height="100" fill="#f0f0f0" stroke="#999" stroke-width="1"/>
+            <text x="150" y="55" text-anchor="middle" font-family="Times New Roman" font-size="9">Heap Memory (Before GC)</text>
+
+            <rect x="70" y="70" width="70" height="30" fill="#99ccff" stroke="#0066cc" stroke-width="2"/>
+            <text x="105" y="90" text-anchor="middle" font-family="Times New Roman" font-size="9">Object</text>
+            <text x="105" y="115" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#666">addr: 0x1000</text>
+
+            <!-- C pointer -->
+            <rect x="70" y="150" width="80" height="25" fill="#ffcc99" stroke="#cc6600" stroke-width="1"/>
+            <text x="110" y="167" text-anchor="middle" font-family="Times New Roman" font-size="8">C pointer</text>
+            <line x1="110" y1="150" x2="110" y2="120" stroke="#cc6600" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="130" y="140" font-family="Times New Roman" font-size="7" fill="#cc6600">0x1000</text>
+
+            <!-- After GC - object moved -->
+            <rect x="50" y="190" width="200" height="100" fill="#f0f0f0" stroke="#999" stroke-width="1"/>
+            <text x="150" y="205" text-anchor="middle" font-family="Times New Roman" font-size="9">Heap Memory (After GC)</text>
+
+            <rect x="150" y="220" width="70" height="30" fill="#99ccff" stroke="#0066cc" stroke-width="2"/>
+            <text x="185" y="240" text-anchor="middle" font-family="Times New Roman" font-size="9">Object</text>
+            <text x="185" y="265" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#666">addr: 0x2000</text>
+
+            <!-- Dangling pointer -->
+            <line x1="110" y1="175" x2="110" y2="260" stroke="#cc0000" stroke-width="2" stroke-dasharray="4,2"/>
+            <text x="70" y="230" font-family="Times New Roman" font-size="8" fill="#cc0000">DANGLING!</text>
+            <text x="95" y="245" font-family="Times New Roman" font-size="7" fill="#cc0000">Points to</text>
+            <text x="95" y="257" font-family="Times New Roman" font-size="7" fill="#cc0000">freed memory</text>
+
+            <!-- With locking -->
+            <text x="450" y="25" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">With Locking</text>
+
+            <!-- Memory before -->
+            <rect x="350" y="40" width="200" height="100" fill="#f0f0f0" stroke="#999" stroke-width="1"/>
+            <text x="450" y="55" text-anchor="middle" font-family="Times New Roman" font-size="9">Heap Memory (Before GC)</text>
+
+            <rect x="370" y="70" width="70" height="30" fill="#ccffcc" stroke="#009900" stroke-width="2"/>
+            <text x="405" y="90" text-anchor="middle" font-family="Times New Roman" font-size="9">Object</text>
+            <text x="405" y="115" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#009900">LOCKED</text>
+
+            <!-- C pointer -->
+            <rect x="370" y="150" width="80" height="25" fill="#ffcc99" stroke="#cc6600" stroke-width="1"/>
+            <text x="410" y="167" text-anchor="middle" font-family="Times New Roman" font-size="8">C pointer</text>
+            <line x1="410" y1="150" x2="410" y2="120" stroke="#cc6600" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+            <!-- After GC - object stays -->
+            <rect x="350" y="190" width="200" height="100" fill="#f0f0f0" stroke="#999" stroke-width="1"/>
+            <text x="450" y="205" text-anchor="middle" font-family="Times New Roman" font-size="9">Heap Memory (After GC)</text>
+
+            <rect x="370" y="220" width="70" height="30" fill="#ccffcc" stroke="#009900" stroke-width="2"/>
+            <text x="405" y="240" text-anchor="middle" font-family="Times New Roman" font-size="9">Object</text>
+            <text x="405" y="265" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#009900">Same addr</text>
+
+            <!-- Valid pointer -->
+            <line x1="410" y1="175" x2="410" y2="218" stroke="#009900" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="445" y="200" font-family="Times New Roman" font-size="8" fill="#009900">VALID!</text>
+        </svg>
+        <br/><br/>
+        <li>Locking for foreign interface:</li>
+<pre><code class="language-scheme line-numbers">; When calling C functions that keep references
+(define (call-foreign-with-buffer proc size)
+  (let ([buffer (make-bytevector size)])
+    (lock-object buffer)
+    (guard (c [else
+               (unlock-object buffer)
+               (raise c)])
+      (let ([result (proc buffer)])
+        (unlock-object buffer)
+        result))))
+
+; Example: C function fills buffer asynchronously
+(define async-read
+  (foreign-procedure "async_read" (void* size_t) int))
+
+(define (safe-async-read size)
+  (let ([buffer (make-bytevector size)])
+    (lock-object buffer)
+    ; Pass raw pointer to C
+    (async-read (#%$bytevector-data buffer) size)
+    ; Keep locked until callback signals completion
+    ; ... later in callback:
+    ; (unlock-object buffer)
+    buffer))
+
+; Locking multiple objects
+(define (with-locked-objects objs thunk)
+  (for-each lock-object objs)
+  (guard (c [else
+             (for-each unlock-object objs)
+             (raise c)])
+    (let ([result (thunk)])
+      (for-each unlock-object objs)
+      result)))
+</code></pre>
+        <br/>
+        <li>Locking implications:</li>
+<pre><code class="language-scheme line-numbers">; Locked objects affect GC efficiency
+; - Cannot be compacted (memory fragmentation)
+; - Pinned in place until unlocked
+
+; Best practices:
+; 1. Lock for minimum necessary duration
+; 2. Unlock in finally/guard clauses
+; 3. Don&apos;t lock long-lived objects unnecessarily
+
+; Check lock status
+(define (object-info obj)
+  (printf "Object: ~a~n" obj)
+  (printf "Locked: ~a~n" (locked-object? obj)))
+
+; Reference counting pattern for shared locking
+(define lock-counts (make-eq-hashtable))
+
+(define (acquire-lock! obj)
+  (let ([count (hashtable-ref lock-counts obj 0)])
+    (when (zero? count)
+      (lock-object obj))
+    (hashtable-set! lock-counts obj (+ count 1))))
+
+(define (release-lock! obj)
+  (let ([count (hashtable-ref lock-counts obj 0)])
+    (when (&gt; count 0)
+      (let ([new-count (- count 1)])
+        (hashtable-set! lock-counts obj new-count)
+        (when (zero? new-count)
+          (unlock-object obj))))))
+</code></pre>
+        <br/>
+        <li>Lock and foreign callable:</li>
+<pre><code class="language-scheme line-numbers">; Foreign callables need special consideration
+(define callback
+  (foreign-callable
+    (lambda (x) (* x 2))
+    (int)
+    int))
+
+; Lock the callable code
+(lock-object callback)
+
+; Get entry point (safe because locked)
+(define callback-ptr (foreign-callable-entry-point callback))
+
+; Pass to C code
+(register-callback callback-ptr)
+
+; Keep locked as long as C might call it
+; ...
+; When done:
+(unlock-object callback)
+
+; Helper for managed callbacks
+(define active-callbacks &apos;())
+
+(define (make-persistent-callback proc arg-types ret-type)
+  (let ([cb (foreign-callable proc arg-types ret-type)])
+    (lock-object cb)
+    (set! active-callbacks (cons cb active-callbacks))
+    (foreign-callable-entry-point cb)))
+
+(define (release-all-callbacks!)
+  (for-each unlock-object active-callbacks)
+  (set! active-callbacks &apos;()))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Immobile Objects</li>
+    <br/>
+    <ul>
+        <li>Understanding immobile objects:</li>
+<pre><code class="language-scheme line-numbers">; Some Chez Scheme objects are naturally immobile
+; They are allocated in non-moving memory regions
+
+; Immobile by design:
+; - Code objects (procedures)
+; - Large objects (above certain threshold)
+; - Objects in static generation
+
+; Check if object might move
+; (No direct predicate, but can infer from type)
+
+; Large object threshold
+; Objects above this size go to large object space
+; Typically 1KB-4KB depending on configuration
+
+; Large objects don't move but can be collected
+(define large-vector (make-vector 10000))
+; Allocated in large object space - won't move
+
+; vs small objects that might move
+(define small-vector (make-vector 10))
+; Allocated in nursery - may move during GC
+</code></pre>
+        <br/>
+        <li>Memory regions visualization:</li>
+        <svg width="600" height="300" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Main heap -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">Chez Scheme Memory Regions</text>
+
+            <!-- Nursery -->
+            <rect x="30" y="50" width="160" height="80" fill="#ffcccc" stroke="#cc0000" stroke-width="2"/>
+            <text x="110" y="75" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Nursery (Gen 0)</text>
+            <text x="110" y="95" text-anchor="middle" font-family="Times New Roman" font-size="8">Small, new objects</text>
+            <text x="110" y="110" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#cc0000">Objects CAN MOVE</text>
+
+            <!-- Older generations -->
+            <rect x="210" y="50" width="160" height="80" fill="#ffe6cc" stroke="#cc6600" stroke-width="2"/>
+            <text x="290" y="75" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Older Generations</text>
+            <text x="290" y="95" text-anchor="middle" font-family="Times New Roman" font-size="8">Survived objects</text>
+            <text x="290" y="110" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#cc6600">Objects CAN MOVE</text>
+
+            <!-- Large object space -->
+            <rect x="390" y="50" width="170" height="80" fill="#ccffcc" stroke="#009900" stroke-width="2"/>
+            <text x="475" y="75" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Large Object Space</text>
+            <text x="475" y="95" text-anchor="middle" font-family="Times New Roman" font-size="8">Objects > threshold</text>
+            <text x="475" y="110" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#009900">Objects DON'T MOVE</text>
+
+            <!-- Static/Code space -->
+            <rect x="30" y="150" width="250" height="70" fill="#cce5ff" stroke="#0066cc" stroke-width="2"/>
+            <text x="155" y="175" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Static / Code Space</text>
+            <text x="155" y="195" text-anchor="middle" font-family="Times New Roman" font-size="8">Compiled code, constants</text>
+            <text x="155" y="210" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#0066cc">IMMOBILE (never moves)</text>
+
+            <!-- Locked objects -->
+            <rect x="300" y="150" width="260" height="70" fill="#e6ccff" stroke="#6600cc" stroke-width="2"/>
+            <text x="430" y="175" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Locked Objects</text>
+            <text x="430" y="195" text-anchor="middle" font-family="Times New Roman" font-size="8">User-locked with lock-object</text>
+            <text x="430" y="210" text-anchor="middle" font-family="Times New Roman" font-size="8" fill="#6600cc">PINNED (won't move until unlocked)</text>
+
+            <!-- Legend -->
+            <rect x="30" y="240" width="530" height="45" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="50" y="260" font-family="Times New Roman" font-size="9">For FFI: Use lock-object for small objects, large objects are safe without locking</text>
+            <text x="50" y="275" font-family="Times New Roman" font-size="9">Code objects (procedures, foreign-callables) are always in immobile space</text>
+        </svg>
+        <br/><br/>
+        <li>Static generation:</li>
+<pre><code class="language-scheme line-numbers">; Objects can be made permanent (static generation)
+; collect-maximum-generation + 1 = static
+
+(define important-data (list 1 2 3 4 5))
+
+; Promote to oldest generation through collections
+(do ([i 0 (+ i 1)])
+    ((= i (+ (collect-maximum-generation) 2)))
+  (collect i))
+
+; Now object is in oldest generation
+; Less likely to be scanned/moved
+
+; Note: There's no direct API to force static allocation
+; Objects naturally move to older generations by surviving GC
+
+; For truly permanent data, consider:
+; 1. Define at top level (lives in static space)
+; 2. Lock the object
+; 3. Use foreign allocation
+</code></pre>
+        <br/>
+        <li>Code objects and immobility:</li>
+<pre><code class="language-scheme line-numbers">; Compiled procedures are code objects
+(define (my-procedure x) (* x 2))
+
+; Code objects are inherently immobile
+; Their addresses are stable
+
+; This is why foreign-callable works
+(define my-callback
+  (foreign-callable
+    (lambda () (display "Hello\n"))
+    ()
+    void))
+
+; Code is immobile, but the closure might not be!
+; For closures with free variables:
+(define (make-adder n)
+  (lambda (x) (+ x n)))
+
+(define add-5 (make-adder 5))
+; The closure object (containing n=5) CAN move
+; But the code itself is immobile
+
+; When passing to FFI, lock the closure
+(lock-object add-5)
+; Now both code and closure environment are stable
+</code></pre>
+        <br/>
+        <li>Working with immobile data:</li>
+<pre><code class="language-scheme line-numbers">; Allocate data that won't move
+; Option 1: Use large enough allocation
+(define immobile-buffer
+  (make-bytevector (* 64 1024)))  ; 64KB - definitely in LOS
+
+; Option 2: Foreign allocation
+(define foreign-buffer
+  (foreign-alloc 1024))           ; Not managed by GC at all
+
+; Option 3: Lock small objects
+(define small-data (make-bytevector 100))
+(lock-object small-data)
+
+; Getting stable pointer for FFI
+(define (get-stable-pointer obj)
+  (cond
+    ; Bytevector data pointer
+    [(bytevector? obj)
+     (lock-object obj)
+     (#%$bytevector-data obj)]
+    ; String data pointer
+    [(string? obj)
+     (lock-object obj)
+     (#%$string-data obj)]
+    [else
+     (error 'get-stable-pointer "unsupported type")]))
+
+; Remember to unlock when done!
+(define (release-stable-pointer obj)
+  (unlock-object obj))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Phantom Bytevectors</li>
+    <br/>
+    <ul>
+        <li>Phantom bytevector basics:</li>
+<pre><code class="language-scheme line-numbers">; Phantom bytevectors track external memory for GC accounting
+; They don&apos;t actually contain data - just report size to GC
+
+; Create phantom bytevector
+(define phantom (make-phantom-bytevector 1000000))
+
+; This tells GC: "I have 1MB of external memory"
+; GC includes this in its memory pressure calculations
+
+; Use case: foreign-allocated memory
+(define external-buffer (foreign-alloc (* 1024 1024)))  ; 1MB
+(define phantom (make-phantom-bytevector (* 1024 1024)))
+
+; GC now knows about the external memory
+; Will collect more aggressively if memory pressure high
+
+; When freeing external memory, release phantom too
+(foreign-free external-buffer)
+(set! phantom #f)  ; Allow phantom to be collected
+</code></pre>
+        <br/>
+        <li>Phantom bytevector purpose:</li>
+        <svg width="600" height="280" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Without phantom -->
+            <text x="150" y="25" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Without Phantom</text>
+
+            <rect x="50" y="40" width="200" height="90" fill="#f0f0f0" stroke="#999" stroke-width="1"/>
+            <text x="150" y="55" text-anchor="middle" font-family="Times New Roman" font-size="9">Scheme Heap (GC managed)</text>
+
+            <rect x="70" y="65" width="60" height="25" fill="#99ccff" stroke="#0066cc" stroke-width="1"/>
+            <text x="100" y="82" text-anchor="middle" font-family="Times New Roman" font-size="8">Handle</text>
+            <text x="100" y="95" text-anchor="middle" font-family="Times New Roman" font-size="7">32 bytes</text>
+
+            <rect x="50" y="145" width="200" height="90" fill="#ffe6e6" stroke="#cc0000" stroke-width="1"/>
+            <text x="150" y="160" text-anchor="middle" font-family="Times New Roman" font-size="9">External Memory (NOT tracked)</text>
+
+            <rect x="60" y="175" width="180" height="40" fill="#ffcccc" stroke="#cc0000" stroke-width="2"/>
+            <text x="150" y="200" text-anchor="middle" font-family="Times New Roman" font-size="9">External Buffer: 100MB</text>
+
+            <line x1="100" y1="90" x2="100" y2="175" stroke="#666" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+
+            <text x="150" y="255" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc0000">GC sees only 32 bytes</text>
+            <text x="150" y="270" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc0000">Won't collect aggressively!</text>
+
+            <!-- With phantom -->
+            <text x="450" y="25" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">With Phantom</text>
+
+            <rect x="350" y="40" width="200" height="90" fill="#f0f0f0" stroke="#999" stroke-width="1"/>
+            <text x="450" y="55" text-anchor="middle" font-family="Times New Roman" font-size="9">Scheme Heap (GC managed)</text>
+
+            <rect x="370" y="65" width="60" height="25" fill="#99ccff" stroke="#0066cc" stroke-width="1"/>
+            <text x="400" y="82" text-anchor="middle" font-family="Times New Roman" font-size="8">Handle</text>
+
+            <rect x="440" y="65" width="90" height="25" fill="#ccffcc" stroke="#009900" stroke-width="2"/>
+            <text x="485" y="82" text-anchor="middle" font-family="Times New Roman" font-size="8">Phantom</text>
+            <text x="485" y="95" text-anchor="middle" font-family="Times New Roman" font-size="7" fill="#009900">reports 100MB</text>
+
+            <rect x="350" y="145" width="200" height="90" fill="#e6ffe6" stroke="#009900" stroke-width="1"/>
+            <text x="450" y="160" text-anchor="middle" font-family="Times New Roman" font-size="9">External Memory (tracked via phantom)</text>
+
+            <rect x="360" y="175" width="180" height="40" fill="#ccffcc" stroke="#009900" stroke-width="2"/>
+            <text x="450" y="200" text-anchor="middle" font-family="Times New Roman" font-size="9">External Buffer: 100MB</text>
+
+            <line x1="400" y1="90" x2="400" y2="175" stroke="#666" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+
+            <text x="450" y="255" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#009900">GC sees 100MB+ pressure</text>
+            <text x="450" y="270" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#009900">Collects appropriately!</text>
+        </svg>
+        <br/><br/>
+        <li>Using phantom bytevectors with foreign memory:</li>
+<pre><code class="language-scheme line-numbers">; Wrapper for foreign-allocated memory with GC awareness
+(define-record-type external-buffer
+  (fields pointer size phantom)
+  (protocol
+    (lambda (new)
+      (lambda (size)
+        (let ([ptr (foreign-alloc size)]
+              [phantom (make-phantom-bytevector size)])
+          (new ptr size phantom))))))
+
+; Destructor using guardian
+(define buffer-guardian (make-guardian))
+
+(define (make-managed-external-buffer size)
+  (let ([buf (make-external-buffer size)])
+    (buffer-guardian buf)
+    buf))
+
+(define (cleanup-external-buffers!)
+  (let loop ()
+    (let ([buf (buffer-guardian)])
+      (when buf
+        (foreign-free (external-buffer-pointer buf))
+        ; Phantom will be collected automatically
+        (loop)))))
+
+; Example: image processing with external memory
+(define (load-large-image filename)
+  (let* ([size (get-image-size filename)]  ; External function
+         [buffer (make-managed-external-buffer size)])
+    (load-image-data filename (external-buffer-pointer buffer))
+    buffer))
+</code></pre>
+        <br/>
+        <li>Phantom bytevector patterns:</li>
+<pre><code class="language-scheme line-numbers">; Pattern 1: Direct association
+(define (allocate-external size)
+  (let ([ptr (foreign-alloc size)]
+        [phantom (make-phantom-bytevector size)])
+    ; Keep phantom alive as long as ptr is valid
+    (values ptr phantom)))
+
+; Pattern 2: Weak association with guardian
+(define (make-tracked-allocation size)
+  (let ([ptr (foreign-alloc size)]
+        [phantom (make-phantom-bytevector size)]
+        [guardian (make-guardian)])
+    (guardian phantom)
+    ; When phantom is collected, free the pointer
+    (values
+      ptr
+      (lambda ()  ; Check function
+        (let ([p (guardian)])
+          (when p
+            (foreign-free ptr)
+            #t))))))
+
+; Pattern 3: Resource pool with phantoms
+(define (make-resource-pool allocator deallocator)
+  (let ([resources &apos;()]
+        [phantoms &apos;()])
+    (lambda (msg . args)
+      (case msg
+        [(allocate)
+         (let* ([size (car args)]
+                [res (allocator size)]
+                [phantom (make-phantom-bytevector size)])
+           (set! resources (cons res resources))
+           (set! phantoms (cons phantom phantoms))
+           res)]
+        [(free)
+         (let ([res (car args)])
+           (deallocator res)
+           (set! resources (remq res resources))
+           ; Phantoms will be collected when pool is
+           )]
+        [(memory)
+         (apply + (map bytevector-length phantoms))]))))
+</code></pre>
+        <br/>
+        <li>Memory pressure and collection:</li>
+<pre><code class="language-scheme line-numbers">; Phantom bytevectors affect GC collection decisions
+; Large phantom = GC thinks memory is tight
+
+; Example: force collection by creating pressure
+(define (force-gc-via-phantom)
+  (let ([phantom (make-phantom-bytevector (* 100 1024 1024))])
+    ; GC sees 100MB pressure
+    (collect)
+    ; Release phantom
+    (set! phantom #f)
+    (collect)))
+
+; Monitor memory with phantoms
+(define (memory-report)
+  (printf "Heap: ~a MB~n"
+          (/ (current-memory-bytes) (* 1024 1024)))
+  (printf "Allocated: ~a MB~n"
+          (/ (bytes-allocated) (* 1024 1024))))
+
+; Create phantom, see effect
+(memory-report)
+(define p (make-phantom-bytevector (* 50 1024 1024)))
+(memory-report)  ; bytes-allocated includes phantom
+(set! p #f)
+(collect)
+(memory-report)  ; Phantom freed
+
+; Phantom bytevector predicates
+(phantom-bytevector? (make-phantom-bytevector 100))  ; #t
+(phantom-bytevector? (make-bytevector 100))          ; #f
+
+; Get reported size
+(phantom-bytevector-length (make-phantom-bytevector 1000))  ; 1000
+</code></pre>
+        <br/>
+        <li>Complete external resource manager:</li>
+<pre><code class="language-scheme line-numbers">; Comprehensive external memory management
+(library (external-memory)
+  (export
+    make-external-memory
+    external-memory?
+    external-memory-pointer
+    external-memory-size
+    free-external-memory!
+    with-external-memory
+    external-memory-stats)
+  (import (chezscheme))
+
+  ; Track all allocations
+  (define allocations (make-eq-hashtable))
+  (define total-allocated 0)
+  (define allocation-count 0)
+
+  ; Record type with phantom
+  (define-record-type external-memory
+    (fields pointer size phantom (mutable freed?))
+    (protocol
+      (lambda (new)
+        (lambda (size)
+          (let ([ptr (foreign-alloc size)]
+                [phantom (make-phantom-bytevector size)])
+            (let ([mem (new ptr size phantom #f)])
+              (hashtable-set! allocations ptr mem)
+              (set! total-allocated (+ total-allocated size))
+              (set! allocation-count (+ allocation-count 1))
+              mem))))))
+
+  ; Guardian for automatic cleanup
+  (define memory-guardian (make-guardian))
+
+  ; Free external memory
+  (define (free-external-memory! mem)
+    (unless (external-memory-freed? mem)
+      (foreign-free (external-memory-pointer mem))
+      (hashtable-delete! allocations (external-memory-pointer mem))
+      (set! total-allocated (- total-allocated (external-memory-size mem)))
+      (external-memory-freed?-set! mem #t)))
+
+  ; Safe scope-based allocation
+  (define (with-external-memory size proc)
+    (let ([mem (make-external-memory size)])
+      (guard (c [else
+                 (free-external-memory! mem)
+                 (raise c)])
+        (let ([result (proc mem)])
+          (free-external-memory! mem)
+          result))))
+
+  ; Cleanup guardian-tracked allocations
+  (define (cleanup-abandoned!)
+    (let loop ([count 0])
+      (let ([mem (memory-guardian)])
+        (if mem
+            (begin
+              (free-external-memory! mem)
+              (loop (+ count 1)))
+            count))))
+
+  ; Statistics
+  (define (external-memory-stats)
+    `((total-allocated . ,total-allocated)
+      (allocation-count . ,allocation-count)
+      (active-allocations . ,(hashtable-size allocations))))
+
+  ; Register with collect-request-handler
+  (let ([old-handler (collect-request-handler)])
+    (collect-request-handler
+      (lambda ()
+        (old-handler)
+        (cleanup-abandoned!)))))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete Storage Management Example</li>
+    <br/>
+    <ul>
+        <li>Cache implementation using weak references:</li>
+<pre><code class="language-scheme line-numbers">; LRU cache with weak values - allows GC to reclaim unused entries
+(library (storage weak-cache)
+  (export
+    make-weak-cache
+    cache-get
+    cache-put!
+    cache-remove!
+    cache-clear!
+    cache-stats)
+  (import (chezscheme))
+
+  (define-record-type cache-entry
+    (fields key (mutable value-cell) (mutable timestamp)))
+
+  (define-record-type weak-cache
+    (fields
+      (mutable table)           ; eq-hashtable of cache-entry
+      (mutable access-order)    ; List for LRU
+      capacity
+      guardian))
+
+  (define (make-weak-cache capacity)
+    (let ([cache (make-weak-cache
+                   (make-eq-hashtable)
+                   &apos;()
+                   capacity
+                   (make-guardian))])
+      cache))
+
+  ; Store value in ephemeron (key keeps value alive)
+  (define (cache-put! cache key value)
+    (let ([table (weak-cache-table cache)]
+          [cell (ephemeron-cons key value)]
+          [timestamp (current-time &apos;time-monotonic)])
+      ; Create entry
+      (let ([entry (make-cache-entry key cell timestamp)])
+        ; Evict if at capacity
+        (when (&gt;= (hashtable-size table) (weak-cache-capacity cache))
+          (evict-lru! cache))
+        ; Add entry
+        (hashtable-set! table key entry)
+        ; Update access order
+        (weak-cache-access-order-set! cache
+          (cons key (remq key (weak-cache-access-order cache))))
+        ; Track with guardian for cleanup
+        ((weak-cache-guardian cache) cell)
+        value)))
+
+  (define (cache-get cache key)
+    (let ([table (weak-cache-table cache)])
+      (let ([entry (hashtable-ref table key #f)])
+        (if entry
+            (let ([cell (cache-entry-value-cell entry)])
+              (if (bwp-object? (car cell))
+                  (begin
+                    ; Value was collected
+                    (hashtable-delete! table key)
+                    #f)
+                  (begin
+                    ; Update access time and order
+                    (cache-entry-timestamp-set! entry
+                      (current-time &apos;time-monotonic))
+                    (weak-cache-access-order-set! cache
+                      (cons key (remq key (weak-cache-access-order cache))))
+                    (cdr cell))))  ; Return value
+            #f))))
+
+  (define (cache-remove! cache key)
+    (hashtable-delete! (weak-cache-table cache) key)
+    (weak-cache-access-order-set! cache
+      (remq key (weak-cache-access-order cache))))
+
+  (define (cache-clear! cache)
+    (hashtable-clear! (weak-cache-table cache))
+    (weak-cache-access-order-set! cache &apos;()))
+
+  (define (evict-lru! cache)
+    (let ([order (weak-cache-access-order cache)])
+      (when (pair? order)
+        (let ([lru-key (last order)])
+          (cache-remove! cache lru-key)))))
+
+  (define (last lst)
+    (if (null? (cdr lst))
+        (car lst)
+        (last (cdr lst))))
+
+  (define (cache-stats cache)
+    (clean-collected-entries! cache)
+    `((size . ,(hashtable-size (weak-cache-table cache)))
+      (capacity . ,(weak-cache-capacity cache))))
+
+  (define (clean-collected-entries! cache)
+    (let ([table (weak-cache-table cache)]
+          [guardian (weak-cache-guardian cache)])
+      (let loop ()
+        (let ([cell (guardian)])
+          (when cell
+            ; Find and remove entry with this cell
+            (let-values ([(keys vals) (hashtable-entries table)])
+              (vector-for-each
+                (lambda (k v)
+                  (when (eq? (cache-entry-value-cell v) cell)
+                    (hashtable-delete! table k)))
+                keys vals))
+            (loop)))))))
+</code></pre>
+        <br/>
+        <li>Object pool with automatic management:</li>
+<pre><code class="language-scheme line-numbers">; Object pool that recycles objects, with GC integration
+(library (storage object-pool)
+  (export
+    make-object-pool
+    pool-acquire
+    pool-release
+    pool-stats
+    with-pooled-object)
+  (import (chezscheme))
+
+  (define-record-type object-pool
+    (fields
+      name
+      allocator              ; () -&gt; object
+      resetter               ; (object) -&gt; void
+      (mutable available)    ; List of free objects
+      (mutable in-use)       ; Eq-hashtable of in-use objects
+      max-size
+      guardian))
+
+  (define (make-object-pool name allocator resetter max-size)
+    (make-object-pool
+      name
+      allocator
+      resetter
+      &apos;()
+      (make-eq-hashtable)
+      max-size
+      (make-guardian)))
+
+  (define (pool-acquire pool)
+    ; First, reclaim any abandoned objects
+    (reclaim-abandoned! pool)
+
+    (let ([available (object-pool-available pool)])
+      (if (pair? available)
+          ; Reuse existing object
+          (let ([obj (car available)])
+            (object-pool-available-set! pool (cdr available))
+            (hashtable-set! (object-pool-in-use pool) obj #t)
+            ((object-pool-guardian pool) obj)  ; Track for abandonment
+            obj)
+          ; Allocate new object if under limit
+          (if (&lt; (hashtable-size (object-pool-in-use pool))
+                 (object-pool-max-size pool))
+              (let ([obj ((object-pool-allocator pool))])
+                (hashtable-set! (object-pool-in-use pool) obj #t)
+                ((object-pool-guardian pool) obj)
+                obj)
+              ; Pool exhausted
+              (error &apos;pool-acquire
+                     "pool exhausted"
+                     (object-pool-name pool))))))
+
+  (define (pool-release pool obj)
+    (when (hashtable-contains? (object-pool-in-use pool) obj)
+      (hashtable-delete! (object-pool-in-use pool) obj)
+      ; Reset object for reuse
+      ((object-pool-resetter pool) obj)
+      ; Return to available pool
+      (object-pool-available-set! pool
+        (cons obj (object-pool-available pool)))))
+
+  (define (reclaim-abandoned! pool)
+    ; Check guardian for objects that were abandoned without release
+    (let loop ()
+      (let ([obj ((object-pool-guardian pool))])
+        (when obj
+          (when (hashtable-contains? (object-pool-in-use pool) obj)
+            ; Object was abandoned - reclaim it
+            (hashtable-delete! (object-pool-in-use pool) obj)
+            ((object-pool-resetter pool) obj)
+            (object-pool-available-set! pool
+              (cons obj (object-pool-available pool))))
+          (loop)))))
+
+  (define (pool-stats pool)
+    (reclaim-abandoned! pool)
+    `((name . ,(object-pool-name pool))
+      (available . ,(length (object-pool-available pool)))
+      (in-use . ,(hashtable-size (object-pool-in-use pool)))
+      (max-size . ,(object-pool-max-size pool))))
+
+  ; Safe scoped access
+  (define (with-pooled-object pool proc)
+    (let ([obj (pool-acquire pool)])
+      (guard (c [else
+                 (pool-release pool obj)
+                 (raise c)])
+        (let ([result (proc obj)])
+          (pool-release pool obj)
+          result)))))
+</code></pre>
+        <br/>
+        <li>Memory-mapped file with locking:</li>
+<pre><code class="language-scheme line-numbers">; Memory-mapped file access with proper locking
+(library (storage mmap)
+  (export
+    mmap-open
+    mmap-close
+    mmap-read
+    mmap-write
+    mmap-sync)
+  (import (chezscheme))
+
+  ; Foreign functions (simplified - actual signatures vary by OS)
+  (define libc (load-shared-object "libc.so.6"))
+
+  (define c-mmap
+    (foreign-procedure "mmap"
+      (void* size_t int int int ssize_t)
+      void*))
+
+  (define c-munmap
+    (foreign-procedure "munmap"
+      (void* size_t)
+      int))
+
+  (define c-msync
+    (foreign-procedure "msync"
+      (void* size_t int)
+      int))
+
+  ; Constants
+  (define PROT_READ 1)
+  (define PROT_WRITE 2)
+  (define MAP_SHARED 1)
+  (define MS_SYNC 4)
+
+  (define-record-type mmap-region
+    (fields
+      pointer
+      size
+      phantom           ; For GC accounting
+      (mutable locked?)))
+
+  (define (mmap-open filename size)
+    (let* ([fd (open filename (file-options no-fail no-truncate))]
+           [ptr (c-mmap 0 size
+                        (fxlogor PROT_READ PROT_WRITE)
+                        MAP_SHARED
+                        (port-file-descriptor fd)
+                        0)])
+      (close-port fd)
+      (when (= ptr -1)
+        (error &apos;mmap-open "mmap failed" filename))
+      (let ([region (make-mmap-region
+                      ptr
+                      size
+                      (make-phantom-bytevector size)
+                      #f)])
+        region)))
+
+  (define (mmap-close region)
+    (when (mmap-region-locked? region)
+      (error &apos;mmap-close "region is locked"))
+    (c-munmap (mmap-region-pointer region)
+              (mmap-region-size region)))
+
+  (define (mmap-read region offset size)
+    (unless (mmap-region-locked? region)
+      (mmap-region-locked?-set! region #t))
+    (let ([bv (make-bytevector size)])
+      (let ([ptr (+ (mmap-region-pointer region) offset)])
+        ; Copy from mapped memory to bytevector
+        (do ([i 0 (+ i 1)])
+            ((= i size))
+          (bytevector-u8-set! bv i
+            (foreign-ref &apos;unsigned-8 ptr i))))
+      bv))
+
+  (define (mmap-write region offset data)
+    (unless (mmap-region-locked? region)
+      (mmap-region-locked?-set! region #t))
+    (let ([ptr (+ (mmap-region-pointer region) offset)]
+          [size (bytevector-length data)])
+      (do ([i 0 (+ i 1)])
+          ((= i size))
+        (foreign-set! &apos;unsigned-8 ptr i
+          (bytevector-u8-ref data i)))))
+
+  (define (mmap-sync region)
+    (c-msync (mmap-region-pointer region)
+             (mmap-region-size region)
+             MS_SYNC)
+    (mmap-region-locked?-set! region #f)))
+</code></pre>
+        <br/>
+        <li>GC-aware data structure:</li>
+<pre><code class="language-scheme line-numbers">; Trie with automatic memory management
+(define-record-type trie-node
+  (fields
+    (mutable value)
+    (mutable children)))    ; Weak hashtable for children
+
+(define (make-trie)
+  (make-trie-node #f (make-weak-eq-hashtable)))
+
+(define (trie-insert! trie key value)
+  (let loop ([node trie] [chars (string-&gt;list key)])
+    (if (null? chars)
+        (trie-node-value-set! node value)
+        (let* ([children (trie-node-children node)]
+               [char (car chars)]
+               [child (hashtable-ref children char #f)])
+          (unless child
+            (set! child (make-trie-node #f (make-weak-eq-hashtable)))
+            (hashtable-set! children char child))
+          (loop child (cdr chars))))))
+
+(define (trie-lookup trie key)
+  (let loop ([node trie] [chars (string-&gt;list key)])
+    (if (null? chars)
+        (trie-node-value node)
+        (let ([child (hashtable-ref (trie-node-children node)
+                                     (car chars)
+                                     #f)])
+          (and child (loop child (cdr chars)))))))
+
+; The weak hashtable for children allows unused branches
+; to be garbage collected automatically
+</code></pre>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
