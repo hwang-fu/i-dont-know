@@ -184,6 +184,7 @@
         <li><a href="#rust-scoping-rules">Scoping Rules</a></li>
         <li><a href="#rust-lifetimes">Lifetimes</a></li>
         <li><a href="#rust-borrowing">Borrowing</a></li>
+        <li><a href="#rust-derive">Derive</a></li>
     </ol>
 </nav>
 <!-- * * * * * * * * * * * * * * -->
@@ -3599,7 +3600,6 @@ println!("result = {result}");
     println!("This runs forever");
 }
 </code></pre>
-    <br/>
     <ul>
         <li>Infinite loops are valid for:
             <ul>
@@ -3634,7 +3634,6 @@ loop {
     }
 }
 </code></pre>
-    <br/>
     <ul>
         <li><code>loop</code> is excellent for state machines with deterministic transitions.</li>
     </ul>
@@ -3656,7 +3655,6 @@ loop {
     }
 }
 </code></pre>
-    <br/>
     <ul>
         <li>Ideal for “retry-until-success” logic.</li>
         <li>Often used with network or file system operations.</li>
@@ -5247,7 +5245,7 @@ println!("{}", p.distance_from_origin());
     <ul>
         <li>Methods may take the following receivers:</li>
     </ul>
-
+    <br/>
     <table>
         <thead>
             <tr>
@@ -11327,6 +11325,364 @@ let r2 = &amp;mut s; // OK now
 r2.push_str("!");
 </code></pre>
 
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="rust-derive">Derive in Rust</h3>
+<ol>
+    <li><b>What Is Derive?</b></li>
+    <br/>
+    <ul>
+        <li><code>#[derive(...)]</code> is an attribute that automatically implements traits for your types.</li>
+        <br/>
+        <li>It saves you from writing repetitive boilerplate code.</li>
+        <br/>
+        <li>Derive works by generating trait implementations at compile time using <u>procedural macros</u>.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>Basic Syntax</b></li>
+    <br/>
+    <ul>
+        <li>Place <code>#[derive(...)]</code> directly above a struct or enum definition.</li>
+        <li>List one or more traits inside the parentheses.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[derive(Debug, Clone, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn main() {
+    let p1 = Point { x: 1, y: 2 };
+    let p2 = p1.clone();
+
+    println!("{:?}", p1);       // Debug
+    println!("{}", p1 == p2);   // PartialEq
+}
+</code></pre>
+    <br/><br/>
+
+    <li><b>Common Derivable Traits (Standard Library)</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Trait</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>Debug</code></td>
+                <td>Enables <code>{:?}</code> formatting for printing</td>
+            </tr>
+            <tr>
+                <td><code>Clone</code></td>
+                <td>Allows explicit duplication via <code>.clone()</code></td>
+            </tr>
+            <tr>
+                <td><code>Copy</code></td>
+                <td>Enables implicit bitwise copy (requires <code>Clone</code>)</td>
+            </tr>
+            <tr>
+                <td><code>PartialEq</code></td>
+                <td>Enables <code>==</code> and <code>!=</code> comparison</td>
+            </tr>
+            <tr>
+                <td><code>Eq</code></td>
+                <td>Marks full equivalence (requires <code>PartialEq</code>)</td>
+            </tr>
+            <tr>
+                <td><code>PartialOrd</code></td>
+                <td>Enables <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code> comparison</td>
+            </tr>
+            <tr>
+                <td><code>Ord</code></td>
+                <td>Total ordering (requires <code>Eq</code> + <code>PartialOrd</code>)</td>
+            </tr>
+            <tr>
+                <td><code>Hash</code></td>
+                <td>Allows use as key in <code>HashMap</code> / <code>HashSet</code></td>
+            </tr>
+            <tr>
+                <td><code>Default</code></td>
+                <td>Provides a default value via <code>Default::default()</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/><br/>
+
+    <li><b>The <code>Debug</code> Trait</b></li>
+    <br/>
+    <ul>
+        <li>Enables debug formatting with <code>{:?}</code> or pretty-print with <code>{:#?}</code>.</li>
+        <li>Essential for development and debugging.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[derive(Debug)]
+struct User {
+    name: String,
+    age: u32,
+}
+
+fn main() {
+    let user = User {
+        name: String::from("Alice"),
+        age: 30,
+    };
+
+    println!("{:?}", user);   // User { name: "Alice", age: 30 }
+    println!("{:#?}", user);  // Pretty-printed
+}
+</code></pre>
+    <br/><br/>
+
+    <li><b>The <code>Clone</code> and <code>Copy</code> Traits</b></li>
+    <br/>
+    <ul>
+        <li><code>Clone</code> allows explicit duplication via <code>.clone()</code>.</li>
+        <br/>
+        <li><code>Copy</code> enables implicit copying (no move semantics).</li>
+        <br/>
+        <li><code>Copy</code> requires <code>Clone</code> and only works if all fields are <code>Copy</code>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[derive(Debug, Clone, Copy)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn main() {
+    let p1 = Point { x: 1, y: 2 };
+    let p2 = p1;  // Copy, not move
+
+    println!("{:?} {:?}", p1, p2); // Both valid
+}
+</code></pre>
+
+    <ul>
+        <li>Types containing <code>String</code>, <code>Vec</code>, or other heap data cannot derive <code>Copy</code>.</li>
+    </ul>
+    <br/><br/>
+
+    <li><b>The <code>PartialEq</code> and <code>Eq</code> Traits</b></li>
+    <br/>
+    <ul>
+        <li><code>PartialEq</code> enables equality comparison with <code>==</code> and <code>!=</code>.</li>
+        <br/>
+        <li><code>Eq</code> is a marker trait indicating <u>reflexive</u> equality (every value equals itself).</li>
+        <br/>
+        <li>Floating-point types implement <code>PartialEq</code> but not <code>Eq</code> (because <code>NaN != NaN</code>).</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[derive(Debug, PartialEq, Eq)]
+struct Id(u64);
+
+fn main() {
+    let a = Id(42);
+    let b = Id(42);
+    let c = Id(99);
+
+    println!("{}", a == b); // true
+    println!("{}", a == c); // false
+}
+</code></pre>
+    <br/><br/>
+
+    <li><b>The <code>PartialOrd</code> and <code>Ord</code> Traits</b></li>
+    <br/>
+    <ul>
+        <li><code>PartialOrd</code> enables ordering comparisons: <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>.</li>
+        <br/>
+        <li><code>Ord</code> provides total ordering (required for sorting, <code>BTreeMap</code> keys).</li>
+        <br/>
+        <li>Derived ordering compares fields in declaration order.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct Version {
+    major: u32,
+    minor: u32,
+    patch: u32,
+}
+
+fn main() {
+    let v1 = Version { major: 1, minor: 2, patch: 0 };
+    let v2 = Version { major: 1, minor: 3, patch: 0 };
+
+    println!("{}", v1 < v2); // true
+}
+</code></pre>
+    <br/><br/>
+
+    <li><b>The <code>Hash</code> Trait</b></li>
+    <br/>
+    <ul>
+        <li>Enables use as a key in <code>HashMap</code> or element in <code>HashSet</code>.</li>
+        <br/>
+        <li>Requires <code>Eq</code>: if two values are equal, they must have the same hash.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use std::collections::HashSet;
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct Email(String);
+
+fn main() {
+    let mut emails = HashSet::new();
+    emails.insert(Email(String::from("a@example.com")));
+    emails.insert(Email(String::from("b@example.com")));
+
+    println!("{:?}", emails);
+}
+</code></pre>
+    <br/><br/>
+
+    <li><b>The <code>Default</code> Trait</b></li>
+    <br/>
+    <ul>
+        <li>Provides a default value via <code>Default::default()</code> or <code>Type::default()</code>.</li>
+        <br/>
+        <li>All fields must also implement <code>Default</code>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[derive(Debug, Default)]
+struct Config {
+    debug: bool,       // defaults to false
+    timeout: u32,      // defaults to 0
+    name: String,      // defaults to ""
+}
+
+fn main() {
+    let cfg = Config::default();
+    println!("{:#?}", cfg);
+}
+</code></pre>
+    <br/><br/>
+
+    <li><b>Derive for Enums</b></li>
+    <br/>
+    <ul>
+        <li>Derive works on enums just like structs.</li>
+        <br/>
+        <li>All variants and their associated data must support the derived trait.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[derive(Debug, Clone, PartialEq)]
+enum Status {
+    Pending,
+    Active { since: u64 },
+    Closed(String),
+}
+
+fn main() {
+    let s1 = Status::Active { since: 1000 };
+    let s2 = s1.clone();
+
+    println!("{:?}", s1 == s2); // true
+}
+</code></pre>
+    <br/><br/>
+
+    <li><b>Derive with Generics</b></li>
+    <br/>
+    <ul>
+        <li>Derive adds trait bounds on generic parameters automatically.</li>
+        <br/>
+        <li>If you derive <code>Clone</code> for <code>Wrapper&lt;T&gt;</code>, the generated impl requires <code>T: Clone</code>.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[derive(Debug, Clone, PartialEq)]
+struct Wrapper&lt;T&gt; {
+    value: T,
+}
+
+fn main() {
+    let w1 = Wrapper { value: 42 };
+    let w2 = w1.clone();
+
+    println!("{:?}", w1 == w2); // true
+}
+</code></pre>
+    <br/><br/>
+
+    <li><b>When Derive Fails: Manual Implementation</b></li>
+    <br/>
+    <ul>
+        <li>Derive may not work if:
+            <ul>
+                <li>a field does not implement the required trait,</li>
+                <li>you need custom logic (e.g., ignore certain fields).</li>
+            </ul>
+        </li>
+        <br/>
+        <li>In such cases, implement the trait manually.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">struct Counter {
+    count: u32,
+    cache: Vec&lt;u32&gt;,  // Ignore in equality check
+}
+
+impl PartialEq for Counter {
+    fn eq(&self, other: &Self) -> bool {
+        self.count == other.count  // Ignore cache
+    }
+}
+</code></pre>
+    <br/><br/>
+
+    <li><b>Multiple Derives at Once</b></li>
+    <br/>
+    <ul>
+        <li>You can list multiple traits in a single <code>#[derive(...)]</code>.</li>
+        <br/>
+        <li>Order does not matter, but dependencies must be satisfied:
+            <ul>
+                <li><code>Copy</code> requires <code>Clone</code></li>
+                <li><code>Eq</code> requires <code>PartialEq</code></li>
+                <li><code>Ord</code> requires <code>Eq</code> + <code>PartialOrd</code></li>
+                <li><code>Hash</code> requires <code>Eq</code></li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+struct Priority(u8);
+</code></pre>
+    <br/><br/>
+
+    <li><b>Third-Party Derive Macros</b></li>
+    <br/>
+    <ul>
+        <li>Many crates provide custom derive macros:
+            <ul>
+                <li><code>serde</code>: <code>#[derive(Serialize, Deserialize)]</code></li>
+                <li><code>thiserror</code>: <code>#[derive(Error)]</code></li>
+                <li><code>clap</code>: <code>#[derive(Parser)]</code></li>
+            </ul>
+        </li>
+        <br/>
+        <li>Add the crate to <code>Cargo.toml</code> and import the derive macro.</li>
+    </ul>
+
+<pre><code class="language-rust line-numbers">use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Person {
+    name: String,
+    age: u32,
+}
+</code></pre>
     <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
