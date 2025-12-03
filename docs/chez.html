@@ -4294,7 +4294,8 @@ $ scheme --program main.ss</code></pre>
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3 id="scm-control-flow">Chez Scheme Control Flow</h3>
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-control-flow">Control Flow in Chez Scheme</h3>
 <ol>
 
     <li>Conditional Expressions</li>
@@ -4302,40 +4303,45 @@ $ scheme --program main.ss</code></pre>
     <ul>
         <li><code>if</code> is the fundamental conditional:</li>
 <pre><code class="language-scheme line-numbers">; Basic if: (if test consequent alternative)
-(if (> 5 3) 'yes 'no)           ; yes
+(if (&gt; 5 3) 'yes 'no)           ; yes
 
 ; Without alternative (returns unspecified if false)
-(if (> 5 3) (display "yes"))
+(if (&gt; 5 3) (display "yes"))
 
 ; Nested if
 (define (sign n)
-  (if (> n 0)
+  (if (&gt; n 0)
       'positive
-      (if (< n 0)
+      (if (&lt; n 0)
           'negative
           'zero)))
 
-(sign 5)    ; positive
-(sign -3)   ; negative
-(sign 0)    ; zero</code></pre>
+(sign 5)                        ; positive
+(sign -3)                       ; negative
+(sign 0)                        ; zero
+
+; if is an expression, returns a value
+(define abs-val
+  (if (&lt; x 0) (- x) x))
+</code></pre>
         <br/>
         <li><code>cond</code> for multiple conditions:</li>
 <pre><code class="language-scheme line-numbers">; (cond [test expr ...] ... [else expr ...])
 (define (grade score)
   (cond
-    [(>= score 90) 'A]
-    [(>= score 80) 'B]
-    [(>= score 70) 'C]
-    [(>= score 60) 'D]
+    [(&gt;= score 90) 'A]
+    [(&gt;= score 80) 'B]
+    [(&gt;= score 70) 'C]
+    [(&gt;= score 60) 'D]
     [else 'F]))
 
-(grade 85)  ; B
-(grade 55)  ; F
+(grade 85)                      ; B
+(grade 55)                      ; F
 
-; cond with => (passes test result to procedure)
+; cond with =&gt; (passes test result to procedure)
 (cond
-  [(assq 'b '((a 1) (b 2) (c 3))) => cadr]
-  [else 'not-found])  ; 2
+  [(assq 'b '((a 1) (b 2) (c 3))) =&gt; cadr]
+  [else 'not-found])            ; 2
 
 ; Multiple expressions in clause
 (cond
@@ -4343,7 +4349,13 @@ $ scheme --program main.ss</code></pre>
    (display "even")
    (newline)
    'even]
-  [else 'odd])</code></pre>
+  [else 'odd])
+
+; cond without else (returns unspecified if no match)
+(cond
+  [(= x 1) 'one]
+  [(= x 2) 'two])
+</code></pre>
         <br/>
         <li><code>case</code> for value matching:</li>
 <pre><code class="language-scheme line-numbers">; (case key [(datum ...) expr ...] ... [else expr ...])
@@ -4353,51 +4365,110 @@ $ scheme --program main.ss</code></pre>
     [(monday tuesday wednesday thursday friday) 'weekday]
     [else 'unknown]))
 
-(day-type 'saturday)  ; weekend
-(day-type 'monday)    ; weekday
+(day-type 'saturday)            ; weekend
+(day-type 'monday)              ; weekday
 
 ; case uses eqv? for comparison
 (case (car '(a b))
   [(a) 'first]
   [(b) 'second]
-  [else 'other])  ; first
+  [else 'other])                ; first
 
 ; Multiple values in single clause
 (define (vowel? c)
   (case c
     [(a e i o u A E I O U) #t]
-    [else #f]))</code></pre>
+    [else #f]))
+
+; case with numeric values
+(case (string-length s)
+  [(0) 'empty]
+  [(1 2 3) 'short]
+  [(4 5 6 7 8 9 10) 'medium]
+  [else 'long])
+</code></pre>
         <br/>
+        <li>Conditional forms comparison:</li>
+        <svg width="600" height="260" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Choosing the Right Conditional</text>
+
+            <!-- if box -->
+            <rect x="30" y="50" width="170" height="90" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="115" y="75" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">if</text>
+            <text x="115" y="95" text-anchor="middle" font-family="Times New Roman" font-size="10">Two-way branch</text>
+            <text x="115" y="115" text-anchor="middle" font-family="monospace" font-size="9">(if test then else)</text>
+            <text x="115" y="132" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">Single test, two outcomes</text>
+
+            <!-- cond box -->
+            <rect x="215" y="50" width="170" height="90" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="300" y="75" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">cond</text>
+            <text x="300" y="95" text-anchor="middle" font-family="Times New Roman" font-size="10">Multiple conditions</text>
+            <text x="300" y="115" text-anchor="middle" font-family="monospace" font-size="9">(cond [test expr]...)</text>
+            <text x="300" y="132" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">Chain of predicates</text>
+
+            <!-- case box -->
+            <rect x="400" y="50" width="170" height="90" fill="#ffe6cc" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="485" y="75" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">case</text>
+            <text x="485" y="95" text-anchor="middle" font-family="Times New Roman" font-size="10">Value matching</text>
+            <text x="485" y="115" text-anchor="middle" font-family="monospace" font-size="9">(case key [(v) expr]...)</text>
+            <text x="485" y="132" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">Compare with eqv?</text>
+
+            <!-- Decision guide -->
+            <rect x="30" y="160" width="540" height="85" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="180" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">When to Use Each</text>
+            <text x="50" y="200" font-family="Times New Roman" font-size="10">• <tspan font-weight="bold">if</tspan>: Simple true/false decision with single test</text>
+            <text x="50" y="218" font-family="Times New Roman" font-size="10">• <tspan font-weight="bold">cond</tspan>: Multiple conditions testing different predicates (>, <, string=?, etc.)</text>
+            <text x="50" y="236" font-family="Times New Roman" font-size="10">• <tspan font-weight="bold">case</tspan>: Matching a value against a set of literal constants (symbols, numbers, chars)</text>
+        </svg>
+        <br/><br/>
         <li><code>when</code> and <code>unless</code> for one-sided conditionals:</li>
-<pre><code class="language-scheme line-numbers">; when: execute if true
-(when (> x 0)
+<pre><code class="language-scheme line-numbers">; when: execute body if test is true
+(when (&gt; x 0)
   (display "positive")
   (newline))
 
-; unless: execute if false
+; unless: execute body if test is false
 (unless (null? lst)
   (display "list is not empty")
   (process lst))
 
-; Equivalent to:
+; Equivalent expansions:
 ; (when test body ...) = (if test (begin body ...))
-; (unless test body ...) = (if (not test) (begin body ...))</code></pre>
+; (unless test body ...) = (if (not test) (begin body ...))
+
+; Common use cases
+(when debug-mode
+  (printf "Debug: x = ~a~n" x))
+
+(unless (file-exists? filename)
+  (error 'load "file not found" filename))
+</code></pre>
         <br/>
         <li>Boolean operations for control flow:</li>
-<pre><code class="language-scheme line-numbers">; and: returns first false or last value
-(and (> 5 3) (< 2 4) 'ok)       ; ok
-(and (> 5 3) (< 4 2) 'ok)       ; #f
-(and)                            ; #t
+<pre><code class="language-scheme line-numbers">; and: returns first false value or last value
+(and (&gt; 5 3) (&lt; 2 4) 'ok)       ; ok
+(and (&gt; 5 3) (&lt; 4 2) 'ok)       ; #f
+(and)                            ; #t (identity for and)
 
-; or: returns first true or last value
-(or (> 1 5) (> 3 2) 'fallback)  ; #t
-(or #f #f 'default)             ; default
-(or)                             ; #f
+; or: returns first true value or last value
+(or (&gt; 1 5) (&gt; 3 2) 'fallback)  ; #t
+(or #f #f 'default)              ; default
+(or)                             ; #f (identity for or)
 
-; Short-circuit evaluation
-(and (pair? x) (car x))         ; Safe: car only if pair
+; Short-circuit evaluation (key feature!)
+(and (pair? x) (car x))          ; Safe: car only called if pair
 (or (hashtable-ref ht key #f)
-    (compute-default key))       ; Only compute if not found</code></pre>
+    (compute-default key))        ; compute only if not found
+
+; Using and/or for control flow
+(define (safe-car x)
+  (and (pair? x) (car x)))       ; Returns #f or car
+
+(define (get-or-default ht key default)
+  (or (hashtable-ref ht key #f)
+      default))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -4412,34 +4483,94 @@ $ scheme --program main.ss</code></pre>
   (newline)
   (display "two")
   (newline)
-  'done)  ; displays "one" and "two", returns done
+  'done)                         ; displays "one" and "two", returns done
 
-; Implicit begin in lambda, let, define, etc.
+; Implicit begin in lambda, let, define, cond, etc.
 (define (greet name)
-  (display "Hello, ")    ; implicit begin
+  (display "Hello, ")            ; implicit begin in procedure body
   (display name)
   (newline))
 
-; begin is often used in conditionals
+; begin is often needed in conditionals
 (if (check-condition)
     (begin
       (do-something)
-      (do-another)
+      (do-another-thing)
       result)
-    alternative)</code></pre>
+    alternative)
+
+; cond clauses have implicit begin
+(cond
+  [(positive? x)
+   (display "positive")          ; multiple expressions OK
+   (newline)
+   x]
+  [else 0])
+</code></pre>
         <br/>
         <li><code>begin0</code> returns the first value (Chez extension):</li>
-<pre><code class="language-scheme line-numbers">; Returns value of first expression
+<pre><code class="language-scheme line-numbers">; Returns value of FIRST expression (not last)
 (begin0
-  (get-result)      ; This value is returned
+  (get-result)                   ; This value is returned
   (cleanup)
   (log-completion))
 
 ; Useful for cleanup after getting a value
-(define (pop! stack)
+(define (pop! stack-box)
   (begin0
-    (car stack)
-    (set! stack (cdr stack))))</code></pre>
+    (car (unbox stack-box))      ; Return the popped value
+    (set-box! stack-box (cdr (unbox stack-box)))))
+
+; Compare begin vs begin0
+(begin  'a 'b 'c)                ; c (last)
+(begin0 'a 'b 'c)                ; a (first)
+
+; Practical example: read and advance
+(define (read-next port)
+  (begin0
+    (read port)                  ; Return what we read
+    (skip-whitespace port)))
+</code></pre>
+        <br/>
+        <li>Sequencing visualization:</li>
+        <svg width="600" height="180" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">begin vs begin0</text>
+
+            <!-- begin flow -->
+            <text x="150" y="55" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">begin</text>
+            <rect x="50" y="65" width="60" height="30" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="80" y="85" text-anchor="middle" font-family="monospace" font-size="9">expr1</text>
+            <line x1="110" y1="80" x2="130" y2="80" stroke="#666" stroke-width="1" marker-end="url(#arrowhead)"/>
+            <rect x="140" y="65" width="60" height="30" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="170" y="85" text-anchor="middle" font-family="monospace" font-size="9">expr2</text>
+            <line x1="200" y1="80" x2="220" y2="80" stroke="#666" stroke-width="1" marker-end="url(#arrowhead)"/>
+            <rect x="230" y="65" width="60" height="30" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="3"/>
+            <text x="260" y="85" text-anchor="middle" font-family="monospace" font-size="9">expr3</text>
+            <text x="260" y="112" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#009900">↑ returned</text>
+
+            <!-- begin0 flow -->
+            <text x="450" y="55" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">begin0</text>
+            <rect x="350" y="65" width="60" height="30" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="3"/>
+            <text x="380" y="85" text-anchor="middle" font-family="monospace" font-size="9">expr1</text>
+            <text x="380" y="112" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#009900">↑ returned</text>
+            <line x1="410" y1="80" x2="430" y2="80" stroke="#666" stroke-width="1" marker-end="url(#arrowhead)"/>
+            <rect x="440" y="65" width="60" height="30" fill="#ffe6cc" stroke="#cc6600" stroke-width="1" rx="3"/>
+            <text x="470" y="85" text-anchor="middle" font-family="monospace" font-size="9">expr2</text>
+            <line x1="500" y1="80" x2="520" y2="80" stroke="#666" stroke-width="1" marker-end="url(#arrowhead)"/>
+            <rect x="530" y="65" width="50" height="30" fill="#ffe6cc" stroke="#cc6600" stroke-width="1" rx="3"/>
+            <text x="555" y="85" text-anchor="middle" font-family="monospace" font-size="9">...</text>
+
+            <!-- Note -->
+            <rect x="50" y="130" width="500" height="35" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="152" text-anchor="middle" font-family="Times New Roman" font-size="10">Both execute all expressions for side effects; they differ only in which value is returned</text>
+        </svg>
     </ul>
     <br/><br/>
 
@@ -4450,11 +4581,19 @@ $ scheme --program main.ss</code></pre>
         <li>Named <code>let</code> creates a local recursive procedure:</li>
 <pre><code class="language-scheme line-numbers">; (let name ([var init] ...) body)
 (let loop ([i 0])
-  (when (< i 5)
+  (when (&lt; i 5)
     (display i)
     (newline)
     (loop (+ i 1))))
 ; Prints 0 1 2 3 4
+
+; Equivalent to:
+(letrec ([loop (lambda (i)
+                 (when (&lt; i 5)
+                   (display i)
+                   (newline)
+                   (loop (+ i 1))))])
+  (loop 0))
 
 ; Summing a list
 (define (sum lst)
@@ -4463,7 +4602,7 @@ $ scheme --program main.ss</code></pre>
         acc
         (loop (cdr lst) (+ acc (car lst))))))
 
-(sum '(1 2 3 4 5))  ; 15
+(sum '(1 2 3 4 5))              ; 15
 
 ; Finding an element
 (define (find pred lst)
@@ -4471,10 +4610,18 @@ $ scheme --program main.ss</code></pre>
     (cond
       [(null? lst) #f]
       [(pred (car lst)) (car lst)]
-      [else (loop (cdr lst))])))</code></pre>
+      [else (loop (cdr lst))])))
+</code></pre>
         <br/>
-        <li>Named let for multiple accumulators:</li>
-<pre><code class="language-scheme line-numbers">; Partition a list
+        <li>Named let patterns:</li>
+<pre><code class="language-scheme line-numbers">; Building a result list (accumulator pattern)
+(define (my-map f lst)
+  (let loop ([lst lst] [acc '()])
+    (if (null? lst)
+        (reverse acc)
+        (loop (cdr lst) (cons (f (car lst)) acc)))))
+
+; Multiple accumulators (partition)
 (define (partition pred lst)
   (let loop ([lst lst] [yes '()] [no '()])
     (cond
@@ -4486,7 +4633,69 @@ $ scheme --program main.ss</code></pre>
        (loop (cdr lst) yes (cons (car lst) no))])))
 
 (partition even? '(1 2 3 4 5 6))
-; Values: (2 4 6) (1 3 5)</code></pre>
+; Values: (2 4 6) (1 3 5)
+
+; Index tracking
+(define (list-index pred lst)
+  (let loop ([lst lst] [i 0])
+    (cond
+      [(null? lst) #f]
+      [(pred (car lst)) i]
+      [else (loop (cdr lst) (+ i 1))])))
+</code></pre>
+        <br/>
+        <li>Named let visualization:</li>
+        <svg width="600" height="220" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Named let Execution: (sum '(1 2 3))</text>
+
+            <!-- Initial call -->
+            <rect x="30" y="50" width="130" height="45" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="95" y="70" text-anchor="middle" font-family="monospace" font-size="9">lst: (1 2 3)</text>
+            <text x="95" y="85" text-anchor="middle" font-family="monospace" font-size="9">acc: 0</text>
+
+            <!-- Arrow -->
+            <line x1="160" y1="72" x2="190" y2="72" stroke="#666" stroke-width="1" marker-end="url(#arrowhead2)"/>
+            <text x="175" y="65" text-anchor="middle" font-family="Times New Roman" font-size="8">loop</text>
+
+            <!-- Second call -->
+            <rect x="200" y="50" width="130" height="45" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="5"/>
+            <text x="265" y="70" text-anchor="middle" font-family="monospace" font-size="9">lst: (2 3)</text>
+            <text x="265" y="85" text-anchor="middle" font-family="monospace" font-size="9">acc: 1</text>
+
+            <!-- Arrow -->
+            <line x1="330" y1="72" x2="360" y2="72" stroke="#666" stroke-width="1" marker-end="url(#arrowhead2)"/>
+
+            <!-- Third call -->
+            <rect x="370" y="50" width="130" height="45" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="5"/>
+            <text x="435" y="70" text-anchor="middle" font-family="monospace" font-size="9">lst: (3)</text>
+            <text x="435" y="85" text-anchor="middle" font-family="monospace" font-size="9">acc: 3</text>
+
+            <!-- Arrow down -->
+            <line x1="435" y1="95" x2="435" y2="115" stroke="#666" stroke-width="1" marker-end="url(#arrowhead2)"/>
+
+            <!-- Fourth call -->
+            <rect x="370" y="120" width="130" height="45" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="5"/>
+            <text x="435" y="140" text-anchor="middle" font-family="monospace" font-size="9">lst: ()</text>
+            <text x="435" y="155" text-anchor="middle" font-family="monospace" font-size="9">acc: 6</text>
+
+            <!-- Arrow to result -->
+            <line x1="370" y1="142" x2="340" y2="142" stroke="#009900" stroke-width="2" marker-end="url(#arrowhead2)"/>
+
+            <!-- Result -->
+            <rect x="260" y="125" width="70" height="35" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="295" y="147" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">6</text>
+
+            <!-- Note -->
+            <rect x="30" y="180" width="540" height="30" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="200" text-anchor="middle" font-family="Times New Roman" font-size="10">Tail recursive: each call replaces the previous (no stack growth)</text>
+        </svg>
     </ul>
     <br/><br/>
 
@@ -4500,35 +4709,89 @@ $ scheme --program main.ss</code></pre>
 ;   body ...)
 
 ; Simple counting loop
-(do ([i 0 (+ i 1)])
-    [(= i 5) 'done]
+(do ([i 0 (+ i 1)])             ; var init step
+    [(= i 5) 'done]             ; test result
   (display i)
   (newline))
 ; Prints 0 1 2 3 4, returns done
 
-; Factorial
+; Factorial with do
 (define (factorial n)
   (do ([i n (- i 1)]
        [acc 1 (* acc i)])
       [(zero? i) acc]))
 
-(factorial 5)  ; 120
+(factorial 5)                   ; 120
 
-; Multiple variables
+; Multiple variables with different steps
 (do ([i 0 (+ i 1)]
      [j 10 (- j 1)])
     [(= i j) (list i j)]
   (printf "i=~a j=~a~n" i j))
-; Prints pairs until i=j=5</code></pre>
+; Prints pairs until i and j meet at 5
+</code></pre>
         <br/>
-        <li>Building a list with do:</li>
+        <li>do loop structure visualization:</li>
+        <svg width="600" height="200" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead3" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">do Loop Execution Flow</text>
+
+            <!-- Init -->
+            <rect x="30" y="50" width="100" height="50" fill="#e6e6ff" stroke="#6600cc" stroke-width="2" rx="5"/>
+            <text x="80" y="70" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Initialize</text>
+            <text x="80" y="88" text-anchor="middle" font-family="monospace" font-size="9">var ← init</text>
+
+            <!-- Arrow to test -->
+            <line x1="130" y1="75" x2="160" y2="75" stroke="#666" stroke-width="1" marker-end="url(#arrowhead3)"/>
+
+            <!-- Test -->
+            <polygon points="230,50 280,75 230,100 180,75" fill="#ffffcc" stroke="#999900" stroke-width="2"/>
+            <text x="230" y="78" text-anchor="middle" font-family="Times New Roman" font-size="10">test?</text>
+
+            <!-- True path -->
+            <line x1="280" y1="75" x2="320" y2="75" stroke="#009900" stroke-width="2" marker-end="url(#arrowhead3)"/>
+            <text x="300" y="65" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#009900">true</text>
+
+            <!-- Result -->
+            <rect x="330" y="50" width="100" height="50" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="380" y="70" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Return</text>
+            <text x="380" y="88" text-anchor="middle" font-family="monospace" font-size="9">result</text>
+
+            <!-- False path -->
+            <line x1="230" y1="100" x2="230" y2="125" stroke="#cc0000" stroke-width="2" marker-end="url(#arrowhead3)"/>
+            <text x="245" y="115" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc0000">false</text>
+
+            <!-- Body -->
+            <rect x="180" y="130" width="100" height="40" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="5"/>
+            <text x="230" y="155" text-anchor="middle" font-family="Times New Roman" font-size="10">body ...</text>
+
+            <!-- Arrow to step -->
+            <line x1="280" y1="150" x2="320" y2="150" stroke="#666" stroke-width="1" marker-end="url(#arrowhead3)"/>
+
+            <!-- Step -->
+            <rect x="330" y="130" width="100" height="40" fill="#ffe6cc" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="380" y="145" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Step</text>
+            <text x="380" y="162" text-anchor="middle" font-family="monospace" font-size="9">var ← step</text>
+
+            <!-- Loop back -->
+            <path d="M 430 150 Q 500 150 500 75 Q 500 50 280 75" stroke="#666" stroke-width="1" fill="none" marker-end="url(#arrowhead3)"/>
+        </svg>
+        <br/><br/>
+        <li>Building results with do:</li>
 <pre><code class="language-scheme line-numbers">; Map using do
 (define (my-map f lst)
   (do ([lst lst (cdr lst)]
        [result '() (cons (f (car lst)) result)])
       [(null? lst) (reverse result)]))
 
-(my-map square '(1 2 3 4 5))  ; (1 4 9 16 25)
+(my-map (lambda (x) (* x x)) '(1 2 3 4 5))
+; (1 4 9 16 25)
 
 ; Collect first n elements
 (define (take n lst)
@@ -4536,7 +4799,19 @@ $ scheme --program main.ss</code></pre>
        [lst lst (cdr lst)]
        [acc '() (cons (car lst) acc)])
       [(or (= i n) (null? lst))
-       (reverse acc)]))</code></pre>
+       (reverse acc)]))
+
+(take 3 '(a b c d e))           ; (a b c)
+
+; Variable without step (unchanged through loop)
+(define (repeat-string s n)
+  (do ([s s]                     ; No step - s stays same
+       [i 0 (+ i 1)]
+       [acc "" (string-append acc s)])
+      [(= i n) acc]))
+
+(repeat-string "ab" 3)          ; "ababab"
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -4545,11 +4820,15 @@ $ scheme --program main.ss</code></pre>
     <br/>
     <ul>
         <li><code>for-each</code> for side effects:</li>
-<pre><code class="language-scheme line-numbers">; Apply procedure to each element
+<pre><code class="language-scheme line-numbers">; Apply procedure to each element (for side effects)
 (for-each display '(1 2 3 4 5))      ; Prints: 12345
+
 (for-each
-  (lambda (x) (display x) (newline))
+  (lambda (x) (printf "Item: ~a~n" x))
   '(a b c))
+; Item: a
+; Item: b
+; Item: c
 
 ; Multiple lists (stops at shortest)
 (for-each
@@ -4558,32 +4837,50 @@ $ scheme --program main.ss</code></pre>
   '(10 20 30))
 ; 1 + 10 = 11
 ; 2 + 20 = 22
-; 3 + 30 = 33</code></pre>
+; 3 + 30 = 33
+
+; for-each returns unspecified value
+; Use map if you need results
+</code></pre>
         <br/>
         <li><code>map</code> transforms lists:</li>
-<pre><code class="language-scheme line-numbers">(map square '(1 2 3 4 5))           ; (1 4 9 16 25)
-(map + '(1 2 3) '(10 20 30))        ; (11 22 33)
-(map cons '(a b c) '(1 2 3))        ; ((a . 1) (b . 2) (c . 3))
+<pre><code class="language-scheme line-numbers">; Apply procedure and collect results
+(map (lambda (x) (* x x)) '(1 2 3 4 5))
+; (1 4 9 16 25)
+
+; Multiple lists
+(map + '(1 2 3) '(10 20 30))         ; (11 22 33)
+(map cons '(a b c) '(1 2 3))         ; ((a . 1) (b . 2) (c . 3))
+(map list '(a b c) '(1 2 3) '(x y z))
+; ((a 1 x) (b 2 y) (c 3 z))
 
 ; Nested map
 (map (lambda (row)
-       (map square row))
+       (map (lambda (x) (* x x)) row))
      '((1 2) (3 4) (5 6)))
-; ((1 4) (9 16) (25 36))</code></pre>
+; ((1 4) (9 16) (25 36))
+
+; Stops at shortest list
+(map + '(1 2 3 4 5) '(10 20))        ; (11 22)
+</code></pre>
         <br/>
         <li>Folding operations:</li>
 <pre><code class="language-scheme line-numbers">; fold-left: accumulate left to right
 ; (fold-left proc init list)
-(fold-left + 0 '(1 2 3 4 5))        ; 15
-(fold-left cons '() '(1 2 3))       ; ((((() . 1) . 2) . 3)
+(fold-left + 0 '(1 2 3 4 5))         ; 15
+; Computes: (+ (+ (+ (+ (+ 0 1) 2) 3) 4) 5)
+
+(fold-left cons '() '(1 2 3))        ; ((((() . 1) . 2) . 3)
 (fold-left (lambda (acc x) (cons x acc))
-           '() '(1 2 3))             ; (3 2 1) - reverse!
+           '() '(1 2 3))              ; (3 2 1) - reverse!
 
 ; fold-right: accumulate right to left
-(fold-right cons '() '(1 2 3))      ; (1 2 3) - copy
-(fold-right + 0 '(1 2 3 4 5))       ; 15
+(fold-right cons '() '(1 2 3))       ; (1 2 3) - copy
+; Computes: (cons 1 (cons 2 (cons 3 '())))
 
-; Practical examples
+(fold-right + 0 '(1 2 3 4 5))        ; 15
+
+; Practical fold examples
 (define (my-length lst)
   (fold-left (lambda (acc _) (+ acc 1)) 0 lst))
 
@@ -4591,28 +4888,106 @@ $ scheme --program main.ss</code></pre>
   (fold-left (lambda (acc x) (cons x acc)) '() lst))
 
 (define (my-append lst1 lst2)
-  (fold-right cons lst2 lst1))</code></pre>
+  (fold-right cons lst2 lst1))
+
+(define (my-filter pred lst)
+  (fold-right (lambda (x acc)
+                (if (pred x) (cons x acc) acc))
+              '() lst))
+</code></pre>
         <br/>
+        <li>Fold direction visualization:</li>
+        <svg width="600" height="220" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead4" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">fold-left vs fold-right</text>
+
+            <!-- fold-left -->
+            <text x="150" y="50" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">fold-left + 0 '(1 2 3)</text>
+
+            <rect x="30" y="65" width="40" height="30" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="3"/>
+            <text x="50" y="85" text-anchor="middle" font-family="monospace" font-size="10">0</text>
+
+            <line x1="70" y1="80" x2="90" y2="80" stroke="#666" stroke-width="1" marker-end="url(#arrowhead4)"/>
+
+            <rect x="100" y="65" width="40" height="30" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="120" y="85" text-anchor="middle" font-family="monospace" font-size="10">1</text>
+
+            <line x1="140" y1="80" x2="160" y2="80" stroke="#666" stroke-width="1" marker-end="url(#arrowhead4)"/>
+
+            <rect x="170" y="65" width="40" height="30" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="190" y="85" text-anchor="middle" font-family="monospace" font-size="10">2</text>
+
+            <line x1="210" y1="80" x2="230" y2="80" stroke="#666" stroke-width="1" marker-end="url(#arrowhead4)"/>
+
+            <rect x="240" y="65" width="40" height="30" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="260" y="85" text-anchor="middle" font-family="monospace" font-size="10">3</text>
+
+            <text x="150" y="115" text-anchor="middle" font-family="monospace" font-size="9">(+ (+ (+ 0 1) 2) 3) = 6</text>
+
+            <!-- fold-right -->
+            <text x="450" y="50" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">fold-right + 0 '(1 2 3)</text>
+
+            <rect x="330" y="65" width="40" height="30" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="350" y="85" text-anchor="middle" font-family="monospace" font-size="10">1</text>
+
+            <line x1="370" y1="80" x2="390" y2="80" stroke="#666" stroke-width="1" marker-end="url(#arrowhead4)"/>
+
+            <rect x="400" y="65" width="40" height="30" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="420" y="85" text-anchor="middle" font-family="monospace" font-size="10">2</text>
+
+            <line x1="440" y1="80" x2="460" y2="80" stroke="#666" stroke-width="1" marker-end="url(#arrowhead4)"/>
+
+            <rect x="470" y="65" width="40" height="30" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="490" y="85" text-anchor="middle" font-family="monospace" font-size="10">3</text>
+
+            <line x1="510" y1="80" x2="530" y2="80" stroke="#666" stroke-width="1" marker-end="url(#arrowhead4)"/>
+
+            <rect x="540" y="65" width="40" height="30" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="3"/>
+            <text x="560" y="85" text-anchor="middle" font-family="monospace" font-size="10">0</text>
+
+            <text x="450" y="115" text-anchor="middle" font-family="monospace" font-size="9">(+ 1 (+ 2 (+ 3 0))) = 6</text>
+
+            <!-- Summary -->
+            <rect x="30" y="135" width="540" height="70" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="155" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">When to Use Each</text>
+            <text x="50" y="175" font-family="Times New Roman" font-size="10">• <tspan font-weight="bold">fold-left</tspan>: Building from the front, reversing, counting (tail recursive)</text>
+            <text x="50" y="193" font-family="Times New Roman" font-size="10">• <tspan font-weight="bold">fold-right</tspan>: Preserving list structure, appending, filtering (matches cons order)</text>
+        </svg>
+        <br/><br/>
         <li>Filtering and searching:</li>
 <pre><code class="language-scheme line-numbers">; filter: keep matching elements
-(filter even? '(1 2 3 4 5 6))       ; (2 4 6)
-(filter (lambda (x) (> x 3)) '(1 2 3 4 5))  ; (4 5)
+(filter even? '(1 2 3 4 5 6))        ; (2 4 6)
+(filter (lambda (x) (&gt; x 3)) '(1 2 3 4 5))
+; (4 5)
 
-; find: first matching element
-(find even? '(1 3 4 5 6))           ; 4
-(find even? '(1 3 5))               ; #f
+; remp: remove matching (opposite of filter)
+(remp even? '(1 2 3 4 5 6))          ; (1 3 5)
 
-; exists: any element matches?
-(exists even? '(1 3 4 5))           ; #t
-(exists even? '(1 3 5))             ; #f
+; find: first matching element (or #f)
+(find even? '(1 3 4 5 6))            ; 4
+(find even? '(1 3 5))                ; #f
 
-; for-all: all elements match?
-(for-all even? '(2 4 6))            ; #t
-(for-all even? '(2 3 4))            ; #f
+; memp: find tail starting with match
+(memp even? '(1 3 4 5 6))            ; (4 5 6)
+
+; exists: any element matches? (short-circuits)
+(exists even? '(1 3 4 5))            ; #t
+(exists even? '(1 3 5))              ; #f
+
+; for-all: all elements match? (short-circuits)
+(for-all even? '(2 4 6))             ; #t
+(for-all even? '(2 3 4))             ; #f
 
 ; partition: split by predicate
 (partition even? '(1 2 3 4 5 6))
-; Values: (2 4 6) (1 3 5)</code></pre>
+; Values: (2 4 6) (1 3 5)
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -4625,57 +5000,109 @@ $ scheme --program main.ss</code></pre>
 (define (quotient-remainder n d)
   (values (quotient n d) (remainder n d)))
 
-(quotient-remainder 17 5)  ; 3 and 2
+(quotient-remainder 17 5)       ; 3 and 2 (two values)
 
 ; values with any number of results
-(values 1 2 3)             ; Three values
-(values)                   ; Zero values
-(values 'single)           ; One value (same as just 'single)</code></pre>
+(values 1 2 3)                  ; Three values
+(values)                        ; Zero values
+(values 'single)                ; One value (same as just 'single)
+
+; Built-in procedures returning multiple values
+(div-and-mod 17 5)              ; 3 and 2
+(exact-integer-sqrt 17)         ; 4 and 1 (sqrt and remainder)
+(partition even? '(1 2 3 4))    ; (2 4) and (1 3)
+</code></pre>
         <br/>
-        <li><code>call-with-values</code> receives multiple values:</li>
-<pre><code class="language-scheme line-numbers">; (call-with-values producer consumer)
+        <li>Receiving multiple values:</li>
+<pre><code class="language-scheme line-numbers">; call-with-values: low-level interface
 (call-with-values
   (lambda () (values 1 2 3))
-  (lambda (a b c) (+ a b c)))  ; 6
+  (lambda (a b c) (+ a b c)))    ; 6
 
 (call-with-values
   (lambda () (quotient-remainder 17 5))
   (lambda (q r) (list 'quotient q 'remainder r)))
-; (quotient 3 remainder 2)</code></pre>
-        <br/>
-        <li><code>let-values</code> and <code>let*-values</code> bind multiple values:</li>
-<pre><code class="language-scheme line-numbers">; let-values: bind multiple value results
+; (quotient 3 remainder 2)
+
+; let-values: convenient syntax
 (let-values ([(q r) (quotient-remainder 17 5)])
   (printf "17 = 5 * ~a + ~a~n" q r))
 ; 17 = 5 * 3 + 2
 
-; Multiple bindings
+; Multiple clauses
 (let-values ([(a b) (values 1 2)]
              [(x y z) (values 10 20 30)])
-  (list a b x y z))  ; (1 2 10 20 30)
+  (list a b x y z))             ; (1 2 10 20 30)
 
 ; let*-values: sequential binding
 (let*-values ([(a b) (values 1 2)]
               [(c) (+ a b)])
-  c)  ; 3
-
-; With regular bindings mixed
-(let-values ([(x y) (values 1 2)]
-             [(z) 3])
-  (+ x y z))  ; 6</code></pre>
+  c)                            ; 3
+</code></pre>
         <br/>
+        <li>Multiple values flow:</li>
+        <svg width="600" height="180" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead5" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Multiple Values Data Flow</text>
+
+            <!-- Producer -->
+            <rect x="30" y="50" width="150" height="70" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="105" y="75" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Producer</text>
+            <text x="105" y="95" text-anchor="middle" font-family="monospace" font-size="9">(div-and-mod 17 5)</text>
+            <text x="105" y="110" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">returns 2 values</text>
+
+            <!-- Values arrow -->
+            <line x1="180" y1="85" x2="250" y2="85" stroke="#666" stroke-width="2" marker-end="url(#arrowhead5)"/>
+            <rect x="195" y="60" width="40" height="20" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="3"/>
+            <text x="215" y="74" text-anchor="middle" font-family="monospace" font-size="9">3</text>
+            <rect x="195" y="90" width="40" height="20" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="3"/>
+            <text x="215" y="104" text-anchor="middle" font-family="monospace" font-size="9">2</text>
+
+            <!-- Consumer -->
+            <rect x="260" y="50" width="180" height="70" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="350" y="75" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Consumer (let-values)</text>
+            <text x="350" y="95" text-anchor="middle" font-family="monospace" font-size="9">[(q r) ...]</text>
+            <text x="350" y="110" text-anchor="middle" font-family="Times New Roman" font-size="9">q ← 3, r ← 2</text>
+
+            <!-- Body -->
+            <line x1="440" y1="85" x2="490" y2="85" stroke="#666" stroke-width="1" marker-end="url(#arrowhead5)"/>
+            <rect x="500" y="55" width="80" height="60" fill="#ffe6cc" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="540" y="80" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Body</text>
+            <text x="540" y="100" text-anchor="middle" font-family="monospace" font-size="9">(+ q r)</text>
+
+            <!-- Note -->
+            <text x="300" y="150" text-anchor="middle" font-family="Times New Roman" font-size="10" fill="#666">Multiple values are not a list — they're a separate passing mechanism</text>
+            <text x="300" y="165" text-anchor="middle" font-family="Times New Roman" font-size="10" fill="#666">More efficient than cons/car for returning multiple results</text>
+        </svg>
+        <br/><br/>
         <li><code>define-values</code> for top-level definitions:</li>
-<pre><code class="language-scheme line-numbers">(define-values (min-val max-val)
+<pre><code class="language-scheme line-numbers">; Define multiple bindings at once
+(define-values (min-val max-val)
   (values 0 100))
 
-min-val  ; 0
-max-val  ; 100
+min-val                         ; 0
+max-val                         ; 100
 
+; With rest argument
 (define-values (head . tail)
   (values 1 2 3 4 5))
 
-head  ; 1
-tail  ; (2 3 4 5)</code></pre>
+head                            ; 1
+tail                            ; (2 3 4 5)
+
+; From procedure call
+(define-values (evens odds)
+  (partition even? '(1 2 3 4 5 6)))
+
+evens                           ; (2 4 6)
+odds                            ; (1 3 5)
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -4685,6 +5112,7 @@ tail  ; (2 3 4 5)</code></pre>
     <ul>
         <li><code>call/cc</code> captures the current continuation:</li>
 <pre><code class="language-scheme line-numbers">; call/cc = call-with-current-continuation
+; Captures "what to do next" as a procedure
 
 ; Early exit from computation
 (define (find-first pred lst)
@@ -4693,9 +5121,9 @@ tail  ; (2 3 4 5)</code></pre>
       (for-each
         (lambda (x)
           (when (pred x)
-            (return x)))
+            (return x)))        ; Jump out immediately
         lst)
-      #f)))
+      #f)))                     ; Default if not found
 
 (find-first even? '(1 3 5 4 7))  ; 4
 (find-first even? '(1 3 5 7))    ; #f
@@ -4707,138 +5135,79 @@ tail  ; (2 3 4 5)</code></pre>
       (let loop ([lst lst] [acc 1])
         (cond
           [(null? lst) acc]
-          [(zero? (car lst)) (return 0)]
-          [else (loop (cdr lst) (* acc (car lst)))])))))</code></pre>
+          [(zero? (car lst)) (return 0)]  ; Short-circuit!
+          [else (loop (cdr lst) (* acc (car lst)))])))))
+
+(product '(1 2 3 0 4 5))        ; 0 (doesn't multiply 4, 5)
+</code></pre>
         <br/>
-        <li>Continuations as first-class values:</li>
-<pre><code class="language-scheme line-numbers">; Save and reuse continuations
+        <li>Continuation as first-class value:</li>
+        <svg width="600" height="240" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead6" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Continuation Capture and Invocation</text>
+
+            <!-- Expression -->
+            <text x="300" y="55" text-anchor="middle" font-family="monospace" font-size="11">(+ 1 (call/cc (λ (k) (set! saved k) 2)))</text>
+
+            <!-- Normal flow -->
+            <rect x="30" y="75" width="540" height="60" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="50" y="95" font-family="Times New Roman" font-size="10" font-weight="bold">First execution:</text>
+            <text x="50" y="115" font-family="Times New Roman" font-size="10">• call/cc captures continuation k = (λ (v) (+ 1 v))</text>
+            <text x="50" y="128" font-family="Times New Roman" font-size="10">• saved ← k, returns 2, computes (+ 1 2) = <tspan font-weight="bold">3</tspan></text>
+
+            <!-- Saved continuation -->
+            <rect x="30" y="145" width="540" height="80" fill="#ffe6cc" stroke="#cc6600" stroke-width="1" rx="3"/>
+            <text x="50" y="165" font-family="Times New Roman" font-size="10" font-weight="bold">Later: (saved 10)</text>
+            <text x="50" y="185" font-family="Times New Roman" font-size="10">• Invokes captured continuation with value 10</text>
+            <text x="50" y="200" font-family="Times New Roman" font-size="10">• Jumps back to (+ 1 □) with □ = 10</text>
+            <text x="50" y="215" font-family="Times New Roman" font-size="10">• Returns <tspan font-weight="bold">11</tspan> (can be called repeatedly with different values)</text>
+        </svg>
+        <br/><br/>
+        <li>Saving and reusing continuations:</li>
+<pre><code class="language-scheme line-numbers">; Save continuation for later use
 (define saved-k #f)
 
 (+ 1 (call/cc
        (lambda (k)
          (set! saved-k k)
-         2)))  ; 3
+         2)))                   ; 3 (first time)
 
-(saved-k 10)   ; 11 (continues from where we left)
-(saved-k 100)  ; 101
+(saved-k 10)                    ; 11 (continues from capture point)
+(saved-k 100)                   ; 101 (can call multiple times)
 
-; Continuations can be called multiple times
-(let ([times 0])
-  (let ([result (call/cc (lambda (k)
-                           (set! saved-k k)
-                           'first))])
-    (set! times (+ times 1))
-    (if (< times 3)
-        (saved-k (string->symbol
-                   (format "attempt-~a" times)))
-        result)))
-; Returns attempt-2 after being called multiple times</code></pre>
+; Continuation remembers entire context
+(let ([x 5])
+  (+ x (call/cc
+         (lambda (k)
+           (set! saved-k k)
+           10))))               ; 15
+
+(saved-k 20)                    ; 25 (x is still 5 in that context)
+</code></pre>
         <br/>
-        <li>Implementing exceptions with continuations:</li>
-<pre><code class="language-scheme line-numbers">(define (with-exception-handler handler thunk)
+        <li>Implementing control structures with continuations:</li>
+<pre><code class="language-scheme line-numbers">; Simple exception mechanism
+(define (with-escape proc)
   (call/cc
-    (lambda (return)
-      (let ([raise (lambda (exn) (return (handler exn)))])
-        (thunk raise)))))
+    (lambda (escape)
+      (proc escape))))
 
-(with-exception-handler
-  (lambda (exn) (list 'caught exn))
-  (lambda (raise)
-    (raise 'my-error)))
-; (caught my-error)</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Dynamic Wind</li>
-    <br/>
-    <ul>
-        <li><code>dynamic-wind</code> ensures cleanup with continuations:</li>
-<pre><code class="language-scheme line-numbers">; (dynamic-wind before thunk after)
-; before: called when entering
-; thunk: the main body
-; after: called when exiting (even via continuation)
-
-(dynamic-wind
-  (lambda () (display "entering\n"))
-  (lambda () (display "in body\n") 'result)
-  (lambda () (display "leaving\n")))
-; entering
-; in body
-; leaving
-; Returns: result</code></pre>
-        <br/>
-        <li>Resource management:</li>
-<pre><code class="language-scheme line-numbers">(define (with-input-file filename proc)
-  (let ([port #f])
-    (dynamic-wind
-      (lambda () (set! port (open-input-file filename)))
-      (lambda () (proc port))
-      (lambda () (close-input-port port)))))
-
-(with-input-file "data.txt"
-  (lambda (port)
-    (read port)))
-
-; Even if continuation jumps out, port is closed
-(call/cc
+(with-escape
   (lambda (escape)
-    (with-input-file "data.txt"
-      (lambda (port)
-        (escape 'early-exit)))))
-; Port still properly closed!</code></pre>
-        <br/>
-        <li>Tracking entry/exit:</li>
-<pre><code class="language-scheme line-numbers">(define level 0)
+    (for-each
+      (lambda (x)
+        (when (negative? x)
+          (escape 'found-negative)))
+      '(1 2 -3 4 5))
+    'all-positive))             ; found-negative
 
-(define (show-level label)
-  (printf "~a: level = ~a~n" label level))
-
-(define (with-level thunk)
-  (dynamic-wind
-    (lambda ()
-      (set! level (+ level 1))
-      (show-level "enter"))
-    thunk
-    (lambda ()
-      (show-level "exit")
-      (set! level (- level 1)))))
-
-(with-level
-  (lambda ()
-    (with-level
-      (lambda ()
-        (display "innermost\n")))))
-; enter: level = 1
-; enter: level = 2
-; innermost
-; exit: level = 2
-; exit: level = 1</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Delimited Continuations</li>
-    <br/>
-    <ul>
-        <li>Chez Scheme provides delimited continuations via <code>call/1cc</code>:</li>
-<pre><code class="language-scheme line-numbers">; call/1cc: one-shot continuation (more efficient)
-; Can only be called once
-
-(define (find-first-1cc pred lst)
-  (call/1cc
-    (lambda (return)
-      (for-each
-        (lambda (x)
-          (when (pred x)
-            (return x)))
-        lst)
-      #f)))
-
-; Use call/1cc when you only need to escape once</code></pre>
-        <br/>
-        <li>Prompts and control with <code>call/cc</code>:</li>
-<pre><code class="language-scheme line-numbers">; Simulating generators with continuations
+; Coroutine-style generator
 (define (make-generator proc)
   (let ([resume #f]
         [yield-k #f])
@@ -4860,9 +5229,163 @@ tail  ; (2 3 4 5)</code></pre>
         (yield i)
         (loop (+ i 1))))))
 
-(counter)  ; 0
-(counter)  ; 1
-(counter)  ; 2</code></pre>
+(counter)                       ; 0
+(counter)                       ; 1
+(counter)                       ; 2
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Dynamic Wind</li>
+    <br/>
+    <ul>
+        <li><code>dynamic-wind</code> ensures cleanup with continuations:</li>
+<pre><code class="language-scheme line-numbers">; (dynamic-wind before thunk after)
+; before: called when entering
+; thunk: the main body
+; after: called when exiting (even via continuation!)
+
+(dynamic-wind
+  (lambda () (display "entering\n"))
+  (lambda () (display "in body\n") 'result)
+  (lambda () (display "leaving\n")))
+; entering
+; in body
+; leaving
+; Returns: result
+
+; Crucial: after runs even if continuation jumps out
+(define escape #f)
+
+(dynamic-wind
+  (lambda () (printf "open resource~n"))
+  (lambda ()
+    (call/cc (lambda (k) (set! escape k)))
+    'normal-exit)
+  (lambda () (printf "close resource~n")))
+; open resource
+; close resource
+; Returns: normal-exit
+
+(escape 'jumped)
+; open resource    (re-entering!)
+; close resource   (leaving again)
+; Returns: jumped
+</code></pre>
+        <br/>
+        <li>Resource management pattern:</li>
+<pre><code class="language-scheme line-numbers">; Safe file handling
+(define (with-input-file filename proc)
+  (let ([port #f])
+    (dynamic-wind
+      (lambda () (set! port (open-input-file filename)))
+      (lambda () (proc port))
+      (lambda () (close-input-port port)))))
+
+(with-input-file "data.txt"
+  (lambda (port)
+    (read port)))
+
+; Even with early exit via continuation, port is closed!
+(call/cc
+  (lambda (escape)
+    (with-input-file "data.txt"
+      (lambda (port)
+        (escape 'early-exit)))))
+; Port properly closed despite jump
+
+; Lock management
+(define (with-lock mutex thunk)
+  (dynamic-wind
+    (lambda () (mutex-acquire mutex))
+    thunk
+    (lambda () (mutex-release mutex))))
+</code></pre>
+        <br/>
+        <li>Dynamic wind visualization:</li>
+        <svg width="600" height="260" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead7" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+                <marker id="arrowheadRed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#cc0000"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">dynamic-wind Guarantees</text>
+
+            <!-- Normal flow -->
+            <text x="150" y="55" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Normal Execution</text>
+
+            <rect x="50" y="70" width="70" height="35" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="3"/>
+            <text x="85" y="92" text-anchor="middle" font-family="Times New Roman" font-size="10">before</text>
+
+            <line x1="120" y1="87" x2="140" y2="87" stroke="#666" stroke-width="1" marker-end="url(#arrowhead7)"/>
+
+            <rect x="150" y="70" width="70" height="35" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="3"/>
+            <text x="185" y="92" text-anchor="middle" font-family="Times New Roman" font-size="10">thunk</text>
+
+            <line x1="220" y1="87" x2="240" y2="87" stroke="#666" stroke-width="1" marker-end="url(#arrowhead7)"/>
+
+            <rect x="250" y="70" width="70" height="35" fill="#ffcccc" stroke="#cc0000" stroke-width="2" rx="3"/>
+            <text x="285" y="92" text-anchor="middle" font-family="Times New Roman" font-size="10">after</text>
+
+            <!-- With continuation jump -->
+            <text x="450" y="55" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">With Continuation Jump</text>
+
+            <rect x="350" y="70" width="70" height="35" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="3"/>
+            <text x="385" y="92" text-anchor="middle" font-family="Times New Roman" font-size="10">before</text>
+
+            <line x1="420" y1="87" x2="440" y2="87" stroke="#666" stroke-width="1" marker-end="url(#arrowhead7)"/>
+
+            <rect x="450" y="70" width="70" height="35" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="3"/>
+            <text x="485" y="85" text-anchor="middle" font-family="Times New Roman" font-size="9">thunk</text>
+            <text x="485" y="97" text-anchor="middle" font-family="Times New Roman" font-size="8">(call/cc...)</text>
+
+            <!-- Jump arrow -->
+            <path d="M 485 105 Q 485 140 400 140" stroke="#cc0000" stroke-width="2" fill="none" stroke-dasharray="4,2"/>
+            <text x="450" y="135" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc0000">escape!</text>
+
+            <!-- After still runs -->
+            <line x1="400" y1="140" x2="350" y2="140" stroke="#cc0000" stroke-width="2" marker-end="url(#arrowheadRed)"/>
+            <rect x="350" y="125" width="70" height="35" fill="#ffcccc" stroke="#cc0000" stroke-width="2" rx="3"/>
+            <text x="385" y="147" text-anchor="middle" font-family="Times New Roman" font-size="10">after</text>
+            <text x="385" y="175" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc0000">still runs!</text>
+
+            <!-- Explanation -->
+            <rect x="30" y="195" width="540" height="50" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="215" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Key Guarantee</text>
+            <text x="300" y="233" text-anchor="middle" font-family="Times New Roman" font-size="10">The <tspan font-style="italic">after</tspan> thunk is <tspan font-weight="bold">always</tspan> called when leaving, even via continuation or exception</text>
+        </svg>
+        <br/><br/>
+        <li>Nesting dynamic-wind:</li>
+<pre><code class="language-scheme line-numbers">; Nested resource management
+(define level 0)
+
+(define (with-level name thunk)
+  (dynamic-wind
+    (lambda ()
+      (set! level (+ level 1))
+      (printf "~a: entering level ~a~n" name level))
+    thunk
+    (lambda ()
+      (printf "~a: leaving level ~a~n" name level)
+      (set! level (- level 1)))))
+
+(with-level "outer"
+  (lambda ()
+    (with-level "inner"
+      (lambda ()
+        (printf "innermost, level = ~a~n" level)))))
+; outer: entering level 1
+; inner: entering level 2
+; innermost, level = 2
+; inner: leaving level 2
+; outer: leaving level 1
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -4871,7 +5394,8 @@ tail  ; (2 3 4 5)</code></pre>
     <br/>
     <ul>
         <li><code>guard</code> for structured exception handling:</li>
-<pre><code class="language-scheme line-numbers">(guard (exn
+<pre><code class="language-scheme line-numbers">; (guard (var clause ...) body ...)
+(guard (exn
         [(error? exn)
          (display "An error occurred: ")
          (display (condition-message exn))
@@ -4880,44 +5404,140 @@ tail  ; (2 3 4 5)</code></pre>
         [(assertion-violation? exn)
          'assertion-failed]
         [else
-         (raise exn)])  ; Re-raise if not handled
+         (raise exn)])           ; Re-raise if not handled
   (risky-operation))
 
+; Practical example
+(define (safe-divide a b)
+  (guard (exn
+          [(and (error? exn)
+                (string=? (condition-message exn) "divide by zero"))
+           +inf.0]
+          [else (raise exn)])
+    (/ a b)))
+
+(safe-divide 10 0)              ; +inf.0
+(safe-divide 10 2)              ; 5
+
 ; Nested guard
-(guard (outer
-        [else (display "outer caught it\n")])
+(guard (outer [else (display "outer caught it\n")])
   (guard (inner
           [(warning? inner) (display "just a warning\n")])
-    (error 'test "something bad")))</code></pre>
+    (error 'test "something bad")))
+; outer caught it
+</code></pre>
         <br/>
         <li><code>with-exception-handler</code> for low-level handling:</li>
 <pre><code class="language-scheme line-numbers">; Handler receives exception, can return or re-raise
 (with-exception-handler
   (lambda (exn)
     (display "Handler called\n")
-    (raise exn))  ; Re-raise to outer handler
+    (display exn)
+    (newline)
+    (raise exn))                ; Re-raise to outer handler
   (lambda ()
     (error 'test "oops")))
 
-; Handling continuable exceptions
+; Handler that recovers
 (with-exception-handler
   (lambda (exn)
-    (when (warning? exn)
-      (display "Warning noted\n"))
-    'continue-value)  ; Return value for continuable
+    'recovered)                 ; Return value continues execution
   (lambda ()
-    (let ([result (raise-continuable (make-warning))])
-      (display "Continued with: ")
-      (display result)
-      (newline))))</code></pre>
+    (raise-continuable 'minor-issue)
+    (display "Continued!\n")
+    'done))
+; Continued!
+; done
+</code></pre>
         <br/>
-        <li>Chez-specific <code>parameterize</code> for exception handling:</li>
-<pre><code class="language-scheme line-numbers">; Using parameters for global exception behavior
-(parameterize ([current-exception-handler
-                (lambda (exn)
-                  (printf "Caught: ~a~n" exn)
-                  (default-exception-handler exn))])
-  (error 'test "demo"))</code></pre>
+        <li>Exception hierarchy:</li>
+        <svg width="600" height="260" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">R6RS Condition Type Hierarchy</text>
+
+            <!-- Root -->
+            <rect x="250" y="45" width="100" height="30" fill="#e6e6ff" stroke="#6600cc" stroke-width="2" rx="3"/>
+            <text x="300" y="65" text-anchor="middle" font-family="monospace" font-size="10">&amp;condition</text>
+
+            <!-- Level 1 branches -->
+            <line x1="300" y1="75" x2="300" y2="95" stroke="#666" stroke-width="1"/>
+            <line x1="150" y1="95" x2="450" y2="95" stroke="#666" stroke-width="1"/>
+
+            <!-- &message -->
+            <line x1="100" y1="95" x2="100" y2="110" stroke="#666" stroke-width="1"/>
+            <rect x="50" y="110" width="100" height="25" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="100" y="127" text-anchor="middle" font-family="monospace" font-size="9">&amp;message</text>
+
+            <!-- &warning -->
+            <line x1="200" y1="95" x2="200" y2="110" stroke="#666" stroke-width="1"/>
+            <rect x="150" y="110" width="100" height="25" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="3"/>
+            <text x="200" y="127" text-anchor="middle" font-family="monospace" font-size="9">&amp;warning</text>
+
+            <!-- &serious -->
+            <line x1="350" y1="95" x2="350" y2="110" stroke="#666" stroke-width="1"/>
+            <rect x="300" y="110" width="100" height="25" fill="#ffcccc" stroke="#cc0000" stroke-width="1" rx="3"/>
+            <text x="350" y="127" text-anchor="middle" font-family="monospace" font-size="9">&amp;serious</text>
+
+            <!-- &irritants -->
+            <line x1="500" y1="95" x2="500" y2="110" stroke="#666" stroke-width="1"/>
+            <rect x="450" y="110" width="100" height="25" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="500" y="127" text-anchor="middle" font-family="monospace" font-size="9">&amp;irritants</text>
+
+            <!-- Under &serious -->
+            <line x1="350" y1="135" x2="350" y2="150" stroke="#666" stroke-width="1"/>
+            <line x1="250" y1="150" x2="450" y2="150" stroke="#666" stroke-width="1"/>
+
+            <!-- &error -->
+            <line x1="280" y1="150" x2="280" y2="165" stroke="#666" stroke-width="1"/>
+            <rect x="230" y="165" width="100" height="25" fill="#ffcccc" stroke="#cc0000" stroke-width="2" rx="3"/>
+            <text x="280" y="182" text-anchor="middle" font-family="monospace" font-size="9">&amp;error</text>
+
+            <!-- &violation -->
+            <line x1="420" y1="150" x2="420" y2="165" stroke="#666" stroke-width="1"/>
+            <rect x="370" y="165" width="100" height="25" fill="#ffcccc" stroke="#cc0000" stroke-width="1" rx="3"/>
+            <text x="420" y="182" text-anchor="middle" font-family="monospace" font-size="9">&amp;violation</text>
+
+            <!-- Under &violation -->
+            <line x1="420" y1="190" x2="420" y2="205" stroke="#666" stroke-width="1"/>
+            <line x1="350" y1="205" x2="490" y2="205" stroke="#666" stroke-width="1"/>
+
+            <line x1="350" y1="205" x2="350" y2="215" stroke="#666" stroke-width="1"/>
+            <rect x="290" y="215" width="120" height="25" fill="#ffe6cc" stroke="#cc6600" stroke-width="1" rx="3"/>
+            <text x="350" y="232" text-anchor="middle" font-family="monospace" font-size="8">&amp;assertion</text>
+
+            <line x1="490" y1="205" x2="490" y2="215" stroke="#666" stroke-width="1"/>
+            <rect x="430" y="215" width="120" height="25" fill="#ffe6cc" stroke="#cc6600" stroke-width="1" rx="3"/>
+            <text x="490" y="232" text-anchor="middle" font-family="monospace" font-size="8">&amp;syntax</text>
+        </svg>
+        <br/><br/>
+        <li>Creating and raising conditions:</li>
+<pre><code class="language-scheme line-numbers">; Raise simple error
+(error 'my-proc "something went wrong")
+(error 'my-proc "invalid argument" bad-value)
+
+; Raise assertion violation
+(assertion-violation 'my-proc "precondition failed")
+
+; Create compound condition
+(raise
+  (condition
+    (make-error)
+    (make-message-condition "File not found")
+    (make-irritants-condition (list filename))))
+
+; Check condition types
+(guard (c
+        [(error? c) 'error]
+        [(warning? c) 'warning]
+        [(violation? c) 'violation])
+  (error 'test "oops"))         ; 'error
+
+; Extract information from conditions
+(guard (c
+        [(message-condition? c)
+         (condition-message c)])
+  (error 'test "the message"))  ; "the message"
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -4940,10 +5560,15 @@ tail  ; (2 3 4 5)</code></pre>
       #f)))
 
 (find-in-matrix
-  (lambda (x) (> x 10))
-  '((1 2 3) (4 5 6) (7 8 15)))  ; 15</code></pre>
+  (lambda (x) (&gt; x 10))
+  '((1 2 3) (4 5 6) (7 8 15)))   ; 15
+
+(find-in-matrix
+  (lambda (x) (&gt; x 100))
+  '((1 2 3) (4 5 6)))           ; #f
+</code></pre>
         <br/>
-        <li>Break and continue in loops:</li>
+        <li>Simulating break and continue:</li>
 <pre><code class="language-scheme line-numbers">; Simulating break
 (define (process-until-done lst)
   (call/cc
@@ -4952,9 +5577,16 @@ tail  ; (2 3 4 5)</code></pre>
         (lambda (x)
           (if (eq? x 'stop)
               (break 'stopped)
-              (process x)))
+              (begin
+                (printf "Processing: ~a~n" x)
+                (process x))))
         lst)
       'completed)))
+
+(process-until-done '(a b stop c d))
+; Processing: a
+; Processing: b
+; Returns: stopped
 
 ; Simulating continue
 (define (process-skip-negatives lst)
@@ -4962,12 +5594,14 @@ tail  ; (2 3 4 5)</code></pre>
     (lambda (x)
       (call/cc
         (lambda (continue)
-          (when (< x 0)
+          (when (&lt; x 0)
+            (printf "Skipping negative: ~a~n" x)
             (continue #f))
-          (process x))))
-    lst))</code></pre>
+          (printf "Processing: ~a~n" x))))
+    lst))
+</code></pre>
         <br/>
-        <li>Return multiple levels:</li>
+        <li>Multi-level return:</li>
 <pre><code class="language-scheme line-numbers">(define (deep-search tree target)
   (call/cc
     (lambda (found)
@@ -4975,7 +5609,7 @@ tail  ; (2 3 4 5)</code></pre>
         (cond
           [(null? tree) #f]
           [(equal? (car tree) target)
-           (found #t)]
+           (found #t)]              ; Immediate exit from any depth
           [(pair? (car tree))
            (search (car tree))
            (search (cdr tree))]
@@ -4983,23 +5617,25 @@ tail  ; (2 3 4 5)</code></pre>
            (search (cdr tree))]))
       #f)))
 
-(deep-search '(a (b (c d)) (e (f target g))) 'target)  ; #t</code></pre>
+(deep-search '(a (b (c d)) (e (f target g))) 'target)
+; #t (found deep in structure)
+</code></pre>
     </ul>
     <br/><br/>
 
 
-    <li>Trampolining and Tail Calls</li>
+    <li>Tail Calls and Optimization</li>
     <br/>
     <ul>
-        <li>Scheme guarantees tail call optimization:</li>
-<pre><code class="language-scheme line-numbers">; This won't overflow the stack
+        <li>Scheme guarantees proper tail call optimization:</li>
+<pre><code class="language-scheme line-numbers">; This will NOT overflow the stack
 (define (count-to n)
   (let loop ([i 0])
     (if (= i n)
         'done
         (loop (+ i 1)))))
 
-(count-to 10000000)  ; Works fine!
+(count-to 10000000)             ; Works fine!
 
 ; Tail recursive factorial
 (define (factorial n)
@@ -5008,26 +5644,41 @@ tail  ; (2 3 4 5)</code></pre>
         acc
         (loop (- n 1) (* acc n)))))
 
-; NOT tail recursive (multiplication after recursive call)
+; NOT tail recursive (multiplication AFTER recursive call)
 (define (factorial-bad n)
   (if (zero? n)
       1
-      (* n (factorial-bad (- n 1)))))  ; Will overflow</code></pre>
+      (* n (factorial-bad (- n 1)))))  ; Will overflow eventually
+</code></pre>
         <br/>
-        <li>Mutual recursion with tail calls:</li>
-<pre><code class="language-scheme line-numbers">(define (even? n)
-  (if (zero? n)
-      #t
-      (odd? (- n 1))))
+        <li>What is a tail call?</li>
+        <svg width="600" height="240" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Tail Position: When Optimization Applies</text>
 
-(define (odd? n)
-  (if (zero? n)
-      #f
-      (even? (- n 1))))
+            <!-- Tail call example -->
+            <rect x="30" y="50" width="260" height="80" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="160" y="75" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold" fill="#009900">✓ Tail Call</text>
+            <text x="160" y="95" text-anchor="middle" font-family="monospace" font-size="9">(define (f n acc)</text>
+            <text x="160" y="110" text-anchor="middle" font-family="monospace" font-size="9">  (if (zero? n) acc</text>
+            <text x="160" y="125" text-anchor="middle" font-family="monospace" font-size="9">      (f (- n 1) (* n acc))))</text>
 
-(even? 1000000)  ; #t, no stack overflow</code></pre>
-        <br/>
-        <li>Converting non-tail to tail recursive:</li>
+            <!-- Non-tail call example -->
+            <rect x="310" y="50" width="260" height="80" fill="#ffcccc" stroke="#cc0000" stroke-width="2" rx="5"/>
+            <text x="440" y="75" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold" fill="#cc0000">✗ Not Tail Call</text>
+            <text x="440" y="95" text-anchor="middle" font-family="monospace" font-size="9">(define (f n)</text>
+            <text x="440" y="110" text-anchor="middle" font-family="monospace" font-size="9">  (if (zero? n) 1</text>
+            <text x="440" y="125" text-anchor="middle" font-family="monospace" font-size="9">      (* n (f (- n 1)))))</text>
+
+            <!-- Explanation -->
+            <rect x="30" y="145" width="540" height="80" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="165" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Definition</text>
+            <text x="50" y="185" font-family="Times New Roman" font-size="10">A call is in <tspan font-weight="bold">tail position</tspan> if nothing more needs to be done after it returns.</text>
+            <text x="50" y="203" font-family="Times New Roman" font-size="10">• Left: <tspan font-family="monospace">(f ...)</tspan> is the last thing—its result IS the function's result</text>
+            <text x="50" y="218" font-family="Times New Roman" font-size="10">• Right: <tspan font-family="monospace">(* n ...)</tspan> must still happen after <tspan font-family="monospace">(f ...)</tspan> returns—not tail position</text>
+        </svg>
+        <br/><br/>
+        <li>Converting to tail recursive form:</li>
 <pre><code class="language-scheme line-numbers">; Non-tail recursive (builds up stack)
 (define (sum-list lst)
   (if (null? lst)
@@ -5041,15 +5692,53 @@ tail  ; (2 3 4 5)</code></pre>
         acc
         (loop (cdr lst) (+ acc (car lst))))))
 
-; CPS transformation for complex cases
-(define (fib-cps n k)
-  (if (< n 2)
-      (k n)
-      (fib-cps (- n 1)
-               (lambda (a)
-                 (fib-cps (- n 2)
-                          (lambda (b)
-                            (k (+ a b))))))))</code></pre>
+; The pattern: add an accumulator parameter
+; Original: (f x) =&gt; result
+; Tail-rec: (f x acc) =&gt; acc when done, (f x' acc') otherwise
+
+; More examples
+(define (length-tr lst)
+  (let loop ([lst lst] [n 0])
+    (if (null? lst)
+        n
+        (loop (cdr lst) (+ n 1)))))
+
+(define (reverse-tr lst)
+  (let loop ([lst lst] [acc '()])
+    (if (null? lst)
+        acc
+        (loop (cdr lst) (cons (car lst) acc)))))
+</code></pre>
+        <br/>
+        <li>Mutual tail recursion:</li>
+<pre><code class="language-scheme line-numbers">; Mutually recursive, both in tail position
+(define (my-even? n)
+  (if (zero? n)
+      #t
+      (my-odd? (- n 1))))       ; Tail call to odd?
+
+(define (my-odd? n)
+  (if (zero? n)
+      #f
+      (my-even? (- n 1))))      ; Tail call to even?
+
+(my-even? 1000000)              ; #t, no stack overflow
+
+; State machine as mutual recursion
+(define (state-a input)
+  (if (null? input)
+      'accept-a
+      (case (car input)
+        [(0) (state-b (cdr input))]
+        [(1) (state-a (cdr input))])))
+
+(define (state-b input)
+  (if (null? input)
+      'accept-b
+      (case (car input)
+        [(0) (state-a (cdr input))]
+        [(1) (state-b (cdr input))])))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -5061,34 +5750,49 @@ tail  ; (2 3 4 5)</code></pre>
 <pre><code class="language-scheme line-numbers">; Create a parameter
 (define current-user (make-parameter "guest"))
 
-(current-user)           ; "guest"
+(current-user)                  ; "guest"
+
+; Set globally
+(current-user "admin")
+(current-user)                  ; "admin"
 
 ; Set temporarily with parameterize
-(parameterize ([current-user "admin"])
-  (display (current-user)))  ; "admin"
+(parameterize ([current-user "alice"])
+  (printf "User: ~a~n" (current-user)))  ; "alice"
 
-(current-user)           ; "guest" (restored)
+(current-user)                  ; "admin" (restored)
 
 ; Nested parameterize
 (parameterize ([current-user "alice"])
-  (display (current-user))   ; alice
-  (newline)
+  (printf "Outer: ~a~n" (current-user))
   (parameterize ([current-user "bob"])
-    (display (current-user)) ; bob
-    (newline))
-  (display (current-user)))  ; alice</code></pre>
+    (printf "Inner: ~a~n" (current-user)))
+  (printf "Back: ~a~n" (current-user)))
+; Outer: alice
+; Inner: bob
+; Back: alice
+</code></pre>
         <br/>
         <li>Parameters with validation:</li>
-<pre><code class="language-scheme line-numbers">; Parameter with guard procedure
+<pre><code class="language-scheme line-numbers">; Parameter with guard/filter procedure
 (define current-level
   (make-parameter 0
     (lambda (v)
-      (unless (and (integer? v) (>= v 0))
+      (unless (and (integer? v) (&gt;= v 0))
         (error 'current-level "must be non-negative integer" v))
       v)))
 
-(current-level 5)        ; OK
-(current-level -1)       ; Error!</code></pre>
+(current-level 5)               ; OK
+(current-level -1)              ; Error!
+
+; Parameter with transformation
+(define current-directory
+  (make-parameter "."
+    (lambda (v)
+      (if (string? v)
+          (path-normalize v)
+          (error 'current-directory "must be string" v)))))
+</code></pre>
         <br/>
         <li>Common built-in parameters:</li>
 <pre><code class="language-scheme line-numbers">; I/O parameters
@@ -5096,104 +5800,175 @@ tail  ; (2 3 4 5)</code></pre>
   (display "captured")
   (get-output-string (current-output-port)))
 
+; Print parameters
+(parameterize ([print-length 5]
+               [print-level 3])
+  (pretty-print deeply-nested-structure))
+
 ; Compilation parameters
 (parameterize ([optimize-level 3]
                [debug-level 0])
-  (compile-file "fast.ss"))
+  (compile-file "optimized.ss"))
 
-; Print parameters
-(parameterize ([print-length 10]
-               [print-level 5])
-  (pretty-print deeply-nested-structure))</code></pre>
+; Useful Chez parameters
+(source-directories)            ; Where to find source files
+(library-directories)           ; Where to find libraries
+(compile-profile)               ; Enable profiling
+(collect-request-handler)       ; GC callback
+</code></pre>
     </ul>
     <br/><br/>
 
 
     <li>Control Flow Summary</li>
     <br/>
-    <ul>
-        <li>Quick reference:</li>
 <table>
     <thead>
         <tr>
             <th>Construct</th>
-            <th>Use Case</th>
+            <th>Purpose</th>
+            <th>Returns</th>
         </tr>
     </thead>
     <tbody>
         <tr>
             <td><code>if</code></td>
-            <td>Simple two-way branch</td>
+            <td>Two-way branch</td>
+            <td>Consequent or alternative</td>
         </tr>
         <tr>
             <td><code>cond</code></td>
-            <td>Multiple conditions</td>
+            <td>Multi-way branch on predicates</td>
+            <td>First matching clause</td>
         </tr>
         <tr>
             <td><code>case</code></td>
             <td>Match against literal values</td>
+            <td>Matching clause</td>
         </tr>
         <tr>
-            <td><code>when/unless</code></td>
-            <td>One-sided conditional with body</td>
+            <td><code>when</code>/<code>unless</code></td>
+            <td>One-sided conditional</td>
+            <td>Body or unspecified</td>
         </tr>
         <tr>
-            <td><code>and/or</code></td>
-            <td>Short-circuit boolean logic</td>
+            <td><code>and</code>/<code>or</code></td>
+            <td>Short-circuit boolean</td>
+            <td>First false/true or last</td>
         </tr>
         <tr>
             <td><code>begin</code></td>
             <td>Sequence expressions</td>
+            <td>Last expression</td>
+        </tr>
+        <tr>
+            <td><code>begin0</code></td>
+            <td>Sequence with first value</td>
+            <td>First expression</td>
         </tr>
         <tr>
             <td>Named <code>let</code></td>
-            <td>General iteration/recursion</td>
+            <td>Local recursion/iteration</td>
+            <td>Final result</td>
         </tr>
         <tr>
             <td><code>do</code></td>
-            <td>Traditional loop with step</td>
+            <td>Traditional loop</td>
+            <td>Result expression</td>
         </tr>
         <tr>
             <td><code>for-each</code></td>
             <td>Iterate for side effects</td>
+            <td>Unspecified</td>
         </tr>
         <tr>
             <td><code>map</code></td>
-            <td>Transform lists</td>
+            <td>Transform list(s)</td>
+            <td>New list</td>
         </tr>
         <tr>
-            <td><code>fold-left/right</code></td>
-            <td>Accumulate over lists</td>
+            <td><code>fold-left</code>/<code>fold-right</code></td>
+            <td>Accumulate over list</td>
+            <td>Accumulated value</td>
         </tr>
         <tr>
             <td><code>values</code></td>
             <td>Return multiple values</td>
+            <td>Multiple values</td>
         </tr>
         <tr>
             <td><code>let-values</code></td>
             <td>Bind multiple values</td>
+            <td>Body result</td>
         </tr>
         <tr>
             <td><code>call/cc</code></td>
             <td>Capture continuation</td>
+            <td>Body or continuation result</td>
         </tr>
         <tr>
             <td><code>dynamic-wind</code></td>
-            <td>Ensure cleanup with continuations</td>
+            <td>Ensure cleanup</td>
+            <td>Body result</td>
         </tr>
         <tr>
             <td><code>guard</code></td>
             <td>Exception handling</td>
+            <td>Body or handler result</td>
         </tr>
         <tr>
             <td><code>parameterize</code></td>
-            <td>Dynamic/fluid bindings</td>
+            <td>Dynamic binding</td>
+            <td>Body result</td>
         </tr>
     </tbody>
 </table>
+        <br/>
+    <ul>
+        <li>Control flow decision guide:</li>
     </ul>
-    <br/><br/>
+        <br/>
+        <svg width="600" height="300" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Choosing the Right Control Flow</text>
 
+            <!-- Branching -->
+            <rect x="30" y="45" width="170" height="110" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="115" y="65" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Branching</text>
+            <text x="45" y="85" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">if</tspan>: simple yes/no</text>
+            <text x="45" y="100" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">cond</tspan>: multiple tests</text>
+            <text x="45" y="115" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">case</tspan>: value matching</text>
+            <text x="45" y="130" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">when/unless</tspan>: one-sided</text>
+            <text x="45" y="145" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">and/or</tspan>: short-circuit</text>
+
+            <!-- Iteration -->
+            <rect x="215" y="45" width="170" height="110" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="300" y="65" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Iteration</text>
+            <text x="230" y="85" font-family="Times New Roman" font-size="9">• named <tspan font-family="monospace">let</tspan>: most flexible</text>
+            <text x="230" y="100" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">do</tspan>: traditional loop</text>
+            <text x="230" y="115" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">for-each</tspan>: side effects</text>
+            <text x="230" y="130" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">map</tspan>: transform list</text>
+            <text x="230" y="145" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">fold</tspan>: accumulate</text>
+
+            <!-- Advanced -->
+            <rect x="400" y="45" width="170" height="110" fill="#ffe6cc" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="485" y="65" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Advanced</text>
+            <text x="415" y="85" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">call/cc</tspan>: escape, coroutine</text>
+            <text x="415" y="100" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">dynamic-wind</tspan>: cleanup</text>
+            <text x="415" y="115" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">guard</tspan>: exceptions</text>
+            <text x="415" y="130" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">values</tspan>: multiple return</text>
+            <text x="415" y="145" font-family="Times New Roman" font-size="9">• <tspan font-family="monospace">parameterize</tspan>: dynamic scope</text>
+
+            <!-- Best practices -->
+            <rect x="30" y="170" width="540" height="115" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="190" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Best Practices</text>
+            <text x="50" y="210" font-family="Times New Roman" font-size="10">1. Prefer named <tspan font-family="monospace">let</tspan> over <tspan font-family="monospace">do</tspan> for most loops—more readable and flexible</text>
+            <text x="50" y="228" font-family="Times New Roman" font-size="10">2. Use <tspan font-family="monospace">map</tspan>/<tspan font-family="monospace">filter</tspan>/<tspan font-family="monospace">fold</tspan> over explicit recursion when applicable</text>
+            <text x="50" y="246" font-family="Times New Roman" font-size="10">3. Always write tail-recursive loops—Scheme guarantees no stack overflow</text>
+            <text x="50" y="264" font-family="Times New Roman" font-size="10">4. Use <tspan font-family="monospace">guard</tspan> for exceptions, <tspan font-family="monospace">call/cc</tspan> only when truly needed</text>
+            <text x="50" y="282" font-family="Times New Roman" font-size="10">5. Prefer <tspan font-family="monospace">parameterize</tspan> over mutation for thread-safe dynamic bindings</text>
+        </svg>
+    <br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
