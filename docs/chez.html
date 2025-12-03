@@ -162,6 +162,8 @@
         <li><a href="#scm-control-structures">Control Structures</a></li>
         <li><a href="#scm-operations-objects">Operations on Objects</a></li>
         <li><a href="#scm-numeric-operations">Numeric Operations</a></li>
+        <li><a href="#scm-input-output">Input / Output</a></li>
+        <li><a href="#scm-"></a></li>
     </ol>
 </nav>
 <hr/>
@@ -12089,6 +12091,1974 @@ v                           ; e.g., #(3 1 5 2 4)
     </ul>
     <br/><br/>
 
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-input-output">Input/Output Operations in Chez Scheme</h3>
+<ol>
+
+    <li>Generic Ports</li>
+    <br/>
+    <ul>
+        <li>Ports are the abstraction for I/O in Scheme:</li>
+<pre><code class="language-scheme line-numbers">; Port type hierarchy
+; - Input ports (for reading)
+; - Output ports (for writing)
+; - Input/output ports (bidirectional)
+; - Binary ports (raw bytes)
+; - Textual ports (characters with encoding)
+
+; Standard ports
+(current-input-port)        ; stdin
+(current-output-port)       ; stdout
+(current-error-port)        ; stderr
+
+; Port predicates
+(port? (current-input-port))         ; #t
+(input-port? (current-input-port))   ; #t
+(output-port? (current-output-port)) ; #t
+(binary-port? port)                  ; #t if binary
+(textual-port? port)                 ; #t if textual
+
+; Input/output port check
+(input-port? (open-input-output-file "test.txt"))   ; #t
+(output-port? (open-input-output-file "test.txt"))  ; #t</code></pre>
+        <br/>
+        <li>Port direction and type combinations:</li>
+<pre><code class="language-scheme line-numbers">; Four main combinations:
+; 1. Textual input port - reads characters
+; 2. Textual output port - writes characters
+; 3. Binary input port - reads bytes
+; 4. Binary output port - writes bytes
+
+; Plus bidirectional versions:
+; 5. Textual input/output port
+; 6. Binary input/output port
+
+; Check port capabilities
+(define (port-info port)
+  (printf "Input: ~a~n" (input-port? port))
+  (printf "Output: ~a~n" (output-port? port))
+  (printf "Binary: ~a~n" (binary-port? port))
+  (printf "Textual: ~a~n" (textual-port? port)))
+
+; Example
+(port-info (current-input-port))
+; Input: #t
+; Output: #f
+; Binary: #f
+; Textual: #t</code></pre>
+        <br/>
+        <li>Port parameters:</li>
+<pre><code class="language-scheme line-numbers">; Rebind standard ports temporarily
+(parameterize ([current-output-port (open-output-file "log.txt")])
+  (display "This goes to log.txt")
+  (newline))
+
+; Redirect error output
+(parameterize ([current-error-port (current-output-port)])
+  (error 'test "error message"))  ; Goes to stdout
+
+; Console ports (Chez extension)
+(console-input-port)        ; Direct console input
+(console-output-port)       ; Direct console output
+(console-error-port)        ; Direct console error
+
+; These bypass any redirection</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Options</li>
+    <br/>
+    <ul>
+        <li>File options control how files are opened:</li>
+<pre><code class="language-scheme line-numbers">; file-options creates a file-options object
+(file-options)              ; No options (default behavior)
+
+; Available options:
+; no-create    - Don't create if doesn't exist
+; no-fail      - Don't fail if exists (for output)
+; no-truncate  - Don't truncate existing file
+; append       - Append to existing file
+; exclusive    - Fail if file exists
+; compressed   - Use compression (Chez extension)
+; replace      - Replace existing file
+
+; Common combinations for output:
+(file-options no-fail)      ; Overwrite if exists, create if not
+(file-options no-fail no-truncate)  ; Keep existing content
+(file-options append)       ; Append to file
+(file-options exclusive)    ; Create new only, fail if exists
+
+; For input (fewer options matter):
+(file-options)              ; Normal open
+(file-options compressed)   ; Open compressed file</code></pre>
+        <br/>
+        <li>Using file options:</li>
+<pre><code class="language-scheme line-numbers">; Default output: fail if exists
+(open-file-output-port "new.txt")  ; Error if file exists
+
+; Allow overwriting
+(open-file-output-port "new.txt"
+  (file-options no-fail))
+
+; Append mode
+(open-file-output-port "log.txt"
+  (file-options no-fail append))
+
+; Exclusive creation
+(open-file-output-port "unique.txt"
+  (file-options exclusive))  ; Fail if exists
+
+; Keep existing content, write at beginning
+(open-file-output-port "data.txt"
+  (file-options no-fail no-truncate))
+
+; Compressed file (Chez extension)
+(open-file-output-port "data.gz"
+  (file-options no-fail compressed))</code></pre>
+        <br/>
+        <li>Buffer modes:</li>
+<pre><code class="language-scheme line-numbers">; Buffer mode affects when data is actually written
+; - none: Write immediately (unbuffered)
+; - line: Write when newline encountered
+; - block: Write when buffer full (default)
+
+; Specify buffer mode when opening
+(open-file-output-port "file.txt"
+  (file-options no-fail)
+  'line)                    ; Line buffering
+
+(open-file-output-port "file.txt"
+  (file-options no-fail)
+  'none)                    ; Unbuffered
+
+(open-file-output-port "file.txt"
+  (file-options no-fail)
+  'block)                   ; Block buffered (default)
+
+; Buffer mode affects:
+; - Performance (buffered is faster)
+; - When output becomes visible
+; - Behavior with multiple writers</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Transcoders</li>
+    <br/>
+    <ul>
+        <li>Transcoders convert between bytes and characters:</li>
+<pre><code class="language-scheme line-numbers">; A transcoder combines:
+; - Codec (encoding): UTF-8, UTF-16, Latin-1, etc.
+; - EOL style: lf, cr, crlf, nel, crnel, ls, none
+; - Error handling mode: ignore, raise, replace
+
+; Create transcoder
+(make-transcoder (utf-8-codec))
+
+(make-transcoder
+  (utf-8-codec)
+  'lf                       ; EOL style
+  'replace)                 ; Error mode
+
+; Available codecs
+(utf-8-codec)               ; UTF-8 encoding
+(utf-16-codec)              ; UTF-16 with BOM
+(utf-16le-codec)            ; UTF-16 little-endian
+(utf-16be-codec)            ; UTF-16 big-endian
+(latin-1-codec)             ; ISO-8859-1
+(native-transcoder)         ; Platform default</code></pre>
+        <br/>
+        <li>EOL (end-of-line) styles:</li>
+<pre><code class="language-scheme line-numbers">; EOL styles for line ending conversion
+; 'none   - No conversion
+; 'lf     - Unix style (linefeed)
+; 'cr     - Old Mac style (carriage return)
+; 'crlf   - Windows style (carriage return + linefeed)
+; 'nel    - Unicode next line
+; 'crnel  - CR + NEL
+; 'ls     - Unicode line separator
+
+; Native EOL style
+(native-eol-style)          ; 'lf on Unix, 'crlf on Windows
+
+; Create transcoder with specific EOL
+(make-transcoder
+  (utf-8-codec)
+  'crlf)                    ; Windows-style line endings
+
+; EOL conversion on input:
+; - All EOL sequences converted to #\newline
+; EOL conversion on output:
+; - #\newline converted to specified style</code></pre>
+        <br/>
+        <li>Error handling modes:</li>
+<pre><code class="language-scheme line-numbers">; Error modes for invalid byte sequences
+; 'ignore  - Skip invalid bytes
+; 'raise   - Raise exception
+; 'replace - Insert replacement character (U+FFFD)
+
+; Strict transcoder (raise on error)
+(make-transcoder
+  (utf-8-codec)
+  'none
+  'raise)
+
+; Lenient transcoder (replace invalid)
+(make-transcoder
+  (utf-8-codec)
+  'none
+  'replace)
+
+; Using transcoders with ports
+(open-file-input-port "data.txt"
+  (file-options)
+  'block
+  (make-transcoder (utf-8-codec)))
+
+; Transcoded port (wrap binary port)
+(define bin-port (open-file-input-port "data.txt"))
+(define text-port
+  (transcoded-port bin-port (make-transcoder (utf-8-codec))))
+
+; Get transcoder from port
+(port-transcoder text-port)  ; Returns transcoder or #f</code></pre>
+        <br/>
+        <li>Transcoder inspection:</li>
+<pre><code class="language-scheme line-numbers">; Extract components from transcoder
+(define tc (make-transcoder (utf-8-codec) 'crlf 'replace))
+
+(transcoder-codec tc)       ; UTF-8 codec
+(transcoder-eol-style tc)   ; crlf
+(transcoder-error-handling-mode tc)  ; replace
+
+; Check if Latin-1 codec
+(define (latin-1-transcoder? tc)
+  (eq? (transcoder-codec tc) (latin-1-codec)))
+
+; Create matching transcoder with different EOL
+(define (transcoder-with-eol tc eol)
+  (make-transcoder
+    (transcoder-codec tc)
+    eol
+    (transcoder-error-handling-mode tc)))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Port Operations</li>
+    <br/>
+    <ul>
+        <li>Opening and closing ports:</li>
+<pre><code class="language-scheme line-numbers">; Close any port
+(close-port port)
+
+; Close specific direction
+(close-input-port port)     ; Close input side
+(close-output-port port)    ; Close output side
+
+; Check if port is closed (Chez extension)
+(port-closed? port)         ; #t if closed
+
+; Ports and garbage collection
+; Ports are closed when garbage collected, but
+; explicit closing is recommended for resources
+
+; Safe port handling with dynamic-wind
+(define (call-with-port port proc)
+  (dynamic-wind
+    (lambda () #f)
+    (lambda () (proc port))
+    (lambda () (close-port port))))
+
+; Built-in call-with-* procedures
+(call-with-input-file "data.txt"
+  (lambda (port)
+    (get-line port)))
+
+(call-with-output-file "data.txt"
+  (lambda (port)
+    (display "Hello" port)))</code></pre>
+        <br/>
+        <li>Port positioning:</li>
+<pre><code class="language-scheme line-numbers">; Check if port supports positioning
+(port-has-port-position? port)
+(port-has-set-port-position!? port)
+
+; Get current position
+(port-position port)        ; Returns position
+
+; Set position
+(set-port-position! port 0)  ; Go to beginning
+(set-port-position! port 100) ; Go to byte/char 100
+
+; Position is in:
+; - Bytes for binary ports
+; - Characters for some textual ports
+; - May be opaque for textual ports (codec-dependent)
+
+; Seek from different origins (Chez extension)
+(file-position port)        ; Current position
+(file-position port 0)      ; Seek to beginning
+(file-position port pos)    ; Seek to position
+
+; File length (Chez extension)
+(file-length port)          ; Total length in bytes</code></pre>
+        <br/>
+        <li>Port buffer control:</li>
+<pre><code class="language-scheme line-numbers">; Flush output buffer
+(flush-output-port port)
+(flush-output-port)         ; Flush current-output-port
+
+; Check for available input
+(input-port-ready? port)    ; #t if data available without blocking
+
+; Clear input buffer (Chez extension)
+(clear-input-port port)
+(clear-input-port)          ; Clear current-input-port
+
+; Clear output buffer without writing (Chez extension)
+(clear-output-port port)
+(clear-output-port)         ; Clear current-output-port
+
+; Port buffer mode
+(output-port-buffer-mode port)  ; 'none, 'line, or 'block
+
+; Set buffer mode (Chez extension)
+(set-port-output-buffer-mode! port 'line)</code></pre>
+        <br/>
+        <li>Port names and information:</li>
+<pre><code class="language-scheme line-numbers">; Get port name (for error messages, debugging)
+(port-name port)            ; Returns string
+
+; Chez extensions for port info
+(port-file-descriptor port) ; OS file descriptor (if applicable)
+
+; Check port EOF status
+(port-eof? port)            ; #t if at end of file
+
+; Mark port as EOF (Chez extension)
+(set-port-eof! port #t)
+
+; Input port position tracking
+(port-has-port-length? port)  ; Can get length?
+(port-length port)            ; Get length if available</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Ports</li>
+    <br/>
+    <ul>
+        <li>String input ports:</li>
+<pre><code class="language-scheme line-numbers">; Create input port from string
+(open-input-string "Hello, World!")
+
+; Read from string
+(let ([port (open-input-string "Hello, World!")])
+  (get-line port))          ; "Hello, World!"
+
+; Parse data from string
+(let ([port (open-input-string "(1 2 3) (4 5 6)")])
+  (list (read port) (read port)))
+; ((1 2 3) (4 5 6))
+
+; Read multiple values
+(let ([port (open-input-string "42 3.14 hello")])
+  (let* ([a (read port)]
+         [b (read port)]
+         [c (read port)])
+    (list a b c)))          ; (42 3.14 hello)
+
+; Useful for testing
+(define (parse-expression str)
+  (read (open-input-string str)))
+
+(parse-expression "(+ 1 2)")  ; (+ 1 2)</code></pre>
+        <br/>
+        <li>String output ports:</li>
+<pre><code class="language-scheme line-numbers">; Create output port to string
+(open-output-string)
+
+; Write to string
+(let ([port (open-output-string)])
+  (display "Hello, " port)
+  (display "World!" port)
+  (get-output-string port)) ; "Hello, World!"
+
+; Get accumulated output
+(define port (open-output-string))
+(display "Line 1\n" port)
+(display "Line 2\n" port)
+(get-output-string port)    ; "Line 1\nLine 2\n"
+
+; get-output-string can be called multiple times
+(display "More" port)
+(get-output-string port)    ; "Line 1\nLine 2\nMore"
+
+; Build formatted string
+(let ([port (open-output-string)])
+  (fprintf port "Name: ~a~n" "Alice")
+  (fprintf port "Age: ~a~n" 30)
+  (get-output-string port))
+; "Name: Alice\nAge: 30\n"</code></pre>
+        <br/>
+        <li>with-output-to-string and with-input-from-string:</li>
+<pre><code class="language-scheme line-numbers">; Capture output to string (Chez extension)
+(with-output-to-string
+  (lambda ()
+    (display "Hello")
+    (newline)
+    (display "World")))
+; "Hello\nWorld"
+
+; Read from string as current input (Chez extension)
+(with-input-from-string "(1 2 3)"
+  (lambda ()
+    (read)))                ; (1 2 3)
+
+; Capture pretty-printed output
+(with-output-to-string
+  (lambda ()
+    (pretty-print '(define (factorial n)
+                     (if (zero? n) 1 (* n (factorial (- n 1))))))))
+
+; Parse multiple items from string
+(with-input-from-string "1 2 3 4 5"
+  (lambda ()
+    (let loop ([acc '()])
+      (let ([x (read)])
+        (if (eof-object? x)
+            (reverse acc)
+            (loop (cons x acc)))))))</code></pre>
+        <br/>
+        <li>Bytevector ports:</li>
+<pre><code class="language-scheme line-numbers">; Binary input from bytevector
+(open-bytevector-input-port #vu8(1 2 3 4 5))
+
+(let ([port (open-bytevector-input-port #vu8(72 101 108 108 111))])
+  (get-bytevector-all port))
+; #vu8(72 101 108 108 111)
+
+; Binary output to bytevector
+(let ([port (open-bytevector-output-port)])
+  (put-u8 port 72)
+  (put-u8 port 105)
+  (get-output-bytevector port))
+; #vu8(72 105)
+
+; With extraction procedure
+(let-values ([(port extract) (open-bytevector-output-port)])
+  (put-bytevector port #vu8(1 2 3))
+  (put-bytevector port #vu8(4 5 6))
+  (extract))                ; #vu8(1 2 3 4 5 6)
+
+; Transcoded bytevector port
+(let ([port (open-bytevector-input-port
+              (string->utf8 "Hello"))])
+  (let ([tport (transcoded-port port (native-transcoder))])
+    (get-line tport)))      ; "Hello"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>File Ports</li>
+    <br/>
+    <ul>
+        <li>Opening files for input:</li>
+<pre><code class="language-scheme line-numbers">; Simple file input (textual)
+(open-input-file "data.txt")
+
+; Binary file input
+(open-file-input-port "data.bin")
+
+; With transcoder (textual)
+(open-file-input-port "data.txt"
+  (file-options)
+  'block
+  (native-transcoder))
+
+; Read entire file
+(define (read-file filename)
+  (call-with-input-file filename
+    (lambda (port)
+      (get-string-all port))))
+
+(read-file "data.txt")      ; Entire file as string
+
+; Read lines
+(define (read-lines filename)
+  (call-with-input-file filename
+    (lambda (port)
+      (let loop ([lines '()])
+        (let ([line (get-line port)])
+          (if (eof-object? line)
+              (reverse lines)
+              (loop (cons line lines))))))))
+
+(read-lines "data.txt")     ; List of lines</code></pre>
+        <br/>
+        <li>Opening files for output:</li>
+<pre><code class="language-scheme line-numbers">; Simple file output (textual)
+(open-output-file "output.txt")  ; Fails if exists
+
+; With options
+(open-output-file "output.txt"
+  '(mode #o644))            ; Unix permissions (Chez)
+
+; Binary file output
+(open-file-output-port "data.bin")
+
+; Allow overwrite
+(open-file-output-port "data.bin"
+  (file-options no-fail))
+
+; Append mode
+(open-file-output-port "log.txt"
+  (file-options no-fail append))
+
+; With transcoder
+(open-file-output-port "data.txt"
+  (file-options no-fail)
+  'block
+  (make-transcoder (utf-8-codec)))
+
+; Write entire file
+(define (write-file filename content)
+  (call-with-output-file filename
+    (lambda (port)
+      (display content port))
+    '(replace)))            ; Replace if exists
+
+(write-file "output.txt" "Hello, World!")</code></pre>
+        <br/>
+        <li>Bidirectional file ports:</li>
+<pre><code class="language-scheme line-numbers">; Open for both input and output
+(open-file-input/output-port "data.txt"
+  (file-options no-fail no-truncate))
+
+; Chez extension
+(open-input-output-file "data.txt")
+
+; Use cases:
+; - In-place file modification
+; - Database-like random access
+; - Log files with read-back
+
+; Example: read, modify, write back
+(let ([port (open-file-input/output-port "counter.txt"
+              (file-options no-fail no-truncate)
+              'block
+              (native-transcoder))])
+  (let ([value (read port)])
+    (set-port-position! port 0)
+    (write (+ value 1) port)
+    (truncate-port port)    ; Remove excess
+    (close-port port)))
+
+; truncate-port cuts file at current position (Chez extension)
+(truncate-port port)</code></pre>
+        <br/>
+        <li>Compressed files (Chez extension):</li>
+<pre><code class="language-scheme line-numbers">; Write compressed file
+(let ([port (open-file-output-port "data.gz"
+              (file-options no-fail compressed))])
+  (put-bytevector port (string->utf8 "Lots of repeated text... "))
+  ; ... write more data
+  (close-port port))
+
+; Read compressed file
+(let ([port (open-file-input-port "data.gz"
+              (file-options compressed))])
+  (let ([data (get-bytevector-all port)])
+    (close-port port)
+    data))
+
+; Note: Compressed ports may not support positioning</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Custom Ports</li>
+    <br/>
+    <ul>
+        <li>Custom binary input ports:</li>
+<pre><code class="language-scheme line-numbers">; make-custom-binary-input-port
+; Arguments:
+;   id          - string identifier
+;   read!       - (bytevector start count) -> bytes-read
+;   get-position - () -> position, or #f
+;   set-position! - (position) -> void, or #f
+;   close       - () -> void, or #f
+
+(define (make-repeating-port byte count)
+  (let ([pos 0])
+    (make-custom-binary-input-port
+      "repeating-byte"
+      (lambda (bv start n)          ; read!
+        (let ([to-read (min n (- count pos))])
+          (do ([i 0 (+ i 1)])
+              ((= i to-read)
+               (set! pos (+ pos to-read))
+               to-read)
+            (bytevector-u8-set! bv (+ start i) byte))))
+      (lambda () pos)               ; get-position
+      (lambda (p) (set! pos p))     ; set-position!
+      #f)))                         ; close
+
+(define port (make-repeating-port 65 10))  ; 10 'A's
+(get-bytevector-all port)   ; #vu8(65 65 65 65 65 65 65 65 65 65)</code></pre>
+        <br/>
+        <li>Custom binary output ports:</li>
+<pre><code class="language-scheme line-numbers">; make-custom-binary-output-port
+; Arguments:
+;   id           - string identifier
+;   write!       - (bytevector start count) -> bytes-written
+;   get-position - () -> position, or #f
+;   set-position! - (position) -> void, or #f
+;   close        - () -> void, or #f
+
+; Port that counts bytes written
+(define (make-counting-port)
+  (let ([count 0])
+    (values
+      (make-custom-binary-output-port
+        "counting"
+        (lambda (bv start n)        ; write!
+          (set! count (+ count n))
+          n)                        ; Return bytes "written"
+        #f                          ; get-position
+        #f                          ; set-position!
+        #f)                         ; close
+      (lambda () count))))          ; Get count
+
+(define-values (port get-count) (make-counting-port))
+(put-bytevector port #vu8(1 2 3 4 5))
+(put-bytevector port #vu8(6 7 8))
+(get-count)                 ; 8</code></pre>
+        <br/>
+        <li>Custom textual ports:</li>
+<pre><code class="language-scheme line-numbers">; make-custom-textual-input-port
+(define (make-string-generator-port generator)
+  (let ([buffer ""]
+        [pos 0])
+    (make-custom-textual-input-port
+      "generator"
+      (lambda (str start count)     ; read!
+        (when (>= pos (string-length buffer))
+          (set! buffer (generator))
+          (set! pos 0))
+        (if (string? buffer)
+            (let ([available (- (string-length buffer) pos)])
+              (let ([to-copy (min count available)])
+                (string-copy! buffer pos str start to-copy)
+                (set! pos (+ pos to-copy))
+                to-copy))
+            0))                     ; EOF
+      #f                            ; get-position
+      #f                            ; set-position!
+      #f)))                         ; close
+
+; make-custom-textual-output-port
+(define (make-line-collector)
+  (let ([lines '()])
+    (values
+      (make-custom-textual-output-port
+        "line-collector"
+        (lambda (str start count)   ; write!
+          (let ([s (substring str start (+ start count))])
+            (set! lines (cons s lines)))
+          count)
+        #f #f #f)
+      (lambda () (reverse lines)))))  ; Get lines</code></pre>
+        <br/>
+        <li>Custom input/output ports:</li>
+<pre><code class="language-scheme line-numbers">; make-custom-binary-input/output-port
+; Combines read! and write! procedures
+
+(define (make-memory-port size)
+  (let ([buffer (make-bytevector size 0)]
+        [pos 0])
+    (make-custom-binary-input/output-port
+      "memory"
+      (lambda (bv start count)      ; read!
+        (let ([to-read (min count (- size pos))])
+          (bytevector-copy! buffer pos bv start to-read)
+          (set! pos (+ pos to-read))
+          to-read))
+      (lambda (bv start count)      ; write!
+        (let ([to-write (min count (- size pos))])
+          (bytevector-copy! bv start buffer pos to-write)
+          (set! pos (+ pos to-write))
+          to-write))
+      (lambda () pos)               ; get-position
+      (lambda (p) (set! pos p))     ; set-position!
+      (lambda () #f))))             ; close
+
+(define mem (make-memory-port 100))
+(put-bytevector mem #vu8(1 2 3 4 5))
+(set-port-position! mem 0)
+(get-bytevector-n mem 5)    ; #vu8(1 2 3 4 5)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Input Operations</li>
+    <br/>
+    <ul>
+        <li>Reading bytes (binary input):</li>
+<pre><code class="language-scheme line-numbers">; Read single byte
+(get-u8 port)               ; Returns byte (0-255) or eof-object
+
+; Lookahead (don't consume)
+(lookahead-u8 port)         ; Peek at next byte
+
+; Read multiple bytes
+(get-bytevector-n port 10)  ; Read exactly 10 bytes (or less at EOF)
+(get-bytevector-n! port bv start count)  ; Read into existing bytevector
+
+; Read all remaining bytes
+(get-bytevector-all port)   ; Returns bytevector or eof-object
+
+; Read some bytes (may return fewer)
+(get-bytevector-some port)  ; Read available bytes, at least 1
+
+; Example
+(let ([port (open-bytevector-input-port #vu8(1 2 3 4 5))])
+  (list (get-u8 port)       ; 1
+        (get-u8 port)       ; 2
+        (get-bytevector-n port 2)))  ; #vu8(3 4)</code></pre>
+        <br/>
+        <li>Reading characters (textual input):</li>
+<pre><code class="language-scheme line-numbers">; Read single character
+(get-char port)             ; Returns char or eof-object
+(read-char port)            ; R5RS name, same behavior
+(read-char)                 ; From current-input-port
+
+; Lookahead
+(lookahead-char port)       ; Peek at next character
+(peek-char port)            ; R5RS name
+
+; Read string of fixed length
+(get-string-n port 10)      ; Read 10 characters
+(get-string-n! port str start count)  ; Into existing string
+
+; Read all remaining characters
+(get-string-all port)       ; Entire remaining content
+
+; Read some characters
+(get-string-some port)      ; Read available, at least 1
+
+; Example
+(let ([port (open-input-string "Hello")])
+  (list (get-char port)     ; #\H
+        (lookahead-char port) ; #\e (not consumed)
+        (get-char port)))   ; #\e</code></pre>
+        <br/>
+        <li>Reading lines:</li>
+<pre><code class="language-scheme line-numbers">; Read line (until newline or EOF)
+(get-line port)             ; Returns string without newline
+(read-line port)            ; Chez extension, same as get-line
+(read-line)                 ; From current-input-port
+
+; Example
+(let ([port (open-input-string "Line 1\nLine 2\nLine 3")])
+  (list (get-line port)     ; "Line 1"
+        (get-line port)     ; "Line 2"
+        (get-line port)     ; "Line 3"
+        (get-line port)))   ; #!eof
+
+; Read all lines
+(define (port->lines port)
+  (let loop ([lines '()])
+    (let ([line (get-line port)])
+      (if (eof-object? line)
+          (reverse lines)
+          (loop (cons line lines))))))
+
+; With continuation for each line
+(define (for-each-line port proc)
+  (let loop ()
+    (let ([line (get-line port)])
+      (unless (eof-object? line)
+        (proc line)
+        (loop)))))</code></pre>
+        <br/>
+        <li>Reading Scheme data:</li>
+<pre><code class="language-scheme line-numbers">; Read Scheme datum
+(read port)                 ; Parse one Scheme object
+(read)                      ; From current-input-port
+
+; Examples
+(read (open-input-string "42"))        ; 42
+(read (open-input-string "(+ 1 2)"))   ; (+ 1 2)
+(read (open-input-string "#(1 2 3)"))  ; #(1 2 3)
+(read (open-input-string "'hello"))    ; 'hello = (quote hello)
+
+; Read multiple datums
+(let ([port (open-input-string "1 2 3")])
+  (list (read port) (read port) (read port)))
+; (1 2 3)
+
+; Read with shared structure
+(let ([port (open-input-string "#0=(1 . #0#)")])
+  (read port))              ; Circular list
+
+; Chez extensions
+(get-datum port)            ; Same as read
+(get-datum/annotations port)  ; With source annotations</code></pre>
+        <br/>
+        <li>Reading with parameters:</li>
+<pre><code class="language-scheme line-numbers">; Control read behavior with parameters
+(parameterize ([case-sensitive #t])  ; Preserve symbol case
+  (read (open-input-string "Hello")))  ; Hello (not hello)
+
+; Read with source information (Chez extension)
+(read-token port)           ; Returns token type and value
+
+; Skip whitespace and comments
+(define (skip-whitespace port)
+  (let ([c (lookahead-char port)])
+    (when (and (char? c) (char-whitespace? c))
+      (get-char port)
+      (skip-whitespace port))))
+
+; Check for EOF
+(eof-object? (read port))   ; #t at end of file
+(port-eof? port)            ; #t if at EOF (Chez extension)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Output Operations</li>
+    <br/>
+    <ul>
+        <li>Writing bytes (binary output):</li>
+<pre><code class="language-scheme line-numbers">; Write single byte
+(put-u8 port 65)            ; Write byte 65 ('A')
+
+; Write bytevector
+(put-bytevector port #vu8(1 2 3 4 5))
+
+; Write portion of bytevector
+(put-bytevector port bv start count)
+
+; Example
+(let ([port (open-bytevector-output-port)])
+  (put-u8 port 72)          ; H
+  (put-u8 port 105)         ; i
+  (get-output-bytevector port))
+; #vu8(72 105)</code></pre>
+        <br/>
+        <li>Writing characters (textual output):</li>
+<pre><code class="language-scheme line-numbers">; Write single character
+(put-char port #\A)
+(write-char #\A port)       ; R5RS name
+(write-char #\A)            ; To current-output-port
+
+; Write string
+(put-string port "Hello")
+(put-string port str start count)  ; Portion of string
+
+; Write newline
+(newline port)
+(newline)                   ; To current-output-port
+
+; Example
+(let ([port (open-output-string)])
+  (put-char port #\H)
+  (put-string port "ello")
+  (newline port)
+  (get-output-string port)) ; "Hello\n"</code></pre>
+        <br/>
+        <li>Display and write:</li>
+<pre><code class="language-scheme line-numbers">; display - human-readable output
+(display "Hello" port)      ; Hello (no quotes)
+(display 42 port)           ; 42
+(display #\A port)          ; A (no #\)
+(display '(1 2 3) port)     ; (1 2 3)
+
+; write - machine-readable output (can be read back)
+(write "Hello" port)        ; "Hello" (with quotes)
+(write 42 port)             ; 42
+(write #\A port)            ; #\A
+(write '(1 2 3) port)       ; (1 2 3)
+
+; Difference
+(let ([port (open-output-string)])
+  (display "Hello\n" port)
+  (get-output-string port)) ; "Hello\n" (actual newline)
+
+(let ([port (open-output-string)])
+  (write "Hello\n" port)
+  (get-output-string port)) ; "\"Hello\\n\"" (escaped)
+
+; write output can be read back
+(equal? '(1 2 3)
+        (read (open-input-string
+                (with-output-to-string
+                  (lambda () (write '(1 2 3)))))))
+; #t</code></pre>
+        <br/>
+        <li>Put-datum and write variants:</li>
+<pre><code class="language-scheme line-numbers">; put-datum - R6RS standard write
+(put-datum port '(1 2 3))
+
+; print - Chez extension, like write but handles cycles
+(print '(1 2 3) port)
+
+; Write with shared structure
+(let ([x (list 1 2 3)])
+  (set-car! (cddr x) x)     ; Create cycle
+  (parameterize ([print-graph #t])
+    (write x)))             ; #0=(1 2 #0#)
+
+; printf for formatted output
+(printf "Hello, ~a!~n" "World")
+
+; fprintf to specific port
+(fprintf port "Value: ~a~n" 42)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Input/Output Operations</li>
+    <br/>
+    <ul>
+        <li>Standard I/O shortcuts:</li>
+<pre><code class="language-scheme line-numbers">; These use current-input-port or current-output-port
+
+; Input shortcuts
+(read)                      ; (read (current-input-port))
+(read-char)                 ; (read-char (current-input-port))
+(peek-char)                 ; (peek-char (current-input-port))
+(read-line)                 ; (read-line (current-input-port))
+
+; Output shortcuts
+(display x)                 ; (display x (current-output-port))
+(write x)                   ; (write x (current-output-port))
+(newline)                   ; (newline (current-output-port))
+(write-char c)              ; (write-char c (current-output-port))
+
+; Flush
+(flush-output-port)         ; Flush current-output-port</code></pre>
+        <br/>
+        <li>File copy operations:</li>
+<pre><code class="language-scheme line-numbers">; Copy file (binary)
+(define (copy-binary-file src dst)
+  (call-with-port (open-file-input-port src)
+    (lambda (in)
+      (call-with-port (open-file-output-port dst
+                        (file-options no-fail))
+        (lambda (out)
+          (let ([buffer (make-bytevector 4096)])
+            (let loop ()
+              (let ([n (get-bytevector-n! in buffer 0 4096)])
+                (unless (eof-object? n)
+                  (put-bytevector out buffer 0 n)
+                  (loop))))))))))
+
+; Copy file (textual)
+(define (copy-text-file src dst)
+  (call-with-input-file src
+    (lambda (in)
+      (call-with-output-file dst
+        (lambda (out)
+          (let loop ()
+            (let ([line (get-line in)])
+              (unless (eof-object? line)
+                (put-string out line)
+                (newline out)
+                (loop)))))
+        '(replace)))))</code></pre>
+        <br/>
+        <li>Transcoding between ports:</li>
+<pre><code class="language-scheme line-numbers">; Convert file encoding
+(define (convert-encoding input-file output-file
+                          input-codec output-codec)
+  (let ([in (open-file-input-port input-file
+              (file-options)
+              'block
+              (make-transcoder input-codec))]
+        [out (open-file-output-port output-file
+               (file-options no-fail)
+               'block
+               (make-transcoder output-codec))])
+    (let loop ()
+      (let ([s (get-string-some in)])
+        (unless (eof-object? s)
+          (put-string out s)
+          (loop))))
+    (close-port in)
+    (close-port out)))
+
+; UTF-8 to Latin-1
+(convert-encoding "utf8.txt" "latin1.txt"
+                  (utf-8-codec) (latin-1-codec))</code></pre>
+        <br/>
+        <li>Interactive I/O:</li>
+<pre><code class="language-scheme line-numbers">; Prompt and read
+(define (prompt-read prompt)
+  (display prompt)
+  (flush-output-port)
+  (read-line))
+
+(define name (prompt-read "Enter your name: "))
+
+; Yes/no prompt
+(define (yes-or-no? prompt)
+  (display prompt)
+  (display " (yes/no) ")
+  (flush-output-port)
+  (let ([response (read-line)])
+    (cond
+      [(member response '("yes" "y" "Y" "YES")) #t]
+      [(member response '("no" "n" "N" "NO")) #f]
+      [else
+       (display "Please answer yes or no.\n")
+       (yes-or-no? prompt)])))
+
+; Read with default
+(define (prompt-with-default prompt default)
+  (printf "~a [~a]: " prompt default)
+  (flush-output-port)
+  (let ([response (read-line)])
+    (if (string=? response "")
+        default
+        response)))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Non-Unicode Bytevector/String Conversions</li>
+    <br/>
+    <ul>
+        <li>Legacy encoding conversions:</li>
+<pre><code class="language-scheme line-numbers">; Latin-1 (ISO-8859-1) conversions
+(define (string->latin-1 str)
+  (let ([bv (make-bytevector (string-length str))])
+    (do ([i 0 (+ i 1)])
+        ((= i (string-length str)) bv)
+      (let ([c (char->integer (string-ref str i))])
+        (if (> c 255)
+            (bytevector-u8-set! bv i #x3F)  ; '?' for unmappable
+            (bytevector-u8-set! bv i c))))))
+
+(define (latin-1->string bv)
+  (let ([str (make-string (bytevector-length bv))])
+    (do ([i 0 (+ i 1)])
+        ((= i (bytevector-length bv)) str)
+      (string-set! str i
+        (integer->char (bytevector-u8-ref bv i))))))
+
+; Using transcoders
+(define (string->bytevector/transcoder str tc)
+  (call-with-bytevector-output-port
+    (lambda (port)
+      (put-string (transcoded-port port tc) str))))
+
+(string->bytevector/transcoder "Hello"
+  (make-transcoder (latin-1-codec)))</code></pre>
+        <br/>
+        <li>ASCII conversions:</li>
+<pre><code class="language-scheme line-numbers">; ASCII string to bytevector
+(define (string->ascii str)
+  (let ([bv (make-bytevector (string-length str))])
+    (do ([i 0 (+ i 1)])
+        ((= i (string-length str)) bv)
+      (let ([c (char->integer (string-ref str i))])
+        (bytevector-u8-set! bv i (fxand c #x7F))))))
+
+; Bytevector to ASCII string
+(define (ascii->string bv)
+  (let ([str (make-string (bytevector-length bv))])
+    (do ([i 0 (+ i 1)])
+        ((= i (bytevector-length bv)) str)
+      (string-set! str i
+        (integer->char (bytevector-u8-ref bv i))))))
+
+; Check if string is ASCII-safe
+(define (ascii-string? str)
+  (let loop ([i 0])
+    (or (= i (string-length str))
+        (and (< (char->integer (string-ref str i)) 128)
+             (loop (+ i 1))))))</code></pre>
+        <br/>
+        <li>Bytevector encoding utilities:</li>
+<pre><code class="language-scheme line-numbers">; Hex encoding
+(define (bytevector->hex-string bv)
+  (let ([str (make-string (* 2 (bytevector-length bv)))])
+    (do ([i 0 (+ i 1)])
+        ((= i (bytevector-length bv)) str)
+      (let* ([b (bytevector-u8-ref bv i)]
+             [hi (fxsrl b 4)]
+             [lo (fxand b #xF)])
+        (string-set! str (* i 2)
+          (string-ref "0123456789abcdef" hi))
+        (string-set! str (+ (* i 2) 1)
+          (string-ref "0123456789abcdef" lo))))))
+
+(bytevector->hex-string #vu8(255 128 0))  ; "ff8000"
+
+; Hex decoding
+(define (hex-string->bytevector str)
+  (let* ([len (quotient (string-length str) 2)]
+         [bv (make-bytevector len)])
+    (do ([i 0 (+ i 1)])
+        ((= i len) bv)
+      (let ([hi (string-ref str (* i 2))]
+            [lo (string-ref str (+ (* i 2) 1))])
+        (bytevector-u8-set! bv i
+          (+ (* 16 (hex-digit hi))
+             (hex-digit lo)))))))
+
+(define (hex-digit c)
+  (cond
+    [(char&lt;=? #\0 c #\9) (- (char->integer c) 48)]
+    [(char&lt;=? #\a c #\f) (+ 10 (- (char->integer c) 97))]
+    [(char&lt;=? #\A c #\F) (+ 10 (- (char->integer c) 65))]
+    [else (error 'hex-digit "invalid hex digit" c)]))</code></pre>
+        <br/>
+        <li>Base64 encoding:</li>
+<pre><code class="language-scheme line-numbers">; Base64 encoding
+(define base64-chars
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")
+
+(define (bytevector->base64 bv)
+  (let* ([len (bytevector-length bv)]
+         [out-len (* 4 (ceiling (/ len 3)))]
+         [str (make-string out-len #\=)])
+    (let loop ([i 0] [j 0])
+      (when (< i len)
+        (let* ([b0 (bytevector-u8-ref bv i)]
+               [b1 (if (< (+ i 1) len)
+                       (bytevector-u8-ref bv (+ i 1)) 0)]
+               [b2 (if (< (+ i 2) len)
+                       (bytevector-u8-ref bv (+ i 2)) 0)]
+               [n (+ (ash b0 16) (ash b1 8) b2)])
+          (string-set! str j
+            (string-ref base64-chars (fxand (fxsrl n 18) #x3F)))
+          (string-set! str (+ j 1)
+            (string-ref base64-chars (fxand (fxsrl n 12) #x3F)))
+          (when (< (+ i 1) len)
+            (string-set! str (+ j 2)
+              (string-ref base64-chars (fxand (fxsrl n 6) #x3F))))
+          (when (< (+ i 2) len)
+            (string-set! str (+ j 3)
+              (string-ref base64-chars (fxand n #x3F))))
+          (loop (+ i 3) (+ j 4)))))
+    str))
+
+(bytevector->base64 #vu8(72 101 108 108 111))  ; "SGVsbG8="</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Pretty Printing</li>
+    <br/>
+    <ul>
+        <li>Basic pretty printing:</li>
+<pre><code class="language-scheme line-numbers">; pretty-print formats Scheme data nicely
+(pretty-print '(define (factorial n)
+                 (if (zero? n)
+                     1
+                     (* n (factorial (- n 1))))))
+; Prints with proper indentation
+
+; Compare with write
+(write '(define (factorial n) (if (zero? n) 1 (* n (factorial (- n 1))))))
+; Prints on one line
+
+; Pretty-print to specific port
+(pretty-print datum port)
+
+; Pretty-print to string
+(with-output-to-string
+  (lambda ()
+    (pretty-print '(1 2 3))))</code></pre>
+        <br/>
+        <li>Pretty printing parameters:</li>
+<pre><code class="language-scheme line-numbers">; Line width
+(pretty-line-length)        ; Get current (default 75)
+(pretty-line-length 100)    ; Set to 100
+
+(parameterize ([pretty-line-length 40])
+  (pretty-print long-expression))
+
+; Initial indentation
+(pretty-initial-indent 4)   ; Start with 4 spaces
+
+; One-line limit (try to fit on one line if under this)
+(pretty-one-line-limit)     ; Get
+(pretty-one-line-limit 60)  ; Set
+
+; Maximum depth
+(print-level)               ; Maximum nesting depth
+(parameterize ([print-level 3])
+  (pretty-print deeply-nested))  ; Shows ... for deeper
+
+; Maximum length
+(print-length)              ; Maximum list length
+(parameterize ([print-length 10])
+  (pretty-print long-list))      ; Shows ... after 10</code></pre>
+        <br/>
+        <li>Pretty format control:</li>
+<pre><code class="language-scheme line-numbers">; pretty-format sets formatting for specific forms
+(pretty-format 'my-special-form
+  '(my-special-form (bracket x ...) #f body ...))
+
+; Format specifiers:
+; (bracket x ...)  - arguments on same line
+; #f               - break here
+; body ...         - indented body expressions
+
+; Built-in formats
+(pretty-format 'define)     ; See how define is formatted
+(pretty-format 'lambda)     ; See how lambda is formatted
+(pretty-format 'let)        ; See how let is formatted
+
+; Custom formatting for DSL
+(pretty-format 'when-valid
+  '(when-valid test #f body ...))
+
+; Reset to default
+(pretty-format 'my-form #f)</code></pre>
+        <br/>
+        <li>Print parameters affecting output:</li>
+<pre><code class="language-scheme line-numbers">; print-graph - handle shared/cyclic structure
+(parameterize ([print-graph #t])
+  (let ([x (list 1 2 3)])
+    (set-cdr! (cddr x) x)
+    (pretty-print x)))      ; #0=(1 2 3 . #0#)
+
+; print-vector-length - show vector length
+(parameterize ([print-vector-length #t])
+  (pretty-print '#(1 2 3))) ; #3(1 2 3)
+
+; print-gensym - how to print gensyms
+(parameterize ([print-gensym #t])
+  (pretty-print (gensym "x")))  ; #{x n}
+
+; print-brackets - use [ ] for some forms
+(parameterize ([print-brackets #t])
+  (pretty-print '(let ([x 1] [y 2]) (+ x y))))
+; (let ([x 1] [y 2]) (+ x y))
+
+; print-unicode - use Unicode escapes
+(parameterize ([print-unicode #f])
+  (write #\λ))              ; #\x3BB</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Formatted Output</li>
+    <br/>
+    <ul>
+        <li>Format strings with format and printf:</li>
+<pre><code class="language-scheme line-numbers">; format returns string
+(format "Hello, ~a!" "World")   ; "Hello, World!"
+
+; printf prints to current-output-port
+(printf "Hello, ~a!~n" "World")
+
+; fprintf prints to specific port
+(fprintf port "Value: ~a~n" 42)
+
+; errorf prints to current-error-port and raises error
+(errorf 'proc "Error: ~a" message)
+
+; warningf prints warning
+(warningf 'proc "Warning: ~a" message)</code></pre>
+        <br/>
+        <li>Common format directives:</li>
+<pre><code class="language-scheme line-numbers">; ~a - display (aesthetic, human-readable)
+(format "~a" "hello")       ; "hello" (no quotes)
+(format "~a" 42)            ; "42"
+(format "~a" '(1 2 3))      ; "(1 2 3)"
+
+; ~s - write (machine-readable)
+(format "~s" "hello")       ; "\"hello\"" (with quotes)
+(format "~s" #\a)           ; "#\\a"
+
+; ~d - decimal integer
+(format "~d" 42)            ; "42"
+
+; ~b - binary
+(format "~b" 42)            ; "101010"
+
+; ~o - octal
+(format "~o" 42)            ; "52"
+
+; ~x - hexadecimal (lowercase)
+(format "~x" 255)           ; "ff"
+
+; ~X - hexadecimal (uppercase)
+(format "~X" 255)           ; "FF"
+
+; ~c - character
+(format "~c" #\A)           ; "A"
+
+; ~% or ~n - newline
+(format "Line 1~%Line 2")   ; "Line 1\nLine 2"
+(format "Line 1~nLine 2")   ; Same
+
+; ~~ - literal tilde
+(format "50~~")             ; "50~"</code></pre>
+        <br/>
+        <li>Numeric formatting:</li>
+<pre><code class="language-scheme line-numbers">; Width specification
+(format "~5d" 42)           ; "   42" (right-aligned)
+(format "~5,'0d" 42)        ; "00042" (zero-padded)
+
+; Floating point
+(format "~f" 3.14159)       ; "3.14159"
+(format "~,2f" 3.14159)     ; "3.14" (2 decimal places)
+(format "~8,2f" 3.14159)    ; "    3.14" (width 8)
+
+; Scientific notation
+(format "~e" 12345.6)       ; "1.23456e4"
+(format "~,2e" 12345.6)     ; "1.23e4"
+
+; General (chooses f or e)
+(format "~g" 0.0001)        ; Uses exponential
+(format "~g" 3.14)          ; Uses fixed
+
+; With sign
+(format "~@d" 42)           ; "+42"
+(format "~@d" -42)          ; "-42"
+
+; Comma separation (Chez extension)
+(format "~:d" 1000000)      ; "1,000,000"</code></pre>
+        <br/>
+        <li>Padding and alignment:</li>
+<pre><code class="language-scheme line-numbers">; Right-align (default)
+(format "~10a" "hello")     ; "     hello"
+
+; Left-align with @
+(format "~10@a" "hello")    ; "hello     "
+
+; Custom padding character
+(format "~10,'*a" "hello")  ; "*****hello"
+
+; Truncation
+(format "~5a" "hello world") ; "hello" (truncated)
+
+; Combining width and precision
+(format "~10,5a" "hello world")  ; Truncate to 5, pad to 10
+
+; Multiple values
+(format "~a ~a ~a" 1 2 3)   ; "1 2 3"
+
+; Using * for computed width
+(format "~va" 10 "hello")   ; "     hello" (width from arg)</code></pre>
+        <br/>
+        <li>Conditional and iteration directives:</li>
+<pre><code class="language-scheme line-numbers">; ~[ ~] - conditional
+(format "~[zero~;one~;two~]" 1)     ; "one"
+(format "~[zero~;one~;two~:;many~]" 5)  ; "many" (default)
+
+; ~{ ~} - iteration
+(format "~{~a ~}" '(1 2 3)) ; "1 2 3 "
+(format "~{~a~^, ~}" '(1 2 3))  ; "1, 2, 3" (no trailing comma)
+
+; ~? or ~@ - recursive format
+(format "~?" "~a + ~a" '(1 2))  ; "1 + 2"
+
+; ~* - skip argument
+(format "~a ~* ~a" 1 2 3)   ; "1  3"
+
+; ~p - plural
+(format "~d item~p" 1)      ; "1 item"
+(format "~d item~p" 2)      ; "2 items"
+(format "~d ~:p" 2)         ; "2 ies" (y -> ies)
+
+; ~r - radix
+(format "~2r" 42)           ; "101010" (binary)
+(format "~16r" 255)         ; "ff" (hex)
+(format "~r" 42)            ; "forty-two" (English)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Input/Output Control Operations</li>
+    <br/>
+    <ul>
+        <li>Buffer control:</li>
+<pre><code class="language-scheme line-numbers">; Flush output buffer
+(flush-output-port port)
+(flush-output-port)         ; Current output port
+
+; Get buffer mode
+(output-port-buffer-mode port)  ; 'none, 'line, 'block
+
+; Block vs line buffering
+; - block: flush when buffer full
+; - line: flush on newline
+; - none: write immediately
+
+; Example: ensure prompt appears before input
+(display "Enter name: ")
+(flush-output-port)
+(read-line)
+
+; Clear input buffer (Chez extension)
+(clear-input-port port)     ; Discard buffered input
+
+; Clear output buffer (Chez extension)
+(clear-output-port port)    ; Discard without writing</code></pre>
+        <br/>
+        <li>Port positioning:</li>
+<pre><code class="language-scheme line-numbers">; File position
+(file-position port)        ; Get current position
+
+(file-position port 0)      ; Seek to beginning
+(file-position port 100)    ; Seek to byte 100
+
+; Chez extension: seek from end
+(file-position port (- (file-length port) 10))  ; 10 from end
+
+; Standard R6RS positioning
+(port-has-port-position? port)  ; Can get position?
+(port-position port)            ; Get position
+
+(port-has-set-port-position!? port)  ; Can set?
+(set-port-position! port 0)          ; Set position
+
+; Truncate file at current position (Chez extension)
+(truncate-port port)
+
+; File length (Chez extension)
+(file-length port)          ; Total file size
+
+; Set file length (Chez extension)
+(set-file-length! port 100) ; Truncate or extend to 100 bytes</code></pre>
+        <br/>
+        <li>Port status and information:</li>
+<pre><code class="language-scheme line-numbers">; Check for available input (non-blocking)
+(input-port-ready? port)    ; #t if data available
+(char-ready? port)          ; Same for textual ports
+
+; Check for EOF
+(port-eof? port)            ; #t if at end of file
+
+; Port name (for error messages)
+(port-name port)            ; Returns string
+
+; Port file descriptor (Chez extension)
+(port-file-descriptor port) ; OS file descriptor or #f
+
+; Check if port is a file port
+(file-port? port)           ; #t if backed by file
+
+; Mark port as closed state
+(mark-port-closed! port)    ; Chez extension</code></pre>
+        <br/>
+        <li>Timeout operations (Chez extension):</li>
+<pre><code class="language-scheme line-numbers">; Set read timeout
+(set-port-input-timeout! port seconds)
+
+; Non-blocking mode
+(set-port-input-timeout! port 0)  ; Return immediately
+
+; Example: read with timeout
+(define (read-with-timeout port seconds)
+  (set-port-input-timeout! port seconds)
+  (let ([result (guard (c [#t #f])
+                  (read port))])
+    (set-port-input-timeout! port #f)  ; Reset
+    result))
+
+; Check if input ready before blocking read
+(define (safe-read port)
+  (if (input-port-ready? port)
+      (read port)
+      'no-input))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Fasl Output</li>
+    <br/>
+    <ul>
+        <li>Fasl (Fast Load) format:</li>
+<pre><code class="language-scheme line-numbers">; Fasl is a compact binary format for Scheme data
+; Used for compiled files, faster than text read/write
+
+; Write fasl output
+(fasl-write datum port)
+
+; Read fasl input
+(fasl-read port)            ; Returns datum
+
+; Example: save and restore data
+(call-with-port
+  (open-file-output-port "data.fasl"
+    (file-options no-fail))
+  (lambda (port)
+    (fasl-write '(1 2 3 4 5) port)
+    (fasl-write '#(a b c) port)))
+
+(call-with-port
+  (open-file-input-port "data.fasl")
+  (lambda (port)
+    (list (fasl-read port)
+          (fasl-read port))))
+; ((1 2 3 4 5) #(a b c))</code></pre>
+        <br/>
+        <li>Fasl for compiled code:</li>
+<pre><code class="language-scheme line-numbers">; Compile to fasl file
+(compile-file "source.ss")  ; Creates source.so
+
+; Compile to specific output
+(compile-file "source.ss" "output.so")
+
+; Compile library
+(compile-library "mylib.ss")
+
+; Compile whole program
+(compile-program "main.ss")
+
+; Load compiled file
+(load "source.so")          ; Load fasl file
+(load-library "mylib.so")
+
+; Visit (load but don't instantiate)
+(visit "mylib.so")
+
+; Revisit (visit again)
+(revisit "mylib.so")</code></pre>
+        <br/>
+        <li>Fasl compression:</li>
+<pre><code class="language-scheme line-numbers">; Compressed fasl output
+(parameterize ([fasl-compressed #t])
+  (fasl-write large-datum port))
+
+; Check compression setting
+(fasl-compressed)           ; #t or #f
+
+; Compression level (Chez extension)
+(fasl-compressed 'lz4)      ; Fast compression
+(fasl-compressed 'gzip)     ; Better compression
+
+; Compile with compression
+(parameterize ([compile-compressed #t])
+  (compile-file "source.ss"))</code></pre>
+        <br/>
+        <li>Fasl version and compatibility:</li>
+<pre><code class="language-scheme line-numbers">; Fasl version (Chez extension)
+(fasl-version)              ; Current fasl format version
+
+; Cross-compilation fasl
+; Fasl files are platform-specific by default
+
+; Strip fasl file (remove debugging info)
+(strip-fasl-file "input.so" "output.so")
+
+; Fasl can store most Scheme objects:
+; - Lists, vectors, bytevectors
+; - Strings, symbols, numbers
+; - Records (with proper setup)
+; - Procedures (as compiled code)
+; - Hashtables
+
+; Cannot store:
+; - Ports
+; - Foreign pointers
+; - Locked objects</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>File System Interface</li>
+    <br/>
+    <ul>
+        <li>File existence and type:</li>
+<pre><code class="language-scheme line-numbers">; Check file existence
+(file-exists? "data.txt")   ; #t if exists
+
+; File type
+(file-regular? "data.txt")  ; #t if regular file
+(file-directory? "mydir")   ; #t if directory
+(file-symbolic-link? "link") ; #t if symlink
+
+; Get file type
+(file-type "path")          ; 'regular, 'directory, 'symbolic-link,
+                            ; 'char-device, 'block-device,
+                            ; 'fifo, 'socket
+
+; Follow symlinks
+(file-type "path" #t)       ; Follow symlinks</code></pre>
+        <br/>
+        <li>File information:</li>
+<pre><code class="language-scheme line-numbers">; File size
+(file-size "data.txt")      ; Size in bytes (Chez extension)
+
+; Modification time
+(file-modification-time "data.txt")  ; Time value
+
+; Access time
+(file-access-time "data.txt")
+
+; Change time
+(file-change-time "data.txt")
+
+; Compare times
+(time&lt;? (file-modification-time "a.txt")
+        (file-modification-time "b.txt"))
+
+; Convert to date
+(date-and-time (file-modification-time "data.txt"))</code></pre>
+        <br/>
+        <li>File operations:</li>
+<pre><code class="language-scheme line-numbers">; Delete file
+(delete-file "data.txt")
+(delete-file "data.txt" #f)  ; Don't error if missing
+
+; Rename/move file
+(rename-file "old.txt" "new.txt")
+
+; Copy file (Chez extension)
+(copy-file "src.txt" "dst.txt")
+
+; Create symbolic link (Unix)
+(create-symbolic-link "target" "link")
+
+; Read symbolic link
+(read-symbolic-link "link") ; Returns target path
+
+; File permissions (Unix)
+(chmod "file.txt" #o644)    ; Chez extension
+(file-permissions "file.txt")  ; Get permissions</code></pre>
+        <br/>
+        <li>Directory operations:</li>
+<pre><code class="language-scheme line-numbers">; Create directory
+(mkdir "newdir")
+(mkdir "newdir" #o755)      ; With permissions
+
+; Delete directory (must be empty)
+(rmdir "emptydir")
+(delete-directory "emptydir")
+
+; Delete directory recursively (Chez extension)
+(delete-directory "dir" #t)
+
+; List directory contents
+(directory-list ".")        ; List of filenames
+(directory-list "." #t)     ; Include hidden files (Chez)
+
+; Example: find all .ss files
+(filter (lambda (f) (string-suffix? ".ss" f))
+        (directory-list "."))
+
+; Current directory
+(current-directory)         ; Get current directory
+(current-directory "/tmp")  ; Change directory
+
+; Path manipulation (Chez extensions)
+(path-last "a/b/c.txt")     ; "c.txt"
+(path-parent "a/b/c.txt")   ; "a/b"
+(path-extension "file.txt") ; "txt"
+(path-root "file.txt")      ; "file"</code></pre>
+        <br/>
+        <li>Path utilities:</li>
+<pre><code class="language-scheme line-numbers">; Combine path components
+(define (path-join . parts)
+  (let loop ([parts parts] [acc ""])
+    (if (null? parts)
+        acc
+        (let ([part (car parts)])
+          (loop (cdr parts)
+                (if (string=? acc "")
+                    part
+                    (string-append acc "/" part)))))))
+
+(path-join "a" "b" "c.txt") ; "a/b/c.txt"
+
+; Absolute path check
+(define (absolute-path? path)
+  (and (> (string-length path) 0)
+       (char=? (string-ref path 0) #\/)))
+
+; Normalize path (remove . and ..)
+(define (normalize-path path)
+  (let loop ([parts (string-split path "/")]
+             [acc '()])
+    (cond
+      [(null? parts)
+       (string-join (reverse acc) "/")]
+      [(string=? (car parts) ".")
+       (loop (cdr parts) acc)]
+      [(and (string=? (car parts) "..")
+            (pair? acc)
+            (not (string=? (car acc) "..")))
+       (loop (cdr parts) (cdr acc))]
+      [else
+       (loop (cdr parts) (cons (car parts) acc))])))
+
+; Get absolute path (Chez extension)
+(cd "relative")             ; Alias for current-directory
+(current-directory)</code></pre>
+        <br/>
+        <li>Temporary files:</li>
+<pre><code class="language-scheme line-numbers">; Create temporary file name
+(tmpnam)                    ; Deprecated, returns temp filename
+
+; Open temporary file (Chez extension)
+(open-temporary-file)       ; Returns port and filename
+
+; Better: use standard temp directory
+(define (temp-directory)
+  (or (getenv "TMPDIR")
+      (getenv "TMP")
+      (getenv "TEMP")
+      "/tmp"))
+
+; Create temporary file with prefix
+(define (make-temp-file prefix)
+  (let loop ([n 0])
+    (let ([name (format "~a/~a~a" (temp-directory) prefix n)])
+      (if (file-exists? name)
+          (loop (+ n 1))
+          name))))
+
+; Clean up temporary files
+(define (with-temp-file prefix proc)
+  (let ([filename (make-temp-file prefix)])
+    (dynamic-wind
+      (lambda () #f)
+      (lambda () (proc filename))
+      (lambda ()
+        (when (file-exists? filename)
+          (delete-file filename))))))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Generic Port Examples</li>
+    <br/>
+    <ul>
+        <li>Logging port wrapper:</li>
+<pre><code class="language-scheme line-numbers">; Create a port that logs all output
+(define (make-logging-port underlying-port log-port)
+  (make-custom-textual-output-port
+    "logging-port"
+    (lambda (str start count)       ; write!
+      (put-string underlying-port str start count)
+      (put-string log-port str start count)
+      (flush-output-port log-port)
+      count)
+    #f                              ; get-position
+    #f                              ; set-position!
+    (lambda ()                      ; close
+      (close-port underlying-port))))
+
+; Usage
+(define log-file (open-output-file "output.log" '(replace)))
+(define logged-output
+  (make-logging-port (current-output-port) log-file))
+
+(parameterize ([current-output-port logged-output])
+  (display "This goes to both console and log\n"))
+
+(close-port log-file)</code></pre>
+        <br/>
+        <li>Counting port:</li>
+<pre><code class="language-scheme line-numbers">; Port that tracks lines and characters
+(define (make-counting-input-port port)
+  (let ([line 1]
+        [col 0])
+    (values
+      (make-custom-textual-input-port
+        "counting"
+        (lambda (str start count)   ; read!
+          (let ([n (get-string-n! port str start count)])
+            (when (and (fixnum? n) (> n 0))
+              (do ([i start (+ i 1)])
+                  ((= i (+ start n)))
+                (let ([c (string-ref str i)])
+                  (if (char=? c #\newline)
+                      (begin (set! line (+ line 1))
+                             (set! col 0))
+                      (set! col (+ col 1))))))
+            n))
+        #f #f
+        (lambda () (close-port port)))
+      (lambda () (values line col)))))  ; get-position
+
+; Usage
+(define-values (port get-pos)
+  (make-counting-input-port
+    (open-input-string "hello\nworld")))
+
+(get-string-n port 7)       ; "hello\nw"
+(get-pos)                   ; Values: 2, 1</code></pre>
+        <br/>
+        <li>Broadcast port (tee):</li>
+<pre><code class="language-scheme line-numbers">; Write to multiple ports simultaneously
+(define (make-broadcast-port . ports)
+  (make-custom-textual-output-port
+    "broadcast"
+    (lambda (str start count)       ; write!
+      (for-each
+        (lambda (port)
+          (put-string port str start count))
+        ports)
+      count)
+    #f                              ; get-position
+    #f                              ; set-position!
+    (lambda ()                      ; close
+      (for-each close-port ports))))
+
+; Usage: write to file and console
+(define both
+  (make-broadcast-port
+    (current-output-port)
+    (open-output-file "copy.txt" '(replace))))
+
+(display "This goes everywhere\n" both)
+(close-port both)</code></pre>
+        <br/>
+        <li>Process port:</li>
+<pre><code class="language-scheme line-numbers">; Create bidirectional port to subprocess
+(define (open-process-port* command)
+  (let-values ([(to-stdin from-stdout from-stderr pid)
+                (open-process-ports command 'block (native-transcoder))])
+    ; Create combined I/O port
+    (make-custom-textual-input/output-port
+      (format "process:~a" command)
+      (lambda (str start count)     ; read!
+        (if (input-port-ready? from-stdout)
+            (get-string-n! from-stdout str start count)
+            0))
+      (lambda (str start count)     ; write!
+        (put-string to-stdin str start count)
+        (flush-output-port to-stdin)
+        count)
+      #f                            ; get-position
+      #f                            ; set-position!
+      (lambda ()                    ; close
+        (close-port to-stdin)
+        (close-port from-stdout)
+        (close-port from-stderr)))))
+
+; Usage
+(define bc (open-process-port* "bc -l"))
+(put-string bc "2 + 3\n")
+(flush-output-port bc)
+(get-line bc)               ; "5"
+(close-port bc)</code></pre>
+        <br/>
+        <li>Limited input port:</li>
+<pre><code class="language-scheme line-numbers">; Port that limits bytes read
+(define (make-limited-input-port port limit)
+  (let ([remaining limit])
+    (make-custom-binary-input-port
+      "limited"
+      (lambda (bv start count)      ; read!
+        (if (&lt;= remaining 0)
+            0                       ; EOF
+            (let* ([to-read (min count remaining)]
+                   [n (get-bytevector-n! port bv start to-read)])
+              (if (eof-object? n)
+                  (begin (set! remaining 0) 0)
+                  (begin (set! remaining (- remaining n)) n)))))
+      #f                            ; get-position
+      #f                            ; set-position!
+      (lambda () (close-port port)))))
+
+; Usage: read only first 100 bytes
+(define limited
+  (make-limited-input-port
+    (open-file-input-port "large-file.bin")
+    100))
+
+(get-bytevector-all limited) ; At most 100 bytes
+</code></pre>
+        <br/>
+        <li>Socket port example:</li>
+<pre><code class="language-scheme line-numbers">; TCP socket ports (using foreign interface)
+; Simplified example - see Foreign Interface chapter for details
+
+(define (make-socket-port fd)
+  (let ([closed? #f])
+    (make-custom-binary-input/output-port
+      (format "socket:~a" fd)
+      (lambda (bv start count)      ; read!
+        (if closed?
+            0
+            (let ([n (socket-read fd bv start count)])
+              (if (&lt;= n 0) 0 n))))
+      (lambda (bv start count)      ; write!
+        (if closed?
+            0
+            (socket-write fd bv start count)))
+      #f                            ; get-position
+      #f                            ; set-position!
+      (lambda ()                    ; close
+        (set! closed? #t)
+        (socket-close fd)))))
+
+; With transcoder for text
+(define (open-text-socket-port fd)
+  (transcoded-port
+    (make-socket-port fd)
+    (make-transcoder (utf-8-codec) 'none 'replace)))
+</code></pre>
+        <br/>
+        <li>Filtering port:</li>
+<pre><code class="language-scheme line-numbers">; Transform input as it's read
+(define (make-uppercase-port port)
+  (make-custom-textual-input-port
+    "uppercase"
+    (lambda (str start count)       ; read!
+      (let ([n (get-string-n! port str start count)])
+        (when (fixnum? n)
+          (do ([i start (+ i 1)])
+              ((= i (+ start n)))
+            (string-set! str i
+              (char-upcase (string-ref str i)))))
+        n))
+    #f #f
+    (lambda () (close-port port))))
+
+; Usage
+(define upper
+  (make-uppercase-port
+    (open-input-string "hello world")))
+
+(get-string-all upper)      ; "HELLO WORLD"
+
+; Transforming output port
+(define (make-rot13-port port)
+  (define (rot13-char c)
+    (cond
+      [(char&lt;=? #\a c #\m) (integer-&gt;char (+ (char-&gt;integer c) 13))]
+      [(char&lt;=? #\n c #\z) (integer-&gt;char (- (char-&gt;integer c) 13))]
+      [(char&lt;=? #\A c #\M) (integer-&gt;char (+ (char-&gt;integer c) 13))]
+      [(char&lt;=? #\N c #\Z) (integer-&gt;char (- (char-&gt;integer c) 13))]
+      [else c]))
+  (make-custom-textual-output-port
+    "rot13"
+    (lambda (str start count)
+      (let ([rotated (make-string count)])
+        (do ([i 0 (+ i 1)])
+            ((= i count))
+          (string-set! rotated i
+            (rot13-char (string-ref str (+ start i)))))
+        (put-string port rotated)
+        count))
+    #f #f
+    (lambda () (close-port port))))
+</code></pre>
+    </ul>
+    <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
