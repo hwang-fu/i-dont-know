@@ -153,6 +153,7 @@
         <li><a href="#scm-multiple-expressions">Multiple Expressions</a></li>
         <li><a href="#scm-naming-conventions">Naming Conventions</a></li>
         <li><a href="#scm-compiler-interpreter">Interacting with Chez Scheme</a></li>
+        <li><a href="#scm-command-line-options">Command Line Options</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3181,6 +3182,414 @@ $ chmod +x app
     </ul>
     <br/><br/>
 
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-command-line-options">Chez Scheme Command Line Options</h3>
+<ol>
+
+    <li>Basic Invocation</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme is invoked from the command line using <code>scheme</code> (full version) or <code>petite</code> (interpreter-only version).</li>
+        <br/>
+        <li>General syntax:</li>
+<pre><code class="language-bash line-numbers"># Start interactive REPL
+$ scheme
+
+# Start Petite Chez Scheme (no compiler)
+$ petite
+
+# Load files before entering REPL
+$ scheme file1.scm file2.scm
+
+# Run a script
+$ scheme --script myscript.scm
+
+# Run an R6RS program
+$ scheme --program myprogram.scm
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Execution Mode Options</li>
+    <br/>
+    <ul>
+        <li><code>--script file</code> runs file as a Scheme shell script.</li>
+        <br/>
+        <li><code>--program file</code> runs file as an R6RS top-level program.</li>
+        <br/>
+        <li><code>-q</code> or <code>--quiet</code> suppresses greeting banner and prompts.</li>
+        <br/>
+        <li>Script example:</li>
+<pre><code class="language-scheme line-numbers">#! /usr/bin/scheme --script
+(display "Hello from script!")
+(newline)
+(display "Arguments: ")
+(display (cdr (command-line)))
+(newline)</code></pre>
+        <br/>
+        <li>R6RS program example:</li>
+<pre><code class="language-scheme line-numbers">#! /usr/bin/scheme --program
+(import (rnrs))
+
+(define (main args)
+  (for-each
+    (lambda (arg)
+      (display arg)
+      (newline))
+    args))
+
+(main (cdr (command-line)))</code></pre>
+        <br/>
+        <li>You can also use <code>scheme-script</code> as an alias for <code>scheme --program</code>:</li>
+<pre><code class="language-scheme line-numbers">#! /usr/bin/env scheme-script
+(import (rnrs))
+(display "Running as R6RS program")
+(newline)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Library Options</li>
+    <br/>
+    <ul>
+        <li><code>--libdirs dir:...</code> — Set library source/object directories.</li>
+        <br/>
+        <li><code>--libexts ext:...</code> — Set library file extensions.</li>
+        <br/>
+        <li><code>--compile-imported-libraries</code> — Compile libraries before loading them.</li>
+        <br/>
+        <li><code>--import-notify</code> — Print messages when searching for libraries.</li>
+        <br/>
+        <li>Directory format uses colons (or semicolons on Windows) as separators:</li>
+<pre><code class="language-bash line-numbers"># Set library directories
+$ scheme --libdirs /path/to/libs:/another/path
+
+# Set library extensions
+$ scheme --libexts .sls:.scm
+
+# Compile libraries automatically
+$ scheme --compile-imported-libraries --program myapp.ss
+
+# Debug library loading
+$ scheme --import-notify --program myapp.ss</code></pre>
+        <br/>
+        <li>The source and object directories can be specified separately using double colons:</li>
+<pre><code class="language-bash line-numbers"># source-dir::object-dir format
+$ scheme --libdirs ./src::./obj:/usr/lib/scheme</code></pre>
+        <br/>
+        <li>Append to default directories by ending with a colon:</li>
+<pre><code class="language-bash line-numbers"># Add to existing directories (note trailing colon)
+$ scheme --libdirs /my/libs:</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Optimization and Debugging Options</li>
+    <br/>
+    <ul>
+        <li><code>--optimize-level 0|1|2|3</code> — Set the optimization level (default: 0).</li>
+        <ul>
+            <li>Levels 0, 1, 2: Safe code with full type and bounds checking</li>
+            <li>Level 3: Unsafe code, may omit checks for better performance</li>
+        </ul>
+        <br/>
+        <li><code>--debug-on-exception</code> — Enter debugger on uncaught exceptions.</li>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-bash line-numbers"># Maximum optimization (unsafe, for production)
+$ scheme --optimize-level 3 --program myapp.ss
+
+# Debug a script that's crashing
+$ scheme --debug-on-exception --script buggy.ss
+
+# Safe optimization for development
+$ scheme --optimize-level 2 --program myapp.ss</code></pre>
+        <br/>
+        <li>When <code>--debug-on-exception</code> is active, exceptions enter the inspector:</li>
+<pre><code class="language-scheme line-numbers">$ scheme --debug-on-exception
+> (car 5)
+Exception in car: 5 is not a pair
+Type (debug) to enter the debugger.
+debug> i     ; inspect continuation
+debug> ?     ; show help
+debug> q     ; quit debugger</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Expression Editor Options</li>
+    <br/>
+    <ul>
+        <li><code>--eedisable</code> — Disable the expression editor (use plain input).</li>
+        <br/>
+        <li><code>--eehistory off|file</code> — Set history file location or disable history.</li>
+        <br/>
+        <li>The expression editor provides:</li>
+        <ul>
+            <li>Multi-line expression editing with auto-indentation</li>
+            <li>Emacs-style key bindings</li>
+            <li>History across sessions (stored in <code>~/.chezscheme_history</code>)</li>
+            <li>Tab completion for identifiers</li>
+            <li>Parenthesis matching and auto-correction</li>
+        </ul>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-bash line-numbers"># Disable expression editor (useful for piped input)
+$ scheme --eedisable
+
+# Use custom history file
+$ scheme --eehistory /tmp/my_history
+
+# Disable history saving
+$ scheme --eehistory off
+
+# Piping input (editor auto-disabled)
+$ echo '(+ 1 2)' | scheme -q</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Boot File Options</li>
+    <br/>
+    <ul>
+        <li><code>-b file</code> or <code>--boot file</code> — Load boot code from specified file.</li>
+        <br/>
+        <li><code>--verbose</code> — Trace the boot file search process.</li>
+        <br/>
+        <li>Boot files contain compiled Scheme code implementing the system. By default, the system searches for boot files based on the executable name.</li>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-bash line-numbers"># Use custom boot file
+$ scheme -b /path/to/custom.boot
+
+# Multiple boot files (order matters: dependencies first)
+$ scheme -b petite.boot -b scheme.boot -b myapp.boot
+
+# Trace boot file searching
+$ scheme --verbose
+
+# Custom application with boot file
+$ scheme -b myapp.boot --program main.ss</code></pre>
+        <br/>
+        <li>Creating boot files programmatically:</li>
+<pre><code class="language-scheme line-numbers">; Create boot file depending on petite or scheme
+(make-boot-file "myapp.boot"
+                '("petite" "scheme")  ; alternatives
+                "module1.so"
+                "module2.so")
+
+; Create standalone boot file (includes petite.boot)
+(make-boot-file "standalone.boot"
+                '()                    ; no dependencies
+                "petite.boot"
+                "myapp.so")</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Other Options</li>
+    <br/>
+    <ul>
+        <li><code>--version</code> — Print version information and exit.</li>
+        <br/>
+        <li><code>--help</code> — Print brief help message and exit.</li>
+        <br/>
+        <li><code>--</code> — Pass all remaining arguments to Scheme (not processed as options).</li>
+        <br/>
+        <li><code>--enable-object-counts</code> — Have garbage collector maintain object counts.</li>
+        <br/>
+        <li><code>--retain-static-relocation</code> — Keep relocation info for <code>compute-size</code>, etc.</li>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-bash line-numbers"># Check version
+$ scheme --version
+Chez Scheme Version 10.0.0
+
+# Pass arguments that look like options to your script
+$ scheme --script myapp.ss -- --my-flag --another-flag
+
+# Enable object counting for memory profiling
+$ scheme --enable-object-counts</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Environment Variables</li>
+    <br/>
+    <ul>
+        <li><code>SCHEMEHEAPDIRS</code> — Colon-separated list of directories to search for boot files.</li>
+        <ul>
+            <li><code>%v</code> is replaced by the version number</li>
+            <li><code>%m</code> is replaced by the machine type</li>
+            <li><code>%%</code> is replaced by a literal <code>%</code></li>
+        </ul>
+        <br/>
+        <li><code>CHEZSCHEMELIBDIRS</code> — Default value for <code>--libdirs</code> if not specified.</li>
+        <br/>
+        <li><code>CHEZSCHEMELIBEXTS</code> — Default value for <code>--libexts</code> if not specified.</li>
+        <br/>
+        <li><code>CHEZSCHEME_HISTORY</code> — Location of expression editor history file.</li>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-bash line-numbers"># Set boot file search path
+export SCHEMEHEAPDIRS="/opt/chez/%v/%m:/usr/lib/csv%v"
+
+# Set default library directories
+export CHEZSCHEMELIBDIRS="/home/user/scheme/libs:/usr/local/lib/scheme"
+
+# Set custom history location
+export CHEZSCHEME_HISTORY="$HOME/.config/chez_history"</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing Command Line Arguments in Scheme</li>
+    <br/>
+    <ul>
+        <li>Use <code>(command-line)</code> to get arguments as a list.</li>
+        <br/>
+        <li>The first element is the script/program name, remaining elements are arguments.</li>
+        <br/>
+        <li>Use <code>(command-line-arguments)</code> for just the arguments (Chez-specific).</li>
+        <br/>
+        <li>Example script with argument parsing:</li>
+<pre><code class="language-scheme line-numbers">#! /usr/bin/scheme --script
+
+(define args (command-line))
+
+(display "Program: ")
+(display (car args))
+(newline)
+
+(display "Arguments: ")
+(display (cdr args))
+(newline)
+
+(display "Argument count: ")
+(display (length (cdr args)))
+(newline)
+
+; Process arguments
+(for-each
+  (lambda (arg)
+    (cond
+      [(string=? arg "--help")
+       (display "Usage: myscript [options]")
+       (newline)
+       (exit 0)]
+      [(string=? arg "--verbose")
+       (display "Verbose mode enabled")
+       (newline)]
+      [else
+       (display "Unknown argument: ")
+       (display arg)
+       (newline)]))
+  (cdr args))</code></pre>
+<pre><code class="language-bash line-numbers">$ chmod +x myscript.ss
+$ ./myscript.ss --verbose foo bar
+Program: ./myscript.ss
+Arguments: (--verbose foo bar)
+Argument count: 3
+Verbose mode enabled
+Unknown argument: foo
+Unknown argument: bar</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Quick Reference Table</li>
+    <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Option</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>-q, --quiet</code></td>
+            <td>Suppress greeting and prompts</td>
+        </tr>
+        <tr>
+            <td><code>--script file</code></td>
+            <td>Run file as shell script</td>
+        </tr>
+        <tr>
+            <td><code>--program file</code></td>
+            <td>Run file as R6RS program</td>
+        </tr>
+        <tr>
+            <td><code>--libdirs dir:...</code></td>
+            <td>Set library directories</td>
+        </tr>
+        <tr>
+            <td><code>--libexts ext:...</code></td>
+            <td>Set library extensions</td>
+        </tr>
+        <tr>
+            <td><code>--compile-imported-libraries</code></td>
+            <td>Compile libraries before loading</td>
+        </tr>
+        <tr>
+            <td><code>--import-notify</code></td>
+            <td>Trace library search</td>
+        </tr>
+        <tr>
+            <td><code>--optimize-level n</code></td>
+            <td>Set optimization (0-3)</td>
+        </tr>
+        <tr>
+            <td><code>--debug-on-exception</code></td>
+            <td>Enter debugger on exceptions</td>
+        </tr>
+        <tr>
+            <td><code>--eedisable</code></td>
+            <td>Disable expression editor</td>
+        </tr>
+        <tr>
+            <td><code>--eehistory off|file</code></td>
+            <td>Set/disable history file</td>
+        </tr>
+        <tr>
+            <td><code>-b, --boot file</code></td>
+            <td>Load boot file</td>
+        </tr>
+        <tr>
+            <td><code>--verbose</code></td>
+            <td>Trace boot search</td>
+        </tr>
+        <tr>
+            <td><code>--enable-object-counts</code></td>
+            <td>Enable GC object counting</td>
+        </tr>
+        <tr>
+            <td><code>--retain-static-relocation</code></td>
+            <td>Keep relocation info</td>
+        </tr>
+        <tr>
+            <td><code>--version</code></td>
+            <td>Print version and exit</td>
+        </tr>
+        <tr>
+            <td><code>--help</code></td>
+            <td>Print help and exit</td>
+        </tr>
+        <tr>
+            <td><code>--</code></td>
+            <td>Pass remaining args to Scheme</td>
+        </tr>
+    </tbody>
+</table>
+    <br/><br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
