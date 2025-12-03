@@ -163,7 +163,7 @@
         <li><a href="#scm-operations-objects">Operations on Objects</a></li>
         <li><a href="#scm-numeric-operations">Numeric Operations</a></li>
         <li><a href="#scm-input-output">Input / Output</a></li>
-        <li><a href="#scm-"></a></li>
+        <li><a href="#scm-libraries-programs">Libraries and Top-level Programs</a></li>
     </ol>
 </nav>
 <hr/>
@@ -14060,6 +14060,1287 @@ v                           ; e.g., #(3 1 5 2 4)
     </ul>
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-libraries-programs">Libraries and Top-level Programs in Chez Scheme</h3>
+<ol>
+
+    <li>Built-in Libraries</li>
+    <br/>
+    <ul>
+        <li>R6RS standard libraries:</li>
+<pre><code class="language-scheme line-numbers">; Core library (base language)
+(import (rnrs))             ; All R6RS bindings
+
+; Individual R6RS libraries
+(import (rnrs base))        ; Core syntax and procedures
+(import (rnrs lists))       ; List utilities
+(import (rnrs sorting))     ; Sorting procedures
+(import (rnrs records syntactic))   ; Record types
+(import (rnrs records procedural))  ; Procedural records
+(import (rnrs records inspection))  ; Record inspection
+(import (rnrs exceptions))  ; Exception handling
+(import (rnrs conditions))  ; Condition types
+(import (rnrs io simple))   ; Simple I/O
+(import (rnrs io ports))    ; Port I/O
+(import (rnrs files))       ; File system operations
+(import (rnrs control))     ; Control structures
+(import (rnrs unicode))     ; Unicode operations
+(import (rnrs bytevectors)) ; Bytevector operations
+(import (rnrs hashtables))  ; Hash tables
+(import (rnrs enums))       ; Enumerations
+(import (rnrs syntax-case)) ; Macro system
+(import (rnrs mutable-pairs))    ; set-car!, set-cdr!
+(import (rnrs mutable-strings))  ; string-set!
+(import (rnrs r5rs))        ; R5RS compatibility
+(import (rnrs eval))        ; eval procedure
+(import (rnrs programs))    ; command-line, exit
+(import (rnrs arithmetic fixnums))   ; Fixnum operations
+(import (rnrs arithmetic flonums))   ; Flonum operations
+(import (rnrs arithmetic bitwise))   ; Bitwise operations</code></pre>
+        <br/>
+        <li>Chez Scheme library:</li>
+<pre><code class="language-scheme line-numbers">; Complete Chez Scheme functionality
+(import (chezscheme))
+
+; This provides everything in (rnrs) plus Chez extensions:
+; - Additional I/O procedures
+; - Compilation and evaluation
+; - Foreign function interface
+; - Threading support
+; - Debugging and inspection
+; - System interface
+; - Engine support
+; - Extended record facilities
+; - Hash table extensions
+; - And much more
+
+; Common pattern: use chezscheme for full access
+(library (my-library)
+  (export my-proc)
+  (import (chezscheme))     ; Full Chez Scheme
+
+  (define (my-proc x)
+    (printf "Processing ~a~n" x)  ; Chez extension
+    (* x 2)))</code></pre>
+        <br/>
+        <li>SRFI libraries:</li>
+<pre><code class="language-scheme line-numbers">; Some SRFIs are built-in or easily available
+
+; SRFI-1: List library (partial support via rnrs)
+(import (rnrs lists))
+
+; Using Chez's built-in equivalents
+(import (chezscheme))
+; Provides: fold-left, fold-right, filter, partition,
+;           find, exists, for-all, memp, remp, assp, etc.
+
+; Pattern for SRFI compatibility
+(library (srfi :1)
+  (export
+    ; List constructors
+    cons list
+    ; Selectors
+    car cdr
+    ; ... etc
+    )
+  (import (rnrs) (rnrs lists)))
+
+; Some Chez installations include SRFI collections
+; Check your installation for available SRFIs</code></pre>
+        <br/>
+        <li>Library naming conventions:</li>
+<pre><code class="language-scheme line-numbers">; Library names are lists of identifiers
+(import (rnrs))             ; Single identifier
+(import (rnrs base))        ; Two identifiers
+(import (rnrs io ports))    ; Three identifiers
+
+; With version
+(import (rnrs (6)))         ; Version 6
+(import (rnrs base (6)))    ; rnrs base version 6
+
+; Version matching
+(import (rnrs (>= 6)))      ; Version 6 or higher
+(import (mylib (and (>= 1) (< 2))))  ; 1.x versions
+
+; Common naming patterns
+(library (company project module) ...)
+(library (myapp utils string) ...)
+(library (web server http) ...)</code></pre>
+        <br/>
+        <li>Library summary table:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Library</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>(rnrs)</code></td>
+            <td>Complete R6RS standard library</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs base)</code></td>
+            <td>Core syntax, procedures, basic types</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs lists)</code></td>
+            <td>List operations: find, filter, fold, etc.</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs io ports)</code></td>
+            <td>Port-based I/O system</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs io simple)</code></td>
+            <td>Simple I/O: read, write, display</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs records syntactic)</code></td>
+            <td>define-record-type syntax</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs exceptions)</code></td>
+            <td>guard, raise, with-exception-handler</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs hashtables)</code></td>
+            <td>Hash table operations</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs syntax-case)</code></td>
+            <td>Macro system</td>
+        </tr>
+        <tr>
+            <td><code>(chezscheme)</code></td>
+            <td>Full Chez Scheme with extensions</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Running Top-level Programs</li>
+    <br/>
+    <ul>
+        <li>Top-level program structure:</li>
+<pre><code class="language-scheme line-numbers">; A top-level program starts with import and has a body
+; File: hello.ss
+
+#!r6rs
+(import (rnrs))
+
+(display "Hello, World!")
+(newline)
+
+; Or with Chez Scheme extensions
+#!chezscheme
+(import (chezscheme))
+
+(printf "Hello, World!~n")</code></pre>
+        <br/>
+        <li>Running programs from command line:</li>
+<pre><code class="language-bash line-numbers"># Run as script
+$ scheme --script hello.ss
+
+# Run as program (R6RS compliant)
+$ scheme --program hello.ss
+
+# With arguments
+$ scheme --script myprogram.ss arg1 arg2 arg3
+
+# Using petite (no compiler)
+$ petite --script hello.ss
+
+# Make executable script (Unix)
+$ chmod +x hello.ss
+$ ./hello.ss</code></pre>
+        <br/>
+        <li>Shebang for executable scripts:</li>
+<pre><code class="language-scheme line-numbers">#!/usr/bin/env scheme-script
+(import (chezscheme))
+
+; Access command-line arguments
+(define args (command-line-arguments))
+(printf "Arguments: ~a~n" args)
+
+; Program name
+(printf "Program: ~a~n" (car (command-line)))
+
+; Exit with status
+(exit 0)
+
+; Alternative shebangs:
+; #!/usr/bin/scheme --script
+; #!/usr/local/bin/scheme --script
+; #!/usr/bin/env scheme --script</code></pre>
+        <br/>
+        <li>Accessing command-line arguments:</li>
+<pre><code class="language-scheme line-numbers">#!/usr/bin/env scheme-script
+(import (chezscheme))
+
+; (command-line) returns all arguments including program name
+(define all-args (command-line))
+; ("program-name" "arg1" "arg2" ...)
+
+; (command-line-arguments) returns just the arguments
+(define args (command-line-arguments))
+; ("arg1" "arg2" ...)
+
+; Example: process arguments
+(define (main args)
+  (cond
+    [(null? args)
+     (display "Usage: program <filename>\n")
+     (exit 1)]
+    [(string=? (car args) "--help")
+     (display "Help message here\n")
+     (exit 0)]
+    [else
+     (process-file (car args))
+     (exit 0)]))
+
+(main (command-line-arguments))</code></pre>
+        <br/>
+        <li>Program exit and return codes:</li>
+<pre><code class="language-scheme line-numbers">; Exit normally
+(exit)                      ; Exit with status 0
+(exit 0)                    ; Same
+
+; Exit with error
+(exit 1)                    ; Non-zero indicates error
+
+; Exit with any value (Chez extension)
+(exit 'some-value)          ; Converted to exit status
+
+; Graceful shutdown
+(define (cleanup-and-exit status)
+  (close-all-ports)
+  (delete-temp-files)
+  (exit status))
+
+; Handling errors at top level
+(guard (c
+        [(error? c)
+         (display "Error: " (current-error-port))
+         (display (condition-message c) (current-error-port))
+         (newline (current-error-port))
+         (exit 1)])
+  (main (command-line-arguments)))</code></pre>
+        <br/>
+        <li>Running programs from REPL:</li>
+<pre><code class="language-scheme line-numbers">; Load and run program
+(load-program "myprogram.ss")
+
+; Load compiled program
+(load-program "myprogram.so")
+
+; Run with custom arguments
+(parameterize ([command-line '("prog" "arg1" "arg2")])
+  (load-program "myprogram.ss"))
+
+; Compile program
+(compile-program "myprogram.ss")     ; Creates myprogram.so
+(compile-program "myprogram.ss" "out.so")  ; Custom output
+
+; Compile and load
+(load (compile-program "myprogram.ss"))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Library and Top-level Program Forms</li>
+    <br/>
+    <ul>
+        <li>Library form syntax:</li>
+<pre><code class="language-scheme line-numbers">; Basic library structure
+(library (library-name)
+  (export export-spec ...)
+  (import import-spec ...)
+
+  ; Library body: definitions
+  definition ...
+
+  ; Optional: expressions (run when library instantiated)
+  expression ...)
+
+; Complete example
+(library (math arithmetic)
+  (export add subtract multiply divide
+          square cube)
+  (import (rnrs))
+
+  (define (add a b) (+ a b))
+  (define (subtract a b) (- a b))
+  (define (multiply a b) (* a b))
+  (define (divide a b) (/ a b))
+
+  (define (square x) (* x x))
+  (define (cube x) (* x x x)))</code></pre>
+        <br/>
+        <li>Export specifications:</li>
+<pre><code class="language-scheme line-numbers">(library (my-library)
+  (export
+    ; Simple export
+    proc1
+    proc2
+
+    ; Renamed export
+    (rename (internal-name external-name))
+    (rename (my-map map) (my-filter filter))
+
+    ; Export imported binding
+    string-append              ; Re-export from import
+
+    ; Export syntax
+    my-macro
+    )
+  (import (rnrs))
+
+  (define (proc1 x) ...)
+  (define (proc2 x) ...)
+  (define (internal-name x) ...)
+  (define (my-map f lst) ...)
+  (define (my-filter p lst) ...)
+
+  (define-syntax my-macro
+    (syntax-rules ()
+      [(_ x) (list x)])))</code></pre>
+        <br/>
+        <li>Import specifications:</li>
+<pre><code class="language-scheme line-numbers">(library (my-library)
+  (export ...)
+  (import
+    ; Simple import
+    (rnrs)
+
+    ; Import specific bindings only
+    (only (rnrs lists) filter map fold-left)
+
+    ; Import all except some
+    (except (rnrs) set-car! set-cdr!)
+
+    ; Import with prefix
+    (prefix (rnrs lists) list:)
+    ; Now use: list:filter, list:map, etc.
+
+    ; Import with rename
+    (rename (rnrs) (lambda fn) (define def))
+    ; Now use: (fn (x) ...), (def name value)
+
+    ; Combine specifications
+    (prefix (only (rnrs lists) filter map) l:)
+    ; Now use: l:filter, l:map
+
+    ; Version specification
+    (rnrs (6))
+    (mylib (>= 1 2))        ; Version 1.2 or higher
+    )
+  ...)</code></pre>
+        <br/>
+        <li>Top-level program form:</li>
+<pre><code class="language-scheme line-numbers">; Top-level program structure
+#!r6rs
+(import import-spec ...)
+
+; Program body
+definition ...
+expression ...
+
+; Example program
+#!r6rs
+(import
+  (rnrs)
+  (rnrs programs)           ; For command-line, exit
+  (my-library))
+
+; Definitions
+(define (process-file filename)
+  (call-with-input-file filename
+    (lambda (port)
+      (let loop ([line (get-line port)])
+        (unless (eof-object? line)
+          (display line)
+          (newline)
+          (loop (get-line port)))))))
+
+; Main code
+(let ([args (command-line-arguments)])
+  (when (null? args)
+    (display "No file specified\n")
+    (exit 1))
+  (for-each process-file args))</code></pre>
+        <br/>
+        <li>Library with initialization:</li>
+<pre><code class="language-scheme line-numbers">; Libraries can have expressions that run on instantiation
+(library (config loader)
+  (export get-config config-loaded?)
+  (import (chezscheme))
+
+  ; Private state
+  (define config-data #f)
+  (define loaded? #f)
+
+  ; Exported procedures
+  (define (get-config key)
+    (and loaded? (assq key config-data)))
+
+  (define (config-loaded?)
+    loaded?)
+
+  ; Initialization code (runs when library first used)
+  (display "Loading configuration...\n")
+  (set! config-data
+    (if (file-exists? "config.scm")
+        (with-input-from-file "config.scm" read)
+        '()))
+  (set! loaded? #t)
+  (printf "Config loaded: ~a entries~n"
+          (length config-data)))</code></pre>
+        <br/>
+        <li>Nested library definitions (Chez extension):</li>
+<pre><code class="language-scheme line-numbers">; Define library at REPL or in another file
+(define-library (my utils)
+  (export helper-proc)
+  (import (chezscheme))
+  (begin
+    (define (helper-proc x)
+      (* x 2))))
+
+; R7RS-style library syntax (limited support)
+(define-library (my-r7rs-lib)
+  (export foo bar)
+  (import (scheme base))
+  (begin
+    (define (foo x) x)
+    (define (bar x) (+ x 1))))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Standalone Import and Export Forms</li>
+    <br/>
+    <ul>
+        <li>Interactive imports at REPL:</li>
+<pre><code class="language-scheme line-numbers">; Import at top level (REPL)
+(import (rnrs))
+(import (chezscheme))
+
+; Import specific bindings
+(import (only (rnrs lists) filter partition))
+
+; Import with prefix
+(import (prefix (rnrs hashtables) ht:))
+(ht:make-eq-hashtable)      ; Use prefixed name
+
+; Multiple imports
+(import (rnrs) (rnrs mutable-pairs))
+
+; Re-import to update (after library recompile)
+(import (my-library))</code></pre>
+        <br/>
+        <li>Implicit exports (Chez extension):</li>
+<pre><code class="language-scheme line-numbers">; implicit-exports parameter controls default export behavior
+(implicit-exports)          ; Check current setting
+
+; When #t (default), all definitions are implicitly exported
+; unless explicitly listed in export clause
+
+(parameterize ([implicit-exports #f])
+  ; In this context, only explicit exports are visible
+  (eval '(library (strict-lib)
+           (export public-proc)  ; Only this is exported
+           (import (chezscheme))
+           (define (public-proc x) (private-proc x))
+           (define (private-proc x) (* x 2)))
+        (interaction-environment)))</code></pre>
+        <br/>
+        <li>Export from REPL (Chez extension):</li>
+<pre><code class="language-scheme line-numbers">; Define at top level
+(define (my-utility x)
+  (+ x 1))
+
+; This is available in the interaction environment
+; but not as a proper library export
+
+; To make definitions available as a library,
+; create a proper library file
+
+; Or use top-level-program for scripts
+(top-level-program
+  (import (chezscheme))
+  (define (helper x) (* x 2))
+  (printf "Result: ~a~n" (helper 21)))</code></pre>
+        <br/>
+        <li>Indirect exports:</li>
+<pre><code class="language-scheme line-numbers">(library (shapes)
+  (export make-shape shape? shape-area
+          make-circle circle?
+          make-rectangle rectangle?)
+  (import (chezscheme))
+
+  ; Parent record type
+  (define-record-type shape
+    (fields (immutable type)))
+
+  ; Circle - extends shape conceptually
+  (define-record-type circle
+    (fields radius))
+
+  (define-record-type rectangle
+    (fields width height))
+
+  ; Generic area procedure
+  (define (shape-area s)
+    (cond
+      [(circle? s)
+       (* 3.14159 (square (circle-radius s)))]
+      [(rectangle? s)
+       (* (rectangle-width s) (rectangle-height s))]
+      [else (error 'shape-area "unknown shape" s)]))
+
+  (define (square x) (* x x)))
+
+; User imports make-circle but also gets circle?
+; through the export list</code></pre>
+        <br/>
+        <li>Import levels:</li>
+<pre><code class="language-scheme line-numbers">; Import levels control when bindings are available
+; Level 0: run time (default)
+; Level 1: expand time (macro expansion)
+
+(library (my-macros)
+  (export define-checked)
+  (import
+    (rnrs)
+    (for (rnrs syntax-case) expand)  ; Need at expand time
+    (for (rnrs base) run expand))    ; Need at both times
+
+  (define-syntax define-checked
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ (name arg ...) pred body ...)
+         #'(define (name arg ...)
+             (unless (and (pred arg) ...)
+               (error 'name "invalid argument"))
+             body ...)]))))
+
+; Shorthand for common cases
+(import (for (my-helper) expand))   ; Only at expand time
+(import (for (my-helper) run))      ; Only at run time (default)
+(import (for (my-helper) (meta 2))) ; Two levels up</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Explicitly Invoking Libraries</li>
+    <br/>
+    <ul>
+        <li>Library invocation basics:</li>
+<pre><code class="language-scheme line-numbers">; Libraries are normally invoked automatically on import
+; But can be controlled explicitly
+
+; Visit: evaluate syntax definitions only
+(visit "my-library.so")
+(visit "my-library.ss")
+
+; Revisit: visit again (re-evaluate)
+(revisit "my-library.so")
+
+; Load library (Chez extension)
+(load-library "my-library.ss")
+
+; Invoke library explicitly
+(invoke-library '(my-library))</code></pre>
+        <br/>
+        <li>Library phases:</li>
+<pre><code class="language-scheme line-numbers">; Library lifecycle:
+; 1. Loading - read source/compiled code
+; 2. Visiting - evaluate syntax definitions
+; 3. Invoking - evaluate variable definitions and expressions
+
+; When you import a library:
+; - It's visited if macros are used
+; - It's invoked if run-time values are used
+
+; Force visit (for macro-only libraries)
+(import (for (macro-library) expand))
+
+; Example showing phases
+(library (phase-demo)
+  (export get-value demo-macro)
+  (import (chezscheme))
+
+  ; This runs during visit (syntax definition)
+  (define-syntax demo-macro
+    (begin
+      (printf "Defining macro (visit time)~n")
+      (syntax-rules ()
+        [(_ x) (list 'demo x)])))
+
+  ; This runs during invoke (variable definition)
+  (define get-value
+    (begin
+      (printf "Defining procedure (invoke time)~n")
+      (lambda () 42)))
+
+  ; This expression runs during invoke
+  (printf "Library body expression (invoke time)~n"))</code></pre>
+        <br/>
+        <li>Controlling library instantiation:</li>
+<pre><code class="language-scheme line-numbers">; library-list: get list of loaded libraries
+(library-list)              ; ((rnrs) (chezscheme) ...)
+
+; Check if library is loaded
+(member '(my-library) (library-list))
+
+; library-exports: get exported bindings
+(library-exports '(rnrs lists))
+; (find for-all exists filter partition ...)
+
+; library-requirements: get dependencies
+(library-requirements '(my-library))
+; Returns list of required libraries
+
+; library-object-filename: get compiled file path
+(library-object-filename '(my-library))
+
+; library-version: get version if specified
+(library-version '(rnrs))   ; (6)</code></pre>
+        <br/>
+        <li>Library reloading:</li>
+<pre><code class="language-scheme line-numbers">; During development, you may need to reload libraries
+
+; Reload source file
+(load "my-library.ss")
+
+; Recompile and reload
+(compile-library "my-library.ss")
+(load "my-library.so")
+
+; Reset library to force re-instantiation (Chez extension)
+(library-requirements-options 'no-invoke)
+; Then re-import
+
+; Clear all libraries (drastic, use carefully)
+; Not directly supported - restart Scheme
+
+; Practical reloading workflow
+(define (reload-library libname filename)
+  (compile-library filename)
+  (load (path-root filename) ".so")
+  (eval `(import ,libname)
+        (interaction-environment)))</code></pre>
+        <br/>
+        <li>Conditional library loading:</li>
+<pre><code class="language-scheme line-numbers">; Load library only if needed
+(define (ensure-library-loaded libname)
+  (unless (member libname (library-list))
+    (eval `(import ,libname)
+          (interaction-environment))))
+
+; Dynamic library loading
+(define (load-plugin name)
+  (let ([lib-name (list 'plugins (string->symbol name))]
+        [filename (format "plugins/~a.ss" name)])
+    (when (file-exists? filename)
+      (load filename)
+      (eval `(import ,lib-name)
+            (interaction-environment))
+      #t)))
+
+; Feature-based imports
+(meta-cond
+  [(threaded?)
+   (import (chezscheme) (threads))]
+  [else
+   (import (chezscheme))])</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Library Parameters</li>
+    <br/>
+    <ul>
+        <li>Library search paths:</li>
+<pre><code class="language-scheme line-numbers">; library-directories: where to look for libraries
+(library-directories)       ; List of (source . object) pairs
+
+; Add search path
+(library-directories
+  (cons '("./lib" . "./lib")
+        (library-directories)))
+
+; Typical setup
+(library-directories
+  '(("." . ".")                    ; Current directory
+    ("./src" . "./lib")            ; Source in src, compiled in lib
+    ("/usr/local/lib/scheme" .
+     "/usr/local/lib/scheme")))    ; System libraries
+
+; Source directories only
+(source-directories)        ; List of source directories
+(source-directories '("." "./src" "../common"))
+
+; Library extensions
+(library-extensions)        ; File extensions to try
+; Default: ((".chezscheme.sls" . ".chezscheme.so")
+;           (".ss" . ".so") (".sls" . ".so") ...)
+
+; Add extension
+(library-extensions
+  (cons '(".scm" . ".so")
+        (library-extensions)))</code></pre>
+        <br/>
+        <li>Compilation parameters:</li>
+<pre><code class="language-scheme line-numbers">; compile-imported-libraries: auto-compile dependencies
+(compile-imported-libraries #t)  ; Enable auto-compilation
+
+; When enabled, importing a library will:
+; 1. Check if source is newer than compiled
+; 2. Recompile if necessary
+; 3. Load the compiled version
+
+; import-notify: print when importing
+(import-notify #t)          ; Show import progress
+
+; With both enabled:
+; > (import (my-library))
+; compiling my-library.ss with output to my-library.so
+; >
+
+; library-search-handler: customize search
+(library-search-handler
+  (lambda (who path dir*)
+    ; Custom search logic
+    ...))
+
+; compile-library-handler: customize compilation
+(compile-library-handler
+  (lambda (source-path dest-path)
+    (printf "Compiling ~a to ~a~n" source-path dest-path)
+    (compile-library source-path dest-path)))</code></pre>
+        <br/>
+        <li>Library output options:</li>
+<pre><code class="language-scheme line-numbers">; Where to put compiled libraries
+(compile-library "source.ss")           ; Same directory
+(compile-library "source.ss" "lib/")    ; Different directory
+
+; Control object file location via library-directories
+(library-directories
+  '(("src" . "build")))     ; Source in src/, output to build/
+
+; generate-wpo-files: whole-program optimization
+(generate-wpo-files #t)     ; Generate .wpo files
+
+; compile-whole-library: optimize entire library
+(compile-whole-library "input.wpo" "output.so")
+
+; Library compression
+(compile-compressed #t)     ; Compress compiled output
+
+; Strip source info from compiled files
+(generate-inspector-information #f)
+(generate-procedure-source-information #f)</code></pre>
+        <br/>
+        <li>Library requirements options:</li>
+<pre><code class="language-scheme line-numbers">; library-requirements-options controls dependency handling
+(library-requirements-options)  ; Get current options
+
+; Available options (can be combined):
+; - 'none: default behavior
+; - 'no-invoke: don't invoke dependencies automatically
+; - 'no-visit: don't visit dependencies automatically
+
+(parameterize ([library-requirements-options 'no-invoke])
+  ; Import only visits, doesn't invoke
+  (import (my-library)))
+
+; Use case: delay initialization
+(library-requirements-options 'no-invoke)
+(import (expensive-initialization-library))
+; ... later, when ready ...
+(invoke-library '(expensive-initialization-library))</code></pre>
+        <br/>
+        <li>Interaction between parameters:</li>
+<pre><code class="language-scheme line-numbers">; Typical development setup
+(compile-imported-libraries #t)  ; Auto-compile
+(import-notify #t)               ; Show progress
+(library-directories
+  '(("." . ".")
+    ("src" . "build")))
+
+; Typical production setup
+(compile-imported-libraries #f)  ; Use pre-compiled
+(import-notify #f)               ; Quiet
+(library-directories
+  '(("lib" . "lib")))           ; Single optimized location
+
+; Debugging setup
+(compile-imported-libraries #t)
+(import-notify #t)
+(generate-inspector-information #t)
+(debug-on-exception #t)
+
+; Helper to configure environment
+(define (setup-development)
+  (compile-imported-libraries #t)
+  (import-notify #t)
+  (library-directories
+    (cons '("./dev" . "./dev")
+          (library-directories))))
+
+(define (setup-production)
+  (compile-imported-libraries #f)
+  (optimize-level 3))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Library Inspection</li>
+    <br/>
+    <ul>
+        <li>Listing loaded libraries:</li>
+<pre><code class="language-scheme line-numbers">; Get all loaded libraries
+(library-list)
+; ((rnrs) (rnrs base) (chezscheme) (my-library) ...)
+
+; Filter by pattern
+(filter (lambda (lib)
+          (and (pair? lib)
+               (eq? (car lib) 'my-project)))
+        (library-list))
+
+; Count loaded libraries
+(length (library-list))
+
+; Check if specific library is loaded
+(define (library-loaded? name)
+  (and (member name (library-list)) #t))
+
+(library-loaded? '(rnrs))   ; #t
+(library-loaded? '(nonexistent))  ; #f</code></pre>
+        <br/>
+        <li>Examining library exports:</li>
+<pre><code class="language-scheme line-numbers">; Get exported bindings
+(library-exports '(rnrs lists))
+; (find for-all exists filter partition
+;  fold-left fold-right remp remove remv remq
+;  memp member memv memq assp assoc assv assq cons*)
+
+; Get exports with details (Chez extension)
+(library-exports '(my-library))
+
+; Check if binding is exported
+(define (library-exports? lib binding)
+  (and (member binding (library-exports lib)) #t))
+
+(library-exports? '(rnrs lists) 'filter)  ; #t
+(library-exports? '(rnrs lists) 'map)     ; #f (in rnrs base)
+
+; Find which library exports a binding
+(define (find-exporting-library binding)
+  (filter (lambda (lib)
+            (member binding (library-exports lib)))
+          (library-list)))</code></pre>
+        <br/>
+        <li>Library dependencies:</li>
+<pre><code class="language-scheme line-numbers">; Get direct dependencies
+(library-requirements '(my-library))
+; ((rnrs) (rnrs lists) (utils))
+
+; Different requirement types
+(library-requirements '(my-library) 'all)      ; All requirements
+(library-requirements '(my-library) 'import)   ; Import requirements
+(library-requirements '(my-library) 'visit)    ; Visit requirements
+(library-requirements '(my-library) 'invoke)   ; Invoke requirements
+
+; Build dependency tree
+(define (dependency-tree lib)
+  (let ([deps (library-requirements lib)])
+    (cons lib
+          (map dependency-tree deps))))
+
+; Flatten dependencies (all transitive)
+(define (all-dependencies lib)
+  (let ([direct (library-requirements lib)])
+    (append direct
+            (append-map all-dependencies direct))))
+
+(remove-duplicates (all-dependencies '(my-app)))</code></pre>
+        <br/>
+        <li>Library version and location:</li>
+<pre><code class="language-scheme line-numbers">; Get library version
+(library-version '(rnrs))   ; (6)
+(library-version '(my-library))  ; () if no version
+
+; Get object (compiled) filename
+(library-object-filename '(my-library))
+; "/path/to/my-library.so" or #f
+
+; Get source filename (if known)
+; Not directly available, but can derive:
+(define (library-source-filename lib)
+  (let ([obj (library-object-filename lib)])
+    (and obj
+         (let ([base (path-root obj)])
+           (find file-exists?
+                 (map (lambda (ext) (string-append base ext))
+                      '(".ss" ".sls" ".scm")))))))
+
+; Check if library is from file vs built-in
+(define (file-library? lib)
+  (and (library-object-filename lib) #t))</code></pre>
+        <br/>
+        <li>Advanced library inspection:</li>
+<pre><code class="language-scheme line-numbers">; Inspect library at compile time
+(define (analyze-library filename)
+  (call-with-input-file filename
+    (lambda (port)
+      (let ([form (read port)])
+        (and (pair? form)
+             (eq? (car form) 'library)
+             (let ([name (cadr form)])
+               (let loop ([rest (cddr form)]
+                          [exports '()]
+                          [imports '()])
+                 (cond
+                   [(null? rest)
+                    `((name . ,name)
+                      (exports . ,exports)
+                      (imports . ,imports))]
+                   [(and (pair? (car rest))
+                         (eq? (caar rest) 'export))
+                    (loop (cdr rest)
+                          (cdar rest)
+                          imports)]
+                   [(and (pair? (car rest))
+                         (eq? (caar rest) 'import))
+                    (loop (cdr rest)
+                          exports
+                          (cdar rest))]
+                   [else
+                    (loop (cdr rest) exports imports)]))))))))
+
+(analyze-library "my-library.ss")
+; ((name my-library)
+;  (exports proc1 proc2 ...)
+;  (imports (rnrs) (utils) ...))
+
+; Print library summary
+(define (describe-library lib)
+  (printf "Library: ~a~n" lib)
+  (printf "Version: ~a~n" (library-version lib))
+  (printf "Exports: ~a~n" (length (library-exports lib)))
+  (printf "Dependencies: ~a~n"
+          (length (library-requirements lib)))
+  (let ([file (library-object-filename lib)])
+    (when file
+      (printf "Object file: ~a~n" file))))</code></pre>
+        <br/>
+        <li>Library debugging:</li>
+<pre><code class="language-scheme line-numbers">; Trace library loading
+(import-notify #t)
+
+; Verbose library search
+(parameterize ([import-notify #t])
+  (import (my-library)))
+
+; Debug library compilation issues
+(define (debug-compile-library filename)
+  (parameterize ([compile-imported-libraries #t]
+                 [import-notify #t]
+                 [optimize-level 0]
+                 [generate-inspector-information #t])
+    (guard (c [#t (display-condition c)
+                  #f])
+      (compile-library filename)
+      #t)))
+
+; Check for circular dependencies
+(define (check-circular lib visited)
+  (cond
+    [(member lib visited)
+     (error 'check-circular "circular dependency" lib visited)]
+    [else
+     (let ([visited (cons lib visited)])
+       (for-each
+         (lambda (dep)
+           (check-circular dep visited))
+         (library-requirements lib)))]))
+
+; Find missing libraries
+(define (find-missing-libraries lib)
+  (filter (lambda (dep)
+            (not (library-loaded? dep)))
+          (library-requirements lib)))</code></pre>
+        <br/>
+        <li>Library management utilities:</li>
+<pre><code class="language-scheme line-numbers">; List all library files in directory
+(define (find-library-files dir)
+  (filter (lambda (f)
+            (or (string-suffix? ".ss" f)
+                (string-suffix? ".sls" f)
+                (string-suffix? ".scm" f)))
+          (directory-list dir)))
+
+; Compile all libraries in directory
+(define (compile-all-libraries dir)
+  (for-each
+    (lambda (file)
+      (let ([path (string-append dir "/" file)])
+        (printf "Compiling ~a...~n" path)
+        (guard (c [#t (printf "  Error: ~a~n"
+                              (condition-message c))])
+          (compile-library path)
+          (printf "  Done.~n"))))
+    (find-library-files dir)))
+
+; Clean compiled files
+(define (clean-compiled-files dir)
+  (for-each
+    (lambda (file)
+      (when (string-suffix? ".so" file)
+        (delete-file (string-append dir "/" file))))
+    (directory-list dir)))
+
+; Generate library documentation skeleton
+(define (document-library lib)
+  (let ([exports (library-exports lib)])
+    (printf ";; Library: ~a~n" lib)
+    (printf ";; Exports:~n")
+    (for-each
+      (lambda (exp)
+        (printf ";;   ~a - TODO: document~n" exp))
+      exports)))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete Library Example</li>
+    <br/>
+    <ul>
+        <li>Multi-file library project structure:</li>
+<pre><code class="language-text line-numbers">my-project/
+├── src/
+│   ├── my-project/
+│   │   ├── core.ss
+│   │   ├── utils.ss
+│   │   └── main.ss
+│   └── my-project.ss        ; Re-exports all modules
+├── test/
+│   └── test-core.ss
+├── build/                    ; Compiled files
+├── run.ss                    ; Top-level program
+└── Makefile</code></pre>
+        <br/>
+        <li>Core module (src/my-project/core.ss):</li>
+<pre><code class="language-scheme line-numbers">(library (my-project core)
+  (export
+    make-widget
+    widget?
+    widget-name
+    widget-value
+    widget-process)
+  (import (chezscheme))
+
+  (define-record-type widget
+    (fields name value))
+
+  (define (widget-process w)
+    (printf "Processing widget: ~a~n" (widget-name w))
+    (* (widget-value w) 2)))</code></pre>
+        <br/>
+        <li>Utilities module (src/my-project/utils.ss):</li>
+<pre><code class="language-scheme line-numbers">(library (my-project utils)
+  (export
+    string-split
+    string-join
+    string-trim
+    with-timing)
+  (import (chezscheme))
+
+  (define (string-split str delim)
+    (let loop ([chars (string->list str)]
+               [current '()]
+               [result '()])
+      (cond
+        [(null? chars)
+         (reverse (cons (list->string (reverse current)) result))]
+        [(char=? (car chars) delim)
+         (loop (cdr chars)
+               '()
+               (cons (list->string (reverse current)) result))]
+        [else
+         (loop (cdr chars)
+               (cons (car chars) current)
+               result)])))
+
+  (define (string-join strs delim)
+    (if (null? strs)
+        ""
+        (fold-left
+          (lambda (acc s) (string-append acc delim s))
+          (car strs)
+          (cdr strs))))
+
+  (define (string-trim str)
+    (list->string
+      (reverse
+        (drop-while char-whitespace?
+          (reverse
+            (drop-while char-whitespace?
+              (string->list str)))))))
+
+  (define (drop-while pred lst)
+    (cond
+      [(null? lst) '()]
+      [(pred (car lst)) (drop-while pred (cdr lst))]
+      [else lst]))
+
+  (define-syntax with-timing
+    (syntax-rules ()
+      [(_ body ...)
+       (let ([start (current-time)])
+         (let ([result (begin body ...)])
+           (let ([end (current-time)])
+             (printf "Elapsed: ~a ms~n"
+                     (time-difference end start))
+             result)))])))</code></pre>
+        <br/>
+        <li>Main module (src/my-project/main.ss):</li>
+<pre><code class="language-scheme line-numbers">(library (my-project main)
+  (export
+    run
+    process-all)
+  (import
+    (chezscheme)
+    (my-project core)
+    (my-project utils))
+
+  (define (process-all widgets)
+    (with-timing
+      (map widget-process widgets)))
+
+  (define (run args)
+    (printf "Starting my-project with args: ~a~n" args)
+    (let ([widgets (map (lambda (name)
+                          (make-widget name (random 100)))
+                        args)])
+      (let ([results (process-all widgets)])
+        (printf "Results: ~a~n" results)
+        results))))</code></pre>
+        <br/>
+        <li>Combined library (src/my-project.ss):</li>
+<pre><code class="language-scheme line-numbers">; Re-export all public bindings
+(library (my-project)
+  (export
+    ; From core
+    make-widget widget? widget-name widget-value widget-process
+    ; From utils
+    string-split string-join string-trim with-timing
+    ; From main
+    run process-all)
+  (import
+    (my-project core)
+    (my-project utils)
+    (my-project main)))</code></pre>
+        <br/>
+        <li>Top-level program (run.ss):</li>
+<pre><code class="language-scheme line-numbers">#!/usr/bin/env scheme-script
+#!chezscheme
+
+(import
+  (chezscheme)
+  (my-project))
+
+; Setup library path
+(library-directories
+  (cons '("src" . "build")
+        (library-directories)))
+
+; Main entry point
+(define (main args)
+  (cond
+    [(null? args)
+     (display "Usage: run.ss <widget-names...>\n")
+     (exit 1)]
+    [(string=? (car args) "--help")
+     (display "my-project: Process widgets\n")
+     (display "Usage: run.ss name1 name2 ...\n")
+     (exit 0)]
+    [(string=? (car args) "--test")
+     (run-tests)
+     (exit 0)]
+    [else
+     (run args)
+     (exit 0)]))
+
+(define (run-tests)
+  (printf "Running tests...~n")
+  (let ([w (make-widget "test" 42)])
+    (assert (widget? w))
+    (assert (= (widget-value w) 42))
+    (assert (= (widget-process w) 84)))
+  (printf "All tests passed.~n"))
+
+(main (command-line-arguments))</code></pre>
+        <br/>
+        <li>Makefile for building:</li>
+<pre><code class="language-makefile line-numbers"># Makefile for my-project
+
+SCHEME = scheme
+SRC_DIR = src
+BUILD_DIR = build
+SOURCES = $(wildcard $(SRC_DIR)/my-project/*.ss) \
+          $(SRC_DIR)/my-project.ss
+
+.PHONY: all clean test run
+
+all: $(BUILD_DIR)
+	$(SCHEME) --compile-imported-libraries \
+	          --libdirs "$(SRC_DIR):$(BUILD_DIR)" \
+	          --program run.ss
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+compile: $(BUILD_DIR)
+	$(SCHEME) -q &lt;&lt;EOF
+	(library-directories '(("$(SRC_DIR)" . "$(BUILD_DIR)")))
+	(compile-imported-libraries #t)
+	(import (my-project))
+	EOF
+
+test:
+	$(SCHEME) --script run.ss --test
+
+run:
+	$(SCHEME) --script run.ss widget1 widget2 widget3
+
+clean:
+	rm -rf $(BUILD_DIR)
+	rm -f $(SRC_DIR)/*.so $(SRC_DIR)/my-project/*.so</code></pre>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
