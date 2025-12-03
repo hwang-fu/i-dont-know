@@ -158,6 +158,7 @@
         <li><a href="#scm-control-flow">Control Flow</a></li>
         <li><a href="#scm-debugging">Debugging</a></li>
         <li><a href="#scm-foreign-interface">Foreign Interface</a></li>
+        <li><a href="#scm-binding-forms">Binding Forms</a></li>
     </ol>
 </nav>
 <hr/>
@@ -6995,7 +6996,817 @@ $ gcc -dynamiclib -o csocket.so csocket.c</code></pre>
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-binding-forms">Binding Forms in Chez Scheme</h3>
+<ol>
 
+    <li>Definitions</li>
+    <br/>
+    <ul>
+        <li>The <code>define</code> form creates bindings for variables and procedures:</li>
+<pre><code class="language-scheme line-numbers">; Variable definition
+(define x 42)
+(define greeting "Hello, World!")
+
+; Procedure definition (full form)
+(define square
+  (lambda (x)
+    (* x x)))
+
+; Procedure definition (shorthand)
+(define (square x)
+  (* x x))
+
+; Shorthand with multiple parameters
+(define (add a b)
+  (+ a b))
+
+; Shorthand with rest parameter
+(define (sum . numbers)
+  (apply + numbers))
+
+(sum 1 2 3 4 5)             ; 15
+
+; Shorthand with required and rest parameters
+(define (format-message prefix . args)
+  (apply format prefix args))</code></pre>
+        <br/>
+        <li><code>let</code> creates local bindings evaluated in parallel:</li>
+<pre><code class="language-scheme line-numbers">; Basic let
+(let ([x 10]
+      [y 20])
+  (+ x y))                  ; 30
+
+; Bindings are parallel - can't reference each other
+(let ([x 5]
+      [y x])                ; ERROR: x not yet bound
+  (+ x y))
+
+; Shadowing outer bindings
+(define x 100)
+(let ([x 1])
+  x)                        ; 1 (inner x shadows outer)
+x                           ; 100 (outer x unchanged)</code></pre>
+        <br/>
+        <li><code>let*</code> creates sequential bindings:</li>
+<pre><code class="language-scheme line-numbers">; Bindings are sequential - later can reference earlier
+(let* ([x 5]
+       [y (* x 2)]          ; Can use x
+       [z (+ x y)])         ; Can use x and y
+  z)                        ; 15
+
+; Equivalent to nested lets
+(let ([x 5])
+  (let ([y (* x 2)])
+    (let ([z (+ x y)])
+      z)))
+
+; Useful for step-by-step computation
+(let* ([input "  hello world  "]
+       [trimmed (string-trim input)]
+       [upper (string-upcase trimmed)]
+       [words (string-split upper " ")])
+  words)                    ; ("HELLO" "WORLD")</code></pre>
+        <br/>
+        <li><code>letrec</code> creates mutually recursive bindings:</li>
+<pre><code class="language-scheme line-numbers">; Mutually recursive procedures
+(letrec ([even? (lambda (n)
+                  (or (zero? n)
+                      (odd? (- n 1))))]
+         [odd? (lambda (n)
+                 (and (not (zero? n))
+                      (even? (- n 1))))])
+  (list (even? 10) (odd? 10)))  ; (#t #f)
+
+; Self-recursive procedure
+(letrec ([factorial
+          (lambda (n)
+            (if (zero? n)
+                1
+                (* n (factorial (- n 1)))))])
+  (factorial 5))            ; 120
+
+; All bindings in scope for all right-hand sides
+(letrec ([a (lambda () (b))]
+         [b (lambda () 42)])
+  (a))                      ; 42</code></pre>
+        <br/>
+        <li><code>letrec*</code> combines <code>letrec</code> semantics with left-to-right evaluation:</li>
+<pre><code class="language-scheme line-numbers">; Guaranteed left-to-right evaluation
+(letrec* ([x 1]
+          [y (+ x 1)]       ; Can reference x's value
+          [z (+ y 1)])      ; Can reference y's value
+  (list x y z))             ; (1 2 3)
+
+; Useful when initialization order matters
+(letrec* ([counter 0]
+          [inc! (lambda ()
+                  (set! counter (+ counter 1))
+                  counter)]
+          [first (inc!)]    ; Evaluated first
+          [second (inc!)])  ; Evaluated second
+  (list first second counter))  ; (1 2 2)</code></pre>
+        <br/>
+        <li>Named <code>let</code> for recursive iteration:</li>
+<pre><code class="language-scheme line-numbers">; Named let creates a recursive procedure
+(let loop ([n 5] [acc 1])
+  (if (zero? n)
+      acc
+      (loop (- n 1) (* n acc))))  ; 120
+
+; Equivalent to:
+(letrec ([loop (lambda (n acc)
+                 (if (zero? n)
+                     acc
+                     (loop (- n 1) (* n acc))))])
+  (loop 5 1))
+
+; List processing with named let
+(let loop ([lst '(1 2 3 4 5)] [sum 0])
+  (if (null? lst)
+      sum
+      (loop (cdr lst) (+ sum (car lst)))))  ; 15</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multiple-value Definitions</li>
+    <br/>
+    <ul>
+        <li><code>define-values</code> binds multiple variables from a multiple-value expression:</li>
+<pre><code class="language-scheme line-numbers">; Basic define-values
+(define-values (quotient remainder)
+  (div-and-mod 17 5))
+
+quotient                    ; 3
+remainder                   ; 2
+
+; From partition
+(define-values (evens odds)
+  (partition even? '(1 2 3 4 5 6)))
+
+evens                       ; (2 4 6)
+odds                        ; (1 3 5)
+
+; Multiple return values from custom procedure
+(define (min-max lst)
+  (values (apply min lst)
+          (apply max lst)))
+
+(define-values (lo hi)
+  (min-max '(3 1 4 1 5 9 2 6)))
+
+lo                          ; 1
+hi                          ; 9</code></pre>
+        <br/>
+        <li><code>let-values</code> creates local multiple-value bindings:</li>
+<pre><code class="language-scheme line-numbers">; Basic let-values
+(let-values ([(q r) (div-and-mod 17 5)])
+  (printf "~a with remainder ~a~n" q r))
+
+; Multiple clauses
+(let-values ([(a b) (values 1 2)]
+             [(x y z) (values 10 20 30)])
+  (+ a b x y z))            ; 63
+
+; Combining with regular values (use extra parens)
+(let-values ([(q r) (div-and-mod 100 7)]
+             [(name) (values "test")])
+  (list name q r))          ; ("test" 14 2)
+
+; Single value (equivalent to let)
+(let-values ([(x) (values 42)])
+  x)                        ; 42</code></pre>
+        <br/>
+        <li><code>let*-values</code> for sequential multiple-value bindings:</li>
+<pre><code class="language-scheme line-numbers">; Sequential binding - later can reference earlier
+(let*-values ([(a b) (values 2 3)]
+              [(c) (values (* a b))]
+              [(d e) (values (+ c 1) (- c 1))])
+  (list a b c d e))         ; (2 3 6 7 5)
+
+; Useful for chained transformations
+(define (parse-and-validate input)
+  (let*-values ([(parsed ok?) (parse input)]
+                [(validated valid?)
+                 (if ok?
+                     (validate parsed)
+                     (values #f #f))])
+    (values validated (and ok? valid?))))</code></pre>
+        <br/>
+        <li>Using <code>call-with-values</code> directly:</li>
+<pre><code class="language-scheme line-numbers">; Explicit call-with-values
+(call-with-values
+  (lambda () (values 1 2 3))
+  (lambda (a b c) (+ a b c)))  ; 6
+
+; Equivalent let-values
+(let-values ([(a b c) (values 1 2 3)])
+  (+ a b c))                ; 6
+
+; Useful for inline value handling
+(call-with-values
+  (lambda () (partition even? '(1 2 3 4 5)))
+  (lambda (evens odds)
+    (printf "Evens: ~a, Odds: ~a~n" evens odds)))</code></pre>
+        <br/>
+        <li>Patterns with multiple values:</li>
+<pre><code class="language-scheme line-numbers">; Ignoring some values
+(let-values ([(_ remainder) (div-and-mod 17 5)])
+  remainder)                ; 2
+
+; Collecting extra values with rest
+(define (first-and-rest producer)
+  (call-with-values producer
+    (lambda (first . rest)
+      (values first rest))))
+
+(first-and-rest (lambda () (values 1 2 3 4)))
+; Returns: 1 and (2 3 4)
+
+; Zero values
+(let-values ([() (values)])  ; No bindings
+  'done)                    ; done</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Recursive Bindings</li>
+    <br/>
+    <ul>
+        <li><code>letrec</code> allows procedures to reference themselves and each other:</li>
+<pre><code class="language-scheme line-numbers">; Self-reference
+(letrec ([count-down
+          (lambda (n)
+            (if (zero? n)
+                'done
+                (begin
+                  (printf "~a~n" n)
+                  (count-down (- n 1)))))])
+  (count-down 3))
+; Prints: 3 2 1
+; Returns: done
+
+; Mutual recursion
+(letrec ([ping (lambda (n)
+                 (if (zero? n)
+                     'ping
+                     (pong (- n 1))))]
+         [pong (lambda (n)
+                 (if (zero? n)
+                     'pong
+                     (ping (- n 1))))])
+  (list (ping 5) (pong 5)))  ; (pong ping)</code></pre>
+        <br/>
+        <li>State machines with <code>letrec</code>:</li>
+<pre><code class="language-scheme line-numbers">; Simple state machine
+(define (parse-number str)
+  (letrec
+    ([start (lambda (chars)
+              (cond
+                [(null? chars) #f]
+                [(char=? (car chars) #\-)
+                 (digits (cdr chars) '() #t)]
+                [(char-numeric? (car chars))
+                 (digits chars '() #f)]
+                [else #f]))]
+     [digits (lambda (chars acc neg?)
+               (cond
+                 [(null? chars)
+                  (if (null? acc)
+                      #f
+                      (let ([n (string->number
+                                 (list->string (reverse acc)))])
+                        (if neg? (- n) n)))]
+                 [(char-numeric? (car chars))
+                  (digits (cdr chars) (cons (car chars) acc) neg?)]
+                 [else #f]))])
+    (start (string->list str))))
+
+(parse-number "123")        ; 123
+(parse-number "-456")       ; -456
+(parse-number "abc")        ; #f</code></pre>
+        <br/>
+        <li><code>rec</code> for single self-recursive bindings:</li>
+<pre><code class="language-scheme line-numbers">; rec creates single recursive binding
+(define factorial
+  (rec fact
+    (lambda (n)
+      (if (zero? n)
+          1
+          (* n (fact (- n 1)))))))
+
+(factorial 5)               ; 120
+
+; Useful for anonymous recursive procedures
+(map (rec sum-tree
+       (lambda (tree)
+         (if (pair? tree)
+             (+ (sum-tree (car tree))
+                (sum-tree (cdr tree)))
+             (if (number? tree) tree 0))))
+     '((1 2) (3 (4 5)) ((6))))
+; (3 12 6)</code></pre>
+        <br/>
+        <li>Internal definitions (implicitly <code>letrec*</code>):</li>
+<pre><code class="language-scheme line-numbers">; Internal defines in procedure body
+(define (process-tree tree)
+  ; These are like letrec* bindings
+  (define (leaf? x) (not (pair? x)))
+  (define (process-node node)
+    (if (leaf? node)
+        (handle-leaf node)
+        (handle-branch node)))
+  (define (handle-leaf x) (* x 2))
+  (define (handle-branch node)
+    (cons (process-node (car node))
+          (process-node (cdr node))))
+  ; Body starts here
+  (process-node tree))
+
+(process-tree '(1 (2 3) 4))  ; (2 (4 6) 8)
+
+; Internal defines can reference later definitions
+(define (example)
+  (define (a) (b))          ; References b defined below
+  (define (b) 42)
+  (a))
+
+(example)                   ; 42</code></pre>
+        <br/>
+        <li>Avoiding evaluation order issues:</li>
+<pre><code class="language-scheme line-numbers">; Problematic: referencing value during initialization
+(letrec ([x (+ y 1)]        ; ERROR: y not yet initialized
+         [y 5])
+  x)
+
+; Solution 1: use lambda to delay evaluation
+(letrec ([x (lambda () (+ (y) 1))]
+         [y (lambda () 5)])
+  ((x)))                    ; 6
+
+; Solution 2: use letrec* with proper order
+(letrec* ([y 5]
+          [x (+ y 1)])
+  x)                        ; 6
+
+; Note: letrec is for procedures, letrec* for values</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Fluid Bindings</li>
+    <br/>
+    <ul>
+        <li>Parameters provide dynamically-scoped (fluid) bindings:</li>
+<pre><code class="language-scheme line-numbers">; Create a parameter with initial value
+(define current-user (make-parameter "guest"))
+
+; Access current value
+(current-user)              ; "guest"
+
+; Set globally
+(current-user "admin")
+(current-user)              ; "admin"
+
+; Dynamic binding with parameterize
+(parameterize ([current-user "alice"])
+  (current-user))           ; "alice"
+
+(current-user)              ; "admin" (restored)</code></pre>
+        <br/>
+        <li><code>parameterize</code> creates dynamic extent bindings:</li>
+<pre><code class="language-scheme line-numbers">; Dynamic scope in action
+(define current-indent (make-parameter 0))
+
+(define (print-indented msg)
+  (display (make-string (current-indent) #\space))
+  (display msg)
+  (newline))
+
+(define (print-tree tree)
+  (cond
+    [(pair? tree)
+     (print-indented "(")
+     (parameterize ([current-indent (+ (current-indent) 2)])
+       (for-each print-tree tree))
+     (print-indented ")")]
+    [else
+     (print-indented tree)]))
+
+(print-tree '(a (b c) d))
+; (
+;   a
+;   (
+;     b
+;     c
+;   )
+;   d
+; )</code></pre>
+        <br/>
+        <li>Parameter validation with guard procedures:</li>
+<pre><code class="language-scheme line-numbers">; Parameter with validation
+(define current-verbosity
+  (make-parameter 0
+    (lambda (v)
+      (unless (and (integer? v) (<= 0 v 3))
+        (error 'current-verbosity
+               "must be integer 0-3, got ~s" v))
+      v)))
+
+(current-verbosity 2)       ; OK
+(current-verbosity 5)       ; ERROR
+
+; Parameter with transformation
+(define current-output-file
+  (make-parameter "output.txt"
+    (lambda (v)
+      (if (string? v)
+          v
+          (format "~a.txt" v)))))
+
+(current-output-file 'data)
+(current-output-file)       ; "data.txt"</code></pre>
+        <br/>
+        <li>Nested and multiple parameter bindings:</li>
+<pre><code class="language-scheme line-numbers">; Multiple parameters
+(define debug-mode (make-parameter #f))
+(define trace-calls (make-parameter #f))
+
+(parameterize ([debug-mode #t]
+               [trace-calls #t])
+  (when (trace-calls)
+    (display "Tracing enabled\n"))
+  (when (debug-mode)
+    (display "Debug mode\n")))
+
+; Nested parameterize
+(define level (make-parameter 0))
+
+(parameterize ([level 1])
+  (printf "Level: ~a~n" (level))   ; 1
+  (parameterize ([level 2])
+    (printf "Level: ~a~n" (level))) ; 2
+  (printf "Level: ~a~n" (level)))  ; 1</code></pre>
+        <br/>
+        <li>Parameters and continuations:</li>
+<pre><code class="language-scheme line-numbers">; Parameters are saved/restored with continuations
+(define p (make-parameter 'initial))
+
+(define saved-k #f)
+
+(parameterize ([p 'inside])
+  (call/cc (lambda (k)
+             (set! saved-k k)
+             (p))))              ; 'inside
+
+(p)                             ; 'initial
+
+; Re-entering the parameterize restores the binding
+(saved-k 'ignored)              ; 'inside
+
+; dynamic-wind ensures proper parameter handling
+(define log-output (make-parameter '()))
+
+(define (with-logging thunk)
+  (parameterize ([log-output '()])
+    (thunk)
+    (reverse (log-output))))
+
+(define (log msg)
+  (log-output (cons msg (log-output))))</code></pre>
+        <br/>
+        <li>Common built-in parameters:</li>
+<pre><code class="language-scheme line-numbers">; I/O parameters
+(current-input-port)
+(current-output-port)
+(current-error-port)
+
+(parameterize ([current-output-port (open-output-string)])
+  (display "captured")
+  (get-output-string (current-output-port)))  ; "captured"
+
+; Print parameters
+(print-level)               ; Max nesting depth
+(print-length)              ; Max list elements
+
+(parameterize ([print-length 3])
+  (printf "~s~n" '(1 2 3 4 5)))  ; (1 2 3 ...)
+
+; Compilation parameters
+(optimize-level)            ; 0-3
+(compile-interpret-simple)  ; #t/#f
+
+; Interaction environment
+(interaction-environment)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Top-Level Bindings</li>
+    <br/>
+    <ul>
+        <li>Top-level <code>define</code> creates or modifies bindings:</li>
+<pre><code class="language-scheme line-numbers">; Create new binding
+(define x 10)
+
+; Redefine (modify) existing binding
+(define x 20)
+
+; Top-level defines are mutable
+(set! x 30)
+
+; Procedure definitions at top level
+(define (greet name)
+  (printf "Hello, ~a!~n" name))</code></pre>
+        <br/>
+        <li><code>top-level-value</code> and <code>set-top-level-value!</code> for programmatic access:</li>
+<pre><code class="language-scheme line-numbers">; Get value of top-level binding
+(define x 42)
+(top-level-value 'x)        ; 42
+
+; Set top-level binding
+(set-top-level-value! 'y 100)
+y                           ; 100
+
+; Check if bound
+(top-level-bound? 'x)       ; #t
+(top-level-bound? 'nonexistent)  ; #f
+
+; Dynamic binding creation
+(define (create-binding name value)
+  (set-top-level-value! name value))
+
+(create-binding 'dynamic-var 999)
+dynamic-var                 ; 999</code></pre>
+        <br/>
+        <li><code>define-top-level-value</code> for explicit top-level definition:</li>
+<pre><code class="language-scheme line-numbers">; Explicitly define at top level (even from nested context)
+(let ([x 10])
+  (define-top-level-value 'from-let (* x 2)))
+
+from-let                    ; 20
+
+; Useful in macros that need to create top-level bindings
+(define-syntax def-constant
+  (syntax-rules ()
+    [(_ name value)
+     (define-top-level-value 'name value)]))</code></pre>
+        <br/>
+        <li>Interaction environment bindings:</li>
+<pre><code class="language-scheme line-numbers">; The interaction environment contains REPL bindings
+(interaction-environment)   ; Returns the environment
+
+; Evaluate in specific environment
+(define env (interaction-environment))
+
+(eval '(define z 50) env)
+(eval 'z env)               ; 50
+
+; Create new environment
+(define my-env (copy-environment (scheme-environment)))
+(eval '(define private 42) my-env)
+
+; private visible in my-env but not globally
+(eval 'private my-env)      ; 42
+; private                   ; ERROR: unbound</code></pre>
+        <br/>
+        <li><code>alias</code> creates alternative names for bindings:</li>
+<pre><code class="language-scheme line-numbers">; Create an alias
+(define original-name 42)
+(alias new-name original-name)
+
+new-name                    ; 42
+(set! new-name 100)
+original-name               ; 100 (same binding)
+
+; Alias for imported procedure
+(alias λ lambda)
+(define add (λ (x y) (+ x y)))
+
+; Alias for keyword
+(alias fn define)
+(fn (square x) (* x x))</code></pre>
+        <br/>
+        <li>Module and library exports as top-level:</li>
+<pre><code class="language-scheme line-numbers">; Library exports become available at top level when imported
+(import (rnrs))             ; Makes R6RS bindings available
+
+; Specific imports
+(import (only (chezscheme) printf format))
+
+; Top-level program structure
+; #!/usr/bin/env scheme-script
+; (import (rnrs) (my-library))
+; (main-procedure)</code></pre>
+        <br/>
+        <li>Top-level syntax definitions:</li>
+<pre><code class="language-scheme line-numbers">; Define syntax at top level
+(define-syntax when
+  (syntax-rules ()
+    [(_ test body ...)
+     (if test (begin body ...))]))
+
+; Syntax is also a top-level binding
+(top-level-bound? 'when)    ; #t
+
+; But top-level-value doesn't work for syntax
+; (top-level-value 'when)   ; ERROR
+
+; Check if identifier is bound to syntax
+(top-level-syntax? 'when)   ; #t
+(top-level-syntax? 'car)    ; #f</code></pre>
+        <br/>
+        <li>Forward references at top level:</li>
+<pre><code class="language-scheme line-numbers">; Top-level allows forward references
+(define (f x) (g x))        ; References g not yet defined
+(define (g x) (* x 2))      ; Now defined
+(f 21)                      ; 42
+
+; This works because:
+; 1. define creates a binding location
+; 2. The lambda body isn't evaluated until f is called
+; 3. By then, g is defined
+
+; Be careful with immediate evaluation
+; (define a (+ b 1))        ; ERROR: b not defined
+; (define b 10)
+
+; Solution: use thunks or proper ordering
+(define b 10)
+(define a (+ b 1))          ; OK</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Additional Binding Forms</li>
+    <br/>
+    <ul>
+        <li><code>fluid-let</code> for temporary mutation (deprecated, prefer parameters):</li>
+<pre><code class="language-scheme line-numbers">; fluid-let temporarily changes a variable's value
+(define counter 0)
+
+(fluid-let ([counter 100])
+  (set! counter (+ counter 1))
+  counter)                  ; 101
+
+counter                     ; 0 (restored)
+
+; Note: prefer make-parameter and parameterize instead
+; fluid-let has issues with continuations and threads</code></pre>
+        <br/>
+        <li><code>let-syntax</code> and <code>letrec-syntax</code> for local macros:</li>
+<pre><code class="language-scheme line-numbers">; Local syntax binding
+(let-syntax ([swap!
+              (syntax-rules ()
+                [(_ a b)
+                 (let ([tmp a])
+                   (set! a b)
+                   (set! b tmp))])])
+  (define x 1)
+  (define y 2)
+  (swap! x y)
+  (list x y))               ; (2 1)
+
+; letrec-syntax for mutually recursive macros
+(letrec-syntax
+  ([my-or
+    (syntax-rules ()
+      [(_) #f]
+      [(_ e) e]
+      [(_ e1 e2 ...)
+       (let ([t e1])
+         (if t t (my-or e2 ...)))])]
+   [my-and
+    (syntax-rules ()
+      [(_) #t]
+      [(_ e) e]
+      [(_ e1 e2 ...)
+       (if e1 (my-and e2 ...) #f)])])
+  (my-and (my-or #f 1) (my-or 2 #f)))  ; 2</code></pre>
+        <br/>
+        <li><code>case-lambda</code> for variable arity:</li>
+<pre><code class="language-scheme line-numbers">; Different bodies for different arities
+(define greet
+  (case-lambda
+    [() (greet "World")]
+    [(name) (printf "Hello, ~a!~n" name)]
+    [(greeting name) (printf "~a, ~a!~n" greeting name)]))
+
+(greet)                     ; "Hello, World!"
+(greet "Alice")             ; "Hello, Alice!"
+(greet "Goodbye" "Bob")     ; "Goodbye, Bob!"
+
+; With rest arguments
+(define sum
+  (case-lambda
+    [() 0]
+    [(x) x]
+    [(x y) (+ x y)]
+    [(x y . rest) (apply + x y rest)]))
+
+(sum)                       ; 0
+(sum 1)                     ; 1
+(sum 1 2)                   ; 3
+(sum 1 2 3 4 5)             ; 15</code></pre>
+        <br/>
+        <li><code>receive</code> for multiple values (SRFI-8 style):</li>
+<pre><code class="language-scheme line-numbers">; receive binds multiple values more concisely
+; (not standard, but can be defined)
+(define-syntax receive
+  (syntax-rules ()
+    [(_ formals expr body ...)
+     (call-with-values
+       (lambda () expr)
+       (lambda formals body ...))]))
+
+(receive (q r) (div-and-mod 17 5)
+  (printf "~a remainder ~a~n" q r))
+
+; With rest parameter
+(receive (first . rest) (values 1 2 3 4)
+  (list first rest))        ; (1 (2 3 4))</code></pre>
+        </ul>
+        <br/>
+        <br/>
+
+
+    <li>Summary of binding forms:</li>
+    <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Form</th>
+            <th>Scope</th>
+            <th>Evaluation</th>
+            <th>Use Case</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>define</code></td>
+            <td>Top-level or local</td>
+            <td>Immediate</td>
+            <td>Variables and procedures</td>
+        </tr>
+        <tr>
+            <td><code>let</code></td>
+            <td>Local</td>
+            <td>Parallel</td>
+            <td>Independent bindings</td>
+        </tr>
+        <tr>
+            <td><code>let*</code></td>
+            <td>Local</td>
+            <td>Sequential</td>
+            <td>Dependent bindings</td>
+        </tr>
+        <tr>
+            <td><code>letrec</code></td>
+            <td>Local</td>
+            <td>Recursive</td>
+            <td>Mutually recursive procedures</td>
+        </tr>
+        <tr>
+            <td><code>letrec*</code></td>
+            <td>Local</td>
+            <td>Sequential + recursive</td>
+            <td>Recursive with order guarantees</td>
+        </tr>
+        <tr>
+            <td><code>let-values</code></td>
+            <td>Local</td>
+            <td>Parallel</td>
+            <td>Multiple value bindings</td>
+        </tr>
+        <tr>
+            <td><code>let*-values</code></td>
+            <td>Local</td>
+            <td>Sequential</td>
+            <td>Chained multiple values</td>
+        </tr>
+        <tr>
+            <td><code>define-values</code></td>
+            <td>Top-level or local</td>
+            <td>Immediate</td>
+            <td>Multiple value definitions</td>
+        </tr>
+        <tr>
+            <td><code>parameterize</code></td>
+            <td>Dynamic</td>
+            <td>For dynamic extent</td>
+            <td>Fluid/dynamic bindings</td>
+        </tr>
+        <tr>
+            <td><code>let-syntax</code></td>
+            <td>Local</td>
+            <td>Compile-time</td>
+            <td>Local macros</td>
+        </tr>
+    </tbody>
+</table>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
