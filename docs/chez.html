@@ -155,6 +155,7 @@
         <li><a href="#scm-compiler-interpreter">Interacting with Chez Scheme</a></li>
         <li><a href="#scm-command-line-options">Command Line Options</a></li>
         <li><a href="#scm-r6rs">R6RS</a></li>
+        <li><a href="#scm-control-flow">Control Flow</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4278,7 +4279,907 @@ $ scheme --program main.ss</code></pre>
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-control-flow">Chez Scheme Control Flow</h3>
+<ol>
 
+    <li>Conditional Expressions</li>
+    <br/>
+    <ul>
+        <li><code>if</code> is the fundamental conditional:</li>
+<pre><code class="language-scheme line-numbers">; Basic if: (if test consequent alternative)
+(if (> 5 3) 'yes 'no)           ; yes
+
+; Without alternative (returns unspecified if false)
+(if (> 5 3) (display "yes"))
+
+; Nested if
+(define (sign n)
+  (if (> n 0)
+      'positive
+      (if (< n 0)
+          'negative
+          'zero)))
+
+(sign 5)    ; positive
+(sign -3)   ; negative
+(sign 0)    ; zero</code></pre>
+        <br/>
+        <li><code>cond</code> for multiple conditions:</li>
+<pre><code class="language-scheme line-numbers">; (cond [test expr ...] ... [else expr ...])
+(define (grade score)
+  (cond
+    [(>= score 90) 'A]
+    [(>= score 80) 'B]
+    [(>= score 70) 'C]
+    [(>= score 60) 'D]
+    [else 'F]))
+
+(grade 85)  ; B
+(grade 55)  ; F
+
+; cond with => (passes test result to procedure)
+(cond
+  [(assq 'b '((a 1) (b 2) (c 3))) => cadr]
+  [else 'not-found])  ; 2
+
+; Multiple expressions in clause
+(cond
+  [(even? x)
+   (display "even")
+   (newline)
+   'even]
+  [else 'odd])</code></pre>
+        <br/>
+        <li><code>case</code> for value matching:</li>
+<pre><code class="language-scheme line-numbers">; (case key [(datum ...) expr ...] ... [else expr ...])
+(define (day-type day)
+  (case day
+    [(saturday sunday) 'weekend]
+    [(monday tuesday wednesday thursday friday) 'weekday]
+    [else 'unknown]))
+
+(day-type 'saturday)  ; weekend
+(day-type 'monday)    ; weekday
+
+; case uses eqv? for comparison
+(case (car '(a b))
+  [(a) 'first]
+  [(b) 'second]
+  [else 'other])  ; first
+
+; Multiple values in single clause
+(define (vowel? c)
+  (case c
+    [(a e i o u A E I O U) #t]
+    [else #f]))</code></pre>
+        <br/>
+        <li><code>when</code> and <code>unless</code> for one-sided conditionals:</li>
+<pre><code class="language-scheme line-numbers">; when: execute if true
+(when (> x 0)
+  (display "positive")
+  (newline))
+
+; unless: execute if false
+(unless (null? lst)
+  (display "list is not empty")
+  (process lst))
+
+; Equivalent to:
+; (when test body ...) = (if test (begin body ...))
+; (unless test body ...) = (if (not test) (begin body ...))</code></pre>
+        <br/>
+        <li>Boolean operations for control flow:</li>
+<pre><code class="language-scheme line-numbers">; and: returns first false or last value
+(and (> 5 3) (< 2 4) 'ok)       ; ok
+(and (> 5 3) (< 4 2) 'ok)       ; #f
+(and)                            ; #t
+
+; or: returns first true or last value
+(or (> 1 5) (> 3 2) 'fallback)  ; #t
+(or #f #f 'default)             ; default
+(or)                             ; #f
+
+; Short-circuit evaluation
+(and (pair? x) (car x))         ; Safe: car only if pair
+(or (hashtable-ref ht key #f)
+    (compute-default key))       ; Only compute if not found</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Sequencing</li>
+    <br/>
+    <ul>
+        <li><code>begin</code> evaluates expressions in order:</li>
+<pre><code class="language-scheme line-numbers">; Returns the value of the last expression
+(begin
+  (display "one")
+  (newline)
+  (display "two")
+  (newline)
+  'done)  ; displays "one" and "two", returns done
+
+; Implicit begin in lambda, let, define, etc.
+(define (greet name)
+  (display "Hello, ")    ; implicit begin
+  (display name)
+  (newline))
+
+; begin is often used in conditionals
+(if (check-condition)
+    (begin
+      (do-something)
+      (do-another)
+      result)
+    alternative)</code></pre>
+        <br/>
+        <li><code>begin0</code> returns the first value (Chez extension):</li>
+<pre><code class="language-scheme line-numbers">; Returns value of first expression
+(begin0
+  (get-result)      ; This value is returned
+  (cleanup)
+  (log-completion))
+
+; Useful for cleanup after getting a value
+(define (pop! stack)
+  (begin0
+    (car stack)
+    (set! stack (cdr stack))))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Iteration with Named let</li>
+    <br/>
+    <ul>
+        <li>Named <code>let</code> creates a local recursive procedure:</li>
+<pre><code class="language-scheme line-numbers">; (let name ([var init] ...) body)
+(let loop ([i 0])
+  (when (< i 5)
+    (display i)
+    (newline)
+    (loop (+ i 1))))
+; Prints 0 1 2 3 4
+
+; Summing a list
+(define (sum lst)
+  (let loop ([lst lst] [acc 0])
+    (if (null? lst)
+        acc
+        (loop (cdr lst) (+ acc (car lst))))))
+
+(sum '(1 2 3 4 5))  ; 15
+
+; Finding an element
+(define (find pred lst)
+  (let loop ([lst lst])
+    (cond
+      [(null? lst) #f]
+      [(pred (car lst)) (car lst)]
+      [else (loop (cdr lst))])))</code></pre>
+        <br/>
+        <li>Named let for multiple accumulators:</li>
+<pre><code class="language-scheme line-numbers">; Partition a list
+(define (partition pred lst)
+  (let loop ([lst lst] [yes '()] [no '()])
+    (cond
+      [(null? lst)
+       (values (reverse yes) (reverse no))]
+      [(pred (car lst))
+       (loop (cdr lst) (cons (car lst) yes) no)]
+      [else
+       (loop (cdr lst) yes (cons (car lst) no))])))
+
+(partition even? '(1 2 3 4 5 6))
+; Values: (2 4 6) (1 3 5)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>The do Loop</li>
+    <br/>
+    <ul>
+        <li><code>do</code> provides traditional loop syntax:</li>
+<pre><code class="language-scheme line-numbers">; (do ([var init step] ...)
+;     (test result ...)
+;   body ...)
+
+; Simple counting loop
+(do ([i 0 (+ i 1)])
+    [(= i 5) 'done]
+  (display i)
+  (newline))
+; Prints 0 1 2 3 4, returns done
+
+; Factorial
+(define (factorial n)
+  (do ([i n (- i 1)]
+       [acc 1 (* acc i)])
+      [(zero? i) acc]))
+
+(factorial 5)  ; 120
+
+; Multiple variables
+(do ([i 0 (+ i 1)]
+     [j 10 (- j 1)])
+    [(= i j) (list i j)]
+  (printf "i=~a j=~a~n" i j))
+; Prints pairs until i=j=5</code></pre>
+        <br/>
+        <li>Building a list with do:</li>
+<pre><code class="language-scheme line-numbers">; Map using do
+(define (my-map f lst)
+  (do ([lst lst (cdr lst)]
+       [result '() (cons (f (car lst)) result)])
+      [(null? lst) (reverse result)]))
+
+(my-map square '(1 2 3 4 5))  ; (1 4 9 16 25)
+
+; Collect first n elements
+(define (take n lst)
+  (do ([i 0 (+ i 1)]
+       [lst lst (cdr lst)]
+       [acc '() (cons (car lst) acc)])
+      [(or (= i n) (null? lst))
+       (reverse acc)]))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Higher-Order Iteration</li>
+    <br/>
+    <ul>
+        <li><code>for-each</code> for side effects:</li>
+<pre><code class="language-scheme line-numbers">; Apply procedure to each element
+(for-each display '(1 2 3 4 5))      ; Prints: 12345
+(for-each
+  (lambda (x) (display x) (newline))
+  '(a b c))
+
+; Multiple lists (stops at shortest)
+(for-each
+  (lambda (x y) (printf "~a + ~a = ~a~n" x y (+ x y)))
+  '(1 2 3)
+  '(10 20 30))
+; 1 + 10 = 11
+; 2 + 20 = 22
+; 3 + 30 = 33</code></pre>
+        <br/>
+        <li><code>map</code> transforms lists:</li>
+<pre><code class="language-scheme line-numbers">(map square '(1 2 3 4 5))           ; (1 4 9 16 25)
+(map + '(1 2 3) '(10 20 30))        ; (11 22 33)
+(map cons '(a b c) '(1 2 3))        ; ((a . 1) (b . 2) (c . 3))
+
+; Nested map
+(map (lambda (row)
+       (map square row))
+     '((1 2) (3 4) (5 6)))
+; ((1 4) (9 16) (25 36))</code></pre>
+        <br/>
+        <li>Folding operations:</li>
+<pre><code class="language-scheme line-numbers">; fold-left: accumulate left to right
+; (fold-left proc init list)
+(fold-left + 0 '(1 2 3 4 5))        ; 15
+(fold-left cons '() '(1 2 3))       ; ((((() . 1) . 2) . 3)
+(fold-left (lambda (acc x) (cons x acc))
+           '() '(1 2 3))             ; (3 2 1) - reverse!
+
+; fold-right: accumulate right to left
+(fold-right cons '() '(1 2 3))      ; (1 2 3) - copy
+(fold-right + 0 '(1 2 3 4 5))       ; 15
+
+; Practical examples
+(define (my-length lst)
+  (fold-left (lambda (acc _) (+ acc 1)) 0 lst))
+
+(define (my-reverse lst)
+  (fold-left (lambda (acc x) (cons x acc)) '() lst))
+
+(define (my-append lst1 lst2)
+  (fold-right cons lst2 lst1))</code></pre>
+        <br/>
+        <li>Filtering and searching:</li>
+<pre><code class="language-scheme line-numbers">; filter: keep matching elements
+(filter even? '(1 2 3 4 5 6))       ; (2 4 6)
+(filter (lambda (x) (> x 3)) '(1 2 3 4 5))  ; (4 5)
+
+; find: first matching element
+(find even? '(1 3 4 5 6))           ; 4
+(find even? '(1 3 5))               ; #f
+
+; exists: any element matches?
+(exists even? '(1 3 4 5))           ; #t
+(exists even? '(1 3 5))             ; #f
+
+; for-all: all elements match?
+(for-all even? '(2 4 6))            ; #t
+(for-all even? '(2 3 4))            ; #f
+
+; partition: split by predicate
+(partition even? '(1 2 3 4 5 6))
+; Values: (2 4 6) (1 3 5)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Multiple Values</li>
+    <br/>
+    <ul>
+        <li><code>values</code> returns multiple values:</li>
+<pre><code class="language-scheme line-numbers">; Return multiple values
+(define (quotient-remainder n d)
+  (values (quotient n d) (remainder n d)))
+
+(quotient-remainder 17 5)  ; 3 and 2
+
+; values with any number of results
+(values 1 2 3)             ; Three values
+(values)                   ; Zero values
+(values 'single)           ; One value (same as just 'single)</code></pre>
+        <br/>
+        <li><code>call-with-values</code> receives multiple values:</li>
+<pre><code class="language-scheme line-numbers">; (call-with-values producer consumer)
+(call-with-values
+  (lambda () (values 1 2 3))
+  (lambda (a b c) (+ a b c)))  ; 6
+
+(call-with-values
+  (lambda () (quotient-remainder 17 5))
+  (lambda (q r) (list 'quotient q 'remainder r)))
+; (quotient 3 remainder 2)</code></pre>
+        <br/>
+        <li><code>let-values</code> and <code>let*-values</code> bind multiple values:</li>
+<pre><code class="language-scheme line-numbers">; let-values: bind multiple value results
+(let-values ([(q r) (quotient-remainder 17 5)])
+  (printf "17 = 5 * ~a + ~a~n" q r))
+; 17 = 5 * 3 + 2
+
+; Multiple bindings
+(let-values ([(a b) (values 1 2)]
+             [(x y z) (values 10 20 30)])
+  (list a b x y z))  ; (1 2 10 20 30)
+
+; let*-values: sequential binding
+(let*-values ([(a b) (values 1 2)]
+              [(c) (+ a b)])
+  c)  ; 3
+
+; With regular bindings mixed
+(let-values ([(x y) (values 1 2)]
+             [(z) 3])
+  (+ x y z))  ; 6</code></pre>
+        <br/>
+        <li><code>define-values</code> for top-level definitions:</li>
+<pre><code class="language-scheme line-numbers">(define-values (min-val max-val)
+  (values 0 100))
+
+min-val  ; 0
+max-val  ; 100
+
+(define-values (head . tail)
+  (values 1 2 3 4 5))
+
+head  ; 1
+tail  ; (2 3 4 5)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Continuations</li>
+    <br/>
+    <ul>
+        <li><code>call/cc</code> captures the current continuation:</li>
+<pre><code class="language-scheme line-numbers">; call/cc = call-with-current-continuation
+
+; Early exit from computation
+(define (find-first pred lst)
+  (call/cc
+    (lambda (return)
+      (for-each
+        (lambda (x)
+          (when (pred x)
+            (return x)))
+        lst)
+      #f)))
+
+(find-first even? '(1 3 5 4 7))  ; 4
+(find-first even? '(1 3 5 7))    ; #f
+
+; Product with early exit on zero
+(define (product lst)
+  (call/cc
+    (lambda (return)
+      (let loop ([lst lst] [acc 1])
+        (cond
+          [(null? lst) acc]
+          [(zero? (car lst)) (return 0)]
+          [else (loop (cdr lst) (* acc (car lst)))])))))</code></pre>
+        <br/>
+        <li>Continuations as first-class values:</li>
+<pre><code class="language-scheme line-numbers">; Save and reuse continuations
+(define saved-k #f)
+
+(+ 1 (call/cc
+       (lambda (k)
+         (set! saved-k k)
+         2)))  ; 3
+
+(saved-k 10)   ; 11 (continues from where we left)
+(saved-k 100)  ; 101
+
+; Continuations can be called multiple times
+(let ([times 0])
+  (let ([result (call/cc (lambda (k)
+                           (set! saved-k k)
+                           'first))])
+    (set! times (+ times 1))
+    (if (< times 3)
+        (saved-k (string->symbol
+                   (format "attempt-~a" times)))
+        result)))
+; Returns attempt-2 after being called multiple times</code></pre>
+        <br/>
+        <li>Implementing exceptions with continuations:</li>
+<pre><code class="language-scheme line-numbers">(define (with-exception-handler handler thunk)
+  (call/cc
+    (lambda (return)
+      (let ([raise (lambda (exn) (return (handler exn)))])
+        (thunk raise)))))
+
+(with-exception-handler
+  (lambda (exn) (list 'caught exn))
+  (lambda (raise)
+    (raise 'my-error)))
+; (caught my-error)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Dynamic Wind</li>
+    <br/>
+    <ul>
+        <li><code>dynamic-wind</code> ensures cleanup with continuations:</li>
+<pre><code class="language-scheme line-numbers">; (dynamic-wind before thunk after)
+; before: called when entering
+; thunk: the main body
+; after: called when exiting (even via continuation)
+
+(dynamic-wind
+  (lambda () (display "entering\n"))
+  (lambda () (display "in body\n") 'result)
+  (lambda () (display "leaving\n")))
+; entering
+; in body
+; leaving
+; Returns: result</code></pre>
+        <br/>
+        <li>Resource management:</li>
+<pre><code class="language-scheme line-numbers">(define (with-input-file filename proc)
+  (let ([port #f])
+    (dynamic-wind
+      (lambda () (set! port (open-input-file filename)))
+      (lambda () (proc port))
+      (lambda () (close-input-port port)))))
+
+(with-input-file "data.txt"
+  (lambda (port)
+    (read port)))
+
+; Even if continuation jumps out, port is closed
+(call/cc
+  (lambda (escape)
+    (with-input-file "data.txt"
+      (lambda (port)
+        (escape 'early-exit)))))
+; Port still properly closed!</code></pre>
+        <br/>
+        <li>Tracking entry/exit:</li>
+<pre><code class="language-scheme line-numbers">(define level 0)
+
+(define (show-level label)
+  (printf "~a: level = ~a~n" label level))
+
+(define (with-level thunk)
+  (dynamic-wind
+    (lambda ()
+      (set! level (+ level 1))
+      (show-level "enter"))
+    thunk
+    (lambda ()
+      (show-level "exit")
+      (set! level (- level 1)))))
+
+(with-level
+  (lambda ()
+    (with-level
+      (lambda ()
+        (display "innermost\n")))))
+; enter: level = 1
+; enter: level = 2
+; innermost
+; exit: level = 2
+; exit: level = 1</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Delimited Continuations</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme provides delimited continuations via <code>call/1cc</code>:</li>
+<pre><code class="language-scheme line-numbers">; call/1cc: one-shot continuation (more efficient)
+; Can only be called once
+
+(define (find-first-1cc pred lst)
+  (call/1cc
+    (lambda (return)
+      (for-each
+        (lambda (x)
+          (when (pred x)
+            (return x)))
+        lst)
+      #f)))
+
+; Use call/1cc when you only need to escape once</code></pre>
+        <br/>
+        <li>Prompts and control with <code>call/cc</code>:</li>
+<pre><code class="language-scheme line-numbers">; Simulating generators with continuations
+(define (make-generator proc)
+  (let ([resume #f]
+        [yield-k #f])
+    (lambda ()
+      (call/cc
+        (lambda (return)
+          (if resume
+              (resume 'continue)
+              (proc (lambda (value)
+                      (call/cc
+                        (lambda (k)
+                          (set! resume k)
+                          (return value)))))))))))
+
+(define counter
+  (make-generator
+    (lambda (yield)
+      (let loop ([i 0])
+        (yield i)
+        (loop (+ i 1))))))
+
+(counter)  ; 0
+(counter)  ; 1
+(counter)  ; 2</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Exception Handling</li>
+    <br/>
+    <ul>
+        <li><code>guard</code> for structured exception handling:</li>
+<pre><code class="language-scheme line-numbers">(guard (exn
+        [(error? exn)
+         (display "An error occurred: ")
+         (display (condition-message exn))
+         (newline)
+         'error-result]
+        [(assertion-violation? exn)
+         'assertion-failed]
+        [else
+         (raise exn)])  ; Re-raise if not handled
+  (risky-operation))
+
+; Nested guard
+(guard (outer
+        [else (display "outer caught it\n")])
+  (guard (inner
+          [(warning? inner) (display "just a warning\n")])
+    (error 'test "something bad")))</code></pre>
+        <br/>
+        <li><code>with-exception-handler</code> for low-level handling:</li>
+<pre><code class="language-scheme line-numbers">; Handler receives exception, can return or re-raise
+(with-exception-handler
+  (lambda (exn)
+    (display "Handler called\n")
+    (raise exn))  ; Re-raise to outer handler
+  (lambda ()
+    (error 'test "oops")))
+
+; Handling continuable exceptions
+(with-exception-handler
+  (lambda (exn)
+    (when (warning? exn)
+      (display "Warning noted\n"))
+    'continue-value)  ; Return value for continuable
+  (lambda ()
+    (let ([result (raise-continuable (make-warning))])
+      (display "Continued with: ")
+      (display result)
+      (newline))))</code></pre>
+        <br/>
+        <li>Chez-specific <code>parameterize</code> for exception handling:</li>
+<pre><code class="language-scheme line-numbers">; Using parameters for global exception behavior
+(parameterize ([current-exception-handler
+                (lambda (exn)
+                  (printf "Caught: ~a~n" exn)
+                  (default-exception-handler exn))])
+  (error 'test "demo"))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Non-Local Exit Patterns</li>
+    <br/>
+    <ul>
+        <li>Early return from nested loops:</li>
+<pre><code class="language-scheme line-numbers">(define (find-in-matrix pred matrix)
+  (call/cc
+    (lambda (return)
+      (for-each
+        (lambda (row)
+          (for-each
+            (lambda (elem)
+              (when (pred elem)
+                (return elem)))
+            row))
+        matrix)
+      #f)))
+
+(find-in-matrix
+  (lambda (x) (> x 10))
+  '((1 2 3) (4 5 6) (7 8 15)))  ; 15</code></pre>
+        <br/>
+        <li>Break and continue in loops:</li>
+<pre><code class="language-scheme line-numbers">; Simulating break
+(define (process-until-done lst)
+  (call/cc
+    (lambda (break)
+      (for-each
+        (lambda (x)
+          (if (eq? x 'stop)
+              (break 'stopped)
+              (process x)))
+        lst)
+      'completed)))
+
+; Simulating continue
+(define (process-skip-negatives lst)
+  (for-each
+    (lambda (x)
+      (call/cc
+        (lambda (continue)
+          (when (< x 0)
+            (continue #f))
+          (process x))))
+    lst))</code></pre>
+        <br/>
+        <li>Return multiple levels:</li>
+<pre><code class="language-scheme line-numbers">(define (deep-search tree target)
+  (call/cc
+    (lambda (found)
+      (let search ([tree tree])
+        (cond
+          [(null? tree) #f]
+          [(equal? (car tree) target)
+           (found #t)]
+          [(pair? (car tree))
+           (search (car tree))
+           (search (cdr tree))]
+          [else
+           (search (cdr tree))]))
+      #f)))
+
+(deep-search '(a (b (c d)) (e (f target g))) 'target)  ; #t</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Trampolining and Tail Calls</li>
+    <br/>
+    <ul>
+        <li>Scheme guarantees tail call optimization:</li>
+<pre><code class="language-scheme line-numbers">; This won't overflow the stack
+(define (count-to n)
+  (let loop ([i 0])
+    (if (= i n)
+        'done
+        (loop (+ i 1)))))
+
+(count-to 10000000)  ; Works fine!
+
+; Tail recursive factorial
+(define (factorial n)
+  (let loop ([n n] [acc 1])
+    (if (zero? n)
+        acc
+        (loop (- n 1) (* acc n)))))
+
+; NOT tail recursive (multiplication after recursive call)
+(define (factorial-bad n)
+  (if (zero? n)
+      1
+      (* n (factorial-bad (- n 1)))))  ; Will overflow</code></pre>
+        <br/>
+        <li>Mutual recursion with tail calls:</li>
+<pre><code class="language-scheme line-numbers">(define (even? n)
+  (if (zero? n)
+      #t
+      (odd? (- n 1))))
+
+(define (odd? n)
+  (if (zero? n)
+      #f
+      (even? (- n 1))))
+
+(even? 1000000)  ; #t, no stack overflow</code></pre>
+        <br/>
+        <li>Converting non-tail to tail recursive:</li>
+<pre><code class="language-scheme line-numbers">; Non-tail recursive (builds up stack)
+(define (sum-list lst)
+  (if (null? lst)
+      0
+      (+ (car lst) (sum-list (cdr lst)))))
+
+; Tail recursive with accumulator
+(define (sum-list-tr lst)
+  (let loop ([lst lst] [acc 0])
+    (if (null? lst)
+        acc
+        (loop (cdr lst) (+ acc (car lst))))))
+
+; CPS transformation for complex cases
+(define (fib-cps n k)
+  (if (< n 2)
+      (k n)
+      (fib-cps (- n 1)
+               (lambda (a)
+                 (fib-cps (- n 2)
+                          (lambda (b)
+                            (k (+ a b))))))))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Fluid Bindings (Parameters)</li>
+    <br/>
+    <ul>
+        <li>Parameters provide dynamic scoping:</li>
+<pre><code class="language-scheme line-numbers">; Create a parameter
+(define current-user (make-parameter "guest"))
+
+(current-user)           ; "guest"
+
+; Set temporarily with parameterize
+(parameterize ([current-user "admin"])
+  (display (current-user)))  ; "admin"
+
+(current-user)           ; "guest" (restored)
+
+; Nested parameterize
+(parameterize ([current-user "alice"])
+  (display (current-user))   ; alice
+  (newline)
+  (parameterize ([current-user "bob"])
+    (display (current-user)) ; bob
+    (newline))
+  (display (current-user)))  ; alice</code></pre>
+        <br/>
+        <li>Parameters with validation:</li>
+<pre><code class="language-scheme line-numbers">; Parameter with guard procedure
+(define current-level
+  (make-parameter 0
+    (lambda (v)
+      (unless (and (integer? v) (>= v 0))
+        (error 'current-level "must be non-negative integer" v))
+      v)))
+
+(current-level 5)        ; OK
+(current-level -1)       ; Error!</code></pre>
+        <br/>
+        <li>Common built-in parameters:</li>
+<pre><code class="language-scheme line-numbers">; I/O parameters
+(parameterize ([current-output-port (open-output-string)])
+  (display "captured")
+  (get-output-string (current-output-port)))
+
+; Compilation parameters
+(parameterize ([optimize-level 3]
+               [debug-level 0])
+  (compile-file "fast.ss"))
+
+; Print parameters
+(parameterize ([print-length 10]
+               [print-level 5])
+  (pretty-print deeply-nested-structure))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Control Flow Summary</li>
+    <br/>
+    <ul>
+        <li>Quick reference:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Construct</th>
+            <th>Use Case</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>if</code></td>
+            <td>Simple two-way branch</td>
+        </tr>
+        <tr>
+            <td><code>cond</code></td>
+            <td>Multiple conditions</td>
+        </tr>
+        <tr>
+            <td><code>case</code></td>
+            <td>Match against literal values</td>
+        </tr>
+        <tr>
+            <td><code>when/unless</code></td>
+            <td>One-sided conditional with body</td>
+        </tr>
+        <tr>
+            <td><code>and/or</code></td>
+            <td>Short-circuit boolean logic</td>
+        </tr>
+        <tr>
+            <td><code>begin</code></td>
+            <td>Sequence expressions</td>
+        </tr>
+        <tr>
+            <td>Named <code>let</code></td>
+            <td>General iteration/recursion</td>
+        </tr>
+        <tr>
+            <td><code>do</code></td>
+            <td>Traditional loop with step</td>
+        </tr>
+        <tr>
+            <td><code>for-each</code></td>
+            <td>Iterate for side effects</td>
+        </tr>
+        <tr>
+            <td><code>map</code></td>
+            <td>Transform lists</td>
+        </tr>
+        <tr>
+            <td><code>fold-left/right</code></td>
+            <td>Accumulate over lists</td>
+        </tr>
+        <tr>
+            <td><code>values</code></td>
+            <td>Return multiple values</td>
+        </tr>
+        <tr>
+            <td><code>let-values</code></td>
+            <td>Bind multiple values</td>
+        </tr>
+        <tr>
+            <td><code>call/cc</code></td>
+            <td>Capture continuation</td>
+        </tr>
+        <tr>
+            <td><code>dynamic-wind</code></td>
+            <td>Ensure cleanup with continuations</td>
+        </tr>
+        <tr>
+            <td><code>guard</code></td>
+            <td>Exception handling</td>
+        </tr>
+        <tr>
+            <td><code>parameterize</code></td>
+            <td>Dynamic/fluid bindings</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
