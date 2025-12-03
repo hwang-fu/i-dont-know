@@ -164,6 +164,9 @@
         <li><a href="#scm-numeric-operations">Numeric Operations</a></li>
         <li><a href="#scm-input-output">Input / Output</a></li>
         <li><a href="#scm-libraries-programs">Libraries and Top-level Programs</a></li>
+        <li><a href="#scm-syntactic-extension">Syntactic Extension and Modules</a></li>
+        <li><a href="#scm-"></a></li>
+        <li><a href="#scm-"></a></li>
     </ol>
 </nav>
 <hr/>
@@ -15252,7 +15255,8 @@ expression ...
   (import
     (my-project core)
     (my-project utils)
-    (my-project main)))</code></pre>
+    (my-project main)))
+</code></pre>
         <br/>
         <li>Top-level program (run.ss):</li>
 <pre><code class="language-scheme line-numbers">#!/usr/bin/env scheme-script
@@ -15292,7 +15296,8 @@ expression ...
     (assert (= (widget-process w) 84)))
   (printf "All tests passed.~n"))
 
-(main (command-line-arguments))</code></pre>
+(main (command-line-arguments))
+</code></pre>
         <br/>
         <li>Makefile for building:</li>
 <pre><code class="language-makefile line-numbers"># Makefile for my-project
@@ -15328,10 +15333,1780 @@ run:
 
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -f $(SRC_DIR)/*.so $(SRC_DIR)/my-project/*.so</code></pre>
+	rm -f $(SRC_DIR)/*.so $(SRC_DIR)/my-project/*.so
+</code></pre>
+    </ul>
+    <br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-syntactic-extension">Syntactic Extension and Modules in Chez Scheme</h3>
+<ol>
+
+    <li>Fluid Keyword Bindings</li>
+    <br/>
+    <ul>
+        <li>Fluid keywords with fluid-let-syntax:</li>
+<pre><code class="language-scheme line-numbers">; fluid-let-syntax temporarily rebinds keywords
+; Similar to parameterize but for syntax
+
+; Basic usage
+(let-syntax ([when (syntax-rules ()
+                     [(_ test e1 e2 ...)
+                      (if test (begin e1 e2 ...))])])
+  (fluid-let-syntax ([when (syntax-rules ()
+                             [(_ test e1 e2 ...)
+                              (begin
+                                (display "checking...\n")
+                                (if test (begin e1 e2 ...)))])])
+    (when #t (display "hello\n"))))
+; Output:
+; checking...
+; hello
+
+; After fluid-let-syntax, original binding restored
+(when #t (display "normal\n"))  ; Uses original when
+</code></pre>
+        <br/>
+        <li>Use cases for fluid keywords:</li>
+<pre><code class="language-scheme line-numbers">; Debugging macros
+(define-syntax with-debug-macros
+  (syntax-rules ()
+    [(_ body ...)
+     (fluid-let-syntax
+       ([define (syntax-rules ()
+                  [(_ (name . args) . body)
+                   (define (name . args)
+                     (printf "Entering ~a~n" 'name)
+                     (let ([result (begin . body)])
+                       (printf "Leaving ~a: ~a~n" 'name result)
+                       result))]
+                  [(_ name val)
+                   (define name val)])])
+       body ...)]))
+
+(with-debug-macros
+  (define (factorial n)
+    (if (zero? n) 1 (* n (factorial (- n 1)))))
+  (factorial 3))
+
+; Domain-specific language contexts
+(define-syntax in-sql-context
+  (syntax-rules ()
+    [(_ body ...)
+     (fluid-let-syntax
+       ([select (syntax-rules () ...)]
+        [from (syntax-rules () ...)]
+        [where (syntax-rules () ...)])
+       body ...)]))
+</code></pre>
+        <br/>
+        <li>Interaction with macro expansion:</li>
+<pre><code class="language-scheme line-numbers">; fluid-let-syntax affects nested macro calls
+(define-syntax outer
+  (syntax-rules ()
+    [(_ x) (inner x)]))
+
+(define-syntax inner
+  (syntax-rules ()
+    [(_ x) (list 'inner x)]))
+
+; Normal expansion
+(outer 1)                   ; (inner 1)
+
+; With fluid binding
+(fluid-let-syntax ([inner (syntax-rules ()
+                            [(_ x) (list 'modified x)])])
+  (outer 1))                ; (modified 1)
+
+; The fluid binding affects inner called from outer
+</code></pre>
+        <br/>
+        <li>Splicing fluid-let-syntax:</li>
+<pre><code class="language-scheme line-numbers">; splicing-fluid-let-syntax splices into surrounding context
+(define-syntax with-alternative-if
+  (syntax-rules ()
+    [(_ body ...)
+     (splicing-fluid-let-syntax
+       ([if (syntax-rules ()
+              [(_ test then else)
+               (cond [test then] [else else])])])
+       body ...)]))
+
+; Can be used at top level or in definition context
+(with-alternative-if
+  (define (safe-divide a b)
+    (if (zero? b)
+        'undefined
+        (/ a b))))
+
+; splicing version allows definitions to escape
+</code></pre>
     </ul>
     <br/><br/>
 
+
+    <li>Syntax-Rules Transformers</li>
+    <br/>
+    <ul>
+        <li>Basic syntax-rules:</li>
+<pre><code class="language-scheme line-numbers">; syntax-rules creates pattern-based macros
+(define-syntax my-when
+  (syntax-rules ()
+    [(_ test body ...)
+     (if test (begin body ...))]))
+
+(my-when (&gt; 5 3)
+  (display "yes")
+  (newline))
+
+; Multiple patterns
+(define-syntax my-cond
+  (syntax-rules (else =&gt;)
+    [(_ [else e1 e2 ...])
+     (begin e1 e2 ...)]
+    [(_ [test =&gt; proc])
+     (let ([t test])
+       (if t (proc t)))]
+    [(_ [test e1 e2 ...])
+     (if test (begin e1 e2 ...))]
+    [(_ [test e1 e2 ...] clause ...)
+     (if test
+         (begin e1 e2 ...)
+         (my-cond clause ...))]))
+
+(my-cond
+  [(assq 'a '((a . 1) (b . 2))) =&gt; cdr]
+  [else 'not-found])            ; 1
+</code></pre>
+        <br/>
+        <li>Pattern variables and ellipsis:</li>
+<pre><code class="language-scheme line-numbers">; ... matches zero or more
+(define-syntax my-list
+  (syntax-rules ()
+    [(_ x ...)
+     (list x ...)]))
+
+(my-list 1 2 3)             ; (1 2 3)
+(my-list)                   ; ()
+
+; Nested ellipsis
+(define-syntax my-let*
+  (syntax-rules ()
+    [(_ () body ...)
+     (begin body ...)]
+    [(_ ([var val] rest ...) body ...)
+     (let ([var val])
+       (my-let* (rest ...) body ...))]))
+
+; Ellipsis in both pattern and template
+(define-syntax swap-pairs
+  (syntax-rules ()
+    [(_ (a b) ...)
+     (list (list b a) ...)]))
+
+(swap-pairs (1 2) (3 4) (5 6))  ; ((2 1) (4 3) (6 5))
+</code></pre>
+        <br/>
+        <li>Literal identifiers:</li>
+<pre><code class="language-scheme line-numbers">; Literals match exactly (compared with free-identifier=?)
+(define-syntax my-case
+  (syntax-rules (else)      ; else is a literal
+    [(_ expr [else e1 e2 ...])
+     (begin e1 e2 ...)]
+    [(_ expr [(datum ...) e1 e2 ...])
+     (if (memv expr '(datum ...))
+         (begin e1 e2 ...))]
+    [(_ expr [(datum ...) e1 e2 ...] clause ...)
+     (let ([t expr])
+       (if (memv t '(datum ...))
+           (begin e1 e2 ...)
+           (my-case t clause ...)))]))
+
+; Multiple literals
+(define-syntax for
+  (syntax-rules (in from to by)
+    [(_ var in lst body ...)
+     (for-each (lambda (var) body ...) lst)]
+    [(_ var from start to end body ...)
+     (do ([var start (+ var 1)])
+         ((&gt; var end))
+       body ...)]
+    [(_ var from start to end by step body ...)
+     (do ([var start (+ var step)])
+         ((&gt; var end))
+       body ...)]))
+
+(for i in '(1 2 3) (display i))
+(for i from 1 to 5 (display i))
+(for i from 0 to 10 by 2 (display i))
+</code></pre>
+        <br/>
+        <li>Underscore and ellipsis escaping:</li>
+<pre><code class="language-scheme line-numbers">; _ matches anything but doesn't bind
+(define-syntax first-of-two
+  (syntax-rules ()
+    [(_ a _) a]))           ; Second element ignored
+
+(first-of-two 1 2)          ; 1
+
+; Escape ellipsis with (... ...)
+(define-syntax define-quoter
+  (syntax-rules ()
+    [(_ name)
+     (define-syntax name
+       (syntax-rules ()
+         [(_ x (... ...))    ; Escaped ellipsis
+          '(x (... ...))]))]))
+
+(define-quoter my-quote)
+(my-quote a b c)            ; (a b c)
+
+; Alternative ellipsis (Chez extension)
+(define-syntax my-macro
+  (syntax-rules ::: ()      ; Use ::: instead of ...
+    [(_ a :::)
+     (list a :::)]))
+
+(my-macro 1 2 3)            ; (1 2 3)
+</code></pre>
+        <br/>
+        <li>Hygiene and syntax-rules:</li>
+<pre><code class="language-scheme line-numbers">; Syntax-rules is automatically hygienic
+(define-syntax swap!
+  (syntax-rules ()
+    [(_ a b)
+     (let ([temp a])        ; temp is hygienic
+       (set! a b)
+       (set! b temp))]))
+
+(let ([temp 1] [x 2])
+  (swap! temp x)            ; Works! temp in macro is different
+  (list temp x))            ; (2 1)
+
+; Introduced identifiers are renamed
+(define-syntax capture-free
+  (syntax-rules ()
+    [(_ x e)
+     (let ([x 'captured])   ; This x is hygienic
+       e)]))
+
+(let ([y 1])
+  (capture-free y (list y)))  ; (1) - y not captured
+
+; Use syntax-case for intentional capture</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Syntax-Case Transformers</li>
+    <br/>
+    <ul>
+        <li>Basic syntax-case:</li>
+<pre><code class="language-scheme line-numbers">; syntax-case provides more control than syntax-rules
+(define-syntax my-when
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ test body ...)
+       #'(if test (begin body ...))])))
+
+; Explicit syntax object construction
+(define-syntax my-or
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_) #'#f]
+      [(_ e) #'e]
+      [(_ e1 e2 ...)
+       #'(let ([t e1])
+           (if t t (my-or e2 ...)))])))
+
+; Access to raw syntax objects
+(define-syntax show-syntax
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ x)
+       (begin
+         (printf "Syntax: ~s~n" (syntax-&gt;datum #'x))
+         #'(quote x))])))
+</code></pre>
+        <br/>
+        <li>Fenders (guards):</li>
+<pre><code class="language-scheme line-numbers">; Fenders add conditions to patterns
+(define-syntax const
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ x)
+       (number? (syntax-&gt;datum #'x))  ; Fender
+       #'x]
+      [(_ x)
+       (string? (syntax-&gt;datum #'x))
+       #'x]
+      [(_ x)
+       (syntax-error #'x "expected constant")])))
+
+; More complex fender
+(define-syntax assert-identifier
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ name)
+       (identifier? #'name)          ; Check it's an identifier
+       #'(void)]
+      [(_ name)
+       (syntax-error #'name "expected identifier")])))
+
+; Multiple conditions
+(define-syntax literal-string
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ s)
+       (and (string? (syntax-&gt;datum #'s))
+            (&lt; (string-length (syntax-&gt;datum #'s)) 100))
+       #'s])))
+</code></pre>
+        <br/>
+        <li>Syntax manipulation procedures:</li>
+<pre><code class="language-scheme line-numbers">; Convert between syntax and data
+(syntax-&gt;datum #'(a b c))   ; (a b c)
+(datum-&gt;syntax #'here '(a b c))  ; #<syntax (a b c)&gt;
+
+; Check syntax object type
+(identifier? #'foo)         ; #t
+(identifier? #'(a b))       ; #f
+
+; Compare identifiers
+(free-identifier=? #'car #'car)   ; #t
+(bound-identifier=? #'x #'x)      ; #t in same binding
+
+; Generate unique identifier
+(generate-temporaries '(a b c))  ; (#<syntax t1&gt; #<syntax t2&gt; #<syntax t3&gt;)
+
+; Syntax lists
+(syntax-&gt;list #'(a b c))    ; (#&lt;syntax a&gt; #&lt;syntax b&gt; #&lt;syntax c&gt;)
+
+; with-syntax for binding patterns
+(define-syntax my-let
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ ([var val] ...) body ...)
+       (with-syntax ([(t ...) (generate-temporaries #'(var ...))])
+         #'(let ([t val] ...)
+             (let ([var t] ...)
+               body ...)))])))
+</code></pre>
+        <br/>
+        <li>Breaking hygiene:</li>
+<pre><code class="language-scheme line-numbers">; datum-&gt;syntax inherits lexical context
+(define-syntax define-struct
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ name (field ...))
+       (with-syntax ([make-name (datum-&gt;syntax #'name
+                                  (string-&gt;symbol
+                                    (string-append "make-"
+                                      (symbol-&gt;string
+                                        (syntax-&gt;datum #'name)))))]
+                     [name? (datum-&gt;syntax #'name
+                              (string-&gt;symbol
+                                (string-append
+                                  (symbol-&gt;string
+                                    (syntax-&gt;datum #'name))
+                                  "?")))])
+         #'(begin
+             (define (make-name field ...)
+               (vector 'name field ...))
+             (define (name? x)
+               (and (vector? x)
+                    (eq? (vector-ref x 0) 'name)))))])))
+
+(define-struct point (x y))
+(define p (make-point 3 4))
+(point? p)                  ; #t
+
+; Intentional capture with datum-&gt;syntax
+(define-syntax aif
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ test then else)
+       (with-syntax ([it (datum-&gt;syntax #'test 'it)])
+         #'(let ([it test])
+             (if it then else)))]))
+
+(aif (assq 'a '((a . 1)))
+     (cdr it)               ; it is captured
+     'not-found)            ; 1
+</code></pre>
+        <br/>
+        <li>Recursive and helper macros:</li>
+<pre><code class="language-scheme line-numbers">; Helper procedure at expand time
+(define-syntax define-enum
+  (lambda (stx)
+    (define (make-constant name index)
+      (datum-&gt;syntax name
+        (string-&gt;symbol
+          (string-append
+            (symbol-&gt;string (syntax-&gt;datum name))
+            "-value"))))
+    (syntax-case stx ()
+      [(_ name ...)
+       (with-syntax ([(index ...)
+                      (datum-&gt;syntax #'(name ...)
+                        (iota (length (syntax-&gt;list #'(name ...)))))]
+                     [(const ...)
+                      (map make-constant
+                           (syntax-&gt;list #'(name ...))
+                           (iota (length (syntax-&gt;list #'(name ...)))))])
+         #'(begin
+             (define name index) ...
+             (define const index) ...))])))
+
+(define-enum RED GREEN BLUE)
+RED                         ; 0
+GREEN                       ; 1
+BLUE-value                  ; 2
+
+; Recursive macro expansion
+(define-syntax my-let*
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ () body ...)
+       #'(let () body ...)]
+      [(_ ([var val] . rest) body ...)
+       #'(let ([var val])
+           (my-let* rest body ...))])))
+</code></pre>
+        <br/>
+        <li>Syntax errors and source location:</li>
+<pre><code class="language-scheme line-numbers">; Raise syntax error with location
+(define-syntax check-args
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ proc (arg ...))
+       (let ([args (syntax-&gt;list #'(arg ...))])
+         (for-each
+           (lambda (a)
+             (unless (identifier? a)
+               (syntax-error a "expected identifier")))
+           args)
+         #'(proc arg ...))])))
+
+; Custom error messages
+(define-syntax my-define
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ (name . args) body ...)
+       (if (identifier? #'name)
+           #'(define (name . args) body ...)
+           (syntax-error #'name
+             "expected identifier for function name"))]
+      [(_ name value)
+       (if (identifier? #'name)
+           #'(define name value)
+           (syntax-error #'name
+             "expected identifier for variable name"))]
+      [_
+       (syntax-error stx "invalid define syntax")])))
+
+; Get source location
+(define-syntax where-am-i
+  (lambda (stx)
+    (let ([src (syntax-&gt;source-info stx)])
+      #`(quote #,(or src 'unknown)))))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Compile-time Values and Properties</li>
+    <br/>
+    <ul>
+        <li>define-property:</li>
+<pre><code class="language-scheme line-numbers">; Attach properties to identifiers at compile time
+(define-syntax define-constant
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ name value)
+       #'(begin
+           (define-property name constant-value 'value)
+           (define name value))])))
+
+(define-syntax get-constant
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ name)
+       (let ([val (lookup-property #'name 'constant-value)])
+         (if val
+             (datum-&gt;syntax #'name val)
+             (syntax-error #'name "not a constant")))])))
+
+(define-constant PI 3.14159)
+(get-constant PI)           ; 3.14159 (at compile time)
+
+; Properties for type information
+(define-syntax define-typed
+  (lambda (stx)
+    (syntax-case stx (:)
+      [(_ name : type value)
+       #'(begin
+           (define-property name type-info 'type)
+           (define name value))])))
+</code></pre>
+        <br/>
+        <li>Compile-time computation with define-syntax:</li>
+<pre><code class="language-scheme line-numbers">; Compute at compile time
+(define-syntax compile-time-factorial
+  (lambda (stx)
+    (define (fact n)
+      (if (zero? n) 1 (* n (fact (- n 1)))))
+    (syntax-case stx ()
+      [(_ n)
+       (let ([val (fact (syntax-&gt;datum #'n))])
+         (datum-&gt;syntax #'n val))])))
+
+(compile-time-factorial 10) ; 3628800 (computed at compile time)
+
+; Lookup tables at compile time
+(define-syntax day-&gt;number
+  (let ([table '((sunday . 0) (monday . 1) (tuesday . 2)
+                 (wednesday . 3) (thursday . 4)
+                 (friday . 5) (saturday . 6))])
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ day)
+         (let ([val (assq (syntax-&gt;datum #'day) table)])
+           (if val
+               (datum-&gt;syntax #'day (cdr val))
+               (syntax-error #'day "unknown day")))]))))
+
+(day-&gt;number monday)        ; 1
+</code></pre>
+        <br/>
+        <li>Storing values with define-integrable:</li>
+<pre><code class="language-scheme line-numbers">; define-integrable allows inline expansion
+(define-syntax define-integrable
+  (syntax-rules ()
+    [(_ (name arg ...) body ...)
+     (begin
+       (define-syntax name
+         (syntax-rules ()
+           [(_ arg ...) (begin body ...)]
+           [_ name-procedure]))
+       (define name-procedure
+         (lambda (arg ...) body ...))
+       (define name name-procedure))]))
+
+(define-integrable (square x)
+  (* x x))
+
+(square 5)                  ; Inlined: (* 5 5)
+(map square '(1 2 3))       ; Uses procedure version
+
+; Chez Scheme's built-in integrable definitions
+; Many primitives like car, cdr, cons are integrable
+</code></pre>
+        <br/>
+        <li>Expand-time environment:</li>
+<pre><code class="language-scheme line-numbers">; Access expand-time environment
+(define-syntax check-bound
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ id)
+       (if (identifier? #'id)
+           (let ([binding (identifier-binding #'id)])
+             (if binding
+                 #'(quote bound)
+                 #'(quote unbound)))
+           (syntax-error #'id "expected identifier"))])))
+
+; identifier-binding returns:
+; #f if unbound
+; 'lexical if lexically bound
+; (library . name) if from library
+
+; Check binding in specific environment
+(define-syntax in-environment
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ env expr)
+       (let ([e (syntax-&gt;datum #'env)])
+         ; Use environment for expansion
+         #'(eval 'expr env))])))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Modules</li>
+    <br/>
+    <ul>
+        <li>Module basics:</li>
+<pre><code class="language-scheme line-numbers">; Modules group definitions with controlled exports
+; Different from libraries - modules are local scoping
+
+(module math-ops (add subtract multiply)
+  (define (add a b) (+ a b))
+  (define (subtract a b) (- a b))
+  (define (multiply a b) (* a b))
+  (define (helper x) (* x x)))  ; Not exported
+
+; Import module bindings
+(import math-ops)
+(add 1 2)                   ; 3
+(multiply 3 4)              ; 12
+; (helper 5)                ; Error: helper not exported
+
+; Selective import
+(import (only math-ops add))
+(import (except math-ops multiply))
+(import (rename math-ops (add plus)))
+</code></pre>
+        <br/>
+        <li>Anonymous modules:</li>
+<pre><code class="language-scheme line-numbers">; Module without name - just for scoping
+(module (get-counter increment!)
+  (define count 0)
+  (define (get-counter) count)
+  (define (increment!)
+    (set! count (+ count 1))))
+
+(import (get-counter increment!))  ; Import anonymous module
+(get-counter)               ; 0
+(increment!)
+(get-counter)               ; 1
+
+; Private state via closure in module
+(module (make-counter)
+  (define (make-counter initial)
+    (let ([count initial])
+      (lambda (msg)
+        (case msg
+          [(get) count]
+          [(inc) (set! count (+ count 1))]
+          [(dec) (set! count (- count 1))])))))
+</code></pre>
+        <br/>
+        <li>Nested modules:</li>
+<pre><code class="language-scheme line-numbers">; Modules can be nested
+(module outer (public-a inner-export)
+  (define private-x 10)
+
+  (define (public-a)
+    private-x)
+
+  (module inner (inner-proc)
+    (define (inner-proc)
+      (* private-x 2)))   ; Can access outer's private
+
+  (import inner)
+  (define (inner-export)
+    (inner-proc)))
+
+(import outer)
+(public-a)                  ; 10
+(inner-export)              ; 20
+
+; Re-exporting from nested module
+(module container (inner-fn)
+  (module hidden (inner-fn)
+    (define (inner-fn x) (* x 3)))
+  (import hidden))
+</code></pre>
+        <br/>
+        <li>Module with interfaces:</li>
+<pre><code class="language-scheme line-numbers">; Define interface separately
+(define-syntax define-interface
+  (syntax-rules ()
+    [(_ name (export ...))
+     (define-syntax name
+       (syntax-rules ()
+         [(_ . body)
+          (module (export ...) . body)]))]))
+
+(define-interface stack-interface
+  (make-stack push! pop! empty?))
+
+(stack-interface
+  (define (make-stack)
+    (let ([items '()])
+      (vector
+        (lambda (x) (set! items (cons x items)))   ; push!
+        (lambda ()
+          (let ([top (car items)])
+            (set! items (cdr items))
+            top))                                   ; pop!
+        (lambda () (null? items)))))               ; empty?
+
+  (define (push! stack x)
+    ((vector-ref stack 0) x))
+
+  (define (pop! stack)
+    ((vector-ref stack 1)))
+
+  (define (empty? stack)
+    ((vector-ref stack 2))))
+</code></pre>
+        <br/>
+        <li>Module with syntax exports:</li>
+<pre><code class="language-scheme line-numbers">; Modules can export syntax
+(module utility-macros (when-let unless-let)
+  (define-syntax when-let
+    (syntax-rules ()
+      [(_ ([var expr]) body ...)
+       (let ([var expr])
+         (when var body ...))]))
+
+  (define-syntax unless-let
+    (syntax-rules ()
+      [(_ ([var expr]) body ...)
+       (let ([var expr])
+         (unless var body ...))])))
+
+(import utility-macros)
+(when-let ([x (assq 'a '((a . 1)))])
+  (display (cdr x)))        ; 1
+
+; Mixed exports (values and syntax)
+(module mixed (value-export syntax-export)
+  (define value-export 42)
+  (define-syntax syntax-export
+    (syntax-rules ()
+      [(_ x) (list 'syntax x)])))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Standalone Import and Export Forms</li>
+    <br/>
+    <ul>
+        <li>Top-level import:</li>
+<pre><code class="language-scheme line-numbers">; Import at top level or in bodies
+(import (rnrs))             ; Import library
+(import my-module)          ; Import module
+
+; Import forms
+(import (only module-name id ...))
+(import (except module-name id ...))
+(import (rename module-name (old new) ...))
+(import (prefix module-name prefix))
+
+; Multiple imports
+(import (rnrs) (rnrs lists) (chezscheme))
+
+; Combining import modifiers
+(import (prefix (only (rnrs lists) filter map) list:))
+; Now use list:filter, list:map
+
+; Import into local scope
+(let ()
+  (import (only (rnrs) display))
+  (display "hello"))        ; Only display is imported here
+</code></pre>
+        <br/>
+        <li>Indirect exports:</li>
+<pre><code class="language-scheme line-numbers">; indirect-export makes helper visible to macros
+(module m (transform)
+  (indirect-export transform helper)
+
+  (define (helper x)
+    (* x 2))
+
+  (define-syntax transform
+    (syntax-rules ()
+      [(_ x) (helper x)])))
+
+(import m)
+(transform 5)               ; 10
+; helper is available because of indirect-export
+
+; Without indirect-export, helper would not be
+; visible when transform expands in importing context
+
+; Multiple indirect exports
+(module m2 (my-macro)
+  (indirect-export my-macro h1 h2 h3)
+  (define (h1 x) ...)
+  (define (h2 x) ...)
+  (define (h3 x) ...)
+  (define-syntax my-macro ...))
+</code></pre>
+        <br/>
+        <li>Export forms in modules:</li>
+<pre><code class="language-scheme line-numbers">; Explicit export list in module form
+(module name (export1 export2)
+  ...)
+
+; Export everything defined
+(module name *
+  ...)                      ; All definitions exported
+
+; Selective re-export
+(module wrapper (public-fn)
+  (import internal-module)
+  ; Only re-export public-fn from internal-module
+  (define public-fn internal-fn))
+
+; Renaming exports
+(module m ((rename internal-name external-name))
+  (define (internal-name x) ...))
+
+; After import, use external-name
+</code></pre>
+        <br/>
+        <li>Import and export interaction:</li>
+<pre><code class="language-scheme line-numbers">; Import for re-export
+(module aggregator (a b c d)
+  (import module-1)         ; Provides a, b
+  (import module-2)         ; Provides c, d
+  ; All four are now exported from aggregator
+  )
+
+; Import with aliases for internal use
+(module m (process)
+  (import (rename other-module
+            (long-name short)))
+  (define (process x)
+    (short x)))             ; Use short name internally
+
+; Shadowing imports
+(module m (my-map)
+  (import (except (rnrs) map))  ; Don't import map
+  (define (my-map f lst)        ; Define our own
+    ...))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Built-in Modules</li>
+    <br/>
+    <ul>
+        <li>Scheme module:</li>
+<pre><code class="language-scheme line-numbers">; The scheme module contains core bindings
+(import scheme)
+
+; Equivalent to importing base language features
+; Includes:
+; - Core syntax: lambda, if, define, let, etc.
+; - Basic procedures: car, cdr, cons, list, etc.
+; - Numeric operations: +, -, *, /, etc.
+; - I/O: read, write, display, etc.
+
+; Typically you'd use libraries instead:
+(import (rnrs))             ; R6RS standard
+(import (chezscheme))       ; Full Chez Scheme
+</code></pre>
+        <br/>
+        <li>Chez Scheme built-in module:</li>
+<pre><code class="language-scheme line-numbers">; $system module contains internal procedures
+; Use with caution - implementation details
+
+; Access to internal representations
+#%$procedure-name           ; Get procedure name
+#%$code-source              ; Get code source info
+#%$continuation?            ; Check for continuation
+
+; Example (implementation-specific):
+(define (procedure-info proc)
+  (and (procedure? proc)
+       (#%$procedure-name proc)))
+
+; These are not part of the public API and
+; may change between Chez Scheme versions
+</code></pre>
+        <br/>
+        <li>ieee and r5rs modules:</li>
+<pre><code class="language-scheme line-numbers">; ieee module for IEEE Scheme compatibility
+(import ieee)
+
+; r5rs module for R5RS compatibility
+(import (rnrs r5rs))
+
+; Contains R5RS-specific forms:
+; - null-environment
+; - scheme-report-environment
+; - delay, force
+; - load
+; - etc.
+
+; Use for compatibility with older code
+(let ([env (scheme-report-environment 5)])
+  (eval '(+ 1 2) env))      ; Evaluate in R5RS environment
+</code></pre>
+        <br/>
+        <li>Interaction between modules and libraries:</li>
+<pre><code class="language-scheme line-numbers">; Libraries and modules can interact
+
+; Library using internal module
+(library (my-lib)
+  (export public-api)
+  (import (chezscheme))
+
+  ; Internal module for organization
+  (module helpers (h1 h2)
+    (define (h1 x) ...)
+    (define (h2 x) ...))
+
+  (import helpers)
+
+  (define (public-api x)
+    (h1 (h2 x))))
+
+; Module importing from library
+(module my-module (combined)
+  (import (rnrs))
+  (import (my-lib))
+  (define (combined x)
+    (public-api x)))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Meta Definitions</li>
+    <br/>
+    <ul>
+        <li>meta form for expand-time code:</li>
+<pre><code class="language-scheme line-numbers">; meta runs code at expand time
+(meta define helper-list '(a b c))
+
+(define-syntax use-helper
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_)
+       (datum-&gt;syntax #'use-helper helper-list)])))
+
+(use-helper)                ; (a b c)
+
+; Meta definitions are available during expansion
+(meta define (compute-table n)
+  (let loop ([i 0] [acc '()])
+    (if (= i n)
+        (reverse acc)
+        (loop (+ i 1) (cons (* i i) acc)))))
+
+(define-syntax get-squares
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ n)
+       (let ([squares (compute-table (syntax-&gt;datum #'n))])
+         (datum-&gt;syntax #'n squares))])))
+</code></pre>
+        <br/>
+        <li>meta-cond for conditional compilation:</li>
+<pre><code class="language-scheme line-numbers">; meta-cond chooses code at expand time
+(meta-cond
+  [(= (optimize-level) 3)
+   (define-syntax debug-print
+     (syntax-rules ()
+       [(_ . args) (void)]))]
+  [else
+   (define-syntax debug-print
+     (syntax-rules ()
+       [(_ . args) (printf . args)]))])
+
+; Feature detection
+(meta-cond
+  [(memq 'threads (machine-features))
+   (import (chezscheme threads))]
+  [else
+   (define make-thread (lambda (thunk) (thunk)))
+   (define thread-start! (lambda (t) t))])
+
+; Platform-specific code
+(meta-cond
+  [(eq? (machine-type) 'i3le)
+   (define word-size 32)]
+  [(eq? (machine-type) 'a6le)
+   (define word-size 64)]
+  [else
+   (define word-size 64)])
+</code></pre>
+        <br/>
+        <li>Meta modules:</li>
+<pre><code class="language-scheme line-numbers">; Define module for expand-time use
+(meta module syntax-helpers (make-id with-ids)
+  (define (make-id template sym)
+    (datum-&gt;syntax template sym))
+
+  (define (with-ids template syms proc)
+    (apply proc (map (lambda (s) (make-id template s)) syms))))
+
+; Use in macro
+(meta import syntax-helpers)
+
+(define-syntax define-accessors
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ name field ...)
+       (with-ids #'name
+         '(getter setter)
+         (lambda (get set)
+           #`(begin
+               (define (#,get obj) ...)
+               (define (#,set obj val) ...))))])))
+</code></pre>
+        <br/>
+        <li>Phases and meta levels:</li>
+<pre><code class="language-scheme line-numbers">; Meta levels:
+; Level 0: run time
+; Level 1: expand time (macro execution)
+; Level 2: meta-expand time (macros defining macros)
+
+; Regular definition (level 0)
+(define run-time-value 42)
+
+; Meta definition (level 1)
+(meta define expand-time-value 100)
+
+; Use expand-time value in macro
+(define-syntax use-expand-time
+  (lambda (stx)
+    #`'#,expand-time-value))
+
+(use-expand-time)           ; 100
+
+; Nested meta for level 2
+(meta meta define level-2-value 'deep)
+
+; For library imports at different phases:
+(import (for (helper-lib) expand))  ; Import for expand time
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Conditional Expansion</li>
+    <br/>
+    <ul>
+        <li>cond-expand form:</li>
+<pre><code class="language-scheme line-numbers">; cond-expand chooses based on features
+(cond-expand
+  [chez-scheme
+   (define implementation 'chez)]
+  [guile
+   (define implementation 'guile)]
+  [else
+   (define implementation 'unknown)])
+
+; Feature requirements
+(cond-expand
+  [(and srfi-1 srfi-13)
+   ; Both available
+   (import (srfi :1) (srfi :13))]
+  [(or srfi-1 rnrs-lists)
+   ; At least one list library
+   (import (rnrs lists))]
+  [else
+   (error 'init "need list library")])
+
+; Check for library existence
+(cond-expand
+  [(library (my optional-lib))
+   (import (my optional-lib))]
+  [else
+   (define optional-feature #f)])
+</code></pre>
+        <br/>
+        <li>when-feature and unless-feature:</li>
+<pre><code class="language-scheme line-numbers">; Chez-specific conditional expansion
+(when-feature pthreads
+  (import (chezscheme threads))
+  (define use-threads? #t))
+
+(unless-feature windows
+  (define use-signals? #t))
+
+; Feature detection helpers
+(define-syntax if-feature
+  (syntax-rules ()
+    [(_ feature then else)
+     (meta-cond
+       [(memq 'feature (machine-features))
+        then]
+       [else
+        else])]))
+
+(if-feature pthreads
+  (define parallel-map threaded-map)
+  (define parallel-map map))
+</code></pre>
+        <br/>
+        <li>Machine type conditionals:</li>
+<pre><code class="language-scheme line-numbers">; Check machine type at expand time
+(meta-cond
+  [(eq? (machine-type) 'a6osx)
+   (define os 'macos)
+   (define arch 'x86-64)]
+  [(eq? (machine-type) 'arm64osx)
+   (define os 'macos)
+   (define arch 'arm64)]
+  [(memq (machine-type) '(a6le ta6le))
+   (define os 'linux)
+   (define arch 'x86-64)]
+  [(memq (machine-type) '(arm64le tarm64le))
+   (define os 'linux)
+   (define arch 'arm64)]
+  [else
+   (define os 'unknown)
+   (define arch 'unknown)])
+
+; Threaded vs non-threaded
+(meta-cond
+  [(threaded?)
+   (define-syntax with-mutex
+     (syntax-rules ()
+       [(_ m body ...)
+        (with-mutex m (lambda () body ...))]))]
+  [else
+   (define-syntax with-mutex
+     (syntax-rules ()
+       [(_ m body ...)
+        (begin body ...)]))])
+</code></pre>
+        <br/>
+        <li>Compile-time parameters:</li>
+<pre><code class="language-scheme line-numbers">; Conditionalize on optimization level
+(meta-cond
+  [(&gt;= (optimize-level) 2)
+   (define-syntax assert
+     (syntax-rules ()
+       [(_ expr) (void)]))]  ; Assertions removed
+  [else
+   (define-syntax assert
+     (syntax-rules ()
+       [(_ expr)
+        (unless expr
+          (error 'assert "assertion failed" 'expr))]))])
+
+; Debug level conditionals
+(meta define debug-level 2)
+
+(meta-cond
+  [(&gt;= debug-level 1)
+   (define-syntax trace
+     (syntax-rules ()
+       [(_ msg) (printf "TRACE: ~a~n" msg)]))]
+  [else
+   (define-syntax trace
+     (syntax-rules ()
+       [(_ msg) (void)]))])
+
+(meta-cond
+  [(&gt;= debug-level 2)
+   (define-syntax debug
+     (syntax-rules ()
+       [(_ msg args ...)
+        (printf "DEBUG: ~a~n" (format msg args ...))]))]
+  [else
+   (define-syntax debug
+     (syntax-rules ()
+       [(_ msg args ...) (void)]))])
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Aliases</li>
+    <br/>
+    <ul>
+        <li>alias form:</li>
+<pre><code class="language-scheme line-numbers">; alias creates alternative name for binding
+(alias new-name old-name)
+
+; Example
+(alias λ lambda)
+(λ (x) (* x x))             ; Same as (lambda (x) (* x x))
+
+; Alias for imported binding
+(import (rnrs))
+(alias fn lambda)
+(alias def define)
+
+(def (square x)
+  (* x x))
+
+; Multiple aliases
+(alias + plus)
+(alias - minus)
+(alias * times)
+(alias / divide)
+
+(plus 1 2)                  ; 3
+(times 3 4)                 ; 12
+</code></pre>
+        <br/>
+        <li>Alias vs define:</li>
+<pre><code class="language-scheme line-numbers">; alias shares binding, define copies
+(define original 42)
+
+(alias aliased original)
+(define copied original)
+
+(set! original 100)
+
+aliased                     ; 100 (shares binding)
+copied                      ; 42 (separate copy)
+
+; Alias for procedures
+(define (greet name)
+  (printf "Hello, ~a!~n" name))
+
+(alias say-hello greet)
+
+(set! greet (lambda (name)
+              (printf "Hi, ~a!~n" name)))
+
+(say-hello "World")         ; Hi, World! (alias follows change)
+
+; Alias maintains all properties
+(alias car* car)
+; car* has same integrable property as car
+</code></pre>
+        <br/>
+        <li>Syntax aliases:</li>
+<pre><code class="language-scheme line-numbers">; Alias for syntax keywords
+(alias when* when)
+(alias unless* unless)
+
+(when* #t (display "yes"))
+
+; Alias for macros
+(define-syntax my-let
+  (syntax-rules ()
+    [(_ ([var val] ...) body ...)
+     (let ([var val] ...) body ...)]))
+
+(alias bind my-let)
+
+(bind ([x 1] [y 2])
+  (+ x y))                  ; 3
+
+; Alias in modules
+(module m (external-name)
+  (define (internal-impl x) ...)
+  (alias external-name internal-impl))
+</code></pre>
+        <br/>
+        <li>Aliases for compatibility:</li>
+<pre><code class="language-scheme line-numbers">; Create R5RS-compatible names
+(alias null? nil?)
+(alias pair? cons?)
+(alias procedure? function?)
+
+; Platform-specific aliases
+(meta-cond
+  [(eq? (machine-type) 'windows)
+   (alias path-separator #\\)]
+  [else
+   (alias path-separator #\/)])
+
+; Version-specific aliases
+(define (new-api-function x y)
+  ...)
+
+; Keep old name for compatibility
+(alias old-api-function new-api-function)
+
+; Documentation comment
+; old-api-function is deprecated, use new-api-function
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Annotations</li>
+    <br/>
+    <ul>
+        <li>Source annotations:</li>
+<pre><code class="language-scheme line-numbers">; Annotations attach source information to syntax
+; Used for error messages and debugging
+
+; Read with annotations
+(define (read-annotated port)
+  (get-datum/annotations port
+    (make-source-file-descriptor (port-name port) port)))
+
+; Annotation accessors
+(define (show-annotation stx)
+  (let ([anno (syntax-&gt;annotation stx)])
+    (when anno
+      (printf "Source: ~a~n" (annotation-source anno))
+      (printf "Expression: ~a~n" (annotation-expression anno))
+      (printf "Stripped: ~a~n" (annotation-stripped anno)))))
+
+; Create annotation manually
+(make-annotation 'expression source-object 'stripped-expression)
+
+; annotation-source returns source-object with:
+; - file information
+; - position information
+; - line/column (if available)
+</code></pre>
+        <br/>
+        <li>Working with source objects:</li>
+<pre><code class="language-scheme line-numbers">; Source objects contain location information
+(define (get-source-location stx)
+  (let ([anno (syntax-&gt;annotation stx)])
+    (and anno
+         (let ([src (annotation-source anno)])
+           (and (source-object? src)
+                (list (source-object-sfd src)
+                      (source-object-bfp src)
+                      (source-object-efp src)))))))
+
+; source-object fields:
+; - sfd: source-file descriptor
+; - bfp: beginning file position
+; - efp: ending file position
+
+; Create source object
+(make-source-object sfd bfp efp)
+
+; Source file descriptor
+(make-source-file-descriptor filename port)
+(source-file-descriptor-checksum sfd)
+(source-file-descriptor-path sfd)
+</code></pre>
+        <br/>
+        <li>Annotations in macros:</li>
+<pre><code class="language-scheme line-numbers">; Preserve source info in macro expansion
+(define-syntax my-define
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ name expr)
+       ; Copy annotation from original to expansion
+       (let ([anno (syntax-&gt;annotation #'expr)])
+         (if anno
+             ; Preserve source location
+             #`(define name #,(syntax-with-annotation
+                                #'expr anno))
+             #'(define name expr)))])))
+
+; Helpful for error messages
+(define-syntax check-positive
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ expr)
+       #`(let ([v expr])
+           (unless (positive? v)
+             (error 'check-positive
+               (format "~a: expected positive, got ~a"
+                 '#,(syntax-&gt;source-info #'expr) v)))
+           v)])))
+
+; syntax-&gt;source-info extracts location string
+</code></pre>
+        <br/>
+        <li>Annotation options:</li>
+<pre><code class="language-scheme line-numbers">; Control annotation generation
+(generate-inspector-information)     ; Get current
+(generate-inspector-information #t)  ; Enable
+
+(generate-procedure-source-information)
+(generate-procedure-source-information #t)
+
+; When enabled, compiled code contains source info
+; for better error messages and debugging
+
+; Strip annotations for production
+(strip-fasl-file "debug.so" "release.so")
+
+; Check if datum has annotation
+(annotation? obj)
+
+; Get annotation from various forms
+(syntax-&gt;annotation stx)    ; From syntax object
+(record-type-descriptor-uid-source-info rtd)  ; From RTD
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Source Tables</li>
+    <br/>
+    <ul>
+        <li>Source table basics:</li>
+<pre><code class="language-scheme line-numbers">; Source tables map positions to source info
+; Used by debugger and profiler
+
+; Make source table during compilation
+(parameterize ([generate-inspector-information #t])
+  (compile-file "source.ss"))
+
+; Source tables are embedded in compiled files
+; and used for:
+; - Stack traces
+; - Debugging
+; - Profiling
+; - Code coverage
+
+; Get source from procedure
+(define (procedure-source-info proc)
+  (#%$code-source (#%$closure-code proc)))
+
+; Returns source position if available</code></pre>
+        <br/>
+        <li>Profile source information:</li>
+<pre><code class="language-scheme line-numbers">; Profiling uses source tables
+(profile-clear)
+(profile source.ss)         ; Enable profiling for file
+
+; After running code:
+(profile-dump-html "profile.html")
+(profile-dump-list)
+
+; Profile data includes:
+; - Line numbers (from source table)
+; - Call counts
+; - Execution time
+
+; Source table for coverage
+(define coverage-data (make-eq-hashtable))
+
+; Code coverage collection
+(visit-source-table
+  (lambda (file-name line-number count)
+    (hashtable-update! coverage-data
+      file-name
+      (lambda (lines) (cons line-number lines))
+      '())))</code></pre>
+        <br/>
+        <li>Inspector source information:</li>
+<pre><code class="language-scheme line-numbers">; Inspector uses source tables for display
+; Enabled with generate-inspector-information
+
+(debug-on-exception #t)
+
+; When error occurs, inspector shows:
+; - Source file
+; - Line and column
+; - Expression
+
+; Manual inspection
+(inspect object)
+
+; Shows source if available
+; Type 'e' to see expression
+; Type 's' to see source location
+
+; Continuation inspector
+(call/cc
+  (lambda (k)
+    (inspect-continuation k)))
+
+; Shows call stack with source info</code></pre>
+        <br/>
+        <li>Building and using source tables:</li>
+<pre><code class="language-scheme line-numbers">; Compile with source information
+(parameterize ([generate-inspector-information #t]
+               [generate-procedure-source-information #t])
+  (compile-file "mycode.ss"))
+
+; Source information increases .so size
+; but enables better debugging
+
+; Verify source info present
+(define (has-source-info? proc)
+  (and (procedure? proc)
+       (#%$code-source (#%$closure-code proc))))
+
+; Extract source for display
+(define (show-procedure-source proc)
+  (let ([src (has-source-info? proc)])
+    (if src
+        (printf "Source: ~a~n" src)
+        (printf "No source information~n"))))
+
+; Source tables for read syntax
+(define (read-with-source-table filename)
+  (call-with-input-file filename
+    (lambda (port)
+      (let ([sfd (make-source-file-descriptor filename port)])
+        (let loop ([datums '()])
+          (let ([d (get-datum/annotations port sfd)])
+            (if (eof-object? d)
+                (reverse datums)
+                (loop (cons d datums)))))))))
+</code></pre>
+        <br/>
+        <li>Source table utilities:</li>
+<pre><code class="language-scheme line-numbers">; Walk through source table entries
+(define (enumerate-sources compiled-code)
+  ; Implementation-specific access to source table
+  ; Typically used internally by profiler/debugger
+  ...)
+
+; Convert position to line/column
+(define (position-&gt;line-col filename pos)
+  (call-with-input-file filename
+    (lambda (port)
+      (let loop ([line 1] [col 0] [p 0])
+        (if (= p pos)
+            (values line col)
+            (let ([c (read-char port)])
+              (if (eof-object? c)
+                  (values line col)
+                  (if (char=? c #\newline)
+                      (loop (+ line 1) 0 (+ p 1))
+                      (loop line (+ col 1) (+ p 1))))))))))
+
+; Format source location for display
+(define (format-source-location sfd bfp)
+  (let ([filename (source-file-descriptor-path sfd)])
+    (let-values ([(line col) (position-&gt;line-col filename bfp)])
+      (format "~a:~a:~a" filename line col))))
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Complete Macro System Example</li>
+    <br/>
+    <ul>
+        <li>Pattern matching macro:</li>
+<pre><code class="language-scheme line-numbers">; Comprehensive match macro using syntax-case
+(define-syntax match
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ expr clause ...)
+       #'(let ([v expr])
+           (match-clauses v clause ...))])))
+
+(define-syntax match-clauses
+  (lambda (stx)
+    (syntax-case stx (else)
+      [(_ v)
+       #'(error 'match "no matching clause")]
+      [(_ v (else body ...))
+       #'(begin body ...)]
+      [(_ v (pattern body ...) rest ...)
+       #'(let ([fail (lambda () (match-clauses v rest ...))])
+           (match-pattern v pattern (begin body ...) (fail)))])))
+
+(define-syntax match-pattern
+  (lambda (stx)
+    (syntax-case stx (quote ?)
+      ; Wildcard
+      [(_ v _ success fail)
+       #'success]
+
+      ; Variable binding
+      [(_ v name success fail)
+       (identifier? #'name)
+       #'(let ([name v]) success)]
+
+      ; Literal quote
+      [(_ v 'datum success fail)
+       #'(if (equal? v 'datum) success fail)]
+
+      ; Predicate check
+      [(_ v (? pred) success fail)
+       #'(if (pred v) success fail)]
+
+      ; Predicate with binding
+      [(_ v (? pred name) success fail)
+       (identifier? #'name)
+       #'(if (pred v)
+             (let ([name v]) success)
+             fail)]
+
+      ; Pair pattern
+      [(_ v (pat1 . pat2) success fail)
+       #'(if (pair? v)
+             (match-pattern (car v) pat1
+               (match-pattern (cdr v) pat2 success fail)
+               fail)
+             fail)]
+
+      ; Vector pattern
+      [(_ v #(pat ...) success fail)
+       #'(if (and (vector? v) (= (vector-length v) (length '(pat ...))))
+             (match-vector v 0 (pat ...) success fail)
+             fail)]
+
+      ; Literal
+      [(_ v literal success fail)
+       #'(if (equal? v 'literal) success fail)])))
+
+(define-syntax match-vector
+  (syntax-rules ()
+    [(_ v i () success fail) success]
+    [(_ v i (pat rest ...) success fail)
+     (match-pattern (vector-ref v i) pat
+       (match-vector v (+ i 1) (rest ...) success fail)
+       fail)]))
+
+; Usage examples
+(define (eval-expr expr env)
+  (match expr
+    [(? number?) expr]
+    [(? symbol? name) (lookup name env)]
+    [('quote datum) datum]
+    [('if test then else)
+     (if (eval-expr test env)
+         (eval-expr then env)
+         (eval-expr else env))]
+    [('lambda (params ...) body)
+     (lambda args
+       (eval-expr body (extend-env params args env)))]
+    [(proc args ...)
+     (apply (eval-expr proc env)
+            (map (lambda (a) (eval-expr a env)) args))]
+    [else (error 'eval "unknown expression" expr)]))
+</code></pre>
+        <br/>
+        <li>Object system macro:</li>
+<pre><code class="language-scheme line-numbers">; Simple object system with define-class
+(define-syntax define-class
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ name (field ...) method ...)
+       (with-syntax
+         ([constructor (datum-&gt;syntax #'name
+                         (string-&gt;symbol
+                           (string-append "make-"
+                             (symbol-&gt;string (syntax-&gt;datum #'name)))))]
+          [predicate (datum-&gt;syntax #'name
+                       (string-&gt;symbol
+                         (string-append
+                           (symbol-&gt;string (syntax-&gt;datum #'name))
+                           "?")))]
+          [(getter ...) (map (lambda (f)
+                               (datum-&gt;syntax f
+                                 (string-&gt;symbol
+                                   (string-append
+                                     (symbol-&gt;string (syntax-&gt;datum #'name))
+                                     "-"
+                                     (symbol-&gt;string (syntax-&gt;datum f))))))
+                             (syntax-&gt;list #'(field ...)))]
+          [(index ...) (datum-&gt;syntax #'name
+                         (iota (length (syntax-&gt;list #'(field ...)))))])
+         #'(begin
+             (define (constructor field ...)
+               (let ([self (vector 'name field ...)])
+                 (define-methods self method ...)
+                 self))
+             (define (predicate obj)
+               (and (vector? obj)
+                    (eq? (vector-ref obj 0) 'name)))
+             (define (getter obj)
+               (vector-ref obj (+ 1 index)))
+             ...))])))
+
+(define-syntax define-methods
+  (syntax-rules ()
+    [(_ self) (void)]
+    [(_ self ((name args ...) body ...) rest ...)
+     (begin
+       (vector-set! self 'name-idx
+         (lambda (args ...) body ...))
+       (define-methods self rest ...))]))
+
+; Usage
+(define-class point (x y)
+  ((move dx dy)
+   (make-point (+ (point-x self) dx)
+               (+ (point-y self) dy)))
+  ((distance other)
+   (sqrt (+ (square (- (point-x other) (point-x self)))
+            (square (- (point-y other) (point-y self)))))))
+</code></pre>
+        <br/>
+        <li>Module with macros example:</li>
+<pre><code class="language-scheme line-numbers">; Complete module demonstrating macro techniques
+(module parser-combinators
+  (parse-result parse-success parse-failure
+   succeed fail item satisfy
+   seq alt many many1
+   parse-char parse-string parse-number)
+
+  ; Parse result type
+  (define-syntax parse-result
+    (syntax-rules ()
+      [(_ success-case failure-case input result rest)
+       (if result
+           (success-case result rest)
+           (failure-case input))]))
+
+  (define (parse-success result rest) (cons result rest))
+  (define (parse-failure input) #f)
+
+  ; Basic parsers
+  (define (succeed v)
+    (lambda (input) (cons v input)))
+
+  (define (fail)
+    (lambda (input) #f))
+
+  (define (item)
+    (lambda (input)
+      (if (null? input)
+          #f
+          (cons (car input) (cdr input)))))
+
+  (define (satisfy pred)
+    (lambda (input)
+      (if (and (pair? input) (pred (car input)))
+          (cons (car input) (cdr input))
+          #f)))
+
+  ; Combinators as macros for efficiency
+  (define-syntax seq
+    (syntax-rules (-&gt;)
+      [(_ p) p]
+      [(_ p1 -&gt; name rest ...)
+       (lambda (input)
+         (let ([r1 (p1 input)])
+           (and r1
+                (let ([name (car r1)])
+                  ((seq rest ...) (cdr r1))))))]
+      [(_ p1 rest ...)
+       (lambda (input)
+         (let ([r1 (p1 input)])
+           (and r1 ((seq rest ...) (cdr r1)))))]))
+
+  (define-syntax alt
+    (syntax-rules ()
+      [(_ p) p]
+      [(_ p1 p2 ...)
+       (lambda (input)
+         (or (p1 input)
+             ((alt p2 ...) input)))]))
+
+  ; Repetition
+  (define (many p)
+    (alt (many1 p) (succeed '())))
+
+  (define (many1 p)
+    (seq p -&gt; x
+         (many p) -&gt; xs
+         (succeed (cons x xs))))
+
+  ; Derived parsers
+  (define (parse-char c)
+    (satisfy (lambda (x) (char=? x c))))
+
+  (define (parse-string s)
+    (if (string=? s "")
+        (succeed '())
+        (seq (parse-char (string-ref s 0))
+             (parse-string (substring s 1 (string-length s)))
+             (succeed s))))
+
+  (define parse-digit
+    (satisfy char-numeric?))
+
+  (define parse-number
+    (seq (many1 parse-digit) -&gt; digits
+         (succeed (string-&gt;number (list-&gt;string digits))))))
+</code></pre>
+    </ul>
+    <br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
