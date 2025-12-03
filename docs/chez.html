@@ -157,6 +157,7 @@
         <li><a href="#scm-r6rs">R6RS</a></li>
         <li><a href="#scm-control-flow">Control Flow</a></li>
         <li><a href="#scm-debugging">Debugging</a></li>
+        <li><a href="#scm-foreign-interface">Foreign Interface</a></li>
     </ol>
 </nav>
 <hr/>
@@ -6036,7 +6037,957 @@ final: (sqrt (+ (* x x) 1))
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-foreign-interface">Foreign Interface in Chez Scheme</h3>
+<ol>
 
+    <li>Subprocess Communication</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme provides two ways to interact with external code: <u>subprocess communication</u> and <u>direct foreign procedure calls</u>.</li>
+        <br/>
+        <li><code>system</code> runs a shell command and waits for completion:</li>
+<pre><code class="language-scheme line-numbers">; Run a command, wait for it to finish
+(system "ls -la")           ; Returns exit code
+
+; Capture exit status
+(let ([status (system "gcc -o myprogram myprogram.c")])
+  (if (zero? status)
+      (display "Compilation succeeded\n")
+      (printf "Compilation failed with code ~a~n" status)))
+
+; On Unix, negative return means signal termination
+(system "sleep 100")        ; If killed by SIGTERM, returns -15</code></pre>
+        <br/>
+        <li><code>open-process-ports</code> creates a subprocess with bidirectional communication:</li>
+<pre><code class="language-scheme line-numbers">; Returns 4 values: to-stdin, from-stdout, from-stderr, process-id
+(define-values (to-stdin from-stdout from-stderr pid)
+  (open-process-ports "cat" 'block (native-transcoder)))
+
+; Write to subprocess
+(display "Hello, subprocess!\n" to-stdin)
+(flush-output-port to-stdin)
+
+; Read from subprocess
+(get-line from-stdout)      ; "Hello, subprocess!"
+
+; Close ports when done
+(close-port to-stdin)
+(close-port from-stdout)
+(close-port from-stderr)</code></pre>
+        <br/>
+        <li><code>process</code> is a simpler variant returning a list:</li>
+<pre><code class="language-scheme line-numbers">; Returns (from-stdout to-stdin process-id)
+(define proc (process "bc -l"))
+(define from-stdout (car proc))
+(define to-stdin (cadr proc))
+(define pid (caddr proc))
+
+; Interact with bc calculator
+(display "2 + 3\n" to-stdin)
+(flush-output-port to-stdin)
+(get-line from-stdout)      ; "5"
+
+(display "scale=10; 1/3\n" to-stdin)
+(flush-output-port to-stdin)
+(get-line from-stdout)      ; ".3333333333"</code></pre>
+        <br/>
+        <li>Using <code>exec</code> prefix for direct execution:</li>
+<pre><code class="language-scheme line-numbers">; "exec" causes shell to replace itself with the command
+; This reduces subprocess count and gives correct PID
+(define-values (in out err pid)
+  (open-process-ports "exec python3" 'line (native-transcoder)))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Calling Out of Scheme</li>
+    <br/>
+    <ul>
+        <li><code>foreign-procedure</code> creates a Scheme wrapper for a C function:</li>
+<pre><code class="language-scheme line-numbers">; Syntax: (foreign-procedure name (param-types ...) return-type)
+
+; First, load the shared library
+(load-shared-object "libc.so.6")  ; Linux
+; (load-shared-object "libc.dylib")  ; macOS
+
+; Create wrapper for strlen
+(define c-strlen
+  (foreign-procedure "strlen" (string) size_t))
+
+(c-strlen "hello")          ; 5
+
+; Create wrapper for getenv
+(define c-getenv
+  (foreign-procedure "getenv" (string) string))
+
+(c-getenv "HOME")           ; "/home/username"
+(c-getenv "NONEXISTENT")    ; #f (null pointer becomes #f)</code></pre>
+        <br/>
+        <li>Common parameter and return types:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>int</code>, <code>unsigned</code></td>
+            <td>C int types</td>
+        </tr>
+        <tr>
+            <td><code>integer-8</code>, <code>integer-16</code>, <code>integer-32</code>, <code>integer-64</code></td>
+            <td>Fixed-size signed integers</td>
+        </tr>
+        <tr>
+            <td><code>unsigned-8</code>, <code>unsigned-16</code>, <code>unsigned-32</code>, <code>unsigned-64</code></td>
+            <td>Fixed-size unsigned integers</td>
+        </tr>
+        <tr>
+            <td><code>double-float</code>, <code>single-float</code></td>
+            <td>Floating-point types</td>
+        </tr>
+        <tr>
+            <td><code>boolean</code></td>
+            <td>#f ↔ 0, others ↔ 1</td>
+        </tr>
+        <tr>
+            <td><code>char</code>, <code>wchar_t</code></td>
+            <td>Character types</td>
+        </tr>
+        <tr>
+            <td><code>string</code>, <code>wstring</code></td>
+            <td>Null-terminated strings (UTF-8/wide)</td>
+        </tr>
+        <tr>
+            <td><code>u8*</code>, <code>u16*</code>, <code>u32*</code></td>
+            <td>Bytevector pointers</td>
+        </tr>
+        <tr>
+            <td><code>void*</code>, <code>uptr</code>, <code>iptr</code></td>
+            <td>Pointer/address types</td>
+        </tr>
+        <tr>
+            <td><code>scheme-object</code>, <code>ptr</code></td>
+            <td>Raw Scheme object (use carefully)</td>
+        </tr>
+        <tr>
+            <td><code>void</code></td>
+            <td>No return value</td>
+        </tr>
+        <tr>
+            <td><code>(* ftype)</code></td>
+            <td>Pointer to foreign type</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>More examples:</li>
+<pre><code class="language-scheme line-numbers">; Math functions
+(define c-sin (foreign-procedure "sin" (double) double))
+(define c-cos (foreign-procedure "cos" (double) double))
+(define c-sqrt (foreign-procedure "sqrt" (double) double))
+
+(c-sin 0.0)                 ; 0.0
+(c-sqrt 2.0)                ; 1.4142135623730951
+
+; Memory functions
+(define c-malloc (foreign-procedure "malloc" (size_t) void*))
+(define c-free (foreign-procedure "free" (void*) void))
+(define c-memcpy (foreign-procedure "memcpy" (void* void* size_t) void*))
+
+; System functions
+(define c-getpid (foreign-procedure "getpid" () int))
+(c-getpid)                  ; Current process ID</code></pre>
+        <br/>
+        <li>Creating procedure templates:</li>
+<pre><code class="language-scheme line-numbers">; Template for double -> double functions
+(define (make-math-proc name)
+  (foreign-procedure name (double) double))
+
+(define sin (make-math-proc "sin"))
+(define cos (make-math-proc "cos"))
+(define tan (make-math-proc "tan"))
+(define log (make-math-proc "log"))
+(define exp (make-math-proc "exp"))</code></pre>
+        <br/>
+        <li>Checking if an entry exists:</li>
+<pre><code class="language-scheme line-numbers">(foreign-entry? "strlen")   ; #t if available
+(foreign-entry? "nonexistent_function")  ; #f
+
+; Get address of entry
+(foreign-entry "strlen")    ; Address as exact integer</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Calling Into Scheme</li>
+    <br/>
+    <ul>
+        <li><code>foreign-callable</code> creates a C-callable wrapper for a Scheme procedure:</li>
+<pre><code class="language-scheme line-numbers">; Syntax: (foreign-callable proc (param-types ...) return-type)
+
+; Create callable wrapper
+(define scheme-callback
+  (foreign-callable
+    (lambda (x y)
+      (printf "Scheme received: ~a, ~a~n" x y)
+      (+ x y))
+    (int int)
+    int))
+
+; Lock the code object (prevents garbage collection)
+(lock-object scheme-callback)
+
+; Get the entry point address for C code
+(define callback-addr
+  (foreign-callable-entry-point scheme-callback))</code></pre>
+        <br/>
+        <li>Example: Registering a callback with C code:</li>
+<pre><code class="language-scheme line-numbers">; Assume C code with:
+; typedef void (*Callback)(char);
+; void register_callback(char c, Callback cb);
+; void trigger_callbacks(void);
+
+(define register-callback
+  (foreign-procedure "register_callback" (char void*) void))
+
+(define trigger-callbacks
+  (foreign-procedure "trigger_callbacks" () void))
+
+; Create and register callbacks
+(define (make-callback proc)
+  (let ([code (foreign-callable proc (char) void)])
+    (lock-object code)
+    (foreign-callable-entry-point code)))
+
+(define on-a-pressed
+  (make-callback
+    (lambda (c) (printf "Key 'a' pressed!~n"))))
+
+(define on-b-pressed
+  (make-callback
+    (lambda (c) (printf "Key 'b' pressed!~n"))))
+
+(register-callback #\a on-a-pressed)
+(register-callback #\b on-b-pressed)</code></pre>
+        <br/>
+        <li>Unlocking when no longer needed:</li>
+<pre><code class="language-scheme line-numbers">; Convert address back to code object and unlock
+(define (free-callback addr)
+  (unlock-object
+    (foreign-callable-code-object addr)))
+
+; When done with callback
+(free-callback on-a-pressed)</code></pre>
+        <br/>
+        <li>Using ftypes for callbacks:</li>
+<pre><code class="language-scheme line-numbers">; Define function type
+(define-ftype callback-t (function (int int) int))
+
+; Create ftype pointer from Scheme procedure
+(define adder-fptr
+  (make-ftype-pointer callback-t
+    (lambda (x y) (+ x y))))
+
+; Get address (code is auto-locked)
+(ftype-pointer-address adder-fptr)
+
+; Unlock when done
+(unlock-object
+  (foreign-callable-code-object
+    (ftype-pointer-address adder-fptr)))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Continuations and Foreign Calls</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme allows arbitrary nesting of Scheme and C calls, but continuations require care.</li>
+        <br/>
+        <li>A foreign context becomes "stale" after returning through it:</li>
+<pre><code class="language-scheme line-numbers">; Scheme calls C calls Scheme calls C...
+; Each C frame creates a "foreign context"
+
+; Safe: Non-local exits (throw upward)
+(call/cc
+  (lambda (escape)
+    (c-function-that-calls-scheme
+      (lambda ()
+        (escape 'early-exit)))))  ; OK: jumps out
+
+; Dangerous: Returning to stale context
+(define saved-k #f)
+(c-function-that-calls-scheme
+  (lambda ()
+    (call/cc (lambda (k) (set! saved-k k)))))
+; Later...
+(saved-k 'value)  ; BAD: C context is stale!</code></pre>
+        <br/>
+        <li>Resetting C stack with continuations:</li>
+<pre><code class="language-scheme line-numbers">; Helper to reset C stack on continuation invocation
+(define (with-exit-proc p)
+  (define th (lambda () (call/cc p)))
+  (define-ftype ->ptr (function () ptr))
+  (let ([fptr (make-ftype-pointer ->ptr th)])
+    (let ([v ((ftype-ref ->ptr () fptr))])
+      (unlock-object
+        (foreign-callable-code-object
+          (ftype-pointer-address fptr)))
+      v)))
+
+; Usage: like call/cc but resets C stack
+(with-exit-proc
+  (lambda (exit)
+    (process-items
+      (lambda (item)
+        (when (error-item? item)
+          (exit 'error))))
+    'success))</code></pre>
+        <br/>
+        <li>General rules:</li>
+        <ul>
+            <li>Non-local exits (escape continuations) are always safe</li>
+            <li>Don't save continuations captured inside C callbacks for later use</li>
+            <li>If you must use general continuations, reset C stack first</li>
+        </ul>
+    </ul>
+    <br/><br/>
+
+
+    <li>Foreign Data</li>
+    <br/>
+    <ul>
+        <li><code>foreign-alloc</code> and <code>foreign-free</code> manage foreign memory:</li>
+<pre><code class="language-scheme line-numbers">; Allocate 100 bytes
+(define ptr (foreign-alloc 100))
+
+; Use the memory...
+
+; Free when done
+(foreign-free ptr)</code></pre>
+        <br/>
+        <li><code>foreign-ref</code> and <code>foreign-set!</code> read/write foreign memory:</li>
+<pre><code class="language-scheme line-numbers">; Allocate space for an int
+(define int-ptr (foreign-alloc (foreign-sizeof 'int)))
+
+; Write value
+(foreign-set! 'int int-ptr 0 42)
+
+; Read value
+(foreign-ref 'int int-ptr 0)    ; 42
+
+; Different types at different offsets
+(define buf (foreign-alloc 24))
+(foreign-set! 'integer-32 buf 0 100)
+(foreign-set! 'double buf 8 3.14159)
+(foreign-set! 'char buf 16 #\A)
+
+(foreign-ref 'integer-32 buf 0)  ; 100
+(foreign-ref 'double buf 8)      ; 3.14159
+(foreign-ref 'char buf 16)       ; #\A
+
+(foreign-free buf)</code></pre>
+        <br/>
+        <li><code>foreign-sizeof</code> returns size of types:</li>
+<pre><code class="language-scheme line-numbers">(foreign-sizeof 'int)           ; 4 (typically)
+(foreign-sizeof 'double)        ; 8
+(foreign-sizeof 'void*)         ; 4 or 8 (platform-dependent)
+(foreign-sizeof 'char)          ; 1</code></pre>
+        <br/>
+        <li>Defining foreign types with <code>define-ftype</code>:</li>
+<pre><code class="language-scheme line-numbers">; Simple struct
+(define-ftype Point
+  (struct
+    [x double]
+    [y double]))
+
+(ftype-sizeof Point)            ; 16
+
+; Nested structures
+(define-ftype Rectangle
+  (struct
+    [top-left Point]
+    [bottom-right Point]))
+
+; Arrays
+(define-ftype IntArray10
+  (array 10 int))
+
+; Pointers
+(define-ftype PointPtr (* Point))
+
+; Unions
+(define-ftype Number
+  (union
+    [as-int integer-32]
+    [as-float single-float]))
+
+; Bit fields
+(define-ftype Flags
+  (bits
+    [enabled unsigned 1]
+    [mode unsigned 3]
+    [priority unsigned 4]))</code></pre>
+        <br/>
+        <li>Using ftype pointers:</li>
+<pre><code class="language-scheme line-numbers">; Allocate and create pointer
+(define p
+  (make-ftype-pointer Point
+    (foreign-alloc (ftype-sizeof Point))))
+
+; Set fields
+(ftype-set! Point (x) p 3.0)
+(ftype-set! Point (y) p 4.0)
+
+; Get fields
+(ftype-ref Point (x) p)         ; 3.0
+(ftype-ref Point (y) p)         ; 4.0
+
+; Get address of field
+(ftype-&ref Point (x) p)        ; Pointer to x field
+
+; Convert to s-expression for debugging
+(ftype-pointer->sexpr p)
+; (struct [x 3.0] [y 4.0])
+
+; Free when done
+(foreign-free (ftype-pointer-address p))</code></pre>
+        <br/>
+        <li>Complex ftype example:</li>
+<pre><code class="language-scheme line-numbers">(define-ftype Person
+  (struct
+    [name (array 64 char)]
+    [age integer-32]
+    [height double]
+    [next (* Person)]))         ; Linked list
+
+; Allocate
+(define person
+  (make-ftype-pointer Person
+    (foreign-alloc (ftype-sizeof Person))))
+
+; Set fields
+(ftype-set! Person (age) person 30)
+(ftype-set! Person (height) person 1.75)
+(ftype-set! Person (next) person
+  (make-ftype-pointer Person 0))  ; null pointer
+
+; Access array elements
+(ftype-set! Person (name 0) person #\J)
+(ftype-set! Person (name 1) person #\o)
+(ftype-set! Person (name 2) person #\e)
+(ftype-set! Person (name 3) person #\nul)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Foreign Arrays of Managed Objects</li>
+    <br/>
+    <ul>
+        <li>Arrays with pointers to Scheme objects require special care due to garbage collection.</li>
+        <br/>
+        <li>Lock objects that foreign code will reference:</li>
+<pre><code class="language-scheme line-numbers">; Create array of Scheme objects for C access
+(define (make-object-array objects)
+  (let* ([n (length objects)]
+         [ptr (foreign-alloc (* n (foreign-sizeof 'ptr)))])
+    ; Store and lock each object
+    (let loop ([objs objects] [i 0])
+      (unless (null? objs)
+        (let ([obj (car objs)])
+          (lock-object obj)
+          (foreign-set! 'ptr ptr (* i (foreign-sizeof 'ptr)) obj))
+        (loop (cdr objs) (+ i 1))))
+    ptr))
+
+; Free and unlock
+(define (free-object-array ptr n)
+  (do ([i 0 (+ i 1)])
+      ((= i n))
+    (let ([obj (foreign-ref 'ptr ptr (* i (foreign-sizeof 'ptr)))])
+      (unlock-object obj)))
+  (foreign-free ptr))</code></pre>
+        <br/>
+        <li>Using bytevectors for binary data (automatically managed):</li>
+<pre><code class="language-scheme line-numbers">; Pass bytevector to C as u8*
+(define bv (make-bytevector 100 0))
+
+; C function receiving bytevector
+(define fill-buffer
+  (foreign-procedure "fill_buffer" (u8* size_t) int))
+
+; Bytevector data is accessible during call
+(fill-buffer bv (bytevector-length bv))
+
+; Don't store bv pointer in C across Scheme calls!</code></pre>
+        <br/>
+        <li>Converting between strings and foreign memory:</li>
+<pre><code class="language-scheme line-numbers">; String to bytevector (for passing to C)
+(define (string->foreign-utf8 str)
+  (string->utf8 str))
+
+; Bytevector from C (null-terminated)
+(define (foreign-utf8->string bv)
+  (let loop ([i 0])
+    (if (zero? (bytevector-u8-ref bv i))
+        (utf8->string (bytevector-copy bv 0 i))
+        (loop (+ i 1)))))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Providing Access to Foreign Procedures</li>
+    <br/>
+    <ul>
+        <li><code>load-shared-object</code> loads dynamic libraries:</li>
+<pre><code class="language-scheme line-numbers">; Load system libraries
+(case (machine-type)
+  [(i3le ti3le a6le ta6le)       ; Linux
+   (load-shared-object "libc.so.6")
+   (load-shared-object "libm.so.6")]
+  [(i3osx ti3osx a6osx ta6osx)   ; macOS
+   (load-shared-object "libc.dylib")]
+  [(i3nt ti3nt a6nt ta6nt)       ; Windows
+   (load-shared-object "msvcrt.dll")])
+
+; Load custom library
+(load-shared-object "./mylib.so")
+
+; With path
+(load-shared-object "/usr/local/lib/libfoo.so")</code></pre>
+        <br/>
+        <li>Building shared libraries:</li>
+<pre><code class="language-bash line-numbers"># Linux
+$ gcc -fPIC -shared -o mylib.so mylib.c
+
+# macOS
+$ gcc -dynamiclib -o mylib.dylib mylib.c
+
+# Windows (Visual Studio)
+$ cl -c mylib.c
+$ link -dll -out:mylib.dll mylib.obj</code></pre>
+        <br/>
+        <li>Export symbols on Windows:</li>
+<pre><code class="language-c line-numbers">// mylib.c for Windows
+#ifdef WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+
+EXPORT int add(int x, int y) {
+    return x + y;
+}</code></pre>
+        <br/>
+        <li>Registering symbols manually:</li>
+<pre><code class="language-scheme line-numbers">; Check if entry exists
+(foreign-entry? "my_function")  ; #t or #f
+
+; Get address
+(foreign-entry "my_function")   ; Address
+
+; Get name from address
+(foreign-address-name addr)     ; "my_function" or #f
+
+; Remove entry (for cleanup)
+(remove-foreign-entry "my_function")</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Other Foreign Languages</li>
+    <br/>
+    <ul>
+        <li>Any language that follows C calling conventions can interoperate.</li>
+        <br/>
+        <li>Name mangling considerations:</li>
+<pre><code class="language-scheme line-numbers">; C compilers may prepend underscore to names
+; Use "=" prefix to bypass name interpretation
+(foreign-entry? "foo")      ; May be false
+(foreign-entry? "=foo")     ; Check raw name
+
+; For assembly-coded procedures
+(foreign-procedure "=_my_asm_proc" (int) int)</code></pre>
+        <br/>
+        <li>Calling conventions (Windows):</li>
+<pre><code class="language-scheme line-numbers">; Default (cdecl)
+(foreign-procedure "func" (int) int)
+
+; stdcall (Windows API)
+(foreign-procedure __stdcall "MessageBoxA"
+  (void* string string unsigned-32)
+  int)
+
+; COM interface
+(foreign-procedure __com 12    ; vtable offset
+  (iptr double-float)
+  integer-32)</code></pre>
+        <br/>
+        <li>Interfacing with C++:</li>
+<pre><code class="language-cpp line-numbers">// C++ code - use extern "C" to disable name mangling
+extern "C" {
+    int my_function(int x) {
+        return x * 2;
+    }
+
+    // Create/destroy C++ objects through C interface
+    void* create_object() {
+        return new MyClass();
+    }
+
+    void destroy_object(void* ptr) {
+        delete static_cast&lt;MyClass*&gt;(ptr);
+    }
+
+    int call_method(void* ptr, int arg) {
+        return static_cast&lt;MyClass*&gt;(ptr)->method(arg);
+    }
+}</code></pre>
+<pre><code class="language-scheme line-numbers">; Scheme interface to C++ object
+(load-shared-object "./myclass.so")
+
+(define create-object
+  (foreign-procedure "create_object" () void*))
+(define destroy-object
+  (foreign-procedure "destroy_object" (void*) void))
+(define call-method
+  (foreign-procedure "call_method" (void* int) int))
+
+(define obj (create-object))
+(call-method obj 42)
+(destroy-object obj)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>C Library Routines</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme provides C-callable routines via <code>scheme.h</code>:</li>
+<pre><code class="language-c line-numbers">/* Include Chez Scheme header */
+#include "scheme.h"
+
+/* Predicates: check object types */
+Sfixnump(obj)       /* Is obj a fixnum? */
+Spairp(obj)         /* Is obj a pair? */
+Sstringp(obj)       /* Is obj a string? */
+Svectorp(obj)       /* Is obj a vector? */
+Sprocedurep(obj)    /* Is obj a procedure? */
+
+/* Accessors: extract values */
+Sfixnum_value(fixnum)    /* fixnum -> C integer */
+Schar_value(char)        /* character -> C char */
+Sflonum_value(flonum)    /* flonum -> C double */
+Scar(pair)               /* car of pair */
+Scdr(pair)               /* cdr of pair */
+Sstring_length(str)      /* string length */
+Svector_ref(vec, i)      /* vector element */</code></pre>
+        <br/>
+        <li>Constructors:</li>
+<pre><code class="language-c line-numbers">/* Immediate values */
+Snil                     /* Empty list */
+Strue                    /* #t */
+Sfalse                   /* #f */
+Svoid                    /* void */
+
+/* Create Scheme objects */
+Sfixnum(n)               /* C int -> fixnum */
+Schar(c)                 /* C char -> character */
+Sflonum(x)               /* C double -> flonum */
+Sstring(s)               /* C string -> Scheme string */
+Scons(car, cdr)          /* Create pair */
+Sbox(obj)                /* Create box */
+Smake_string(n, c)       /* Make string of length n */
+Smake_vector(n, obj)     /* Make vector of length n */
+Sinteger(n)              /* C int -> exact integer (any size) */
+Sstring_to_symbol(s)     /* C string -> symbol */</code></pre>
+        <br/>
+        <li>Calling Scheme from C:</li>
+<pre><code class="language-c line-numbers">/* Call with 0-3 arguments */
+ptr Scall0(ptr proc);
+ptr Scall1(ptr proc, ptr arg1);
+ptr Scall2(ptr proc, ptr arg1, ptr arg2);
+ptr Scall3(ptr proc, ptr arg1, ptr arg2, ptr arg3);
+
+/* General call interface */
+void Sinitframe(iptr n);          /* Initialize for n args */
+void Sput_arg(iptr i, ptr arg);   /* Set argument i */
+ptr Scall(ptr proc, iptr n);      /* Call with n args */
+
+/* Example: call Scheme + from C */
+ptr plus = Stop_level_value(Sstring_to_symbol("+"));
+ptr result = Scall2(plus, Sfixnum(3), Sfixnum(4));
+/* result is Scheme 7 */</code></pre>
+        <br/>
+        <li>Locking objects:</li>
+<pre><code class="language-c line-numbers">/* Prevent GC from moving/collecting object */
+void Slock_object(ptr obj);
+void Sunlock_object(ptr obj);
+
+/* Must lock Scheme objects that C code retains
+   across calls back into Scheme */
+ptr str = Sstring("hello");
+Slock_object(str);
+/* ... use str, possibly calling Scheme ... */
+Sunlock_object(str);</code></pre>
+        <br/>
+        <li>Registering foreign symbols:</li>
+<pre><code class="language-c line-numbers">/* Make C function visible to Scheme */
+void Sforeign_symbol(const char *name, void *addr);
+void Sregister_symbol(const char *name, void *addr);
+
+/* Example */
+int my_add(int x, int y) { return x + y; }
+
+void init_my_lib(void) {
+    Sregister_symbol("my_add", (void*)my_add);
+}</code></pre>
+        <br/>
+        <li>Embedding Chez Scheme:</li>
+<pre><code class="language-c line-numbers">/* Initialize Scheme */
+Sscheme_init(NULL);
+
+/* Register boot file */
+Sregister_boot_file("petite.boot");
+Sregister_boot_file("scheme.boot");
+
+/* Build heap */
+Sbuild_heap(NULL, NULL);
+
+/* Run Scheme code */
+ptr result = Scall1(
+    Stop_level_value(Sstring_to_symbol("eval")),
+    Scons(Sstring_to_symbol("+"),
+          Scons(Sfixnum(1),
+                Scons(Sfixnum(2), Snil))));
+
+/* Cleanup */
+Sscheme_deinit();</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Example: Socket Operations</li>
+    <br/>
+    <ul>
+        <li>C helper code (csocket.c):</li>
+<pre><code class="language-c line-numbers">/* csocket.c */
+#include &lt;sys/types.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;sys/un.h&gt;
+#include &lt;string.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/ioctl.h&gt;
+
+/* Write entire buffer, handling interrupts */
+int c_write(int fd, char *buf, unsigned n) {
+    unsigned i, m;
+    m = n;
+    while (m &gt; 0) {
+        if ((i = write(fd, buf, m)) &lt; 0) {
+            if (errno != EAGAIN &amp;&amp; errno != EINTR)
+                return i;
+        } else {
+            m -= i;
+            buf += i;
+        }
+    }
+    return n;
+}
+
+/* Read handling interrupts */
+int c_read(int fd, char *buf, unsigned n) {
+    int i;
+    for (;;) {
+        i = read(fd, buf, n);
+        if (i &gt;= 0) return i;
+        if (errno != EAGAIN &amp;&amp; errno != EINTR) return -1;
+    }
+}
+
+/* Check if data available */
+int bytes_ready(int fd) {
+    int n;
+    ioctl(fd, FIONREAD, &amp;n);
+    return n;
+}
+
+/* Create Unix domain socket */
+int do_socket(void) {
+    return socket(AF_UNIX, SOCK_STREAM, 0);
+}
+
+/* Bind socket to name */
+int do_bind(int s, char *name) {
+    struct sockaddr_un sun;
+    sun.sun_family = AF_UNIX;
+    strcpy(sun.sun_path, name);
+    return bind(s, (struct sockaddr*)&amp;sun,
+                sizeof(sun.sun_family) + strlen(name) + 1);
+}
+
+/* Accept connection */
+int do_accept(int s) {
+    struct sockaddr_un sun;
+    socklen_t len = sizeof(sun);
+    return accept(s, (struct sockaddr*)&amp;sun, &amp;len);
+}
+
+/* Connect to server */
+int do_connect(int s, char *name) {
+    struct sockaddr_un sun;
+    sun.sun_family = AF_UNIX;
+    strcpy(sun.sun_path, name);
+    return connect(s, (struct sockaddr*)&amp;sun,
+                   sizeof(sun.sun_family) + strlen(name) + 1);
+}
+
+/* Get error string */
+char* get_error(void) {
+    return strerror(errno);
+}</code></pre>
+        <br/>
+        <li>Compile the C code:</li>
+<pre><code class="language-bash line-numbers"># Linux
+$ gcc -fPIC -shared -o csocket.so csocket.c
+
+# macOS
+$ gcc -dynamiclib -o csocket.so csocket.c</code></pre>
+        <br/>
+        <li>Scheme socket interface:</li>
+<pre><code class="language-scheme line-numbers">;;; socket.ss
+
+;; Load libraries
+(load-shared-object "libc.so.6")  ; or libc.dylib on macOS
+(load-shared-object "./csocket.so")
+
+;; Basic C library functions
+(define close (foreign-procedure "close" (int) int))
+(define dup (foreign-procedure "dup" (int) int))
+(define fork (foreign-procedure "fork" () int))
+(define listen (foreign-procedure "listen" (int int) int))
+(define unlink (foreign-procedure "unlink" (string) int))
+
+;; Socket functions from csocket.c
+(define socket (foreign-procedure "do_socket" () int))
+(define bind (foreign-procedure "do_bind" (int string) int))
+(define accept (foreign-procedure "do_accept" (int) int))
+(define connect (foreign-procedure "do_connect" (int string) int))
+(define c-read (foreign-procedure "c_read" (int string int) int))
+(define c-write (foreign-procedure "c_write" (int string int) int))
+(define bytes-ready? (foreign-procedure "bytes_ready" (int) boolean))
+(define c-error (foreign-procedure "get_error" () string))
+
+;; Error checking helper
+(define (check who x)
+  (if (< x 0)
+      (errorf who "~a" (c-error))
+      x))
+
+;; Set up server socket
+(define (setup-server-socket name)
+  (let ([sock (check 'socket (socket))])
+    (unlink name)
+    (check 'bind (bind sock name))
+    (check 'listen (listen sock 1))
+    sock))
+
+;; Set up client socket
+(define (setup-client-socket name)
+  (let ([sock (check 'socket (socket))])
+    (check 'connect (connect sock name))
+    sock))
+
+;; Accept a connection
+(define (accept-socket sock)
+  (check 'accept (accept sock)))
+
+;; Read from socket
+(define (socket-read sock max-bytes)
+  (let ([buf (make-string max-bytes)])
+    (let ([n (c-read sock buf max-bytes)])
+      (if (< n 0)
+          (errorf 'socket-read "~a" (c-error))
+          (substring buf 0 n)))))
+
+;; Write to socket
+(define (socket-write sock str)
+  (let ([n (c-write sock str (string-length str))])
+    (if (< n 0)
+        (errorf 'socket-write "~a" (c-error))
+        n)))</code></pre>
+        <br/>
+        <li>Example usage - Echo server:</li>
+<pre><code class="language-scheme line-numbers">(load "socket.ss")
+
+(define (run-echo-server socket-name)
+  (let ([server-sock (setup-server-socket socket-name)])
+    (printf "Server listening on ~a~n" socket-name)
+    (let ([client-sock (accept-socket server-sock)])
+      (printf "Client connected~n")
+      (let loop ()
+        (when (bytes-ready? client-sock)
+          (let ([data (socket-read client-sock 1024)])
+            (unless (string=? data "")
+              (printf "Received: ~a" data)
+              (socket-write client-sock data)
+              (loop)))))
+      (close client-sock))
+    (close server-sock)
+    (unlink socket-name)))
+
+; Run with: (run-echo-server "/tmp/echo.sock")</code></pre>
+        <br/>
+        <li>Example usage - Client:</li>
+<pre><code class="language-scheme line-numbers">(load "socket.ss")
+
+(define (run-echo-client socket-name message)
+  (let ([sock (setup-client-socket socket-name)])
+    (socket-write sock message)
+    (let ([response (socket-read sock 1024)])
+      (printf "Response: ~a~n" response))
+    (close sock)))
+
+; Run with: (run-echo-client "/tmp/echo.sock" "Hello!\n")</code></pre>
+        <br/>
+        <li>Creating a process port (bidirectional communication with subprocess):</li>
+<pre><code class="language-scheme line-numbers">;; Create port that wraps socket I/O
+(define (make-socket-port sock)
+  (define (read! bv start count)
+    (let ([buf (make-string count)])
+      (let ([n (c-read sock buf count)])
+        (do ([i 0 (+ i 1)])
+            ((= i n) n)
+          (bytevector-u8-set! bv (+ start i)
+            (char->integer (string-ref buf i)))))))
+
+  (define (write! bv start count)
+    (let ([str (make-string count)])
+      (do ([i 0 (+ i 1)])
+          ((= i count))
+        (string-set! str i
+          (integer->char (bytevector-u8-ref bv (+ start i)))))
+      (c-write sock str count)))
+
+  (define (close-proc)
+    (close sock))
+
+  (make-custom-binary-input/output-port
+    "socket-port"
+    read!
+    write!
+    #f      ; get-position
+    #f      ; set-position
+    close-proc))</code></pre>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
