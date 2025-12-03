@@ -6745,19 +6745,21 @@ void Sunlock_object(ptr obj);
 ptr str = Sstring("hello");
 Slock_object(str);
 /* ... use str, possibly calling Scheme ... */
-Sunlock_object(str);</code></pre>
+Sunlock_object(str);
+</code></pre>
         <br/>
         <li>Registering foreign symbols:</li>
 <pre><code class="language-c line-numbers">/* Make C function visible to Scheme */
-void Sforeign_symbol(const char *name, void *addr);
-void Sregister_symbol(const char *name, void *addr);
+void Sforeign_symbol(const char * name, void * addr);
+void Sregister_symbol(const char * name, void * addr);
 
 /* Example */
 int my_add(int x, int y) { return x + y; }
 
 void init_my_lib(void) {
     Sregister_symbol("my_add", (void*)my_add);
-}</code></pre>
+}
+</code></pre>
         <br/>
         <li>Embedding Chez Scheme:</li>
 <pre><code class="language-c line-numbers">/* Initialize Scheme */
@@ -6778,7 +6780,8 @@ ptr result = Scall1(
                 Scons(Sfixnum(2), Snil))));
 
 /* Cleanup */
-Sscheme_deinit();</code></pre>
+Sscheme_deinit();
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -6835,7 +6838,7 @@ int do_socket(void) {
 }
 
 /* Bind socket to name */
-int do_bind(int s, char *name) {
+int do_bind(int s, char * name) {
     struct sockaddr_un sun;
     sun.sun_family = AF_UNIX;
     strcpy(sun.sun_path, name);
@@ -6851,7 +6854,7 @@ int do_accept(int s) {
 }
 
 /* Connect to server */
-int do_connect(int s, char *name) {
+int do_connect(int s, char * name) {
     struct sockaddr_un sun;
     sun.sun_family = AF_UNIX;
     strcpy(sun.sun_path, name);
@@ -6862,7 +6865,8 @@ int do_connect(int s, char *name) {
 /* Get error string */
 char* get_error(void) {
     return strerror(errno);
-}</code></pre>
+}
+</code></pre>
         <br/>
         <li>Compile the C code:</li>
 <pre><code class="language-bash line-numbers"># Linux
@@ -6897,7 +6901,7 @@ $ gcc -dynamiclib -o csocket.so csocket.c</code></pre>
 
 ;; Error checking helper
 (define (check who x)
-  (if (< x 0)
+  (if (&lt; x 0)
       (errorf who "~a" (c-error))
       x))
 
@@ -6923,16 +6927,17 @@ $ gcc -dynamiclib -o csocket.so csocket.c</code></pre>
 (define (socket-read sock max-bytes)
   (let ([buf (make-string max-bytes)])
     (let ([n (c-read sock buf max-bytes)])
-      (if (< n 0)
+      (if (&lt; n 0)
           (errorf 'socket-read "~a" (c-error))
           (substring buf 0 n)))))
 
 ;; Write to socket
 (define (socket-write sock str)
   (let ([n (c-write sock str (string-length str))])
-    (if (< n 0)
+    (if (&lt; n 0)
         (errorf 'socket-write "~a" (c-error))
-        n)))</code></pre>
+        n)))
+</code></pre>
         <br/>
         <li>Example usage - Echo server:</li>
 <pre><code class="language-scheme line-numbers">(load "socket.ss")
@@ -6953,7 +6958,8 @@ $ gcc -dynamiclib -o csocket.so csocket.c</code></pre>
     (close server-sock)
     (unlink socket-name)))
 
-; Run with: (run-echo-server "/tmp/echo.sock")</code></pre>
+; Run with: (run-echo-server "/tmp/echo.sock")
+</code></pre>
         <br/>
         <li>Example usage - Client:</li>
 <pre><code class="language-scheme line-numbers">(load "socket.ss")
@@ -6965,7 +6971,8 @@ $ gcc -dynamiclib -o csocket.so csocket.c</code></pre>
       (printf "Response: ~a~n" response))
     (close sock)))
 
-; Run with: (run-echo-client "/tmp/echo.sock" "Hello!\n")</code></pre>
+; Run with: (run-echo-client "/tmp/echo.sock" "Hello!\n")
+</code></pre>
         <br/>
         <li>Creating a process port (bidirectional communication with subprocess):</li>
 <pre><code class="language-scheme line-numbers">;; Create port that wraps socket I/O
@@ -6976,14 +6983,14 @@ $ gcc -dynamiclib -o csocket.so csocket.c</code></pre>
         (do ([i 0 (+ i 1)])
             ((= i n) n)
           (bytevector-u8-set! bv (+ start i)
-            (char->integer (string-ref buf i)))))))
+            (char-&gt;integer (string-ref buf i)))))))
 
   (define (write! bv start count)
     (let ([str (make-string count)])
       (do ([i 0 (+ i 1)])
           ((= i count))
         (string-set! str i
-          (integer->char (bytevector-u8-ref bv (+ start i)))))
+          (integer-&gt;char (bytevector-u8-ref bv (+ start i)))))
       (c-write sock str count)))
 
   (define (close-proc)
@@ -6995,7 +7002,8 @@ $ gcc -dynamiclib -o csocket.so csocket.c</code></pre>
     write!
     #f      ; get-position
     #f      ; set-position
-    close-proc))</code></pre>
+    close-proc))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -7056,7 +7064,8 @@ $ gcc -dynamiclib -o csocket.so csocket.c</code></pre>
 (define x 100)
 (let ([x 1])
   x)                        ; 1 (inner x shadows outer)
-x                           ; 100 (outer x unchanged)</code></pre>
+x                           ; 100 (outer x unchanged)
+</code></pre>
         <br/>
         <li><code>let*</code> creates sequential bindings:</li>
 <pre><code class="language-scheme line-numbers">; Bindings are sequential - later can reference earlier
@@ -7076,7 +7085,8 @@ x                           ; 100 (outer x unchanged)</code></pre>
        [trimmed (string-trim input)]
        [upper (string-upcase trimmed)]
        [words (string-split upper " ")])
-  words)                    ; ("HELLO" "WORLD")</code></pre>
+  words)                    ; ("HELLO" "WORLD")
+</code></pre>
         <br/>
         <li><code>letrec</code> creates mutually recursive bindings:</li>
 <pre><code class="language-scheme line-numbers">; Mutually recursive procedures
@@ -7099,7 +7109,8 @@ x                           ; 100 (outer x unchanged)</code></pre>
 ; All bindings in scope for all right-hand sides
 (letrec ([a (lambda () (b))]
          [b (lambda () 42)])
-  (a))                      ; 42</code></pre>
+  (a))                      ; 42
+</code></pre>
         <br/>
         <li><code>letrec*</code> combines <code>letrec</code> semantics with left-to-right evaluation:</li>
 <pre><code class="language-scheme line-numbers">; Guaranteed left-to-right evaluation
@@ -7117,6 +7128,48 @@ x                           ; 100 (outer x unchanged)</code></pre>
           [second (inc!)])  ; Evaluated second
   (list first second counter))  ; (1 2 2)</code></pre>
         <br/>
+        <li>Binding evaluation order visualization:</li>
+        <svg width="600" height="280" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">let vs let* vs letrec Evaluation</text>
+
+            <!-- let box -->
+            <rect x="30" y="50" width="170" height="100" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="115" y="75" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">let (parallel)</text>
+            <text x="45" y="100" font-family="Times New Roman" font-size="10">[x 5]</text>
+            <text x="45" y="118" font-family="Times New Roman" font-size="10">[y x] ← ERROR</text>
+            <text x="45" y="140" font-family="Times New Roman" font-size="9" fill="#666">All init exprs see outer scope</text>
+
+            <!-- let* box -->
+            <rect x="215" y="50" width="170" height="100" fill="#e6ffe6" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="300" y="75" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">let* (sequential)</text>
+            <text x="230" y="100" font-family="Times New Roman" font-size="10">[x 5] → evaluates first</text>
+            <text x="230" y="118" font-family="Times New Roman" font-size="10">[y x] → sees x = 5</text>
+            <text x="230" y="140" font-family="Times New Roman" font-size="9" fill="#666">Each init sees prior bindings</text>
+
+            <!-- letrec box -->
+            <rect x="400" y="50" width="170" height="100" fill="#fff0e6" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="485" y="75" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">letrec (recursive)</text>
+            <text x="415" y="100" font-family="Times New Roman" font-size="10">[f (λ () (g))]</text>
+            <text x="415" y="118" font-family="Times New Roman" font-size="10">[g (λ () 42)]</text>
+            <text x="415" y="140" font-family="Times New Roman" font-size="9" fill="#666">All bindings visible to all</text>
+
+            <!-- Comparison table area -->
+            <rect x="30" y="170" width="540" height="95" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="190" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">When to Use Each Form</text>
+
+            <text x="50" y="210" font-family="Times New Roman" font-size="10">• <tspan font-weight="bold">let</tspan>: Independent bindings, no cross-references needed</text>
+            <text x="50" y="228" font-family="Times New Roman" font-size="10">• <tspan font-weight="bold">let*</tspan>: Step-by-step computation, each step uses previous results</text>
+            <text x="50" y="246" font-family="Times New Roman" font-size="10">• <tspan font-weight="bold">letrec</tspan>: Mutually recursive procedures (even?, odd?)</text>
+            <text x="50" y="264" font-family="Times New Roman" font-size="10">• <tspan font-weight="bold">letrec*</tspan>: Like letrec, but with guaranteed evaluation order</text>
+        </svg>
+        <br/><br/>
         <li>Named <code>let</code> for recursive iteration:</li>
 <pre><code class="language-scheme line-numbers">; Named let creates a recursive procedure
 (let loop ([n 5] [acc 1])
@@ -7135,7 +7188,14 @@ x                           ; 100 (outer x unchanged)</code></pre>
 (let loop ([lst '(1 2 3 4 5)] [sum 0])
   (if (null? lst)
       sum
-      (loop (cdr lst) (+ sum (car lst)))))  ; 15</code></pre>
+      (loop (cdr lst) (+ sum (car lst)))))  ; 15
+
+; Building a result list
+(let loop ([n 5] [result '()])
+  (if (zero? n)
+      result
+      (loop (- n 1) (cons n result))))  ; (1 2 3 4 5)
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -7167,7 +7227,8 @@ odds                        ; (1 3 5)
   (min-max '(3 1 4 1 5 9 2 6)))
 
 lo                          ; 1
-hi                          ; 9</code></pre>
+hi                          ; 9
+</code></pre>
         <br/>
         <li><code>let-values</code> creates local multiple-value bindings:</li>
 <pre><code class="language-scheme line-numbers">; Basic let-values
@@ -7186,7 +7247,8 @@ hi                          ; 9</code></pre>
 
 ; Single value (equivalent to let)
 (let-values ([(x) (values 42)])
-  x)                        ; 42</code></pre>
+  x)                        ; 42
+</code></pre>
         <br/>
         <li><code>let*-values</code> for sequential multiple-value bindings:</li>
 <pre><code class="language-scheme line-numbers">; Sequential binding - later can reference earlier
@@ -7202,8 +7264,50 @@ hi                          ; 9</code></pre>
                  (if ok?
                      (validate parsed)
                      (values #f #f))])
-    (values validated (and ok? valid?))))</code></pre>
+    (values validated (and ok? valid?))))
+</code></pre>
         <br/>
+        <li>Multiple values flow visualization:</li>
+        <svg width="600" height="200" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Multiple Values Flow</text>
+
+            <!-- Producer -->
+            <rect x="50" y="60" width="140" height="70" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="120" y="85" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Producer</text>
+            <text x="120" y="105" text-anchor="middle" font-family="Times New Roman" font-size="10">(div-and-mod 17 5)</text>
+            <text x="120" y="120" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">returns 2 values</text>
+
+            <!-- Arrow with values -->
+            <line x1="190" y1="95" x2="280" y2="95" stroke="#666" stroke-width="2" marker-end="url(#arrowhead2)"/>
+            <rect x="210" y="70" width="50" height="20" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="3"/>
+            <text x="235" y="84" text-anchor="middle" font-family="Times New Roman" font-size="9">3, 2</text>
+
+            <!-- Consumer -->
+            <rect x="290" y="50" width="180" height="90" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="380" y="75" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Consumer (let-values)</text>
+            <text x="380" y="95" text-anchor="middle" font-family="Times New Roman" font-size="10">[(q r) ...]</text>
+            <text x="380" y="115" text-anchor="middle" font-family="Times New Roman" font-size="9">q ← 3</text>
+            <text x="380" y="130" text-anchor="middle" font-family="Times New Roman" font-size="9">r ← 2</text>
+
+            <!-- Body -->
+            <line x1="470" y1="95" x2="530" y2="95" stroke="#666" stroke-width="2" marker-end="url(#arrowhead2)"/>
+            <rect x="490" y="60" width="80" height="70" fill="#ffe6cc" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="530" y="85" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Body</text>
+            <text x="530" y="105" text-anchor="middle" font-family="Times New Roman" font-size="10">(+ q r)</text>
+            <text x="530" y="120" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">→ 5</text>
+
+            <!-- Note -->
+            <text x="300" y="170" text-anchor="middle" font-family="Times New Roman" font-size="10" fill="#666">values creates multiple values; let-values destructures them into bindings</text>
+            <text x="300" y="185" text-anchor="middle" font-family="Times New Roman" font-size="10" fill="#666">call-with-values is the primitive; let-values is syntactic sugar</text>
+        </svg>
+        <br/><br/>
         <li>Using <code>call-with-values</code> directly:</li>
 <pre><code class="language-scheme line-numbers">; Explicit call-with-values
 (call-with-values
@@ -7218,7 +7322,8 @@ hi                          ; 9</code></pre>
 (call-with-values
   (lambda () (partition even? '(1 2 3 4 5)))
   (lambda (evens odds)
-    (printf "Evens: ~a, Odds: ~a~n" evens odds)))</code></pre>
+    (printf "Evens: ~a, Odds: ~a~n" evens odds)))
+</code></pre>
         <br/>
         <li>Patterns with multiple values:</li>
 <pre><code class="language-scheme line-numbers">; Ignoring some values
@@ -7236,7 +7341,13 @@ hi                          ; 9</code></pre>
 
 ; Zero values
 (let-values ([() (values)])  ; No bindings
-  'done)                    ; done</code></pre>
+  'done)                    ; done
+
+; Handling unknown number of values
+(call-with-values
+  (lambda () (values 1 2 3 4 5))
+  list)                     ; (1 2 3 4 5)
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -7268,8 +7379,47 @@ hi                          ; 9</code></pre>
                      (ping (- n 1))))])
   (list (ping 5) (pong 5)))  ; (pong ping)</code></pre>
         <br/>
+        <li>Mutual recursion visualization:</li>
+        <svg width="600" height="220" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead3" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#0066cc"/>
+                </marker>
+                <marker id="arrowhead4" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#cc6600"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Mutual Recursion: even? / odd?</text>
+
+            <!-- even? box -->
+            <rect x="80" y="60" width="180" height="80" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="170" y="85" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">even?</text>
+            <text x="170" y="105" text-anchor="middle" font-family="Times New Roman" font-size="9">(or (zero? n)</text>
+            <text x="170" y="120" text-anchor="middle" font-family="Times New Roman" font-size="9">    (odd? (- n 1)))</text>
+
+            <!-- odd? box -->
+            <rect x="340" y="60" width="180" height="80" fill="#ffe6cc" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="430" y="85" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">odd?</text>
+            <text x="430" y="105" text-anchor="middle" font-family="Times New Roman" font-size="9">(and (not (zero? n))</text>
+            <text x="430" y="120" text-anchor="middle" font-family="Times New Roman" font-size="9">     (even? (- n 1)))</text>
+
+            <!-- Arrows between -->
+            <path d="M 260 80 Q 300 50 340 80" stroke="#0066cc" stroke-width="2" fill="none" marker-end="url(#arrowhead3)"/>
+            <text x="300" y="55" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#0066cc">calls</text>
+
+            <path d="M 340 120 Q 300 150 260 120" stroke="#cc6600" stroke-width="2" fill="none" marker-end="url(#arrowhead4)"/>
+            <text x="300" y="160" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc6600">calls</text>
+
+            <!-- Example trace -->
+            <rect x="100" y="160" width="400" height="45" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="180" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Example: (even? 4)</text>
+            <text x="300" y="195" text-anchor="middle" font-family="Times New Roman" font-size="9">even?(4) → odd?(3) → even?(2) → odd?(1) → even?(0) → #t</text>
+        </svg>
+        <br/><br/>
         <li>State machines with <code>letrec</code>:</li>
-<pre><code class="language-scheme line-numbers">; Simple state machine
+<pre><code class="language-scheme line-numbers">; Simple state machine for parsing numbers
 (define (parse-number str)
   (letrec
     ([start (lambda (chars)
@@ -7285,17 +7435,18 @@ hi                          ; 9</code></pre>
                  [(null? chars)
                   (if (null? acc)
                       #f
-                      (let ([n (string->number
-                                 (list->string (reverse acc)))])
+                      (let ([n (string-&gt;number
+                                 (list-&gt;string (reverse acc)))])
                         (if neg? (- n) n)))]
                  [(char-numeric? (car chars))
                   (digits (cdr chars) (cons (car chars) acc) neg?)]
                  [else #f]))])
-    (start (string->list str))))
+    (start (string-&gt;list str))))
 
 (parse-number "123")        ; 123
 (parse-number "-456")       ; -456
-(parse-number "abc")        ; #f</code></pre>
+(parse-number "abc")        ; #f
+</code></pre>
         <br/>
         <li><code>rec</code> for single self-recursive bindings:</li>
 <pre><code class="language-scheme line-numbers">; rec creates single recursive binding
@@ -7316,7 +7467,11 @@ hi                          ; 9</code></pre>
                 (sum-tree (cdr tree)))
              (if (number? tree) tree 0))))
      '((1 2) (3 (4 5)) ((6))))
-; (3 12 6)</code></pre>
+; (3 12 6)
+
+; rec is essentially:
+; (rec name expr) = (letrec ([name expr]) name)
+</code></pre>
         <br/>
         <li>Internal definitions (implicitly <code>letrec*</code>):</li>
 <pre><code class="language-scheme line-numbers">; Internal defines in procedure body
@@ -7342,7 +7497,8 @@ hi                          ; 9</code></pre>
   (define (b) 42)
   (a))
 
-(example)                   ; 42</code></pre>
+(example)                   ; 42
+</code></pre>
         <br/>
         <li>Avoiding evaluation order issues:</li>
 <pre><code class="language-scheme line-numbers">; Problematic: referencing value during initialization
@@ -7360,7 +7516,11 @@ hi                          ; 9</code></pre>
           [x (+ y 1)])
   x)                        ; 6
 
-; Note: letrec is for procedures, letrec* for values</code></pre>
+; Rule of thumb:
+; - letrec: for mutually recursive PROCEDURES
+; - letrec*: when you need ordered VALUE initialization
+; - let/let*: when recursion isn't needed
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -7383,8 +7543,47 @@ hi                          ; 9</code></pre>
 (parameterize ([current-user "alice"])
   (current-user))           ; "alice"
 
-(current-user)              ; "admin" (restored)</code></pre>
+(current-user)              ; "admin" (restored)
+</code></pre>
         <br/>
+        <li>Dynamic vs lexical scope visualization:</li>
+        <svg width="600" height="300" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Lexical Scope vs Dynamic Scope (Parameters)</text>
+
+            <!-- Lexical scope side -->
+            <rect x="30" y="50" width="260" height="230" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="160" y="75" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">Lexical Scope (let)</text>
+
+            <rect x="50" y="90" width="220" height="60" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="160" y="110" text-anchor="middle" font-family="Times New Roman" font-size="9">(define x 1)</text>
+            <text x="160" y="125" text-anchor="middle" font-family="Times New Roman" font-size="9">(define (f) x)  ; sees x=1</text>
+            <text x="160" y="140" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">x bound at definition site</text>
+
+            <rect x="50" y="160" width="220" height="50" fill="#99ccff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="160" y="180" text-anchor="middle" font-family="Times New Roman" font-size="9">(let ([x 999]) (f))</text>
+            <text x="160" y="200" text-anchor="middle" font-family="Times New Roman" font-size="10" fill="#009900">→ 1 (ignores local x)</text>
+
+            <text x="160" y="235" text-anchor="middle" font-family="Times New Roman" font-size="10">Binding determined by</text>
+            <text x="160" y="250" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">where code is written</text>
+
+            <!-- Dynamic scope side -->
+            <rect x="310" y="50" width="260" height="230" fill="#fff0e6" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="440" y="75" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">Dynamic Scope (parameter)</text>
+
+            <rect x="330" y="90" width="220" height="60" fill="#ffe6cc" stroke="#cc6600" stroke-width="1" rx="3"/>
+            <text x="440" y="110" text-anchor="middle" font-family="Times New Roman" font-size="9">(define p (make-parameter 1))</text>
+            <text x="440" y="125" text-anchor="middle" font-family="Times New Roman" font-size="9">(define (f) (p))  ; reads p</text>
+            <text x="440" y="140" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">p read at call site</text>
+
+            <rect x="330" y="160" width="220" height="50" fill="#ffcc99" stroke="#cc6600" stroke-width="1" rx="3"/>
+            <text x="440" y="180" text-anchor="middle" font-family="Times New Roman" font-size="9">(parameterize ([p 999]) (f))</text>
+            <text x="440" y="200" text-anchor="middle" font-family="Times New Roman" font-size="10" fill="#009900">→ 999 (sees dynamic p)</text>
+
+            <text x="440" y="235" text-anchor="middle" font-family="Times New Roman" font-size="10">Binding determined by</text>
+            <text x="440" y="250" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">where code is called</text>
+        </svg>
+        <br/><br/>
         <li><code>parameterize</code> creates dynamic extent bindings:</li>
 <pre><code class="language-scheme line-numbers">; Dynamic scope in action
 (define current-indent (make-parameter 0))
@@ -7412,20 +7611,21 @@ hi                          ; 9</code></pre>
 ;     c
 ;   )
 ;   d
-; )</code></pre>
+; )
+</code></pre>
         <br/>
         <li>Parameter validation with guard procedures:</li>
 <pre><code class="language-scheme line-numbers">; Parameter with validation
 (define current-verbosity
   (make-parameter 0
     (lambda (v)
-      (unless (and (integer? v) (<= 0 v 3))
+      (unless (and (integer? v) (&lt;= 0 v 3))
         (error 'current-verbosity
                "must be integer 0-3, got ~s" v))
       v)))
 
 (current-verbosity 2)       ; OK
-(current-verbosity 5)       ; ERROR
+(current-verbosity 5)       ; ERROR: must be integer 0-3
 
 ; Parameter with transformation
 (define current-output-file
@@ -7436,7 +7636,14 @@ hi                          ; 9</code></pre>
           (format "~a.txt" v)))))
 
 (current-output-file 'data)
-(current-output-file)       ; "data.txt"</code></pre>
+(current-output-file)       ; "data.txt"
+
+; Parameter that normalizes input
+(define current-path
+  (make-parameter "."
+    (lambda (p)
+      (path-normalize p))))
+</code></pre>
         <br/>
         <li>Nested and multiple parameter bindings:</li>
 <pre><code class="language-scheme line-numbers">; Multiple parameters
@@ -7457,7 +7664,16 @@ hi                          ; 9</code></pre>
   (printf "Level: ~a~n" (level))   ; 1
   (parameterize ([level 2])
     (printf "Level: ~a~n" (level))) ; 2
-  (printf "Level: ~a~n" (level)))  ; 1</code></pre>
+  (printf "Level: ~a~n" (level)))  ; 1
+
+; Parameters restored even on error
+(define p (make-parameter 'initial))
+
+(guard (c [else 'caught])
+  (parameterize ([p 'temporary])
+    (error 'test "oops")))
+
+(p)                         ; 'initial (restored)</code></pre>
         <br/>
         <li>Parameters and continuations:</li>
 <pre><code class="language-scheme line-numbers">; Parameters are saved/restored with continuations
@@ -7497,18 +7713,21 @@ hi                          ; 9</code></pre>
   (get-output-string (current-output-port)))  ; "captured"
 
 ; Print parameters
-(print-level)               ; Max nesting depth
-(print-length)              ; Max list elements
+(print-level)               ; Max nesting depth to print
+(print-length)              ; Max list elements to print
 
 (parameterize ([print-length 3])
   (printf "~s~n" '(1 2 3 4 5)))  ; (1 2 3 ...)
 
 ; Compilation parameters
 (optimize-level)            ; 0-3
+(debug-level)               ; 0-3
 (compile-interpret-simple)  ; #t/#f
 
-; Interaction environment
-(interaction-environment)</code></pre>
+; Other useful parameters
+(interaction-environment)   ; Current REPL environment
+(source-directories)        ; Where to find source files
+(library-directories)       ; Where to find libraries</code></pre>
     </ul>
     <br/><br/>
 
@@ -7528,7 +7747,11 @@ hi                          ; 9</code></pre>
 
 ; Procedure definitions at top level
 (define (greet name)
-  (printf "Hello, ~a!~n" name))</code></pre>
+  (printf "Hello, ~a!~n" name))
+
+; Top-level vs local semantics
+; At top-level, define can redefine
+; In local scope, define creates new binding</code></pre>
         <br/>
         <li><code>top-level-value</code> and <code>set-top-level-value!</code> for programmatic access:</li>
 <pre><code class="language-scheme line-numbers">; Get value of top-level binding
@@ -7548,7 +7771,13 @@ y                           ; 100
   (set-top-level-value! name value))
 
 (create-binding 'dynamic-var 999)
-dynamic-var                 ; 999</code></pre>
+dynamic-var                 ; 999
+
+; Useful for REPL utilities and metaprogramming
+(define (show-binding name)
+  (if (top-level-bound? name)
+      (printf "~a = ~s~n" name (top-level-value name))
+      (printf "~a is unbound~n" name)))</code></pre>
         <br/>
         <li><code>define-top-level-value</code> for explicit top-level definition:</li>
 <pre><code class="language-scheme line-numbers">; Explicitly define at top level (even from nested context)
@@ -7561,7 +7790,10 @@ from-let                    ; 20
 (define-syntax def-constant
   (syntax-rules ()
     [(_ name value)
-     (define-top-level-value 'name value)]))</code></pre>
+     (define-top-level-value 'name value)]))
+
+(def-constant PI 3.14159)
+PI                          ; 3.14159</code></pre>
         <br/>
         <li>Interaction environment bindings:</li>
 <pre><code class="language-scheme line-numbers">; The interaction environment contains REPL bindings
@@ -7573,42 +7805,39 @@ from-let                    ; 20
 (eval '(define z 50) env)
 (eval 'z env)               ; 50
 
-; Create new environment
+; Create new environment (copy of scheme-environment)
 (define my-env (copy-environment (scheme-environment)))
 (eval '(define private 42) my-env)
 
 ; private visible in my-env but not globally
 (eval 'private my-env)      ; 42
-; private                   ; ERROR: unbound</code></pre>
+; private                   ; ERROR: unbound in interaction-environment
+
+; Environment hierarchy
+(scheme-environment)        ; Built-in bindings
+(interaction-environment)   ; REPL bindings (includes scheme-environment)</code></pre>
         <br/>
         <li><code>alias</code> creates alternative names for bindings:</li>
-<pre><code class="language-scheme line-numbers">; Create an alias
+<pre><code class="language-scheme line-numbers">; Create an alias (both names refer to same binding)
 (define original-name 42)
 (alias new-name original-name)
 
 new-name                    ; 42
 (set! new-name 100)
-original-name               ; 100 (same binding)
+original-name               ; 100 (same binding!)
 
 ; Alias for imported procedure
 (alias λ lambda)
 (define add (λ (x y) (+ x y)))
+(add 3 4)                   ; 7
 
 ; Alias for keyword
 (alias fn define)
-(fn (square x) (* x x))</code></pre>
-        <br/>
-        <li>Module and library exports as top-level:</li>
-<pre><code class="language-scheme line-numbers">; Library exports become available at top level when imported
-(import (rnrs))             ; Makes R6RS bindings available
+(fn (square x) (* x x))
+(square 5)                  ; 25
 
-; Specific imports
-(import (only (chezscheme) printf format))
-
-; Top-level program structure
-; #!/usr/bin/env scheme-script
-; (import (rnrs) (my-library))
-; (main-procedure)</code></pre>
+; Note: alias creates true alias, not copy
+; Modifying one affects the other</code></pre>
         <br/>
         <li>Top-level syntax definitions:</li>
 <pre><code class="language-scheme line-numbers">; Define syntax at top level
@@ -7621,11 +7850,23 @@ original-name               ; 100 (same binding)
 (top-level-bound? 'when)    ; #t
 
 ; But top-level-value doesn't work for syntax
-; (top-level-value 'when)   ; ERROR
+; (top-level-value 'when)   ; ERROR: not a variable
 
 ; Check if identifier is bound to syntax
 (top-level-syntax? 'when)   ; #t
-(top-level-syntax? 'car)    ; #f</code></pre>
+(top-level-syntax? 'car)    ; #f (car is a procedure)
+
+; Redefining syntax
+(define-syntax my-if
+  (syntax-rules ()
+    [(_ test then else)
+     (if test then else)]))
+
+; Later, can redefine
+(define-syntax my-if
+  (syntax-rules ()
+    [(_ test then else)
+     (cond [test then] [else else])]))</code></pre>
         <br/>
         <li>Forward references at top level:</li>
 <pre><code class="language-scheme line-numbers">; Top-level allows forward references
@@ -7644,7 +7885,12 @@ original-name               ; 100 (same binding)
 
 ; Solution: use thunks or proper ordering
 (define b 10)
-(define a (+ b 1))          ; OK</code></pre>
+(define a (+ b 1))          ; OK now
+
+; Or use a thunk for delayed evaluation
+(define a-thunk (lambda () (+ b 1)))
+(define b 10)
+(a-thunk)                   ; 11</code></pre>
     </ul>
     <br/><br/>
 
@@ -7662,8 +7908,18 @@ original-name               ; 100 (same binding)
 
 counter                     ; 0 (restored)
 
-; Note: prefer make-parameter and parameterize instead
-; fluid-let has issues with continuations and threads</code></pre>
+; Warning: fluid-let has issues with:
+; - Continuations (may not restore properly)
+; - Multiple threads (race conditions)
+
+; Prefer make-parameter and parameterize instead:
+(define counter-param (make-parameter 0))
+
+(parameterize ([counter-param 100])
+  (counter-param (+ (counter-param) 1))
+  (counter-param))          ; 101
+
+(counter-param)             ; 0 (properly restored)</code></pre>
         <br/>
         <li><code>let-syntax</code> and <code>letrec-syntax</code> for local macros:</li>
 <pre><code class="language-scheme line-numbers">; Local syntax binding
@@ -7677,6 +7933,8 @@ counter                     ; 0 (restored)
   (define y 2)
   (swap! x y)
   (list x y))               ; (2 1)
+
+; swap! not visible outside the let-syntax
 
 ; letrec-syntax for mutually recursive macros
 (letrec-syntax
@@ -7718,11 +7976,17 @@ counter                     ; 0 (restored)
 (sum)                       ; 0
 (sum 1)                     ; 1
 (sum 1 2)                   ; 3
-(sum 1 2 3 4 5)             ; 15</code></pre>
+(sum 1 2 3 4 5)             ; 15
+
+; Efficient dispatch based on argument count
+(define make-point
+  (case-lambda
+    [(x y) (cons x y)]
+    [(x y z) (vector x y z)]))</code></pre>
         <br/>
         <li><code>receive</code> for multiple values (SRFI-8 style):</li>
 <pre><code class="language-scheme line-numbers">; receive binds multiple values more concisely
-; (not standard, but can be defined)
+; (not built-in, but commonly defined)
 (define-syntax receive
   (syntax-rules ()
     [(_ formals expr body ...)
@@ -7735,14 +7999,39 @@ counter                     ; 0 (restored)
 
 ; With rest parameter
 (receive (first . rest) (values 1 2 3 4)
-  (list first rest))        ; (1 (2 3 4))</code></pre>
-        </ul>
+  (list first rest))        ; (1 (2 3 4))
+
+; More concise than let-values for simple cases
+(receive (a b c) (values 1 2 3)
+  (+ a b c))                ; 6</code></pre>
         <br/>
-        <br/>
+        <li><code>do</code> for iterative binding:</li>
+<pre><code class="language-scheme line-numbers">; do combines binding with iteration
+(do ([i 0 (+ i 1)]          ; (var init step)
+     [sum 0 (+ sum i)])     ; Multiple variables
+    [(&gt;= i 5) sum]          ; (test result)
+  ; Optional body (side effects)
+  (printf "i=~a sum=~a~n" i sum))
+; Prints: i=0 sum=0, i=1 sum=0, i=2 sum=1, ...
+; Returns: 10
+
+; Building a list
+(do ([i 5 (- i 1)]
+     [lst '() (cons i lst)])
+    [(zero? i) lst])        ; (1 2 3 4 5)
+
+; Without step (variable unchanged)
+(do ([x 10]                 ; No step = unchanged
+     [i 0 (+ i 1)])
+    [(&gt;= i 3) x])           ; 10</code></pre>
+    </ul>
+    <br/><br/>
 
 
-    <li>Summary of binding forms:</li>
+    <li>Binding Forms Comparison</li>
     <br/>
+    <ul>
+        <li>Summary table of all binding forms:</li>
 <table>
     <thead>
         <tr>
@@ -7761,37 +8050,37 @@ counter                     ; 0 (restored)
         </tr>
         <tr>
             <td><code>let</code></td>
-            <td>Local</td>
+            <td>Local (lexical)</td>
             <td>Parallel</td>
             <td>Independent bindings</td>
         </tr>
         <tr>
             <td><code>let*</code></td>
-            <td>Local</td>
+            <td>Local (lexical)</td>
             <td>Sequential</td>
             <td>Dependent bindings</td>
         </tr>
         <tr>
             <td><code>letrec</code></td>
-            <td>Local</td>
+            <td>Local (lexical)</td>
             <td>Recursive</td>
             <td>Mutually recursive procedures</td>
         </tr>
         <tr>
             <td><code>letrec*</code></td>
-            <td>Local</td>
+            <td>Local (lexical)</td>
             <td>Sequential + recursive</td>
             <td>Recursive with order guarantees</td>
         </tr>
         <tr>
             <td><code>let-values</code></td>
-            <td>Local</td>
+            <td>Local (lexical)</td>
             <td>Parallel</td>
             <td>Multiple value bindings</td>
         </tr>
         <tr>
             <td><code>let*-values</code></td>
-            <td>Local</td>
+            <td>Local (lexical)</td>
             <td>Sequential</td>
             <td>Chained multiple values</td>
         </tr>
@@ -7809,12 +8098,139 @@ counter                     ; 0 (restored)
         </tr>
         <tr>
             <td><code>let-syntax</code></td>
-            <td>Local</td>
+            <td>Local (lexical)</td>
             <td>Compile-time</td>
             <td>Local macros</td>
         </tr>
+        <tr>
+            <td><code>letrec-syntax</code></td>
+            <td>Local (lexical)</td>
+            <td>Compile-time</td>
+            <td>Mutually recursive local macros</td>
+        </tr>
+        <tr>
+            <td><code>case-lambda</code></td>
+            <td>N/A (creates procedure)</td>
+            <td>Immediate</td>
+            <td>Multi-arity procedures</td>
+        </tr>
+        <tr>
+            <td><code>do</code></td>
+            <td>Local (lexical)</td>
+            <td>Iterative</td>
+            <td>Loop with bindings</td>
+        </tr>
     </tbody>
 </table>
+        <br/>
+        <li>Decision tree for choosing binding forms:</li>
+        <br/>
+        <svg width="600" height="380" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead5" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Choosing the Right Binding Form</text>
+
+            <!-- Start -->
+            <ellipse cx="300" cy="55" rx="60" ry="20" fill="#e6e6ff" stroke="#6600cc" stroke-width="2"/>
+            <text x="300" y="60" text-anchor="middle" font-family="Times New Roman" font-size="10">Need bindings?</text>
+
+            <!-- First decision: Local or Top-level -->
+            <line x1="300" y1="75" x2="300" y2="95" stroke="#666" stroke-width="1" marker-end="url(#arrowhead5)"/>
+            <rect x="220" y="100" width="160" height="30" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="3"/>
+            <text x="300" y="120" text-anchor="middle" font-family="Times New Roman" font-size="10">Local or Top-level?</text>
+
+            <!-- Top-level branch -->
+            <line x1="220" y1="115" x2="100" y2="115" stroke="#666" stroke-width="1"/>
+            <line x1="100" y1="115" x2="100" y2="145" stroke="#666" stroke-width="1" marker-end="url(#arrowhead5)"/>
+            <text x="160" y="108" font-family="Times New Roman" font-size="9">top-level</text>
+            <rect x="40" y="150" width="120" height="30" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="3"/>
+            <text x="100" y="170" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">define</text>
+
+            <!-- Local branch -->
+            <line x1="380" y1="115" x2="480" y2="115" stroke="#666" stroke-width="1"/>
+            <line x1="480" y1="115" x2="480" y2="145" stroke="#666" stroke-width="1" marker-end="url(#arrowhead5)"/>
+            <text x="430" y="108" font-family="Times New Roman" font-size="9">local</text>
+            <rect x="400" y="150" width="160" height="30" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="3"/>
+            <text x="480" y="170" text-anchor="middle" font-family="Times New Roman" font-size="10">Need recursion?</text>
+
+            <!-- No recursion branch -->
+            <line x1="400" y1="165" x2="300" y2="165" stroke="#666" stroke-width="1"/>
+            <line x1="300" y1="165" x2="300" y2="195" stroke="#666" stroke-width="1" marker-end="url(#arrowhead5)"/>
+            <text x="350" y="158" font-family="Times New Roman" font-size="9">no</text>
+            <rect x="220" y="200" width="160" height="30" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="3"/>
+            <text x="300" y="220" text-anchor="middle" font-family="Times New Roman" font-size="10">Dependencies?</text>
+
+            <!-- Independent bindings -->
+            <line x1="220" y1="215" x2="120" y2="215" stroke="#666" stroke-width="1"/>
+            <line x1="120" y1="215" x2="120" y2="245" stroke="#666" stroke-width="1" marker-end="url(#arrowhead5)"/>
+            <text x="170" y="208" font-family="Times New Roman" font-size="9">none</text>
+            <rect x="60" y="250" width="120" height="30" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="3"/>
+            <text x="120" y="270" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">let</text>
+
+            <!-- Sequential bindings -->
+            <line x1="380" y1="215" x2="480" y2="215" stroke="#666" stroke-width="1"/>
+            <line x1="480" y1="215" x2="480" y2="245" stroke="#666" stroke-width="1" marker-end="url(#arrowhead5)"/>
+            <text x="430" y="208" font-family="Times New Roman" font-size="9">sequential</text>
+            <rect x="420" y="250" width="120" height="30" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="3"/>
+            <text x="480" y="270" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">let*</text>
+
+            <!-- Recursion branch -->
+            <line x1="560" y1="165" x2="580" y2="165" stroke="#666" stroke-width="1"/>
+            <line x1="580" y1="165" x2="580" y2="295" stroke="#666" stroke-width="1"/>
+            <line x1="580" y1="295" x2="400" y2="295" stroke="#666" stroke-width="1" marker-end="url(#arrowhead5)"/>
+            <text x="565" y="158" font-family="Times New Roman" font-size="9">yes</text>
+            <rect x="280" y="300" width="120" height="30" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="3"/>
+            <text x="340" y="320" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">letrec / letrec*</text>
+
+            <!-- Dynamic scope note -->
+            <rect x="30" y="330" width="540" height="40" fill="#ffe6cc" stroke="#cc6600" stroke-width="1" rx="3"/>
+            <text x="300" y="350" text-anchor="middle" font-family="Times New Roman" font-size="10">For <tspan font-weight="bold">dynamic scope</tspan> (value depends on call site, not definition site):</text>
+            <text x="300" y="365" text-anchor="middle" font-family="Times New Roman" font-size="10">use <tspan font-weight="bold">make-parameter</tspan> + <tspan font-weight="bold">parameterize</tspan></text>
+        </svg>
+        <br/><br/>
+        <li>Best practices for binding forms:</li>
+<pre><code class="language-scheme line-numbers">; 1. Use the simplest form that works
+(let ([x 1] [y 2]) ...)     ; Prefer over let* when order doesn't matter
+
+; 2. Use let* for step-by-step transformations
+(let* ([raw (read-input)]
+       [parsed (parse raw)]
+       [validated (validate parsed)])
+  (process validated))
+
+; 3. Use letrec only for recursive procedures
+(letrec ([f (lambda (n) ...)])   ; Good: f calls itself
+  ...)
+
+; 4. Use internal defines for cleaner code
+(define (process data)
+  (define (helper x) ...)   ; Cleaner than letrec
+  (define (another y) ...)
+  (helper (another data)))
+
+; 5. Prefer parameters over fluid-let
+(define config (make-parameter default-config))
+(parameterize ([config special-config])
+  (do-work))                ; Safe with continuations
+
+; 6. Use case-lambda for optional arguments
+(define greet
+  (case-lambda
+    [() (greet "World")]
+    [(name) (printf "Hello, ~a!~n" name)]))
+
+; 7. Named let for simple loops
+(let loop ([lst items] [acc '()])
+  (if (null? lst)
+      (reverse acc)
+      (loop (cdr lst) (cons (f (car lst)) acc))))
+</code></pre>
+    </ul>
     <br/><br/>
 
 </ol>
@@ -7833,12 +8249,12 @@ counter                     ; 0 (restored)
     <ul>
         <li><code>if</code> is the fundamental conditional:</li>
 <pre><code class="language-scheme line-numbers">; Basic if with two branches
-(if (> 5 3)
+(if (&gt; 5 3)
     'yes
     'no)                    ; yes
 
 ; Without else branch (returns unspecified if false)
-(if (> 5 3)
+(if (&gt; 5 3)
     (display "5 is greater"))
 
 ; Multiple expressions require begin
@@ -7854,20 +8270,20 @@ counter                     ; 0 (restored)
 
 ; Nested if
 (define (sign n)
-  (if (> n 0)
+  (if (&gt; n 0)
       'positive
-      (if (< n 0)
+      (if (&lt; n 0)
           'negative
-          'zero)))</code></pre>
-        <br/>
-        <li><code>cond</code> handles multiple conditions:</li>
-<pre><code class="language-scheme line-numbers">; Basic cond
+          'zero)))&lt;/code&gt;&lt;/pre&gt;
+        &lt;br/&gt;
+        &lt;li&gt;&lt;code&gt;cond&lt;/code&gt; handles multiple conditions:&lt;/li&gt;
+&lt;pre&gt;&lt;code class="language-scheme line-numbers"&gt;; Basic cond
 (define (grade score)
   (cond
-    [(>= score 90) 'A]
-    [(>= score 80) 'B]
-    [(>= score 70) 'C]
-    [(>= score 60) 'D]
+    [(&gt;= score 90) 'A]
+    [(&gt;= score 80) 'B]
+    [(&gt;= score 70) 'C]
+    [(&gt;= score 60) 'D]
     [else 'F]))
 
 (grade 85)                  ; B
@@ -7875,7 +8291,7 @@ counter                     ; 0 (restored)
 ; Multiple expressions per clause (implicit begin)
 (cond
   [(assq 'name data)
-   => (lambda (pair)
+   =&gt; (lambda (pair)
         (display "Found: ")
         (display (cdr pair))
         (cdr pair))]
@@ -7883,9 +8299,9 @@ counter                     ; 0 (restored)
    (display "Not found")
    #f])
 
-; Using => with procedure
+; Using =&gt; with procedure
 (cond
-  [(assoc 'key alist) => cdr]  ; Apply cdr to result if truthy
+  [(assoc 'key alist) =&gt; cdr]  ; Apply cdr to result if truthy
   [else 'not-found])
 
 ; Guard expressions
@@ -7893,7 +8309,8 @@ counter                     ; 0 (restored)
   (cond
     [(zero? b) 'division-by-zero]
     [(and (integer? a) (integer? b)) (quotient a b)]
-    [else (/ a b)]))</code></pre>
+    [else (/ a b)]))
+</code></pre>
         <br/>
         <li><code>case</code> dispatches on values:</li>
 <pre><code class="language-scheme line-numbers">; Basic case
@@ -7939,13 +8356,13 @@ counter                     ; 0 (restored)
         <br/>
         <li><code>when</code> and <code>unless</code> for one-sided conditionals:</li>
 <pre><code class="language-scheme line-numbers">; when executes body if test is true
-(when (> x 0)
+(when (&gt; x 0)
   (display "Positive")
   (newline)
   (process-positive x))
 
 ; Equivalent to:
-(if (> x 0)
+(if (&gt; x 0)
     (begin
       (display "Positive")
       (newline)
@@ -7969,7 +8386,8 @@ counter                     ; 0 (restored)
 
 (define (maybe-log message)
   (when (current-debug-mode)
-    (fprintf (current-error-port) "DEBUG: ~a~n" message)))</code></pre>
+    (fprintf (current-error-port) "DEBUG: ~a~n" message)))
+</code></pre>
         <br/>
         <li><code>and</code> and <code>or</code> with short-circuit evaluation:</li>
 <pre><code class="language-scheme line-numbers">; and returns first false value or last value
@@ -7981,7 +8399,7 @@ counter                     ; 0 (restored)
 ; Short-circuit: stops at first false
 (and (pair? x)
      (number? (car x))
-     (> (car x) 0))         ; Safe - checks pair? first
+     (&gt; (car x) 0))         ; Safe - checks pair? first
 
 ; or returns first true value or last value
 (or #f #f #t)               ; #t
@@ -8004,9 +8422,10 @@ counter                     ; 0 (restored)
 ; Validation chains
 (define (valid-input? x)
   (and (string? x)
-       (> (string-length x) 0)
-       (< (string-length x) 100)
-       (string-alphabetic? x)))</code></pre>
+       (&gt; (string-length x) 0)
+       (&lt; (string-length x) 100)
+       (string-alphabetic? x)))
+</code></pre>
         <br/>
         <li><code>not</code> and <code>boolean</code> conversions:</li>
 <pre><code class="language-scheme line-numbers">; not negates boolean
@@ -8026,7 +8445,8 @@ counter                     ; 0 (restored)
 ; In Scheme, only #f is false
 (if '() 'true 'false)       ; true
 (if 0 'true 'false)         ; true
-(if "" 'true 'false)        ; true</code></pre>
+(if "" 'true 'false)        ; true
+</code></pre>
         <br/>
         <li><code>exclusive-cond</code> (Chez extension) for exhaustive cases:</li>
 <pre><code class="language-scheme line-numbers">; exclusive-cond requires exactly one clause to match
@@ -8074,7 +8494,8 @@ counter                     ; 0 (restored)
 (map (lambda (row)
        (map (lambda (x) (* x 2)) row))
      '((1 2 3) (4 5 6)))
-; ((2 4 6) (8 10 12))</code></pre>
+; ((2 4 6) (8 10 12))
+</code></pre>
         <br/>
         <li><code>for-each</code> for side effects:</li>
 <pre><code class="language-scheme line-numbers">; Like map but doesn't collect results
@@ -8097,7 +8518,8 @@ counter                     ; 0 (restored)
   '(30 25 35))
 
 ; Returns unspecified value
-(for-each display '(1 2 3))  ; Returns #<void></code></pre>
+(for-each display '(1 2 3))  ; Returns #&lt;void&gt;
+</code></pre>
         <br/>
         <li><code>fold-left</code> accumulates left to right:</li>
 <pre><code class="language-scheme line-numbers">; (fold-left proc init list)
@@ -8133,7 +8555,8 @@ counter                     ; 0 (restored)
 (fold-left (lambda (acc k v) (cons (cons k v) acc))
            '()
            '(a b c)
-           '(1 2 3))        ; ((c . 3) (b . 2) (a . 1))</code></pre>
+           '(1 2 3))        ; ((c . 3) (b . 2) (a . 1))
+</code></pre>
         <br/>
         <li><code>fold-right</code> accumulates right to left:</li>
 <pre><code class="language-scheme line-numbers">; (fold-right proc init list)
@@ -8171,14 +8594,15 @@ counter                     ; 0 (restored)
     '()
     lst))
 
-(my-map add1 '(1 2 3))      ; (2 3 4)</code></pre>
+(my-map add1 '(1 2 3))      ; (2 3 4)
+</code></pre>
         <br/>
         <li><code>filter</code>, <code>partition</code>, and <code>remove</code>:</li>
 <pre><code class="language-scheme line-numbers">; filter keeps elements satisfying predicate
 (filter even? '(1 2 3 4 5 6))
 ; (2 4 6)
 
-(filter (lambda (x) (> x 3)) '(1 2 3 4 5))
+(filter (lambda (x) (&gt; x 3)) '(1 2 3 4 5))
 ; (4 5)
 
 (filter string? '(1 "a" 2 "b" 3))
@@ -8199,28 +8623,29 @@ counter                     ; 0 (restored)
 (remp even? '(1 2 3 4 5 6)) ; (1 3 5) - removes if pred true
 
 ; remove duplicates (Chez extension)
-(remove-duplicates '(1 2 1 3 2 4))  ; (1 2 3 4)</code></pre>
+(remove-duplicates '(1 2 1 3 2 4))  ; (1 2 3 4)
+</code></pre>
         <br/>
         <li><code>find</code>, <code>exists</code>, and <code>for-all</code>:</li>
 <pre><code class="language-scheme line-numbers">; find returns first match or #f
 (find even? '(1 3 5 6 7))   ; 6
 (find even? '(1 3 5 7))     ; #f
 
-(find (lambda (x) (> x 10)) '(5 8 12 3))  ; 12
+(find (lambda (x) (&gt; x 10)) '(5 8 12 3))  ; 12
 
 ; exists checks if any element satisfies predicate
 (exists even? '(1 3 5 6 7)) ; #t
 (exists even? '(1 3 5 7 9)) ; #f
 
 ; Multiple lists - true if any tuple satisfies
-(exists < '(1 2 3) '(2 2 2))  ; #t (1 < 2)
+(exists &lt; '(1 2 3) '(2 2 2))  ; #t (1 &lt; 2)
 
 ; for-all checks if all elements satisfy predicate
 (for-all even? '(2 4 6 8))  ; #t
 (for-all even? '(2 4 5 8))  ; #f
 
 ; Multiple lists
-(for-all < '(1 2 3) '(2 3 4))  ; #t (all pairs satisfy <)
+(for-all &lt; '(1 2 3) '(2 3 4))  ; #t (all pairs satisfy &lt;)
 
 ; Short-circuit behavior
 (for-all
@@ -8229,7 +8654,8 @@ counter                     ; 0 (restored)
     (even? x))
   '(2 4 5 8))
 ; Prints: Checking 2, Checking 4, Checking 5
-; Returns: #f (stops at first failure)</code></pre>
+; Returns: #f (stops at first failure)
+</code></pre>
         <br/>
         <li><code>map</code> variants and <code>andmap</code>/<code>ormap</code>:</li>
 <pre><code class="language-scheme line-numbers">; andmap - like for-all but returns last value
@@ -8249,8 +8675,8 @@ counter                     ; 0 (restored)
 
 ; string-map for strings (character by character)
 (define (string-map proc str)
-  (list->string
-    (map proc (string->list str))))
+  (list-&gt;string
+    (map proc (string-&gt;list str))))
 
 ; hash table mapping
 (define ht (make-eq-hashtable))
@@ -8259,7 +8685,8 @@ counter                     ; 0 (restored)
 
 (vector-map
   (lambda (k) (cons k (hashtable-ref ht k #f)))
-  (hashtable-keys ht))</code></pre>
+  (hashtable-keys ht))
+</code></pre>
         <br/>
         <li>List comprehension patterns:</li>
 <pre><code class="language-scheme line-numbers">; Cartesian product
@@ -8303,7 +8730,8 @@ counter                     ; 0 (restored)
         (cons (cons i (car lst))
               (loop (cdr lst) (+ i 1))))))
 
-(enumerate '(a b c))        ; ((0 . a) (1 . b) (2 . c))</code></pre>
+(enumerate '(a b c))        ; ((0 . a) (1 . b) (2 . c))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -8333,7 +8761,8 @@ counter                     ; 0 (restored)
 ; The continuation represents "the rest of the computation"
 (+ 1 (call/cc (lambda (k) (* 2 (k 3)))))
 ; k is "add 1 to the result"
-; (k 3) means "add 1 to 3" = 4</code></pre>
+; (k 3) means "add 1 to 3" = 4
+</code></pre>
         <br/>
         <li>Saving and reusing continuations:</li>
 <pre><code class="language-scheme line-numbers">; Store continuation for later use
@@ -8367,7 +8796,8 @@ counter                     ; 0 (restored)
 (gen)                       ; 1
 (gen)                       ; 2
 (gen)                       ; 3
-(gen)                       ; done</code></pre>
+(gen)                       ; done
+</code></pre>
         <br/>
         <li>Implementing control structures with continuations:</li>
 <pre><code class="language-scheme line-numbers">; Return (early exit)
@@ -8404,7 +8834,8 @@ counter                     ; 0 (restored)
   (lambda (e) (printf "Error: ~a~n" e) 'error)
   (lambda (raise)
     (raise "something went wrong")
-    'never-reached))</code></pre>
+    'never-reached))
+</code></pre>
         <br/>
         <li><code>call/1cc</code> for one-shot continuations:</li>
 <pre><code class="language-scheme line-numbers">; call/1cc creates a one-shot continuation (more efficient)
@@ -8431,7 +8862,8 @@ counter                     ; 0 (restored)
         (lambda (x)
           (when (pred x) (return x)))
         lst)
-      #f)))</code></pre>
+      #f)))
+</code></pre>
         <br/>
         <li><code>dynamic-wind</code> for guaranteed cleanup:</li>
 <pre><code class="language-scheme line-numbers">; (dynamic-wind before thunk after)
@@ -8467,7 +8899,8 @@ counter                     ; 0 (restored)
 ; First: enter, body, exit
 
 (k 'resume)
-; Re-entry: enter, body, exit</code></pre>
+; Re-entry: enter, body, exit
+</code></pre>
         <br/>
         <li>Continuation marks (for stack inspection):</li>
 <pre><code class="language-scheme line-numbers">; Continuation marks attach data to continuations
@@ -8478,7 +8911,7 @@ counter                     ; 0 (restored)
     (thunk)))
 
 (define (get-trace)
-  (continuation-mark-set->list
+  (continuation-mark-set-&gt;list
     (current-continuation-marks)
     trace-key))
 
@@ -8491,7 +8924,8 @@ counter                     ; 0 (restored)
             (get-trace)))))))
 ; (inner middle outer)
 
-; Useful for debugging, profiling, dynamic scope</code></pre>
+; Useful for debugging, profiling, dynamic scope
+</code></pre>
         <br/>
         <li><code>let/cc</code> and <code>let/1cc</code> shorthand:</li>
 <pre><code class="language-scheme line-numbers">; Chez provides convenient shorthand
@@ -8512,11 +8946,12 @@ counter                     ; 0 (restored)
   (let/cc return
     (unless (list? data)
       (return "must be a list"))
-    (unless (> (length data) 0)
+    (unless (&gt; (length data) 0)
       (return "must be non-empty"))
     (unless (for-all number? data)
       (return "must contain only numbers"))
-    #t))</code></pre>
+    #t))
+</code></pre>
         <br/>
         <li>Coroutines with continuations:</li>
 <pre><code class="language-scheme line-numbers">; Simple coroutine implementation
@@ -8550,7 +8985,8 @@ counter                     ; 0 (restored)
 
 (counter 'start)            ; 0
 (counter 'next)             ; 1
-(counter 'next)             ; 2</code></pre>
+(counter 'next)             ; 2
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -8580,7 +9016,8 @@ counter                     ; 0 (restored)
 ; The engine mechanism:
 ; - Allocate fuel (ticks)
 ; - Run until fuel exhausted or computation completes
-; - If expired, get new engine to continue</code></pre>
+; - If expired, get new engine to continue
+</code></pre>
         <br/>
         <li>Basic engine usage:</li>
 <pre><code class="language-scheme line-numbers">; Engine that completes
@@ -8615,7 +9052,8 @@ counter                     ; 0 (restored)
             (printf "Continuing...~n")
             (run-to-completion new-engine fuel))))
 
-(run-to-completion eng2 10000)</code></pre>
+(run-to-completion eng2 10000)
+</code></pre>
         <br/>
         <li>Implementing timeouts with engines:</li>
 <pre><code class="language-scheme line-numbers">; Run computation with timeout
@@ -8646,7 +9084,8 @@ counter                     ; 0 (restored)
      (lambda (engine)
        (set! result 'expired)
        (set! remaining-engine engine)))
-    (values result remaining-engine)))</code></pre>
+    (values result remaining-engine)))
+</code></pre>
         <br/>
         <li>Nested engines:</li>
 <pre><code class="language-scheme line-numbers">; Engines can be nested
@@ -8669,7 +9108,8 @@ counter                     ; 0 (restored)
 ; Timer ticks are shared hierarchically
 (outer-engine 200
               (lambda (t v) (printf "Outer complete: ~a~n" v))
-              (lambda (e) (printf "Outer expired~n")))</code></pre>
+              (lambda (e) (printf "Outer expired~n")))
+</code></pre>
         <br/>
         <li>Engine-based round-robin scheduler:</li>
 <pre><code class="language-scheme line-numbers">; Simple cooperative multitasking
@@ -8704,12 +9144,13 @@ counter                     ; 0 (restored)
 (add-task (lambda () (printf "Task 2 running~n") 'task2))
 (add-task (lambda ()
             (let loop ([n 3])
-              (when (> n 0)
+              (when (&gt; n 0)
                 (printf "Task 3 iteration ~a~n" n)
                 (loop (- n 1))))
             'task3))
 
-(run-scheduler)</code></pre>
+(run-scheduler)
+</code></pre>
         <br/>
         <li><code>engine-block</code> for voluntary yielding:</li>
 <pre><code class="language-scheme line-numbers">; engine-block causes immediate expiration
@@ -8731,7 +9172,8 @@ counter                     ; 0 (restored)
 
 (define e1 (step yielding-engine))  ; Phase 1, Yielded
 (define e2 (step e1))               ; Phase 2, Yielded
-(define e3 (step e2))               ; Phase 3, Complete: done</code></pre>
+(define e3 (step e2))               ; Phase 3, Complete: done
+</code></pre>
         <br/>
         <li><code>engine-return</code> for early completion:</li>
 <pre><code class="language-scheme line-numbers">; engine-return immediately completes with value
@@ -8746,7 +9188,8 @@ counter                     ; 0 (restored)
 (early-exit-engine 10000
                    (lambda (t v) (printf "Result: ~a~n" v))
                    (lambda (e) (printf "Expired~n")))
-; Result: found-it</code></pre>
+; Result: found-it
+</code></pre>
         <br/>
         <li>Timed computations with engines:</li>
 <pre><code class="language-scheme line-numbers">; Benchmark with fixed fuel
@@ -8768,7 +9211,7 @@ counter                     ; 0 (restored)
 ; Adaptive execution - run until consistent result
 (define (stable-compute thunk max-fuel tolerance)
   (let loop ([fuel 100])
-    (if (> fuel max-fuel)
+    (if (&gt; fuel max-fuel)
         'no-stable-result
         (let-values ([(r1 t1) (benchmark-ticks fuel thunk)]
                      [(r2 t2) (benchmark-ticks fuel thunk)])
@@ -8776,7 +9219,8 @@ counter                     ; 0 (restored)
                    (not (eq? r2 'incomplete))
                    (equal? r1 r2))
               r1
-              (loop (* fuel 2)))))))</code></pre>
+              (loop (* fuel 2)))))))
+</code></pre>
         <br/>
         <li>Comparing engines with threads:</li>
         <br/>
@@ -8850,7 +9294,8 @@ counter                     ; 0 (restored)
    x]
   [else
    (display "non-positive")
-   0])</code></pre>
+   0])
+</code></pre>
         <br/>
         <li><code>begin0</code> returns first value:</li>
 <pre><code class="language-scheme line-numbers">; begin0 evaluates all but returns first value
@@ -8867,7 +9312,8 @@ counter                     ; 0 (restored)
 
 ; Compare:
 (begin 1 2 3)               ; 3
-(begin0 1 2 3)              ; 1</code></pre>
+(begin0 1 2 3)              ; 1
+</code></pre>
         <br/>
         <li><code>do</code> loop:</li>
 <pre><code class="language-scheme line-numbers">; (do ((var init step) ...) (test result ...) body ...)
@@ -8893,7 +9339,8 @@ counter                     ; 0 (restored)
   (do ([j 0 (+ j 1)])
       ((= j 3))
     (printf "(~a,~a) " i j))
-  (newline))</code></pre>
+  (newline))
+</code></pre>
         <br/>
         <li>Recursion patterns:</li>
 <pre><code class="language-scheme line-numbers">; Named let for tail-recursive loops
@@ -8921,7 +9368,8 @@ counter                     ; 0 (restored)
   (let loop ([lst lst] [acc '()])
     (if (null? lst)
         acc
-        (loop (cdr lst) (cons (car lst) acc)))))</code></pre>
+        (loop (cdr lst) (cons (car lst) acc)))))
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -8955,7 +9403,8 @@ counter                     ; 0 (restored)
       (cons (car lazy-list)
             (take-lazy (- n 1) (force (cdr lazy-list))))))
 
-(take-lazy 10 naturals)     ; (0 1 2 3 4 5 6 7 8 9)</code></pre>
+(take-lazy 10 naturals)     ; (0 1 2 3 4 5 6 7 8 9)
+</code></pre>
         <br/>
         <li>Streams (SRFI-41 style):</li>
 <pre><code class="language-scheme line-numbers">; Stream primitives
@@ -8995,7 +9444,8 @@ counter                     ; 0 (restored)
     [else (stream-filter pred (stream-cdr s))]))
 
 (stream-take 10 fibs)       ; (0 1 1 2 3 5 8 13 21 34)
-(stream-take 5 (stream-filter even? fibs))  ; (0 2 8 34 144)</code></pre>
+(stream-take 5 (stream-filter even? fibs))  ; (0 2 8 34 144)
+</code></pre>
         <br/>
         <li>Memoization patterns:</li>
 <pre><code class="language-scheme line-numbers">; Simple memoization with delay
@@ -9028,14 +9478,14 @@ counter                     ; 0 (restored)
 (define fib
   (memoize-proc
     (lambda (n)
-      (if (< n 2)
+      (if (&lt; n 2)
           n
           (+ (fib (- n 1)) (fib (- n 2)))))))
 
-(fib 100)                   ; Fast due to memoization</code></pre>
+(fib 100)                   ; Fast due to memoization
+</code></pre>
     </ul>
-    <br/><br/>
-
+    <br/>
 </ol>
 <!-- * * * * * * * * * * * * * * -->
 
