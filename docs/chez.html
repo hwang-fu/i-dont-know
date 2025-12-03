@@ -167,6 +167,7 @@
         <li><a href="#scm-syntactic-extension">Syntactic Extension and Modules</a></li>
         <li><a href="#scm-system-operations">System Operations</a></li>
         <li><a href="#scm-storage-management">Storage Management</a></li>
+        <li><a href="#scm-expression-editor">Expression Editor</a></li>
     </ol>
 </nav>
 <hr/>
@@ -20460,7 +20461,1495 @@ copied                      ; 42 (separate copy)
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-expression-editor">Expression Editor in Chez Scheme</h3>
+<ol>
 
+    <li>Expression Editor Parameters</li>
+    <br/>
+    <ul>
+        <li>Enabling the expression editor:</li>
+<pre><code class="language-scheme line-numbers">; The expression editor provides line editing capabilities
+; Similar to GNU Readline but integrated with Scheme
+
+; Check if expression editor is enabled
+(expression-editor)         ; #t if enabled
+
+; Enable expression editor
+(expression-editor #t)
+
+; Disable expression editor
+(expression-editor #f)
+
+; The expression editor provides:
+; - Line editing (insert, delete, cursor movement)
+; - History navigation
+; - Parenthesis matching
+; - Tab completion
+; - Multi-line editing
+; - Emacs-style key bindings (default)</code></pre>
+        <br/>
+        <li>History parameters:</li>
+<pre><code class="language-scheme line-numbers">; ee-history-limit: maximum history entries
+(ee-history-limit)          ; Get current limit
+(ee-history-limit 500)      ; Set to 500 entries
+
+; History file location
+(ee-history-file)           ; Get current file path
+(ee-history-file "~/.chez_history")  ; Set custom path
+
+; Typical default: ~/.chez_history or platform equivalent
+
+; History is automatically saved/loaded
+; Each expression entered is added to history
+
+; Disable history persistence
+(ee-history-file #f)        ; Don't save history
+
+; Clear current history
+; (No direct command - restart or set new file)</code></pre>
+        <br/>
+        <li>Display and formatting parameters:</li>
+<pre><code class="language-scheme line-numbers">; ee-paren-flash-delay: parenthesis flash duration
+(ee-paren-flash-delay)      ; Get current (milliseconds)
+(ee-paren-flash-delay 100)  ; Set to 100ms
+
+; When you type a closing paren, cursor briefly jumps
+; to matching open paren, then returns
+
+; Disable paren flashing
+(ee-paren-flash-delay #f)
+
+; ee-default-repeat: default repeat count
+(ee-default-repeat)         ; Get current
+(ee-default-repeat 4)       ; Set default repeat
+
+; Used with universal argument (C-u)
+; C-u C-f moves forward 4 characters by default
+
+; ee-auto-indent: automatic indentation
+(ee-auto-indent)            ; #t if enabled
+(ee-auto-indent #t)         ; Enable auto-indent
+
+; Automatically indents new lines based on
+; Scheme syntax (parentheses depth)</code></pre>
+        <br/>
+        <li>Completion parameters:</li>
+<pre><code class="language-scheme line-numbers">; ee-common-identifiers: identifiers for completion
+(ee-common-identifiers)     ; Get current list
+
+; Add custom identifiers for completion
+(ee-common-identifiers
+  (append '(my-special-function my-custom-macro)
+          (ee-common-identifiers)))
+
+; Completion sources:
+; 1. Bound identifiers in current environment
+; 2. Common identifiers list
+; 3. History entries
+
+; Tab completion behavior:
+; - Single match: complete immediately
+; - Multiple matches: show options
+; - No match: beep or do nothing
+
+; ee-auto-paren-balance: auto-balance parentheses
+(ee-auto-paren-balance)     ; #t if enabled
+(ee-auto-paren-balance #t)  ; Enable
+
+; Helps maintain balanced parentheses during editing</code></pre>
+        <br/>
+        <li>Terminal parameters:</li>
+<pre><code class="language-scheme line-numbers">; ee-noisy: beep on errors
+(ee-noisy)                  ; #t if beeping enabled
+(ee-noisy #f)               ; Disable beeping
+
+; Terminal dimensions (usually auto-detected)
+; Can affect line wrapping and display
+
+; Console parameters
+(console-input-port)        ; Input port for editor
+(console-output-port)       ; Output port for editor
+
+; The expression editor works with terminal capabilities
+; TERM environment variable affects behavior
+
+; For best experience:
+; - Use terminal with ANSI support
+; - Ensure TERM is set correctly
+; - UTF-8 encoding recommended
+
+; Check terminal type
+(getenv "TERM")             ; e.g., "xterm-256color"</code></pre>
+        <br/>
+        <li>Expression editor parameter summary:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>expression-editor</code></td>
+            <td>boolean</td>
+            <td>Enable/disable expression editor</td>
+        </tr>
+        <tr>
+            <td><code>ee-history-limit</code></td>
+            <td>integer</td>
+            <td>Maximum history entries to keep</td>
+        </tr>
+        <tr>
+            <td><code>ee-history-file</code></td>
+            <td>string/#f</td>
+            <td>Path to history file</td>
+        </tr>
+        <tr>
+            <td><code>ee-paren-flash-delay</code></td>
+            <td>integer/#f</td>
+            <td>Paren matching flash delay (ms)</td>
+        </tr>
+        <tr>
+            <td><code>ee-auto-indent</code></td>
+            <td>boolean</td>
+            <td>Auto-indent new lines</td>
+        </tr>
+        <tr>
+            <td><code>ee-default-repeat</code></td>
+            <td>integer</td>
+            <td>Default repeat count for C-u</td>
+        </tr>
+        <tr>
+            <td><code>ee-noisy</code></td>
+            <td>boolean</td>
+            <td>Beep on errors</td>
+        </tr>
+        <tr>
+            <td><code>ee-auto-paren-balance</code></td>
+            <td>boolean</td>
+            <td>Auto-balance parentheses</td>
+        </tr>
+        <tr>
+            <td><code>ee-common-identifiers</code></td>
+            <td>list</td>
+            <td>Identifiers for tab completion</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Key Binding</li>
+    <br/>
+    <ul>
+        <li>Understanding key representations:</li>
+<pre><code class="language-scheme line-numbers">; Keys are represented as strings with special notation
+
+; Regular characters
+"a"                         ; The letter 'a'
+"A"                         ; The letter 'A' (shift-a)
+"1"                         ; The digit '1'
+" "                         ; Space
+
+; Control characters (C- prefix)
+"\\C-a"                     ; Control-a (^A)
+"\\C-b"                     ; Control-b (^B)
+"\\C-x"                     ; Control-x (^X)
+
+; Meta/Alt characters (M- or \\e prefix)
+"\\M-f"                     ; Meta-f (Alt-f or Esc f)
+"\\ef"                      ; Same as above (escape followed by f)
+"\\M-b"                     ; Meta-b
+
+; Special keys
+"\\C-m"                     ; Return/Enter (same as \\r)
+"\\C-i"                     ; Tab (same as \\t)
+"\\C-j"                     ; Newline
+"\\C-["                     ; Escape
+
+; Key sequences (multiple keys)
+"\\C-x\\C-f"                ; Control-x followed by Control-f
+"\\C-xb"                    ; Control-x followed by 'b'
+"\\exf"                     ; Escape, then 'x', then 'f'</code></pre>
+        <br/>
+        <li>Key binding visualization:</li>
+        <svg width="600" height="200" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">Key Notation in Expression Editor</text>
+
+            <!-- Control keys -->
+            <rect x="30" y="45" width="160" height="65" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="5"/>
+            <text x="110" y="65" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Control Keys</text>
+            <text x="110" y="82" text-anchor="middle" font-family="Times New Roman" font-size="9">\C-x = Ctrl+x</text>
+            <text x="110" y="97" text-anchor="middle" font-family="Times New Roman" font-size="9">\C-a = Ctrl+a</text>
+
+            <!-- Meta keys -->
+            <rect x="220" y="45" width="160" height="65" fill="#e6ffe6" stroke="#009900" stroke-width="1" rx="5"/>
+            <text x="300" y="65" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Meta/Alt Keys</text>
+            <text x="300" y="82" text-anchor="middle" font-family="Times New Roman" font-size="9">\M-f = Alt+f</text>
+            <text x="300" y="97" text-anchor="middle" font-family="Times New Roman" font-size="9">\ef = Esc then f</text>
+
+            <!-- Special keys -->
+            <rect x="410" y="45" width="160" height="65" fill="#fff0e6" stroke="#cc6600" stroke-width="1" rx="5"/>
+            <text x="490" y="65" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Special Keys</text>
+            <text x="490" y="82" text-anchor="middle" font-family="Times New Roman" font-size="9">\C-m = Enter</text>
+            <text x="490" y="97" text-anchor="middle" font-family="Times New Roman" font-size="9">\C-i = Tab</text>
+
+            <!-- Key sequences -->
+            <rect x="30" y="125" width="540" height="55" fill="#f5f5f5" stroke="#999" stroke-width="1" rx="5"/>
+            <text x="300" y="145" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Key Sequences (Multiple Keys)</text>
+            <text x="150" y="165" text-anchor="middle" font-family="Times New Roman" font-size="9">\C-x\C-f = Ctrl+x, Ctrl+f</text>
+            <text x="450" y="165" text-anchor="middle" font-family="Times New Roman" font-size="9">\C-xb = Ctrl+x, then 'b'</text>
+        </svg>
+        <br/><br/>
+        <li>Viewing current bindings:</li>
+<pre><code class="language-scheme line-numbers">; ee-binding-list: get all current bindings
+(ee-binding-list)
+; Returns association list of (key . command) pairs
+
+; Example output:
+; (("\\C-a" . ee-beginning-of-line)
+;  ("\\C-e" . ee-end-of-line)
+;  ("\\C-f" . ee-forward-char)
+;  ("\\C-b" . ee-backward-char)
+;  ...)
+
+; Find binding for specific key
+(define (find-binding key)
+  (let ([bindings (ee-binding-list)])
+    (cond
+      [(assoc key bindings) => cdr]
+      [else #f])))
+
+(find-binding "\\C-a")      ; ee-beginning-of-line
+
+; Find key for specific command
+(define (find-key-for-command cmd)
+  (let loop ([bindings (ee-binding-list)])
+    (cond
+      [(null? bindings) #f]
+      [(eq? (cdar bindings) cmd) (caar bindings)]
+      [else (loop (cdr bindings))])))
+
+(find-key-for-command 'ee-beginning-of-line)  ; "\\C-a"</code></pre>
+        <br/>
+        <li>Setting key bindings:</li>
+<pre><code class="language-scheme line-numbers">; ee-bind-key: bind key to command
+(ee-bind-key "\\C-t" 'ee-transpose-char)
+(ee-bind-key "\\M-u" 'ee-upcase-word)
+(ee-bind-key "\\M-l" 'ee-downcase-word)
+
+; Bind key sequence
+(ee-bind-key "\\C-x\\C-s" 'ee-save-history)
+(ee-bind-key "\\C-xh" 'ee-select-all)
+
+; Unbind a key (bind to #f)
+(ee-bind-key "\\C-z" #f)    ; Disable Ctrl-Z
+
+; Rebind existing key
+(ee-bind-key "\\C-w" 'ee-backward-kill-word)  ; Change from default
+
+; Multiple bindings for same command
+(ee-bind-key "\\C-a" 'ee-beginning-of-line)
+(ee-bind-key "\\eOH" 'ee-beginning-of-line)  ; Home key (some terminals)
+
+; Bind to self-insert for special characters
+(ee-bind-key "λ" 'ee-self-insert)</code></pre>
+        <br/>
+        <li>Default Emacs-style bindings:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Key</th>
+            <th>Command</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>C-a</code></td>
+            <td><code>ee-beginning-of-line</code></td>
+            <td>Move to beginning of line</td>
+        </tr>
+        <tr>
+            <td><code>C-e</code></td>
+            <td><code>ee-end-of-line</code></td>
+            <td>Move to end of line</td>
+        </tr>
+        <tr>
+            <td><code>C-f</code></td>
+            <td><code>ee-forward-char</code></td>
+            <td>Move forward one character</td>
+        </tr>
+        <tr>
+            <td><code>C-b</code></td>
+            <td><code>ee-backward-char</code></td>
+            <td>Move backward one character</td>
+        </tr>
+        <tr>
+            <td><code>M-f</code></td>
+            <td><code>ee-forward-word</code></td>
+            <td>Move forward one word</td>
+        </tr>
+        <tr>
+            <td><code>M-b</code></td>
+            <td><code>ee-backward-word</code></td>
+            <td>Move backward one word</td>
+        </tr>
+        <tr>
+            <td><code>C-p</code></td>
+            <td><code>ee-previous-history</code></td>
+            <td>Previous history entry</td>
+        </tr>
+        <tr>
+            <td><code>C-n</code></td>
+            <td><code>ee-next-history</code></td>
+            <td>Next history entry</td>
+        </tr>
+        <tr>
+            <td><code>C-d</code></td>
+            <td><code>ee-delete-char</code></td>
+            <td>Delete character under cursor</td>
+        </tr>
+        <tr>
+            <td><code>C-h / DEL</code></td>
+            <td><code>ee-backward-delete-char</code></td>
+            <td>Delete character before cursor</td>
+        </tr>
+        <tr>
+            <td><code>C-k</code></td>
+            <td><code>ee-kill-line</code></td>
+            <td>Kill to end of line</td>
+        </tr>
+        <tr>
+            <td><code>C-y</code></td>
+            <td><code>ee-yank</code></td>
+            <td>Yank (paste) killed text</td>
+        </tr>
+        <tr>
+            <td><code>C-_</code></td>
+            <td><code>ee-undo</code></td>
+            <td>Undo last change</td>
+        </tr>
+        <tr>
+            <td><code>C-r</code></td>
+            <td><code>ee-history-search-backward</code></td>
+            <td>Search history backward</td>
+        </tr>
+        <tr>
+            <td><code>C-s</code></td>
+            <td><code>ee-history-search-forward</code></td>
+            <td>Search history forward</td>
+        </tr>
+        <tr>
+            <td><code>TAB</code></td>
+            <td><code>ee-complete</code></td>
+            <td>Complete identifier</td>
+        </tr>
+        <tr>
+            <td><code>C-m / RET</code></td>
+            <td><code>ee-accept</code></td>
+            <td>Accept input (if complete)</td>
+        </tr>
+        <tr>
+            <td><code>C-j</code></td>
+            <td><code>ee-newline</code></td>
+            <td>Insert newline</td>
+        </tr>
+        <tr>
+            <td><code>C-g</code></td>
+            <td><code>ee-abort</code></td>
+            <td>Abort current input</td>
+        </tr>
+        <tr>
+            <td><code>C-l</code></td>
+            <td><code>ee-redisplay</code></td>
+            <td>Redraw screen</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Custom key binding configuration:</li>
+<pre><code class="language-scheme line-numbers">; Setup function for custom bindings
+(define (setup-my-keybindings)
+  ; Vi-like bindings (example)
+  ; Note: This is partial - full vi mode would need more
+
+  ; Navigation in "normal" style
+  (ee-bind-key "\\C-h" 'ee-backward-char)     ; h = left
+  (ee-bind-key "\\C-l" 'ee-forward-char)      ; l = right
+  (ee-bind-key "\\ew" 'ee-forward-word)       ; w = word forward
+  (ee-bind-key "\\eb" 'ee-backward-word)      ; b = word backward
+
+  ; Additional useful bindings
+  (ee-bind-key "\\C-x\\C-e" 'ee-edit-externally)
+  (ee-bind-key "\\M-p" 'ee-previous-history)
+  (ee-bind-key "\\M-n" 'ee-next-history)
+
+  ; Function key bindings (terminal-dependent)
+  (ee-bind-key "\\e[A" 'ee-previous-history)  ; Up arrow
+  (ee-bind-key "\\e[B" 'ee-next-history)      ; Down arrow
+  (ee-bind-key "\\e[C" 'ee-forward-char)      ; Right arrow
+  (ee-bind-key "\\e[D" 'ee-backward-char)     ; Left arrow
+  (ee-bind-key "\\e[H" 'ee-beginning-of-line) ; Home
+  (ee-bind-key "\\e[F" 'ee-end-of-line)       ; End
+  (ee-bind-key "\\e[3~" 'ee-delete-char))     ; Delete
+
+; Call during startup (e.g., in .schemerc)
+(when (expression-editor)
+  (setup-my-keybindings))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Editing Commands</li>
+    <br/>
+    <ul>
+        <li>Cursor movement commands:</li>
+<pre><code class="language-scheme line-numbers">; Character movement
+ee-forward-char             ; Move right one character (C-f)
+ee-backward-char            ; Move left one character (C-b)
+
+; Word movement
+ee-forward-word             ; Move to end of word (M-f)
+ee-backward-word            ; Move to beginning of word (M-b)
+
+; Line movement
+ee-beginning-of-line        ; Move to line start (C-a)
+ee-end-of-line              ; Move to line end (C-e)
+ee-previous-line            ; Move to previous line (C-p in multi-line)
+ee-next-line                ; Move to next line (C-n in multi-line)
+
+; Expression movement (Scheme-aware)
+ee-forward-exp              ; Move forward one S-expression (C-M-f)
+ee-backward-exp             ; Move backward one S-expression (C-M-b)
+
+; Buffer movement
+ee-beginning-of-entry       ; Move to start of entire input
+ee-end-of-entry             ; Move to end of entire input
+
+; Matching parenthesis
+ee-flash-matching-paren     ; Flash matching paren
+ee-goto-matching-paren      ; Move to matching paren</code></pre>
+        <br/>
+        <li>Deletion commands:</li>
+<pre><code class="language-scheme line-numbers">; Character deletion
+ee-delete-char              ; Delete char at cursor (C-d)
+ee-backward-delete-char     ; Delete char before cursor (Backspace)
+
+; Word deletion
+ee-delete-word              ; Delete word forward (M-d)
+ee-backward-delete-word     ; Delete word backward (M-Backspace)
+
+; Kill commands (save to kill ring)
+ee-kill-line                ; Kill to end of line (C-k)
+ee-backward-kill-line       ; Kill to beginning of line (C-u)
+ee-kill-word                ; Kill word forward (M-d)
+ee-backward-kill-word       ; Kill word backward (M-DEL)
+ee-kill-exp                 ; Kill S-expression forward (C-M-k)
+ee-backward-kill-exp        ; Kill S-expression backward
+
+; Delete entire entry
+ee-delete-entry             ; Delete entire input
+
+; Note: Kill commands save text to kill ring for yanking
+; Delete commands do not save to kill ring</code></pre>
+        <br/>
+        <li>Text insertion and manipulation:</li>
+<pre><code class="language-scheme line-numbers">; Self-insert
+ee-self-insert              ; Insert the typed character
+
+; Newline and indentation
+ee-newline                  ; Insert newline (C-j)
+ee-newline-and-indent       ; Newline with auto-indent (C-m in some configs)
+ee-indent                   ; Indent current line
+ee-indent-all               ; Indent entire entry
+
+; Case conversion
+ee-upcase-word              ; Convert word to uppercase (M-u)
+ee-downcase-word            ; Convert word to lowercase (M-l)
+ee-capitalize-word          ; Capitalize word (M-c)
+
+; Transposition
+ee-transpose-char           ; Swap chars around cursor (C-t)
+ee-transpose-word           ; Swap words around cursor (M-t)
+ee-transpose-exp            ; Swap S-expressions (C-M-t)
+
+; Open line
+ee-open-line                ; Insert newline after cursor (C-o)</code></pre>
+        <br/>
+        <li>Kill ring and yank:</li>
+<pre><code class="language-scheme line-numbers">; The kill ring stores killed text for later retrieval
+
+; Yank (paste) most recent kill
+ee-yank                     ; Paste last killed text (C-y)
+
+; Yank previous kills
+ee-yank-pop                 ; Cycle through kill ring (M-y after C-y)
+
+; Kill ring operations:
+; 1. C-k kills to end of line, saves to ring
+; 2. C-y yanks most recent
+; 3. M-y after C-y cycles through older kills
+
+; Example workflow:
+; Type: (define x 10)
+; C-a C-k          ; Kill entire line
+; Type: (define y 20)
+; C-a C-k          ; Kill this line too
+; C-y              ; Yank "(define y 20)"
+; M-y              ; Replace with "(define x 10)"
+; M-y              ; Cycle back to "(define y 20)"</code></pre>
+        <br/>
+        <li>History commands:</li>
+<pre><code class="language-scheme line-numbers">; History navigation
+ee-previous-history         ; Previous entry (C-p or Up)
+ee-next-history             ; Next entry (C-n or Down)
+ee-history-beginning        ; First history entry (M-<)
+ee-history-end              ; Last/current entry (M->)
+
+; History search
+ee-history-search-backward  ; Search backward (C-r)
+ee-history-search-forward   ; Search forward (C-s)
+
+; Search behavior:
+; 1. Press C-r
+; 2. Type search string
+; 3. Press C-r again to find next match
+; 4. Press Enter to accept
+; 5. Press C-g to cancel
+
+; History by prefix
+ee-history-bwd-prefix       ; Find previous with same prefix
+ee-history-fwd-prefix       ; Find next with same prefix
+
+; Example: type "(def" then use prefix search
+; to find all entries starting with "(def"</code></pre>
+        <br/>
+        <li>Completion commands:</li>
+<pre><code class="language-scheme line-numbers">; Tab completion
+ee-complete                 ; Complete identifier (Tab)
+ee-complete-list            ; Show all completions
+
+; Completion behavior:
+; - Completes based on current prefix
+; - Sources: bound identifiers, common-identifiers, history
+
+; Example:
+; Type: str      (then Tab)
+; Shows: string->list, string->number, string-append, ...
+
+; Type: string-a (then Tab)
+; Completes to: string-append (if unique match)
+
+; Completion is context-aware:
+; - At start of expression: all identifiers
+; - After open paren: procedure names
+; - After quote: symbols</code></pre>
+        <br/>
+        <li>Parenthesis handling:</li>
+<pre><code class="language-scheme line-numbers">; Parenthesis matching and manipulation
+ee-flash-matching-paren     ; Briefly show matching paren
+ee-goto-matching-paren      ; Move to matching paren
+
+; Insert with matching
+ee-insert-paren             ; Insert ( and potentially )
+ee-insert-bracket           ; Insert [ and potentially ]
+
+; Balance checking
+ee-paren-balance            ; Check if parens are balanced
+
+; The expression editor understands Scheme syntax:
+; - () round parentheses
+; - [] square brackets
+; - {} curly braces (for some syntaxes)
+; - "" string delimiters
+; - ; comments
+; - #| |# block comments
+
+; Accept behavior depends on balance:
+; - Balanced: Enter accepts and evaluates
+; - Unbalanced: Enter adds newline for continuation</code></pre>
+        <br/>
+        <li>Control and miscellaneous commands:</li>
+<pre><code class="language-scheme line-numbers">; Accept and evaluate
+ee-accept                   ; Accept input if complete (Enter/C-m)
+ee-newline                  ; Always insert newline (C-j)
+
+; Abort and reset
+ee-abort                    ; Abort current input (C-g)
+ee-reset                    ; Reset editor state
+
+; Undo
+ee-undo                     ; Undo last edit (C-_ or C-/)
+ee-redo                     ; Redo undone edit
+
+; Display
+ee-redisplay                ; Redraw display (C-l)
+ee-clear-screen             ; Clear screen and redraw
+
+; Information
+ee-command-repeat           ; Repeat last command
+ee-set-mark                 ; Set mark at point (C-Space)
+ee-exchange-point-and-mark  ; Swap cursor and mark (C-x C-x)
+ee-kill-region              ; Kill between mark and point (C-w)
+ee-copy-region              ; Copy between mark and point (M-w)
+
+; Help
+ee-help                     ; Show help (if bound)
+ee-describe-key             ; Describe what key does</code></pre>
+        <br/>
+        <li>Complete command reference:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th>Command</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td rowspan="8">Movement</td>
+            <td><code>ee-forward-char</code></td>
+            <td>Move right one character</td>
+        </tr>
+        <tr>
+            <td><code>ee-backward-char</code></td>
+            <td>Move left one character</td>
+        </tr>
+        <tr>
+            <td><code>ee-forward-word</code></td>
+            <td>Move forward one word</td>
+        </tr>
+        <tr>
+            <td><code>ee-backward-word</code></td>
+            <td>Move backward one word</td>
+        </tr>
+        <tr>
+            <td><code>ee-forward-exp</code></td>
+            <td>Move forward one S-expression</td>
+        </tr>
+        <tr>
+            <td><code>ee-backward-exp</code></td>
+            <td>Move backward one S-expression</td>
+        </tr>
+        <tr>
+            <td><code>ee-beginning-of-line</code></td>
+            <td>Move to line start</td>
+        </tr>
+        <tr>
+            <td><code>ee-end-of-line</code></td>
+            <td>Move to line end</td>
+        </tr>
+        <tr>
+            <td rowspan="6">Deletion</td>
+            <td><code>ee-delete-char</code></td>
+            <td>Delete char at cursor</td>
+        </tr>
+        <tr>
+            <td><code>ee-backward-delete-char</code></td>
+            <td>Delete char before cursor</td>
+        </tr>
+        <tr>
+            <td><code>ee-kill-line</code></td>
+            <td>Kill to end of line</td>
+        </tr>
+        <tr>
+            <td><code>ee-kill-word</code></td>
+            <td>Kill word forward</td>
+        </tr>
+        <tr>
+            <td><code>ee-backward-kill-word</code></td>
+            <td>Kill word backward</td>
+        </tr>
+        <tr>
+            <td><code>ee-kill-exp</code></td>
+            <td>Kill S-expression forward</td>
+        </tr>
+        <tr>
+            <td rowspan="4">History</td>
+            <td><code>ee-previous-history</code></td>
+            <td>Previous history entry</td>
+        </tr>
+        <tr>
+            <td><code>ee-next-history</code></td>
+            <td>Next history entry</td>
+        </tr>
+        <tr>
+            <td><code>ee-history-search-backward</code></td>
+            <td>Search history backward</td>
+        </tr>
+        <tr>
+            <td><code>ee-history-search-forward</code></td>
+            <td>Search history forward</td>
+        </tr>
+        <tr>
+            <td rowspan="4">Editing</td>
+            <td><code>ee-yank</code></td>
+            <td>Paste killed text</td>
+        </tr>
+        <tr>
+            <td><code>ee-transpose-char</code></td>
+            <td>Swap characters</td>
+        </tr>
+        <tr>
+            <td><code>ee-upcase-word</code></td>
+            <td>Uppercase word</td>
+        </tr>
+        <tr>
+            <td><code>ee-undo</code></td>
+            <td>Undo last change</td>
+        </tr>
+        <tr>
+            <td rowspan="3">Control</td>
+            <td><code>ee-accept</code></td>
+            <td>Accept and evaluate</td>
+        </tr>
+        <tr>
+            <td><code>ee-abort</code></td>
+            <td>Abort input</td>
+        </tr>
+        <tr>
+            <td><code>ee-complete</code></td>
+            <td>Tab completion</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating New Editing Commands</li>
+    <br/>
+    <ul>
+        <li>Understanding the editor state:</li>
+<pre><code class="language-scheme line-numbers">; The expression editor maintains state including:
+; - Current entry text (string or list of strings for multi-line)
+; - Cursor position (line and column)
+; - Mark position (for region operations)
+; - Kill ring (list of killed text)
+; - History (list of previous entries)
+; - Undo history
+
+; Commands are procedures that:
+; 1. Receive editor state
+; 2. Modify state as needed
+; 3. Return updated state
+
+; Basic structure of a custom command:
+(define (my-command)
+  (lambda (ee entry)
+    ; ee = editor state object
+    ; entry = current text entry
+    ; Return: (values new-entry update-needed?)
+    ...))
+
+; Editor state accessors (implementation-specific):
+; These may vary by Chez Scheme version</code></pre>
+        <br/>
+        <li>Simple custom commands:</li>
+<pre><code class="language-scheme line-numbers">; Example: Insert current date
+(define (ee-insert-date)
+  ; This is a simplified conceptual example
+  ; Actual implementation depends on editor internals
+  (let ([date-string (date->string (current-date) "~Y-~m-~d")])
+    (ee-insert-string date-string)))
+
+; Bind to key
+(ee-bind-key "\\C-xd" ee-insert-date)
+
+; Example: Insert lambda character
+(define ee-insert-lambda
+  (lambda ()
+    (ee-insert-string "λ")))
+
+(ee-bind-key "\\C-xl" ee-insert-lambda)
+
+; Example: Clear line and insert template
+(define (ee-insert-define-template)
+  (ee-delete-entry)
+  (ee-insert-string "(define (name args)\n  body)"))
+
+(ee-bind-key "\\C-xD" ee-insert-define-template)</code></pre>
+        <br/>
+        <li>Commands using ee-string-macro:</li>
+<pre><code class="language-scheme line-numbers">; ee-string-macro: create command from key string
+; Simulates typing a sequence of characters
+
+; Insert template text
+(define ee-insert-let-template
+  (ee-string-macro "(let ([])\\C-b\\C-b"))
+
+(ee-bind-key "\\C-xL" ee-insert-let-template)
+; Inserts "(let ([])" with cursor inside brackets
+
+; Insert and position
+(define ee-insert-if-template
+  (ee-string-macro "(if \\C-j    \\C-j    )\\C-p\\C-p\\C-e"))
+
+(ee-bind-key "\\C-xI" ee-insert-if-template)
+
+; Multi-line lambda template
+(define ee-insert-lambda-template
+  (ee-string-macro "(lambda ()\\C-j  )\\C-p\\C-e\\C-b"))
+
+(ee-bind-key "\\C-x\\\\" ee-insert-lambda-template)
+
+; Insert common patterns
+(define ee-insert-define-syntax
+  (ee-string-macro "(define-syntax \\C-j  (syntax-rules ()\\C-j    [(_ )]))\\C-p\\C-p\\C-e"))
+
+(ee-bind-key "\\C-xS" ee-insert-define-syntax)</code></pre>
+        <br/>
+        <li>Composing existing commands:</li>
+<pre><code class="language-scheme line-numbers">; ee-compose: combine multiple commands
+; Executes commands in sequence
+
+; Kill line and yank at different position
+(define ee-duplicate-line
+  (ee-compose
+    ee-beginning-of-line
+    ee-set-mark
+    ee-end-of-line
+    ee-copy-region
+    ee-end-of-line
+    ee-newline
+    ee-yank))
+
+(ee-bind-key "\\C-xc" ee-duplicate-line)
+
+; Select entire entry
+(define ee-select-all
+  (ee-compose
+    ee-beginning-of-entry
+    ee-set-mark
+    ee-end-of-entry))
+
+(ee-bind-key "\\C-xa" ee-select-all)
+
+; Kill entire entry
+(define ee-kill-entire-entry
+  (ee-compose
+    ee-beginning-of-entry
+    ee-set-mark
+    ee-end-of-entry
+    ee-kill-region))
+
+(ee-bind-key "\\C-xk" ee-kill-entire-entry)
+
+; Uppercase entire word under cursor
+(define ee-upcase-current-word
+  (ee-compose
+    ee-backward-word
+    ee-upcase-word))
+
+(ee-bind-key "\\M-U" ee-upcase-current-word)</code></pre>
+        <br/>
+        <li>Commands with repeat count:</li>
+<pre><code class="language-scheme line-numbers">; Commands can respect repeat count (C-u prefix)
+; C-u sets repeat count, default is 4
+; C-u C-u is 16, C-u C-u C-u is 64, etc.
+; C-u followed by digits sets explicit count
+
+; Example: C-u 10 C-f moves forward 10 characters
+; Most movement and deletion commands respect repeat count
+
+; Custom command respecting repeat count
+(define (ee-insert-multiple-chars char)
+  (lambda ()
+    ; The editor provides repeat count to command
+    ; Simplified example:
+    (let ([count (ee-get-repeat-count)])
+      (do ([i 0 (+ i 1)])
+          ((= i count))
+        (ee-insert-string (string char))))))
+
+; Insert multiple spaces
+(define ee-insert-spaces
+  (ee-insert-multiple-chars #\space))
+
+(ee-bind-key "\\M-SPC" ee-insert-spaces)
+; M-SPC inserts 1 space, C-u M-SPC inserts 4 spaces
+
+; Insert separator line
+(define (ee-insert-separator)
+  (let ([count (or (ee-get-repeat-count) 40)])
+    (ee-insert-string (make-string count #\-))))
+
+(ee-bind-key "\\C-x-" ee-insert-separator)</code></pre>
+        <br/>
+        <li>Context-sensitive commands:</li>
+<pre><code class="language-scheme line-numbers">; Commands that behave differently based on context
+
+; Smart semicolon - add comment or toggle comment
+(define (ee-smart-semicolon)
+  (let ([line (ee-current-line)])
+    (cond
+      ; Already has comment - remove it
+      [(string-prefix? ";" (string-trim line))
+       (ee-beginning-of-line)
+       (ee-delete-char)]
+      ; Add comment
+      [else
+       (ee-beginning-of-line)
+       (ee-insert-string "; ")])))
+
+(ee-bind-key "\\C-x;" ee-smart-semicolon)
+
+; Smart parenthesis - wrap selection or insert pair
+(define (ee-smart-paren)
+  (if (ee-region-active?)
+      ; Wrap region in parentheses
+      (begin
+        (ee-goto-mark)
+        (ee-insert-string "(")
+        (ee-exchange-point-and-mark)
+        (ee-insert-string ")"))
+      ; Just insert pair and position
+      (begin
+        (ee-insert-string "()")
+        (ee-backward-char))))
+
+(ee-bind-key "(" ee-smart-paren)
+
+; Electric return - newline with smart indent
+(define (ee-electric-return)
+  (ee-newline)
+  (ee-indent))</code></pre>
+        <br/>
+        <li>Commands with user input:</li>
+<pre><code class="language-scheme line-numbers">; Commands can prompt for input
+
+; Go to specific line number
+(define (ee-goto-line)
+  (let ([input (ee-prompt "Go to line: ")])
+    (when input
+      (let ([line-num (string->number input)])
+        (when (and line-num (positive? line-num))
+          (ee-goto-line-number line-num))))))
+
+(ee-bind-key "\\M-g" ee-goto-line)
+
+; Search and replace
+(define (ee-search-replace)
+  (let ([search (ee-prompt "Search: ")])
+    (when search
+      (let ([replace (ee-prompt "Replace with: ")])
+        (when replace
+          (ee-replace-all search replace))))))
+
+(ee-bind-key "\\M-%" ee-search-replace)
+
+; Insert from history by pattern
+(define (ee-insert-from-history)
+  (let ([pattern (ee-prompt "History pattern: ")])
+    (when pattern
+      (let ([match (find-history-match pattern)])
+        (when match
+          (ee-insert-string match))))))
+
+(ee-bind-key "\\M-h" ee-insert-from-history)</code></pre>
+        <br/>
+        <li>Scheme-aware commands:</li>
+<pre><code class="language-scheme line-numbers">; Commands that understand Scheme syntax
+
+; Evaluate S-expression before cursor
+(define (ee-eval-last-exp)
+  (let ([exp-text (ee-get-last-exp)])
+    (when exp-text
+      (let ([result (eval (read (open-input-string exp-text)))])
+        (ee-message (format "~s" result))))))
+
+(ee-bind-key "\\C-x\\C-e" ee-eval-last-exp)
+
+; Expand macro at cursor
+(define (ee-expand-macro)
+  (let ([exp-text (ee-get-current-exp)])
+    (when exp-text
+      (let* ([exp (read (open-input-string exp-text))]
+             [expanded (expand exp)])
+        (ee-delete-exp)
+        (ee-insert-string (format "~s" expanded))))))
+
+(ee-bind-key "\\C-xm" ee-expand-macro)
+
+; Format/indent current expression
+(define (ee-format-exp)
+  (let ([exp-text (ee-get-current-exp)])
+    (when exp-text
+      (let ([exp (read (open-input-string exp-text))])
+        (ee-delete-exp)
+        (ee-insert-string
+          (with-output-to-string
+            (lambda () (pretty-print exp))))))))
+
+(ee-bind-key "\\C-x\\C-q" ee-format-exp)
+
+; Wrap expression in form
+(define (ee-wrap-in-let)
+  (let ([exp (ee-get-current-exp)])
+    (when exp
+      (ee-delete-exp)
+      (ee-insert-string
+        (format "(let ([x ~a])~n  x)" exp))
+      ; Position cursor at 'x' binding name
+      (ee-beginning-of-entry)
+      (ee-forward-char 7))))
+
+(ee-bind-key "\\C-xl" ee-wrap-in-let)</code></pre>
+        <br/>
+        <li>Complete custom configuration example:</li>
+<pre><code class="language-scheme line-numbers">; Complete expression editor customization
+; Put in ~/.schemerc or load at startup
+
+(define (setup-expression-editor)
+  (when (expression-editor)
+
+    ; Basic settings
+    (ee-history-limit 1000)
+    (ee-paren-flash-delay 100)
+    (ee-auto-indent #t)
+    (ee-noisy #f)
+
+    ; Add custom identifiers for completion
+    (ee-common-identifiers
+      (append
+        '(define-syntax syntax-rules syntax-case
+          with-syntax datum->syntax syntax->datum
+          guard condition raise
+          parameterize make-parameter
+          call-with-values let-values define-values
+          case-lambda rec trace untrace
+          pretty-print format printf fprintf)
+        (ee-common-identifiers)))
+
+    ; Template insertions
+    (ee-bind-key "\\C-xd"
+      (ee-string-macro "(define ()\\C-b"))
+
+    (ee-bind-key "\\C-xD"
+      (ee-string-macro "(define-syntax \\C-j  (syntax-rules ()\\C-j    ))"))
+
+    (ee-bind-key "\\C-xl"
+      (ee-string-macro "(lambda ()\\C-b"))
+
+    (ee-bind-key "\\C-xL"
+      (ee-string-macro "(let ([])\\C-b\\C-b\\C-b"))
+
+    (ee-bind-key "\\C-xi"
+      (ee-string-macro "(if \\C-j    \\C-j    )"))
+
+    (ee-bind-key "\\C-xc"
+      (ee-string-macro "(cond\\C-j  [])"))
+
+    (ee-bind-key "\\C-xg"
+      (ee-string-macro "(guard (c\\C-j        [else ])\\C-j  )"))
+
+    ; Navigation enhancements
+    (ee-bind-key "\\e[1;5C" ee-forward-word)   ; Ctrl-Right
+    (ee-bind-key "\\e[1;5D" ee-backward-word)  ; Ctrl-Left
+    (ee-bind-key "\\e[1;5A" ee-backward-exp)   ; Ctrl-Up (expression)
+    (ee-bind-key "\\e[1;5B" ee-forward-exp)    ; Ctrl-Down (expression)
+
+    ; Duplicate line
+    (ee-bind-key "\\C-xc"
+      (ee-compose
+        ee-beginning-of-line
+        ee-set-mark
+        ee-end-of-line
+        ee-copy-region
+        ee-end-of-line
+        ee-newline
+        ee-yank))
+
+    ; Comment/uncomment line
+    (ee-bind-key "\\C-x;"
+      (ee-compose
+        ee-beginning-of-line
+        (ee-string-macro "; ")))
+
+    ; Quick evaluation message
+    (ee-bind-key "\\C-xp"
+      (ee-string-macro "(printf \"~a~n\" )\\C-b"))
+
+    (printf "Expression editor configured.~n")))
+
+; Run setup
+(setup-expression-editor)</code></pre>
+        <br/>
+        <li>Editor state diagram:</li>
+        <svg width="600" height="320" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">Expression Editor State Model</text>
+
+            <!-- Main state box -->
+            <rect x="180" y="45" width="240" height="180" fill="#f5f5f5" stroke="#666" stroke-width="2" rx="5"/>
+            <text x="300" y="70" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Editor State</text>
+
+            <!-- State components -->
+            <rect x="200" y="85" width="200" height="25" fill="#cce5ff" stroke="#0066cc" stroke-width="1"/>
+            <text x="300" y="102" text-anchor="middle" font-family="Times New Roman" font-size="9">Entry Text (buffer)</text>
+
+            <rect x="200" y="115" width="95" height="25" fill="#e6ffe6" stroke="#009900" stroke-width="1"/>
+            <text x="247" y="132" text-anchor="middle" font-family="Times New Roman" font-size="9">Point (cursor)</text>
+
+            <rect x="305" y="115" width="95" height="25" fill="#ffe6e6" stroke="#cc0000" stroke-width="1"/>
+            <text x="352" y="132" text-anchor="middle" font-family="Times New Roman" font-size="9">Mark</text>
+
+            <rect x="200" y="145" width="200" height="25" fill="#fff0e6" stroke="#cc6600" stroke-width="1"/>
+            <text x="300" y="162" text-anchor="middle" font-family="Times New Roman" font-size="9">Kill Ring</text>
+
+            <rect x="200" y="175" width="200" height="25" fill="#e6e6ff" stroke="#6600cc" stroke-width="1"/>
+            <text x="300" y="192" text-anchor="middle" font-family="Times New Roman" font-size="9">History</text>
+
+            <!-- Command flow -->
+            <rect x="30" y="100" width="100" height="50" fill="#ffff99" stroke="#999900" stroke-width="2" rx="3"/>
+            <text x="80" y="120" text-anchor="middle" font-family="Times New Roman" font-size="9" font-weight="bold">Key Press</text>
+            <text x="80" y="135" text-anchor="middle" font-family="Times New Roman" font-size="8">(e.g., C-f)</text>
+
+            <line x1="130" y1="125" x2="175" y2="125" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+            <rect x="470" y="100" width="100" height="50" fill="#99ff99" stroke="#009900" stroke-width="2" rx="3"/>
+            <text x="520" y="120" text-anchor="middle" font-family="Times New Roman" font-size="9" font-weight="bold">Command</text>
+            <text x="520" y="135" text-anchor="middle" font-family="Times New Roman" font-size="8">ee-forward-char</text>
+
+            <line x1="420" y1="125" x2="465" y2="125" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+            <!-- Binding lookup -->
+            <text x="300" y="250" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Key Binding Table</text>
+            <rect x="150" y="260" width="300" height="45" fill="#f0f0f0" stroke="#999" stroke-width="1" rx="3"/>
+            <text x="300" y="278" text-anchor="middle" font-family="Times New Roman" font-size="8">"\\C-f" → ee-forward-char</text>
+            <text x="300" y="293" text-anchor="middle" font-family="Times New Roman" font-size="8">"\\C-b" → ee-backward-char  ...</text>
+
+            <line x1="80" y1="150" x2="80" y2="275" stroke="#666" stroke-width="1" stroke-dasharray="4,2"/>
+            <line x1="80" y1="275" x2="145" y2="275" stroke="#666" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+
+            <line x1="450" y1="275" x2="520" y2="275" stroke="#666" stroke-width="1" stroke-dasharray="4,2"/>
+            <line x1="520" y1="275" x2="520" y2="155" stroke="#666" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#arrowhead)"/>
+        </svg>
+    </ul>
+    <br/><br/>
+
+
+    <li>Advanced Expression Editor Topics</li>
+    <br/>
+    <ul>
+        <li>Multi-line editing:</li>
+<pre><code class="language-scheme line-numbers">; The expression editor handles multi-line input automatically
+; When parentheses are unbalanced, Enter adds newline
+
+; Example multi-line input:
+; &gt; (define (factorial n)
+;     (if (zero? n)
+;         1
+;         (* n (factorial (- n 1)))))
+
+; Navigation in multi-line mode:
+; C-p / Up    - Previous line (or previous history if at top)
+; C-n / Down  - Next line (or next history if at bottom)
+; C-a         - Beginning of current line
+; C-e         - End of current line
+; M-&lt;         - Beginning of entire entry
+; M-&gt;         - End of entire entry
+
+; Multi-line history:
+; Entire multi-line expressions stored as single history entry
+; Navigate with C-p/C-n at entry boundaries
+
+; Indentation in multi-line:
+; Auto-indent based on paren depth
+; Tab to manually indent
+; ee-indent-all to reindent entire entry
+</code></pre>
+        <br/>
+        <li>Terminal compatibility:</li>
+<pre><code class="language-scheme line-numbers">; Expression editor adapts to terminal capabilities
+
+; Check terminal type
+(getenv "TERM")             ; Should be set correctly
+
+; Common terminal types:
+; - xterm, xterm-256color
+; - screen, screen-256color
+; - vt100, vt220
+; - linux (console)
+; - dumb (no capabilities)
+
+; If keys don't work, check terminal settings:
+; 1. Verify TERM is set correctly
+; 2. Check key sequences with: cat -v (then press keys)
+; 3. Bind actual sequences your terminal sends
+
+; Example: finding actual escape sequence
+; $ cat -v
+; (press Ctrl-Right)
+; ^[[1;5C
+;
+; In Scheme: "\\e[1;5C"
+
+; Some terminals need special configuration:
+(ee-bind-key "\\e[1~" ee-beginning-of-line)  ; Home (some terms)
+(ee-bind-key "\\e[4~" ee-end-of-line)        ; End (some terms)
+(ee-bind-key "\\e[5~" ee-history-beginning)  ; PgUp
+(ee-bind-key "\\e[6~" ee-history-end)        ; PgDn
+
+; For dumb terminals, expression editor may be disabled
+; Use rlwrap or similar as alternative</code></pre>
+        <br/>
+        <li>History file management:</li>
+<pre><code class="language-scheme line-numbers">; History persistence across sessions
+(ee-history-file)           ; Default location
+
+; Custom history location
+(ee-history-file
+  (string-append (getenv "HOME") "/.scheme_history"))
+
+; Separate history per project
+(define (set-project-history! project-name)
+  (ee-history-file
+    (format "~a/.scheme_history_~a"
+            (getenv "HOME")
+            project-name)))
+
+; History is saved automatically:
+; - On normal exit
+; - Periodically during session (implementation-dependent)
+
+; History format is typically plain text
+; One entry per line (multi-line entries escaped)
+
+; Clear history
+(define (clear-history!)
+  (let ([file (ee-history-file)])
+    (when file
+      (when (file-exists? file)
+        (delete-file file)))))
+
+; Export history
+(define (export-history filename)
+  (let ([history (ee-history-list)])
+    (call-with-output-file filename
+      (lambda (port)
+        (for-each
+          (lambda (entry)
+            (fprintf port "~a~n~n" entry))
+          history))
+      '(replace))))</code></pre>
+        <br/>
+        <li>Integrating with external editors:</li>
+<pre><code class="language-scheme line-numbers">; Edit current expression in external editor
+(define (ee-edit-external)
+  (let ([text (ee-get-entry)]
+        [editor (or (getenv "VISUAL")
+                    (getenv "EDITOR")
+                    "vi")])
+    ; Write to temp file
+    (let ([temp-file (format "/tmp/scheme-edit-~a" (getpid))])
+      (call-with-output-file temp-file
+        (lambda (port)
+          (display text port))
+        '(replace))
+      ; Run editor
+      (system (format "~a ~a" editor temp-file))
+      ; Read back
+      (let ([new-text (call-with-input-file temp-file
+                        get-string-all)])
+        (delete-file temp-file)
+        ; Replace entry
+        (ee-delete-entry)
+        (ee-insert-string new-text)))))
+
+(ee-bind-key "\\C-x\\C-e" ee-edit-external)
+
+; Edit with specific editor
+(define (ee-edit-with-emacs)
+  (parameterize ([current-environment-variable "VISUAL" "emacsclient"])
+    (ee-edit-external)))
+
+(define (ee-edit-with-vim)
+  (parameterize ([current-environment-variable "VISUAL" "vim"])
+    (ee-edit-external)))</code></pre>
+        <br/>
+        <li>Completion customization:</li>
+<pre><code class="language-scheme line-numbers">; Customize tab completion behavior
+
+; Add module-specific completions
+(define (add-module-completions! module-name)
+  (let ([exports (library-exports module-name)])
+    (ee-common-identifiers
+      (append exports (ee-common-identifiers)))))
+
+; Add completions from current file
+(define (add-file-completions! filename)
+  (let ([identifiers (extract-definitions filename)])
+    (ee-common-identifiers
+      (append identifiers (ee-common-identifiers)))))
+
+(define (extract-definitions filename)
+  (call-with-input-file filename
+    (lambda (port)
+      (let loop ([defs '()])
+        (let ([form (read port)])
+          (if (eof-object? form)
+              defs
+              (loop
+                (if (and (pair? form)
+                         (memq (car form) '(define define-syntax)))
+                    (cons (if (pair? (cadr form))
+                              (caadr form)
+                              (cadr form))
+                          defs)
+                    defs))))))))
+
+; Context-aware completion (conceptual)
+(define (smart-complete)
+  (let ([context (ee-get-context)])
+    (case context
+      [(after-open-paren)
+       ; Complete with procedures only
+       (ee-complete-procedures)]
+      [(after-quote)
+       ; Complete with symbols
+       (ee-complete-symbols)]
+      [(in-string)
+       ; Complete file paths
+       (ee-complete-files)]
+      [else
+       (ee-complete)])))  ; Default</code></pre>
+        <br/>
+        <li>Expression editor initialization file:</li>
+<pre><code class="language-scheme line-numbers">; Complete .schemerc example for expression editor
+
+; ~/.schemerc or ~/.chezschemerc
+
+;; Expression Editor Configuration
+
+(when (expression-editor)
+
+  ;; ========== Basic Settings ==========
+  (ee-history-limit 2000)
+  (ee-history-file (format "~a/.chez_history" (getenv "HOME")))
+  (ee-paren-flash-delay 100)
+  (ee-auto-indent #t)
+  (ee-noisy #f)
+  (ee-default-repeat 4)
+
+  ;; ========== Common Identifiers ==========
+  (ee-common-identifiers
+    (append
+      '(; Syntax
+        define-syntax syntax-rules syntax-case
+        with-syntax quasisyntax unsyntax
+        datum->syntax syntax->datum
+        identifier? free-identifier=? bound-identifier=?
+        generate-temporaries
+
+        ; Control
+        guard raise raise-continuable
+        call/cc call/1cc call-with-values
+        dynamic-wind parameterize
+
+        ; I/O
+        call-with-input-file call-with-output-file
+        with-input-from-file with-output-to-file
+        open-input-string open-output-string
+        get-string-all get-line
+
+        ; Common utilities
+        printf fprintf format
+        pretty-print trace untrace
+        time collect
+
+        ; Records
+        define-record-type
+
+        ; Foreign
+        foreign-procedure load-shared-object
+        foreign-callable foreign-alloc foreign-free)
+      (ee-common-identifiers)))
+
+  ;; ========== Key Bindings ==========
+
+  ; Arrow keys (adjust for your terminal)
+  (ee-bind-key "\\e[A" ee-previous-history)    ; Up
+  (ee-bind-key "\\e[B" ee-next-history)        ; Down
+  (ee-bind-key "\\e[C" ee-forward-char)        ; Right
+  (ee-bind-key "\\e[D" ee-backward-char)       ; Left
+  (ee-bind-key "\\e[H" ee-beginning-of-line)   ; Home
+  (ee-bind-key "\\e[F" ee-end-of-line)         ; End
+  (ee-bind-key "\\e[3~" ee-delete-char)        ; Delete
+
+  ; Ctrl+Arrow
+  (ee-bind-key "\\e[1;5C" ee-forward-word)     ; Ctrl+Right
+  (ee-bind-key "\\e[1;5D" ee-backward-word)    ; Ctrl+Left
+
+  ;; ========== Templates ==========
+
+  ; Basic forms
+  (ee-bind-key "\\C-xd"
+    (ee-string-macro "(define )\\C-b"))
+
+  (ee-bind-key "\\C-xf"
+    (ee-string-macro "(define ()\\C-j  )\\C-p\\C-e\\C-b\\C-b"))
+
+  (ee-bind-key "\\C-xl"
+    (ee-string-macro "(lambda ()\\C-j  )\\C-p\\C-e\\C-b"))
+
+  (ee-bind-key "\\C-xL"
+    (ee-string-macro "(let ([])\\C-j  )\\C-p\\C-e\\C-b\\C-b\\C-b"))
+
+  (ee-bind-key "\\C-xL"
+    (ee-string-macro "(let* ([])\\C-j  )\\C-p\\C-e\\C-b\\C-b\\C-b"))
+
+  (ee-bind-key "\\C-xi"
+    (ee-string-macro "(if \\C-j    \\C-j    )\\C-p\\C-p\\C-e"))
+
+  (ee-bind-key "\\C-xc"
+    (ee-string-macro "(cond\\C-j  [else ])\\C-b"))
+
+  (ee-bind-key "\\C-xw"
+    (ee-string-macro "(when \\C-j  )\\C-p\\C-e"))
+
+  ; Macro templates
+  (ee-bind-key "\\C-xS"
+    (ee-string-macro "(define-syntax \\C-j  (syntax-rules ()\\C-j    [(_ ) ]))\\C-p\\C-p\\C-e"))
+
+  ; Test/debug
+  (ee-bind-key "\\C-xp"
+    (ee-string-macro "(printf \"~a~n\" )\\C-b"))
+
+  (ee-bind-key "\\C-xt"
+    (ee-string-macro "(time )\\C-b"))
+
+  (ee-bind-key "\\C-xT"
+    (ee-string-macro "(trace )\\C-b"))
+
+  ;; ========== Utility Bindings ==========
+
+  ; Duplicate line (simplified)
+  (ee-bind-key "\\C-xc"
+    (ee-compose
+      ee-beginning-of-line
+      ee-set-mark
+      ee-end-of-line
+      ee-copy-region
+      ee-end-of-line
+      ee-newline
+      ee-yank))
+
+  ;; ========== Report ==========
+  (printf "; Expression editor configured~n")
+  (printf "; History file: ~a~n" (ee-history-file))
+  (printf "; History limit: ~a~n" (ee-history-limit))
+)
+</code></pre>
+    </ul>
+    <br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
