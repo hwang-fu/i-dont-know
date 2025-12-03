@@ -154,6 +154,7 @@
         <li><a href="#scm-naming-conventions">Naming Conventions</a></li>
         <li><a href="#scm-compiler-interpreter">Interacting with Chez Scheme</a></li>
         <li><a href="#scm-command-line-options">Command Line Options</a></li>
+        <li><a href="#scm-r6rs">R6RS</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3591,6 +3592,693 @@ Unknown argument: bar</code></pre>
 </table>
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="scm-r6rs">R6RS in Chez Scheme</h3>
+<ol>
+
+    <li>What is R6RS?</li>
+    <br/>
+    <ul>
+        <li>R6RS (Revised⁶ Report on the Algorithmic Language Scheme) is a major Scheme standard ratified in 2007.</li>
+        <br/>
+        <li>Key features introduced by R6RS:</li>
+        <ul>
+            <li>Standard library system for modular code</li>
+            <li>Unicode support for source code and strings</li>
+            <li>Exception handling and condition system</li>
+            <li>Record types with procedural and syntactic layers</li>
+            <li>Bytevectors for binary data</li>
+            <li>Hash tables</li>
+            <li>Hygienic macros via <code>syntax-case</code></li>
+            <li>Full numeric tower requirement</li>
+        </ul>
+        <br/>
+        <li>Chez Scheme fully implements R6RS and its standard libraries.</li>
+    </ul>
+    <br/><br/>
+
+
+    <li>R6RS Standard Libraries</li>
+    <br/>
+    <ul>
+        <li>R6RS organizes functionality into standard libraries that can be imported as needed:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Library</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>(rnrs base (6))</code></td>
+            <td>Core language: define, lambda, if, let, etc.</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs lists (6))</code></td>
+            <td>List operations: find, filter, fold-left, etc.</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs sorting (6))</code></td>
+            <td>Sorting: list-sort, vector-sort</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs control (6))</code></td>
+            <td>Control: when, unless, do, case-lambda</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs io simple (6))</code></td>
+            <td>Simple I/O: read, write, display</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs io ports (6))</code></td>
+            <td>Port-based I/O: binary/textual ports</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs files (6))</code></td>
+            <td>File operations: file-exists?, delete-file</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs unicode (6))</code></td>
+            <td>Unicode: char-upcase, string-normalize-nfc</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs bytevectors (6))</code></td>
+            <td>Binary data: bytevector operations</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs hashtables (6))</code></td>
+            <td>Hash tables: make-hashtable, hashtable-ref</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs records syntactic (6))</code></td>
+            <td>Record definitions via define-record-type</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs records procedural (6))</code></td>
+            <td>Procedural record creation</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs records inspection (6))</code></td>
+            <td>Record introspection</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs conditions (6))</code></td>
+            <td>Condition types for exceptions</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs exceptions (6))</code></td>
+            <td>Exception handling: guard, raise</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs syntax-case (6))</code></td>
+            <td>Procedural macros</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs arithmetic fixnums (6))</code></td>
+            <td>Fixed-precision integer operations</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs arithmetic flonums (6))</code></td>
+            <td>Floating-point operations</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs arithmetic bitwise (6))</code></td>
+            <td>Bitwise operations</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs enums (6))</code></td>
+            <td>Enumeration types</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs eval (6))</code></td>
+            <td>Evaluation: eval, environment</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs mutable-pairs (6))</code></td>
+            <td>set-car!, set-cdr!</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs mutable-strings (6))</code></td>
+            <td>string-set!, string-fill!</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs programs (6))</code></td>
+            <td>command-line, exit</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs r5rs (6))</code></td>
+            <td>R5RS compatibility: delay, force, etc.</td>
+        </tr>
+        <tr>
+            <td><code>(rnrs (6))</code></td>
+            <td>Composite: exports all of the above</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>The version number <code>(6)</code> can usually be omitted:</li>
+<pre><code class="language-scheme line-numbers">; These are equivalent
+(import (rnrs base (6)))
+(import (rnrs base))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>R6RS Top-Level Programs</li>
+    <br/>
+    <ul>
+        <li>An R6RS top-level program starts with an <code>import</code> form followed by a body:</li>
+<pre><code class="language-scheme line-numbers">#!r6rs
+(import (rnrs))
+
+(define (greet name)
+  (display "Hello, ")
+  (display name)
+  (display "!")
+  (newline))
+
+(greet "World")</code></pre>
+        <br/>
+        <li>Run with the <code>--program</code> option:</li>
+<pre><code class="language-bash line-numbers">$ scheme --program hello.ss
+Hello, World!</code></pre>
+        <br/>
+        <li>Make it executable with a shebang:</li>
+<pre><code class="language-scheme line-numbers">#! /usr/bin/scheme --program
+(import (rnrs))
+
+(for-each
+  (lambda (arg)
+    (display arg)
+    (newline))
+  (cdr (command-line)))</code></pre>
+<pre><code class="language-bash line-numbers">$ chmod +x myprogram.ss
+$ ./myprogram.ss arg1 arg2
+arg1
+arg2</code></pre>
+        <br/>
+        <li>Alternative shebang using <code>env</code>:</li>
+<pre><code class="language-scheme line-numbers">#! /usr/bin/env scheme-script
+(import (rnrs))
+(display "Portable shebang!")
+(newline)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>R6RS Library Definition</li>
+    <br/>
+    <ul>
+        <li>Libraries are defined with the <code>library</code> form:</li>
+<pre><code class="language-scheme line-numbers">(library (mylib utils)
+  (export square cube average)
+  (import (rnrs))
+
+  (define (square x) (* x x))
+  (define (cube x) (* x x x))
+  (define (average x y) (/ (+ x y) 2)))</code></pre>
+        <br/>
+        <li>Save as <code>mylib/utils.sls</code> (directory structure matches library name).</li>
+        <br/>
+        <li>Use the library in a program:</li>
+<pre><code class="language-scheme line-numbers">#!r6rs
+(import (rnrs)
+        (mylib utils))
+
+(display (square 5))    ; 25
+(newline)
+(display (cube 3))      ; 27
+(newline)</code></pre>
+        <br/>
+        <li>Library with versioning:</li>
+<pre><code class="language-scheme line-numbers">(library (mylib math (1 0 0))
+  (export factorial fibonacci)
+  (import (rnrs))
+
+  (define (factorial n)
+    (if (zero? n) 1 (* n (factorial (- n 1)))))
+
+  (define (fibonacci n)
+    (if (< n 2) n
+        (+ (fibonacci (- n 1))
+           (fibonacci (- n 2))))))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Import Specifications</li>
+    <br/>
+    <ul>
+        <li>R6RS provides several ways to control imports:</li>
+        <br/>
+        <li><code>only</code> — import specific identifiers:</li>
+<pre><code class="language-scheme line-numbers">(import (only (rnrs) define lambda if))</code></pre>
+        <br/>
+        <li><code>except</code> — import all except specified:</li>
+<pre><code class="language-scheme line-numbers">(import (except (rnrs) set-car! set-cdr!))</code></pre>
+        <br/>
+        <li><code>prefix</code> — add prefix to all imports:</li>
+<pre><code class="language-scheme line-numbers">(import (prefix (rnrs lists) list:))
+
+(list:filter odd? '(1 2 3 4 5))  ; (1 3 5)</code></pre>
+        <br/>
+        <li><code>rename</code> — rename specific imports:</li>
+<pre><code class="language-scheme line-numbers">(import (rename (rnrs)
+                (display print)
+                (newline nl)))
+
+(print "Hello")
+(nl)</code></pre>
+        <br/>
+        <li>Combinations:</li>
+<pre><code class="language-scheme line-numbers">(import (prefix (only (rnrs lists) filter map) list:))
+
+(list:map square '(1 2 3))       ; (1 4 9)
+(list:filter even? '(1 2 3 4))   ; (2 4)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Export Specifications</li>
+    <br/>
+    <ul>
+        <li>Control what a library exports:</li>
+        <br/>
+        <li>Simple export:</li>
+<pre><code class="language-scheme line-numbers">(library (mylib)
+  (export public-proc another-proc)
+  (import (rnrs))
+
+  (define (public-proc x) (helper x))
+  (define (another-proc y) (* y 2))
+  (define (helper x) (+ x 1)))  ; not exported</code></pre>
+        <br/>
+        <li>Export with renaming:</li>
+<pre><code class="language-scheme line-numbers">(library (mylib)
+  (export (rename (internal-name external-name)
+                  (proc1 public-proc1)))
+  (import (rnrs))
+
+  (define (internal-name x) ...)
+  (define (proc1 x) ...))</code></pre>
+        <br/>
+        <li>Re-export from another library:</li>
+<pre><code class="language-scheme line-numbers">(library (mylib combined)
+  (export
+    ; Export from this library
+    my-func
+    ; Re-export from rnrs lists
+    (import (rnrs lists)))
+  (import (rnrs)
+          (rnrs lists))
+
+  (define (my-func x) ...))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>R6RS Records</li>
+    <br/>
+    <ul>
+        <li>R6RS provides a powerful record system with syntactic and procedural layers.</li>
+        <br/>
+        <li>Syntactic layer (most common):</li>
+<pre><code class="language-scheme line-numbers">#!r6rs
+(import (rnrs))
+
+; Define a point record
+(define-record-type point
+  (fields x y))
+
+; Create instances
+(define p1 (make-point 3 4))
+
+; Access fields
+(point-x p1)    ; 3
+(point-y p1)    ; 4
+
+; Type predicate
+(point? p1)     ; #t
+(point? 42)     ; #f</code></pre>
+        <br/>
+        <li>Mutable fields:</li>
+<pre><code class="language-scheme line-numbers">(define-record-type counter
+  (fields (mutable value)))
+
+(define c (make-counter 0))
+(counter-value c)           ; 0
+(counter-value-set! c 10)
+(counter-value c)           ; 10</code></pre>
+        <br/>
+        <li>Record inheritance:</li>
+<pre><code class="language-scheme line-numbers">(define-record-type point
+  (fields x y))
+
+(define-record-type point3d
+  (parent point)
+  (fields z))
+
+(define p (make-point3d 1 2 3))
+(point-x p)      ; 1 (inherited)
+(point-y p)      ; 2 (inherited)
+(point3d-z p)    ; 3
+(point? p)       ; #t
+(point3d? p)     ; #t</code></pre>
+        <br/>
+        <li>Custom constructor:</li>
+<pre><code class="language-scheme line-numbers">(define-record-type person
+  (fields name age)
+  (protocol
+    (lambda (new)
+      (lambda (name birth-year)
+        (new name (- 2025 birth-year))))))
+
+(define p (make-person "Alice" 1990))
+(person-name p)  ; "Alice"
+(person-age p)   ; 35</code></pre>
+        <br/>
+        <li>Nongenerative records (same type across invocations):</li>
+<pre><code class="language-scheme line-numbers">(define-record-type point
+  (nongenerative point-uid-12345)
+  (fields x y))</code></pre>
+        <br/>
+        <li>Sealed and opaque records:</li>
+<pre><code class="language-scheme line-numbers">; Sealed: cannot be inherited
+(define-record-type final-type
+  (sealed #t)
+  (fields value))
+
+; Opaque: cannot be inspected
+(define-record-type private-type
+  (opaque #t)
+  (fields secret))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>R6RS Exception Handling</li>
+    <br/>
+    <ul>
+        <li>R6RS provides <code>guard</code> for exception handling:</li>
+<pre><code class="language-scheme line-numbers">#!r6rs
+(import (rnrs))
+
+(guard (ex
+        [(error? ex)
+         (display "Error: ")
+         (display (condition-message ex))
+         (newline)]
+        [(assertion-violation? ex)
+         (display "Assertion failed!")
+         (newline)]
+        [else
+         (display "Unknown exception")
+         (newline)])
+  (assertion-violation 'test "something went wrong"))</code></pre>
+        <br/>
+        <li>Raising exceptions:</li>
+<pre><code class="language-scheme line-numbers">; Raise continuable exception
+(raise-continuable (make-warning))
+
+; Raise non-continuable exception
+(raise (make-error))
+
+; Convenience procedures
+(error 'proc-name "message" irritant1 irritant2)
+(assertion-violation 'proc-name "message" irritant)</code></pre>
+        <br/>
+        <li>Condition hierarchy (partial):</li>
+<pre><code class="language-scheme line-numbers">&condition
+├── &warning
+├── &serious
+│   ├── &error
+│   └── &violation
+│       ├── &assertion
+│       ├── &non-continuable
+│       ├── &implementation-restriction
+│       ├── &lexical
+│       ├── &syntax
+│       └── &undefined
+├── &message
+├── &irritants
+└── &who</code></pre>
+        <br/>
+        <li>Creating compound conditions:</li>
+<pre><code class="language-scheme line-numbers">(define my-condition
+  (condition
+    (make-error)
+    (make-who-condition 'my-proc)
+    (make-message-condition "Something failed")
+    (make-irritants-condition '(bad-value))))
+
+(raise my-condition)</code></pre>
+        <br/>
+        <li>Defining custom condition types:</li>
+<pre><code class="language-scheme line-numbers">(define-condition-type &my-error &error
+  make-my-error my-error?
+  (code my-error-code))
+
+(guard (ex
+        [(my-error? ex)
+         (display "My error with code: ")
+         (display (my-error-code ex))])
+  (raise (make-my-error 42)))</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>R6RS Bytevectors</li>
+    <br/>
+    <ul>
+        <li>Bytevectors are sequences of bytes for binary data:</li>
+<pre><code class="language-scheme line-numbers">#!r6rs
+(import (rnrs))
+
+; Create bytevector
+(define bv (make-bytevector 10 0))  ; 10 bytes, filled with 0
+
+; Direct creation
+(define bv2 #vu8(1 2 3 4 5))
+
+; Access bytes
+(bytevector-u8-ref bv2 0)           ; 1
+(bytevector-u8-set! bv 0 255)
+
+; Length
+(bytevector-length bv2)             ; 5</code></pre>
+        <br/>
+        <li>Multi-byte access with endianness:</li>
+<pre><code class="language-scheme line-numbers">; 16-bit access
+(bytevector-u16-ref bv 0 (endianness big))
+(bytevector-u16-set! bv 0 1000 (endianness little))
+
+; 32-bit access
+(bytevector-s32-ref bv 0 (endianness native))
+
+; 64-bit access
+(bytevector-u64-ref bv 0 (endianness big))
+
+; Floating point
+(bytevector-ieee-single-ref bv 0 (endianness native))
+(bytevector-ieee-double-set! bv 0 3.14159 (endianness big))</code></pre>
+        <br/>
+        <li>String conversion:</li>
+<pre><code class="language-scheme line-numbers">; UTF-8
+(string->utf8 "Hello")           ; #vu8(72 101 108 108 111)
+(utf8->string #vu8(72 101 108 108 111))  ; "Hello"
+
+; UTF-16
+(string->utf16 "Hello" (endianness big))
+(utf16->string bv (endianness little))
+
+; UTF-32
+(string->utf32 "Hello" (endianness native))</code></pre>
+        <br/>
+        <li>Bytevector operations:</li>
+<pre><code class="language-scheme line-numbers">; Copy
+(bytevector-copy bv)
+(bytevector-copy! src src-start dst dst-start count)
+
+; Compare
+(bytevector=? bv1 bv2)
+
+; Fill
+(bytevector-fill! bv 0)</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>R6RS Hash Tables</li>
+    <br/>
+    <ul>
+        <li>R6RS provides standard hash table operations:</li>
+<pre><code class="language-scheme line-numbers">#!r6rs
+(import (rnrs))
+
+; Create hash tables
+(define ht (make-hashtable string-hash string=?))
+(define eq-ht (make-eq-hashtable))
+(define eqv-ht (make-eqv-hashtable))
+
+; Set and get
+(hashtable-set! ht "name" "Alice")
+(hashtable-set! ht "age" 30)
+(hashtable-ref ht "name" #f)        ; "Alice"
+(hashtable-ref ht "missing" 'default) ; default
+
+; Check existence
+(hashtable-contains? ht "name")     ; #t
+
+; Delete
+(hashtable-delete! ht "age")
+
+; Size
+(hashtable-size ht)                 ; 1</code></pre>
+        <br/>
+        <li>Iteration:</li>
+<pre><code class="language-scheme line-numbers">; Get keys and values as vectors
+(hashtable-keys ht)                 ; #("name")
+(hashtable-entries ht)              ; #("name"), #("Alice")
+
+; Process all entries
+(let-values ([(keys vals) (hashtable-entries ht)])
+  (vector-for-each
+    (lambda (k v)
+      (display k) (display ": ") (display v) (newline))
+    keys vals))</code></pre>
+        <br/>
+        <li>Update operations:</li>
+<pre><code class="language-scheme line-numbers">; Update existing or insert
+(hashtable-update! ht "count"
+  (lambda (v) (+ v 1))
+  0)  ; default if not present
+
+; Clear all
+(hashtable-clear! ht)
+
+; Copy
+(hashtable-copy ht)
+(hashtable-copy ht #t)  ; mutable copy</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Chez Scheme vs R6RS Mode</li>
+    <br/>
+    <ul>
+        <li>Chez Scheme extends R6RS with additional features. Use <code>#!r6rs</code> for strict R6RS mode:</li>
+<pre><code class="language-scheme line-numbers">; File starts in R6RS mode
+#!r6rs
+(import (rnrs))
+
+; Only R6RS syntax allowed here
+(define x 10)</code></pre>
+        <br/>
+        <li>Use <code>#!chezscheme</code> to enable Chez extensions:</li>
+<pre><code class="language-scheme line-numbers">#!chezscheme
+(import (chezscheme))
+
+; Chez-specific features available
+(printf "~a~n" "Hello")
+(define-syntax my-macro
+  (syntax-rules ()
+    [(_ x) x]))  ; fenders allowed</code></pre>
+        <br/>
+        <li>The <code>(chezscheme)</code> library provides all R6RS bindings plus Chez extensions:</li>
+<pre><code class="language-scheme line-numbers">; (rnrs) is strict R6RS
+; (chezscheme) extends R6RS
+
+; Some differences:
+; - (chezscheme) syntax-rules allows fenders
+; - (chezscheme) current-input-port accepts optional argument
+; - (chezscheme) includes additional procedures</code></pre>
+        <br/>
+        <li>Chez also provides R6RS bindings with <code>rnrs:</code> prefix:</li>
+<pre><code class="language-scheme line-numbers">(import (chezscheme))
+
+; Both available:
+(current-input-port)       ; Chez version (can set port)
+(rnrs:current-input-port)  ; Strict R6RS version</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Compiling R6RS Programs</li>
+    <br/>
+    <ul>
+        <li>Compile libraries:</li>
+<pre><code class="language-bash line-numbers"># Compile a library
+$ echo '(compile-library "mylib.sls")' | scheme
+
+# Compile with auto-compilation of dependencies
+$ scheme --compile-imported-libraries --program main.ss</code></pre>
+        <br/>
+        <li>Compile top-level programs:</li>
+<pre><code class="language-bash line-numbers"># compile-program preserves shebang line
+$ echo '(compile-program "myapp.ss")' | scheme
+
+# Result: myapp.so (compiled program)</code></pre>
+        <br/>
+        <li>Programmatic compilation:</li>
+<pre><code class="language-scheme line-numbers">; In REPL or build script
+(compile-imported-libraries #t)  ; Auto-compile imports
+(compile-library "mylib.sls")
+(compile-program "main.ss")</code></pre>
+        <br/>
+        <li>Library search paths:</li>
+<pre><code class="language-bash line-numbers"># Set library directories
+$ scheme --libdirs ./src:./lib --program main.ss
+
+# Set via environment
+$ export CHEZSCHEMELIBDIRS="./src:./lib"
+$ scheme --program main.ss</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Portability Tips</li>
+    <br/>
+    <ul>
+        <li>R6RS does not guarantee argument evaluation order:</li>
+<pre><code class="language-scheme line-numbers">; Don't rely on left-to-right evaluation
+(define counter 0)
+(define (inc!) (set! counter (+ counter 1)) counter)
+
+; Result is implementation-dependent!
+(list (inc!) (inc!) (inc!))  ; Could be (1 2 3) or (3 2 1) etc.</code></pre>
+        <br/>
+        <li>Fixnum range varies by implementation:</li>
+<pre><code class="language-scheme line-numbers">; Minimum guaranteed: 24 bits (-8388608 to 8388607)
+; Chez Scheme typically: 61 bits on 64-bit systems
+
+; For portable code, use generic arithmetic for large numbers
+(+ x y)  ; Always safe
+(fx+ x y)  ; May overflow on small fixnum implementations</code></pre>
+        <br/>
+        <li>Specify endianness explicitly for binary data:</li>
+<pre><code class="language-scheme line-numbers">; Don't use (endianness native) for files/network
+(bytevector-u32-set! bv 0 value (endianness big))  ; Portable</code></pre>
+        <br/>
+        <li>Use <code>#!r6rs</code> at the start of portable code to ensure strict compliance.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
