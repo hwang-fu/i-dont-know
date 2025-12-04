@@ -2322,7 +2322,7 @@ send-email-notification</code></pre>
 ; Internal helper
 (define (%validate-host host)
   (and (string? host)
-       (> (string-length host) 0)))
+       (&gt; (string-length host) 0)))
 
 ; Usage
 (define my-conn (make-connection "localhost" 8080))
@@ -2346,37 +2346,186 @@ send-email-notification</code></pre>
     <li>Starting Chez Scheme</li>
     <br/>
     <ul>
-        <li>Chez Scheme provides both an interactive REPL and a compiler.</li>
-        <br/>
-        <li><b>Starting the REPL:</b></li>
-<pre><code class="language-bash line-numbers"># Start interactive session
-$ scheme
+        <li>Interactive REPL and execution modes:</li>
+<pre><code class="language-scheme line-numbers">; Chez Scheme provides multiple entry points:
+; - scheme: Full compiler and interpreter
+; - petite: Interpreter-only (no compiler)
+; - scheme-script: Script execution mode
 
-# Start with specific options
-$ scheme --script myscript.scm
-$ scheme --program myprogram.ss</code></pre>
+; Each mode has different capabilities and use cases</code></pre>
         <br/>
-        <li><b>Basic interaction:</b></li>
-<pre><code class="language-scheme line-numbers">> (+ 2 3)
+        <li>Starting the REPL:</li>
+<pre><code class="language-bash line-numbers"># Start interactive session (full Chez)
+$ scheme
+Chez Scheme Version 10.0.0
+Copyright 1984-2024 Cisco Systems, Inc.
+
+&gt;
+
+# Start without greeting
+$ scheme -q
+&gt;
+
+# Start interpreter-only version
+$ petite
+Petite Chez Scheme Version 10.0.0
+Copyright 1984-2024 Cisco Systems, Inc.
+
+&gt;
+
+# Display version and exit
+$ scheme --version
+10.0.0
+
+# Display help
+$ scheme --help
+</code></pre>
+        <br/>
+        <li>Basic REPL interaction:</li>
+<pre><code class="language-scheme line-numbers">; Arithmetic
+&gt; (+ 2 3)
 5
 
-> (define x 10)
+&gt; (* 7 8)
+56
 
-> x
+&gt; (/ 22 7)
+22/7
+
+; String operations
+&gt; (string-append "Hello, " "World!")
+"Hello, World!"
+
+; List operations
+&gt; (cons 1 '(2 3))
+(1 2 3)
+
+&gt; (car '(a b c))
+a
+
+; Define variables
+&gt; (define x 10)
+&gt; x
 10
 
-> (string-append "Hello, " "World!")
-"Hello, World!"</code></pre>
+&gt; (define name "Alice")
+&gt; name
+"Alice"
+
+; Define procedures
+&gt; (define (square x)
+    (* x x))
+&gt; (square 5)
+25
+
+; Lambda expressions
+&gt; ((lambda (x y) (+ x y)) 3 4)
+7
+</code></pre>
         <br/>
-        <li><b>Exiting the REPL:</b></li>
-<pre><code class="language-scheme line-numbers">; Method 1: Use exit procedure
-> (exit)
+        <li>Multi-line input:</li>
+<pre><code class="language-scheme line-numbers">; REPL automatically handles incomplete expressions
+&gt; (define (factorial n)
+    (if (= n 0)
+        1
+        (* n (factorial (- n 1)))))
 
-; Method 2: Ctrl+D (Unix/Linux/Mac)
-> ^D
+; Prompt waits for closing parentheses
+&gt; (let ([x 10]
+        [y 20])
+    (+ x y))
+30
 
-; Method 3: Ctrl+Z then Enter (Windows)
-> ^Z</code></pre>
+; Nested structures
+&gt; (define person
+    '((name . "John")
+      (age . 30)
+      (city . "Boston")))
+&gt; (assoc 'age person)
+(age . 30)
+</code></pre>
+        <br/>
+        <li>Exiting the REPL:</li>
+<pre><code class="language-scheme line-numbers">; Method 1: exit procedure
+&gt; (exit)
+
+; Method 2: exit with status code
+&gt; (exit 0)      ; Success
+&gt; (exit 1)      ; Error
+
+; Method 3: Ctrl+D (Unix/Linux/macOS)
+&gt; ^D
+
+; Method 4: Ctrl+Z then Enter (Windows)
+&gt; ^Z
+&lt;Enter&gt;
+
+; Emergency exit: Ctrl+C (may leave cleanup incomplete)
+&gt; ^C
+</code></pre>
+        <br/>
+        <li>REPL configuration:</li>
+<pre><code class="language-scheme line-numbers">; Check current settings
+&gt; (print-level)
+#f                          ; Unlimited depth
+
+&gt; (print-length)
+#f                          ; Unlimited length
+
+; Set print depth
+&gt; (print-level 3)
+&gt; '(a (b (c (d (e)))))
+(a (b (c ...)))             ; Truncated at level 3
+
+; Set print length
+&gt; (print-length 5)
+&gt; (iota 20)
+(0 1 2 3 4 ...)             ; Truncated at 5 elements
+
+; Reset to unlimited
+&gt; (print-level #f)
+&gt; (print-length #f)
+
+; Control greeting display
+&gt; (suppress-greeting #t)   ; For next startup
+
+; Waiter prompt customization
+&gt; (waiter-prompt-string)
+"&gt; "
+&gt; (waiter-prompt-string "chez&gt; ")
+&gt;
+chez&gt;
+</code></pre>
+        <br/>
+        <li>Startup files and initialization:</li>
+<pre><code class="language-scheme line-numbers">; Chez Scheme looks for startup files in order:
+; 1. ./.schemerc               (current directory)
+; 2. ~/.schemerc               (home directory)
+; 3. ~/.chezscheme.rc          (alternative name)
+
+; Example ~/.schemerc file:
+(case-sensitive #t)
+(optimize-level 2)
+(print-gensym #t)
+
+; Personal library paths
+(library-directories
+  (cons "~/scheme/lib" (library-directories)))
+
+; Load utility functions
+(when (file-exists? "~/scheme/utils.ss")
+  (load "~/scheme/utils.ss"))
+
+; Custom REPL prompt
+(waiter-prompt-string "λ ")
+
+; Suppress greeting for cleaner startup
+(suppress-greeting #t)
+
+; Print startup message
+(printf "; Chez Scheme ~a~%" (scheme-version))
+(printf "; Ready~%")
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -2384,72 +2533,312 @@ $ scheme --program myprogram.ss</code></pre>
     <li>Loading and Compiling Files</li>
     <br/>
     <ul>
-        <li>Chez Scheme can load source files or compiled object files.</li>
-        <br/>
-        <li><b>Loading source files with load:</b></li>
-<pre><code class="language-scheme line-numbers">; Load a Scheme source file
-> (load "myfile.ss")
+        <li>Loading source files:</li>
+<pre><code class="language-scheme line-numbers">; Load evaluates all expressions in a file
+&gt; (load "myfile.ss")
 
-; Load with .scm extension
-> (load "library.scm")
+; Load with different extensions
+&gt; (load "library.scm")
+&gt; (load "utils.sls")
 
 ; Load from specific path
-> (load "/home/user/code/utils.ss")
+&gt; (load "/home/user/code/helpers.ss")
 
 ; Load relative to current directory
-> (load "./helpers/math.ss")</code></pre>
+&gt; (load "./lib/math.ss")
+&gt; (load "../common/io.ss")
+
+; Load returns unspecified value
+&gt; (load "config.ss")
+; File loaded, configuration set
+
+; Check if file exists before loading
+&gt; (when (file-exists? "optional.ss")
+    (load "optional.ss"))
+</code></pre>
         <br/>
-        <li><b>What load does:</b></li>
-        <ul>
-            <li>Reads and evaluates all expressions in the file</li>
-            <li>Definitions become available immediately</li>
-            <li>Side effects (like <code>display</code>) happen during load</li>
-        </ul>
-        <br/>
-        <li><b>Example file to load:</b></li>
+        <li>What happens during load:</li>
+        <svg width="600" height="280" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Load Process Flow</text>
+
+            <!-- Source file -->
+            <rect x="30" y="50" width="120" height="180" fill="#e6e6ff" stroke="#6600cc" stroke-width="2" rx="5"/>
+            <text x="90" y="70" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Source File</text>
+            <text x="90" y="90" text-anchor="middle" font-family="Times New Roman" font-size="9">(define x 10)</text>
+            <text x="90" y="110" text-anchor="middle" font-family="Times New Roman" font-size="9">(define (f y) ...)</text>
+            <text x="90" y="130" text-anchor="middle" font-family="Times New Roman" font-size="9">(display "Hi")</text>
+            <text x="90" y="150" text-anchor="middle" font-family="Times New Roman" font-size="9">(define z 20)</text>
+            <text x="90" y="210" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">myfile.ss</text>
+
+            <!-- Arrow to load -->
+            <line x1="150" y1="140" x2="190" y2="140" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="170" y="130" text-anchor="middle" font-family="Times New Roman" font-size="9">(load ...)</text>
+
+            <!-- Load process -->
+            <rect x="200" y="60" width="140" height="160" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="270" y="80" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Load Process</text>
+
+            <text x="220" y="105" font-family="Times New Roman" font-size="9">1. Read expression</text>
+            <text x="220" y="125" font-family="Times New Roman" font-size="9">2. Evaluate</text>
+            <text x="220" y="145" font-family="Times New Roman" font-size="9">3. Execute effects</text>
+            <text x="220" y="165" font-family="Times New Roman" font-size="9">4. Store definitions</text>
+            <text x="220" y="185" font-family="Times New Roman" font-size="9">5. Repeat for next</text>
+            <text x="220" y="205" font-family="Times New Roman" font-size="9">6. Return when done</text>
+
+            <!-- Arrow to environment -->
+            <line x1="340" y1="140" x2="380" y2="140" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+            <!-- Environment -->
+            <rect x="390" y="60" width="180" height="160" fill="#ffffcc" stroke="#999900" stroke-width="2" rx="5"/>
+            <text x="480" y="80" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Environment State</text>
+
+            <rect x="405" y="95" width="150" height="25" fill="#fff" stroke="#999" stroke-width="1" rx="2"/>
+            <text x="415" y="112" font-family="Times New Roman" font-size="9">x → 10</text>
+
+            <rect x="405" y="125" width="150" height="25" fill="#fff" stroke="#999" stroke-width="1" rx="2"/>
+            <text x="415" y="142" font-family="Times New Roman" font-size="9">(f) → #&lt;procedure&gt;</text>
+
+            <rect x="405" y="155" width="150" height="25" fill="#fff" stroke="#999" stroke-width="1" rx="2"/>
+            <text x="415" y="172" font-family="Times New Roman" font-size="9">z → 20</text>
+
+            <text x="480" y="200" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">+ side effects executed</text>
+            <text x="480" y="215" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">("Hi" was displayed)</text>
+
+            <!-- Note -->
+            <rect x="30" y="245" width="540" height="25" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="262" text-anchor="middle" font-family="Times New Roman" font-size="10">Load is sequential: each expression is read and evaluated before the next</text>
+        </svg>
+        <br/><br/>
+        <li>Example file to load:</li>
 <pre><code class="language-scheme line-numbers">; File: math-utils.ss
+(printf "Loading math utilities...~%")
+
 (define (square x)
   (* x x))
 
 (define (cube x)
   (* x x x))
 
-(display "Math utilities loaded")
-(newline)</code></pre>
-<pre><code class="language-scheme line-numbers">; In REPL
-> (load "math-utils.ss")
-Math utilities loaded
+(define (hypotenuse a b)
+  (sqrt (+ (square a) (square b))))
 
-> (square 5)
+(define pi 3.141592653589793)
+
+(define (circle-area r)
+  (* pi (square r)))
+
+(printf "Math utilities loaded.~%")
+(printf "Available: square, cube, hypotenuse, circle-area~%")
+</code></pre>
+<pre><code class="language-scheme line-numbers">; Loading the file in REPL
+&gt; (load "math-utils.ss")
+Loading math utilities...
+Math utilities loaded.
+Available: square, cube, hypotenuse, circle-area
+
+&gt; (square 5)
 25
 
-> (cube 3)
-27</code></pre>
+&gt; (cube 3)
+27
+
+&gt; (hypotenuse 3 4)
+5.0
+
+&gt; (circle-area 10)
+314.1592653589793
+
+&gt; pi
+3.141592653589793
+</code></pre>
         <br/>
-        <li><b>Compiling files:</b></li>
-<pre><code class="language-scheme line-numbers">; Compile a source file to object file
-> (compile-file "myfile.ss")
+        <li>Compiling files:</li>
+<pre><code class="language-scheme line-numbers">; compile-file compiles source to object file
+&gt; (compile-file "myfile.ss")
 
-; This creates myfile.so (compiled object)</code></pre>
+; Creates myfile.so (compiled object)
+; Compilation uses current parameter settings
+
+; Compile with specific options
+&gt; (parameterize ([optimize-level 3])
+    (compile-file "myfile.ss"))
+
+; Check if compilation is needed
+&gt; (define (compile-if-needed source)
+    (let* ([source-file source]
+           [object-file (path-replace-extension source ".so")])
+      (when (or (not (file-exists? object-file))
+                (file-modification-time&gt; source-file object-file))
+        (printf "Compiling ~a...~%" source)
+        (compile-file source))))
+
+&gt; (compile-if-needed "myfile.ss")
+Compiling myfile.ss...
+
+; Compile multiple files
+&gt; (for-each compile-file
+    '("module1.ss" "module2.ss" "module3.ss"))
+
+; Compile with error handling
+&gt; (guard (ex [else
+              (printf "Compilation failed: ~a~%" ex)
+              #f])
+    (compile-file "problematic.ss"))
+</code></pre>
         <br/>
-        <li><b>Loading compiled files:</b></li>
-<pre><code class="language-scheme line-numbers">; Load compiled object (faster)
-> (load "myfile.so")
+        <li>Loading compiled files:</li>
+<pre><code class="language-scheme line-numbers">; Load compiled object file directly
+&gt; (load "myfile.so")
 
-; Chez automatically uses .so if available
-> (load "myfile")  ; Loads myfile.so if it exists and is newer</code></pre>
+; load automatically prefers .so if available and newer
+&gt; (load "myfile")
+; Loads myfile.so if it exists and is newer than myfile.ss
+
+; Force source load even if .so exists
+&gt; (load "myfile.ss")
+
+; Check which file would be loaded
+&gt; (define (which-file-loads? base)
+    (let ([source (string-append base ".ss")]
+          [object (string-append base ".so")])
+      (cond
+        [(not (file-exists? source)) object]
+        [(not (file-exists? object)) source]
+        [(file-modification-time&gt; object source) object]
+        [else source])))
+
+&gt; (which-file-loads? "myfile")
+"myfile.so"
+</code></pre>
         <br/>
-        <li><b>Compilation workflow:</b></li>
-<pre><code class="language-bash line-numbers"># From command line
-$ echo '(compile-file "myfile.ss")' | scheme
+        <li>Compile-time vs load-time behavior:</li>
+<pre><code class="language-scheme line-numbers">; File: example.ss
 
-# Or in REPL
-> (compile-file "myfile.ss")
-> (exit)
+; This runs at compile-time AND load-time
+(define-syntax compile-time-info
+  (lambda (x)
+    (printf "Compiling at: ~a~%" (current-date))
+    #'(begin)))
 
-# Then load the compiled version
+; This runs at load-time only
+(printf "Loading at: ~a~%" (current-date))
+
+(define (greet)
+  (printf "Hello!~%"))
+
+; Behavior:
+; When compiling (compile-file "example.ss"):
+;   - Prints "Compiling at: ..."
+;   - Does NOT print "Loading at: ..."
+;   - Does NOT execute (greet)
+
+; When loading (load "example.so"):
+;   - Does NOT print "Compiling at: ..."
+;   - Prints "Loading at: ..."
+;   - Defines greet procedure
+;   - Does NOT execute (greet)
+
+; When loading source (load "example.ss"):
+;   - Prints "Compiling at: ..." (compile on fly)
+;   - Prints "Loading at: ..."
+;   - Defines greet procedure
+</code></pre>
+        <br/>
+        <li>Compilation workflow:</li>
+<pre><code class="language-bash line-numbers"># Method 1: From REPL
 $ scheme
-> (load "myfile.so")</code></pre>
+&gt; (compile-file "myfile.ss")
+&gt; (exit)
+
+# Method 2: One-line compilation
+$ echo '(compile-file "myfile.ss")' | scheme -q
+
+# Method 3: Batch compile script
+$ cat &gt; compile-all.ss &lt;&lt;'EOF'
+(for-each compile-file
+  '("module1.ss"
+    "module2.ss"
+    "module3.ss"))
+EOF
+$ scheme --script compile-all.ss
+
+# Method 4: Makefile integration
+# In Makefile:
+%.so: %.ss
+	echo '(compile-file "$&lt;")' | scheme -q
+
+# Method 5: Using scheme command directly
+$ scheme --eval '(compile-file "myfile.ss")' --eval '(exit)'
+</code></pre>
+        <br/>
+        <li>Compilation best practices:</li>
+<pre><code class="language-scheme line-numbers">; Always compile with consistent settings
+
+; Development compilation
+(define (compile-dev file)
+  (parameterize ([optimize-level 1]
+                 [debug-level 3]
+                 [generate-inspector-information #t])
+    (compile-file file)))
+
+; Production compilation
+(define (compile-prod file)
+  (parameterize ([optimize-level 3]
+                 [debug-level 0]
+                 [generate-inspector-information #f])
+    (compile-file file)))
+
+; Compile project with dependencies
+(define (compile-project)
+  ; Compile in dependency order
+  (compile-prod "utils.ss")
+  (compile-prod "data-structures.ss")
+  (compile-prod "algorithms.ss")
+  (compile-prod "main.ss"))
+
+; Clean compiled files
+(define (clean-compiled)
+  (for-each
+    (lambda (file)
+      (when (file-exists? file)
+        (delete-file file)
+        (printf "Deleted ~a~%" file)))
+    (directory-list "." "*.so")))
+</code></pre>
+        <br/>
+        <li>Load vs revisit vs visit:</li>
+<pre><code class="language-scheme line-numbers">; load: Read and evaluate all expressions
+(load "file.ss")                ; Interprets or compiles+runs
+
+; revisit: Load run-time code from compiled library
+(revisit "library.so")          ; Library runtime only
+
+; visit: Load compile-time code from compiled library
+(visit "library.so")            ; Library macros only
+
+; Typical usage (handled automatically by import):
+(import (mylib))
+; Equivalent to:
+;   (visit "mylib.so")    ; Load compile-time
+;   (revisit "mylib.so")  ; Load run-time
+
+; Manual control for advanced cases:
+; Compile-time only (for macro definitions)
+(visit "macros.so")
+
+; Run-time only (for procedure definitions)
+(revisit "procedures.so")
+
+; Both (normal case)
+(load "complete.so")
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -2457,40 +2846,132 @@ $ scheme
     <li>Command-Line Usage</li>
     <br/>
     <ul>
-        <li>Chez Scheme supports various command-line options for different use cases.</li>
+        <li>Basic command-line modes:</li>
+    <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Mode</th>
+            <th>Command</th>
+            <th>Behavior</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Interactive</td>
+            <td><code>scheme</code></td>
+            <td>Start REPL</td>
+        </tr>
+        <tr>
+            <td>Script</td>
+            <td><code>scheme --script file.ss</code></td>
+            <td>Run as script, exit after</td>
+        </tr>
+        <tr>
+            <td>Program</td>
+            <td><code>scheme --program file.ss</code></td>
+            <td>Run as R6RS program, exit after</td>
+        </tr>
+        <tr>
+            <td>Eval</td>
+            <td><code>scheme --eval 'expr'</code></td>
+            <td>Evaluate expression, continue REPL</td>
+        </tr>
+        <tr>
+            <td>Load</td>
+            <td><code>scheme file.ss</code></td>
+            <td>Load file, then start REPL</td>
+        </tr>
+    </tbody>
+</table>
         <br/>
-        <li><b>Running a script:</b></li>
+        <li>Script execution:</li>
 <pre><code class="language-bash line-numbers"># Execute script and exit
 $ scheme --script myscript.ss
 
-# With arguments
-$ scheme --script myscript.ss arg1 arg2 arg3</code></pre>
+# With command-line arguments
+$ scheme --script myscript.ss arg1 arg2 arg3
+
+# Script receives arguments via command-line
+# (command-line) returns ("myscript.ss" "arg1" "arg2" "arg3")
+</code></pre>
+<pre><code class="language-scheme line-numbers">; File: greet.ss
+#!/usr/bin/env scheme --script
+(import (chezscheme))
+
+(define args (cdr (command-line)))
+
+(if (null? args)
+    (printf "Usage: greet.ss &lt;name&gt; ...~%")
+    (for-each
+      (lambda (name)
+        (printf "Hello, ~a!~%" name))
+      args))
+</code></pre>
+<pre><code class="language-bash line-numbers">$ chmod +x greet.ss
+$ ./greet.ss
+Usage: greet.ss &lt;name&gt; ...
+
+$ ./greet.ss Alice Bob Charlie
+Hello, Alice!
+Hello, Bob!
+Hello, Charlie!
+</code></pre>
         <br/>
-        <li><b>Running a program:</b></li>
+        <li>Program execution:</li>
 <pre><code class="language-bash line-numbers"># Run as R6RS program
 $ scheme --program myprogram.ss
 
-# Programs must start with library/import declarations
-$ scheme --program myprogram.ss arg1 arg2</code></pre>
-        <br/>
-        <li><b>Evaluating expressions:</b></li>
-<pre><code class="language-bash line-numbers"># Evaluate expression and exit
-$ scheme --eval '(display "Hello")' --eval '(newline)'
+# With arguments
+$ scheme --program myprogram.ss --verbose --count 10
+</code></pre>
+<pre><code class="language-scheme line-numbers">; File: myprogram.ss
+#!r6rs
+(import (rnrs)
+        (chezscheme))
 
-# Combine multiple expressions
-$ scheme --eval '(+ 2 3)' --eval '(* 4 5)'</code></pre>
+; R6RS programs must start with import form
+
+(define (main)
+  (let ([args (cdr (command-line))])
+    (for-each
+      (lambda (arg)
+        (cond
+          [(string=? arg "--verbose")
+           (display "Verbose mode enabled\n")]
+          [(string=? arg "--help")
+           (display "Help requested\n")]
+          [else
+           (fprintf (current-output-port)
+                    "Processing: ~a~%" arg)]))
+      args)))
+
+(main)
+</code></pre>
         <br/>
-        <li><b>Loading files on startup:</b></li>
+        <li>Loading files on startup:</li>
 <pre><code class="language-bash line-numbers"># Load file then start REPL
 $ scheme myfile.ss
+; myfile.ss is loaded
+&gt;                              # Can use definitions from myfile.ss
 
 # Load multiple files
 $ scheme file1.ss file2.ss file3.ss
+; All three files loaded
+&gt;
 
 # Load and run expression
-$ scheme myfile.ss --eval '(main)'</code></pre>
+$ scheme myfile.ss --eval '(main)'
+; Load file and call main procedure
+
+# Load compiled file
+$ scheme myfile.so
+; Load compiled version (faster)
+&gt;
+</code></pre>
         <br/>
-        <li><b>Common command-line options:</b></li>
+        <li>Complete command-line options:</li>
+        <br/>
 <table>
     <thead>
         <tr>
@@ -2501,24 +2982,54 @@ $ scheme myfile.ss --eval '(main)'</code></pre>
     </thead>
     <tbody>
         <tr>
+            <td><code>-q, --quiet</code></td>
+            <td>Suppress greeting message</td>
+            <td><code>scheme -q</code></td>
+        </tr>
+        <tr>
             <td><code>--script file</code></td>
-            <td>Run script and exit</td>
-            <td><code>scheme --script test.ss</code></td>
+            <td>Run file as script, exit when done</td>
+            <td><code>scheme --script app.ss</code></td>
         </tr>
         <tr>
             <td><code>--program file</code></td>
-            <td>Run R6RS program and exit</td>
+            <td>Run R6RS program, exit when done</td>
             <td><code>scheme --program app.ss</code></td>
         </tr>
         <tr>
-            <td><code>--eval expr</code></td>
-            <td>Evaluate expression</td>
-            <td><code>scheme --eval '(+ 1 2)'</code></td>
+            <td><code>--libdirs dirs</code></td>
+            <td>Set library directories (: separated)</td>
+            <td><code>scheme --libdirs lib:vendor</code></td>
         </tr>
         <tr>
-            <td><code>-q</code></td>
-            <td>Quiet mode (no banner)</td>
-            <td><code>scheme -q</code></td>
+            <td><code>--libexts exts</code></td>
+            <td>Set library extensions</td>
+            <td><code>scheme --libexts .ss:.sls</code></td>
+        </tr>
+        <tr>
+            <td><code>--compile-imported-libraries</code></td>
+            <td>Compile imported libraries automatically</td>
+            <td><code>scheme --compile-imported-libraries</code></td>
+        </tr>
+        <tr>
+            <td><code>--import-notify</code></td>
+            <td>Print imports as they occur</td>
+            <td><code>scheme --import-notify</code></td>
+        </tr>
+        <tr>
+            <td><code>--optimize-level n</code></td>
+            <td>Set optimization level (0-3)</td>
+            <td><code>scheme --optimize-level 3</code></td>
+        </tr>
+        <tr>
+            <td><code>--debug-on-exception</code></td>
+            <td>Enter debugger on exception</td>
+            <td><code>scheme --debug-on-exception</code></td>
+        </tr>
+        <tr>
+            <td><code>--eedisable</code></td>
+            <td>Disable expression editor</td>
+            <td><code>scheme --eedisable</code></td>
         </tr>
         <tr>
             <td><code>--version</code></td>
@@ -2527,131 +3038,465 @@ $ scheme myfile.ss --eval '(main)'</code></pre>
         </tr>
         <tr>
             <td><code>--help</code></td>
-            <td>Display help message</td>
+            <td>Display help and exit</td>
             <td><code>scheme --help</code></td>
         </tr>
     </tbody>
 </table>
         <br/>
-        <li><b>Example script file:</b></li>
+        <li>Executable script with shebang:</li>
 <pre><code class="language-scheme line-numbers">#!/usr/bin/env scheme --script
-; File: hello.ss
+; File: calculator.ss
+; Make executable with: chmod +x calculator.ss
 
-(display "Hello from Chez Scheme!")
-(newline)
+(import (chezscheme))
 
-; Access command-line arguments
-(display "Arguments: ")
-(display (command-line))
-(newline)</code></pre>
-<pre><code class="language-bash line-numbers"># Make executable
-$ chmod +x hello.ss
+(define (usage)
+  (display "Usage: calculator.ss &lt;operation&gt; &lt;num1&gt; &lt;num2&gt;\n")
+  (display "Operations: add, sub, mul, div\n")
+  (exit 1))
 
-# Run directly
-$ ./hello.ss arg1 arg2
-Hello from Chez Scheme!
-Arguments: ("./hello.ss" "arg1" "arg2")</code></pre>
+(define (calculate op a b)
+  (case (string-&gt;symbol op)
+    [(add) (+ a b)]
+    [(sub) (- a b)]
+    [(mul) (* a b)]
+    [(div) (if (zero? b)
+               (begin
+                 (display "Error: Division by zero\n")
+                 (exit 1))
+               (/ a b))]
+    [else
+     (display "Unknown operation\n")
+     (usage)]))
+
+(let ([args (cdr (command-line))])
+  (if (not (= (length args) 3))
+      (usage)
+      (let ([op (car args)]
+            [a (string-&gt;number (cadr args))]
+            [b (string-&gt;number (caddr args))])
+        (if (and a b)
+            (printf "Result: ~a~%" (calculate op a b))
+            (begin
+              (display "Error: Invalid numbers\n")
+              (exit 1))))))
+</code></pre>
+<pre><code class="language-bash line-numbers">$ chmod +x calculator.ss
+
+$ ./calculator.ss add 10 20
+Result: 30
+
+$ ./calculator.ss mul 7 8
+Result: 56
+
+$ ./calculator.ss div 22 7
+Result: 22/7
+
+$ ./calculator.ss
+Usage: calculator.ss &lt;operation&gt; &lt;num1&gt; &lt;num2&gt;
+Operations: add, sub, mul, div
+</code></pre>
+        <br/>
+        <li>Complex command-line example:</li>
+<pre><code class="language-bash line-numbers"># Set library paths, load config, compile imports, run program
+$ scheme \
+    --libdirs lib:vendor:~/.scheme/lib \
+    --compile-imported-libraries \
+    --optimize-level 3 \
+    --eval '(load "config.ss")' \
+    --program main.ss \
+    --verbose \
+    input.txt
+
+# Debug mode with notifications
+$ scheme \
+    --debug-on-exception \
+    --import-notify \
+    --eval '(debug-level 3)' \
+    --script test.ss
+
+# Production mode (quiet, optimized)
+$ scheme -q \
+    --optimize-level 3 \
+    --program app.ss \
+    --port 8080 \
+    --workers 4
+</code></pre>
     </ul>
     <br/><br/>
 
 
-    <li>REPL Special Commands and Features</li>
+    <li>REPL Features and Commands</li>
     <br/>
     <ul>
-        <li>The REPL provides special commands for development and debugging.</li>
-        <br/>
-        <li><b>Inspecting values:</b></li>
-<pre><code class="language-scheme line-numbers">; Display value with details
-> (define lst '(1 2 3))
-> lst
+        <li>Inspecting values:</li>
+<pre><code class="language-scheme line-numbers">; Display simple values
+&gt; 42
+42
+
+&gt; "hello"
+"hello"
+
+&gt; '(1 2 3)
 (1 2 3)
 
-; Inspect procedure
-> car
+; Inspect procedures
+&gt; car
 #&lt;procedure car&gt;
 
-; Get procedure information
-> (procedure-arity car)
-#&lt;arity (1)&gt;</code></pre>
-        <br/>
-        <li><b>Getting help and documentation:</b></li>
-<pre><code class="language-scheme line-numbers">; Load help system (if available)
-> (load "help.ss")
+&gt; (lambda (x) (* x 2))
+#&lt;procedure&gt;
 
-; Describe a procedure
-> (describe '+)
-; Shows documentation for +
+; Inspect arity
+&gt; (procedure-arity car)
+#&lt;arity (1)&gt;
 
-; Apropos - search for procedures
-> (apropos "list")
-; Shows all procedures with "list" in name</code></pre>
+&gt; (procedure-arity +)
+#&lt;arity (n)&gt;                   ; Variable arity
+
+; Type checking
+&gt; (procedure? car)
+#t
+
+&gt; (procedure? 42)
+#f
+
+; Get procedure name (if available)
+&gt; (procedure-name car)
+car
+
+; Inspect records/structures
+&gt; (define-record-type point (fields x y))
+&gt; (define p (make-point 10 20))
+&gt; p
+#[point x:10 y:20]
+
+; Pretty-print for complex structures
+&gt; (pretty-print
+    '((name . "John")
+      (address . ((street . "Main St")
+                  (city . "Boston")
+                  (zip . 02101)))))
+((name . "John")
+ (address
+  (street . "Main St")
+  (city . "Boston")
+  (zip . 02101)))
+</code></pre>
         <br/>
-        <li><b>Compiler and runtime information:</b></li>
-<pre><code class="language-scheme line-numbers">; Check Scheme version
-> (scheme-version)
+        <li>Getting help and documentation:</li>
+<pre><code class="language-scheme line-numbers">; Display procedure information
+&gt; (describe '+)
++: procedure
+  (+ number ...)
+  Returns the sum of the arguments.
+
+; Apropos - search for procedures by name pattern
+&gt; (apropos "list")
+list
+list?
+list-ref
+list-tail
+list-head
+list-copy
+; ... and more
+
+; Search in specific library
+&gt; (apropos "fold" 'rnrs)
+fold-left
+fold-right
+
+; Help system (if loaded)
+&gt; (help 'map)
+map: procedure
+  (map procedure list1 list2 ...)
+  Applies procedure element-wise to the lists.
+
+; Inspect available bindings
+&gt; (environment-bindings (interaction-environment))
+; Shows all defined names
+
+; Check if bound
+&gt; (top-level-bound? 'car)
+#t
+
+&gt; (top-level-bound? 'nonexistent)
+#f
+</code></pre>
+        <br/>
+        <li>System information:</li>
+<pre><code class="language-scheme line-numbers">; Version information
+&gt; (scheme-version)
 "10.0.0"
 
+&gt; (scheme-version-number)
+#x0a000000                     ; Hex encoded version
+
 ; Machine type
-> (machine-type)
-'ta6le  ; or 'a6le, etc.
+&gt; (machine-type)
+'ta6le                         ; Threaded, AMD64, Linux
 
-; Optimize level
-> (optimize-level)
-2
+; Operating system
+&gt; (machine-type-&gt;os)
+"Linux"
 
-; Set optimize level (0-3)
-> (optimize-level 3)</code></pre>
+; Features available
+&gt; (features)
+(threads 64-bit little-endian ...)
+
+; Check for specific feature
+&gt; (threaded?)
+#t
+
+&gt; (windows?)
+#f
+
+; Installation directory
+&gt; (scheme-directory)
+"/usr/lib/csv10.0"
+
+; Current directory
+&gt; (current-directory)
+"/home/user/project"
+
+; Change directory
+&gt; (current-directory "/tmp")
+&gt; (current-directory)
+"/tmp"
+
+; Environment variables
+&gt; (getenv "HOME")
+"/home/user"
+
+&gt; (getenv "PATH")
+"/usr/local/bin:/usr/bin:/bin"
+
+; Set environment variable
+&gt; (putenv "MY_VAR" "value")
+&gt; (getenv "MY_VAR")
+"value"
+</code></pre>
         <br/>
-        <li><b>Timing expressions:</b></li>
-<pre><code class="language-scheme line-numbers">; Time an expression
-> (time (+ 2 3))
+        <li>Timing and profiling:</li>
+<pre><code class="language-scheme line-numbers">; Time a single expression
+&gt; (time (+ 2 3))
 (time (+ 2 3))
     no collections
-    0.000000s elapsed cpu time
+    0.000001s elapsed cpu time
     0.000001s elapsed real time
     0 bytes allocated
 5
 
 ; Time a longer computation
-> (time (apply + (iota 1000000)))
+&gt; (time (apply + (iota 1000000)))
 (time (apply + (iota 1000000)))
     5 collections
-    0.021000s elapsed cpu time
-    0.021234s elapsed real time
+    0.021456s elapsed cpu time
+    0.021523s elapsed real time
     24000016 bytes allocated
-499999500000</code></pre>
-        <br/>
-        <li><b>Viewing compiler output:</b></li>
-<pre><code class="language-scheme line-numbers">; Generate and view assembly
-> (expand '(lambda (x) (* x x)))
-; Shows expanded form
+499999500000
 
-; Compile and inspect
-> (compile '(lambda (x) (* x x)))
-#&lt;procedure&gt;</code></pre>
-        <br/>
-        <li><b>Multi-line input in REPL:</b></li>
-<pre><code class="language-scheme line-numbers">; REPL waits for complete expression
-> (define (factorial n)
-    (if (= n 0)
-        1
-        (* n (factorial (- n 1)))))
+; Time with multiple iterations
+&gt; (define (benchmark proc n)
+    (time
+      (do ([i 0 (+ i 1)])
+          ((= i n))
+        (proc))))
 
-> (factorial 5)
-120</code></pre>
-        <br/>
-        <li><b>Recovering from errors:</b></li>
-<pre><code class="language-scheme line-numbers">; Error example
-> (/ 1 0)
-Exception: attempt to divide by zero
+&gt; (benchmark (lambda () (apply + (iota 1000))) 10000)
+(time (do ([i 0 (+ i 1)]) ((= i n)) (proc)))
+    248 collections
+    0.845123s elapsed cpu time
+    0.846234s elapsed real time
+    959997104 bytes allocated
 
-; REPL continues
-> (+ 2 3)
+; Measure memory only
+&gt; (collect)                    ; Force garbage collection
+&gt; (let ([before (bytes-allocated)])
+    (make-list 1000000 0)
+    (- (bytes-allocated) before))
+8000016                        ; Bytes used
+
+; Garbage collection statistics
+&gt; (collect)
+&gt; (statistics)
+; Displays detailed GC statistics
+</code></pre>
+        <br/>
+        <li>Compiler parameters:</li>
+<pre><code class="language-scheme line-numbers">; Optimization level (0-3)
+&gt; (optimize-level)
+2                              ; Default
+
+&gt; (optimize-level 3)
+&gt; (optimize-level)
+3
+
+; Debug level (0-3)
+&gt; (debug-level)
+2                              ; Default
+
+&gt; (debug-level 3)              ; More debugging info
+
+; Generate inspector information
+&gt; (generate-inspector-information)
+#f                             ; Default
+
+&gt; (generate-inspector-information #t)
+
+; Generate procedure source information
+&gt; (generate-procedure-source-information)
+#f
+
+&gt; (generate-procedure-source-information #t)
+
+; Enable compile-time folding
+&gt; (enable-cp0)
+#t                             ; Default
+
+; Track statistics
+&gt; (statistics-level)
+0
+
+&gt; (statistics-level 3)
+&gt; (compile '(lambda (x) (* x x)))
+; Shows detailed statistics
+</code></pre>
+        <br/>
+        <li>Expression editor (enhanced REPL):</li>
+<pre><code class="language-scheme line-numbers">; The expression editor provides:
+; - Line editing with arrow keys
+; - Multi-line input handling
+; - History navigation (up/down arrows)
+; - Tab completion (if enabled)
+; - Parenthesis matching
+
+; Check if enabled
+&gt; (ee-enabled?)
+#t
+
+; Disable expression editor
+&gt; (ee-disable)
+
+; Re-enable
+&gt; (ee-enable)
+
+; History navigation
+; Press Up: previous expression
+; Press Down: next expression
+
+; Multi-line editing
+; Opening ( waits for matching )
+&gt; (define (factorial n)    ; Press Enter
+    (if (= n 0)             ; Press Enter
+        1                   ; Press Enter
+        (* n                ; Press Enter
+           (factorial       ; Press Enter
+             (- n 1)))))    ; Completes and evaluates
+
+; Interrupt long-running computation
+&gt; (let loop () (loop))      ; Infinite loop
+^C                           ; Ctrl+C interrupts
+Exception: interrupted
+
+; Reset REPL state
+&gt; (reset)
+; Clears REPL state, restarts interaction
+</code></pre>
+        <br/>
+        <li>Multi-value returns:</li>
+<pre><code class="language-scheme line-numbers">; Expressions returning multiple values
+&gt; (values 1 2 3)
+1
+2
+3
+
+; REPL prints all values returned
+
+&gt; (let-values ([(a b c) (values 1 2 3)])
+    (+ a b c))
+6
+
+; Multiple values from procedures
+&gt; (define (quotient-remainder a b)
+    (values (quotient a b) (remainder a b)))
+
+&gt; (quotient-remainder 17 5)
+3
+2
+
+&gt; (call-with-values
+    (lambda () (quotient-remainder 17 5))
+    +)
 5
 
-; Reset environment if needed
-> (reset)
-; Or restart REPL</code></pre>
+; Using multiple values
+&gt; (let-values ([(q r) (quotient-remainder 17 5)])
+    (printf "Quotient: ~a, Remainder: ~a~%" q r))
+Quotient: 3, Remainder: 2
+</code></pre>
+        <br/>
+        <li>REPL visualization of features:</li>
+        <br/>
+        <svg width="600" height="320" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">REPL Interaction Cycle</text>
+
+            <!-- Read -->
+            <rect x="50" y="60" width="120" height="50" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="110" y="80" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">Read</text>
+            <text x="110" y="98" text-anchor="middle" font-family="Times New Roman" font-size="10">Parse input</text>
+
+            <!-- Arrow to Eval -->
+            <line x1="170" y1="85" x2="220" y2="85" stroke="#666" stroke-width="2" marker-end="url(#arrowhead2)"/>
+
+            <!-- Eval -->
+            <rect x="230" y="60" width="120" height="50" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="290" y="80" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">Eval</text>
+            <text x="290" y="98" text-anchor="middle" font-family="Times New Roman" font-size="10">Execute code</text>
+
+            <!-- Arrow to Print -->
+            <line x1="350" y1="85" x2="400" y2="85" stroke="#666" stroke-width="2" marker-end="url(#arrowhead2)"/>
+
+            <!-- Print -->
+            <rect x="410" y="60" width="120" height="50" fill="#ffe6cc" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="470" y="80" text-anchor="middle" font-family="Times New Roman" font-size="12" font-weight="bold">Print</text>
+            <text x="470" y="98" text-anchor="middle" font-family="Times New Roman" font-size="10">Display result</text>
+
+            <!-- Arrow back to Read -->
+            <path d="M 470 110 L 470 140 L 110 140 L 110 110" stroke="#666" stroke-width="2" fill="none" marker-end="url(#arrowhead2)"/>
+            <text x="290" y="155" text-anchor="middle" font-family="Times New Roman" font-size="10" fill="#666">Loop</text>
+
+            <!-- Features box -->
+            <rect x="50" y="180" width="480" height="125" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="5"/>
+            <text x="290" y="200" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Available During REPL Session</text>
+
+            <!-- Feature categories -->
+            <rect x="70" y="215" width="140" height="80" fill="#fff" stroke="#999" stroke-width="1" rx="3"/>
+            <text x="140" y="232" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Inspection</text>
+            <text x="80" y="250" font-family="Times New Roman" font-size="9">• describe</text>
+            <text x="80" y="265" font-family="Times New Roman" font-size="9">• apropos</text>
+            <text x="80" y="280" font-family="Times New Roman" font-size="9">• pretty-print</text>
+
+            <rect x="225" y="215" width="140" height="80" fill="#fff" stroke="#999" stroke-width="1" rx="3"/>
+            <text x="295" y="232" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Timing</text>
+            <text x="235" y="250" font-family="Times New Roman" font-size="9">• time</text>
+            <text x="235" y="265" font-family="Times New Roman" font-size="9">• collect</text>
+            <text x="235" y="280" font-family="Times New Roman" font-size="9">• statistics</text>
+
+            <rect x="380" y="215" width="140" height="80" fill="#fff" stroke="#999" stroke-width="1" rx="3"/>
+            <text x="450" y="232" text-anchor="middle" font-family="Times New Roman" font-size="10" font-weight="bold">Debugging</text>
+            <text x="390" y="250" font-family="Times New Roman" font-size="9">• trace/untrace</text>
+            <text x="390" y="265" font-family="Times New Roman" font-size="9">• break</text>
+            <text x="390" y="280" font-family="Times New Roman" font-size="9">• debug-level</text>
+        </svg>
     </ul>
     <br/><br/>
 
@@ -2659,199 +3504,748 @@ Exception: attempt to divide by zero
     <li>Working with Libraries and Imports</li>
     <br/>
     <ul>
-        <li>Chez Scheme supports R6RS libraries and import system.</li>
-        <br/>
-        <li><b>Defining a library file:</b></li>
+        <li>Defining a library:</li>
 <pre><code class="language-scheme line-numbers">; File: mylib.sls (Scheme Library Source)
 (library (mylib)
-  (export square cube double)
+  (export
+    square
+    cube
+    double
+    halve
+    clamp)
   (import (chezscheme))
 
   (define (square x)
+    "Return x squared"
     (* x x))
 
   (define (cube x)
+    "Return x cubed"
     (* x x x))
 
   (define (double x)
-    (* 2 x)))</code></pre>
-        <br/>
-        <li><b>Importing a library in REPL:</b></li>
-<pre><code class="language-scheme line-numbers">; Import library
-> (import (mylib))
+    "Return double of x"
+    (* 2 x))
 
-; Use exported functions
-> (square 5)
+  (define (halve x)
+    "Return half of x"
+    (/ x 2))
+
+  (define (clamp x min max)
+    "Clamp x between min and max"
+    (cond
+      [(&lt; x min) min]
+      [(&gt; x max) max]
+      [else x])))
+</code></pre>
+        <br/>
+        <li>Importing libraries:</li>
+<pre><code class="language-scheme line-numbers">; Import entire library
+&gt; (import (mylib))
+
+&gt; (square 5)
 25
 
-> (cube 3)
+&gt; (cube 3)
 27
 
-> (double 10)
-20</code></pre>
-        <br/>
-        <li><b>Importing specific bindings:</b></li>
-<pre><code class="language-scheme line-numbers">; Import only specific functions
-> (import (only (mylib) square cube))
+; Import only specific bindings
+&gt; (import (only (mylib) square cube))
 
-; Import all except specific
-> (import (except (mylib) double))
-
-; Import with rename
-> (import (rename (mylib) (square sq)))
-> (sq 4)
+&gt; (square 4)
 16
 
+&gt; (double 5)
+Exception: undefined variable double
+
+; Import all except specific bindings
+&gt; (import (except (mylib) double))
+
+&gt; (square 5)
+25
+
+&gt; (double 5)
+Exception: undefined variable double
+
+; Import with renaming
+&gt; (import (rename (mylib) (square sq)))
+
+&gt; (sq 5)
+25
+
+&gt; (square 5)
+Exception: undefined variable square
+
 ; Import with prefix
-> (import (prefix (mylib) math:))
-> (math:square 5)
-25</code></pre>
+&gt; (import (prefix (mylib) math:))
+
+&gt; (math:square 5)
+25
+
+&gt; (math:cube 3)
+27
+
+; Combine import forms
+&gt; (import (rename (only (mylib) square cube)
+                  (square sq)
+                  (cube cb)))
+
+&gt; (sq 4)
+16
+
+&gt; (cb 2)
+8
+</code></pre>
         <br/>
-        <li><b>Standard library imports:</b></li>
-<pre><code class="language-scheme line-numbers">; Import R6RS base library
-> (import (rnrs base))
+        <li>Standard library imports:</li>
+<pre><code class="language-scheme line-numbers">; R6RS base library
+(import (rnrs base))
 
-; Import specific R6RS libraries
-> (import (rnrs io simple))
-> (import (rnrs lists))
-> (import (rnrs sorting))
+; R6RS specific libraries
+(import (rnrs io simple))      ; Simple I/O
+(import (rnrs io ports))       ; Port I/O
+(import (rnrs files))          ; File operations
+(import (rnrs programs))       ; exit, command-line
+(import (rnrs arithmetic fixnums))  ; Fixnum operations
+(import (rnrs arithmetic flonums))  ; Flonum operations
+(import (rnrs bytevectors))    ; Byte vectors
+(import (rnrs lists))          ; List utilities
+(import (rnrs sorting))        ; Sorting
+(import (rnrs records syntactic))   ; Record types
+(import (rnrs hashtables))     ; Hash tables
+(import (rnrs control))        ; when, unless, case-lambda
+(import (rnrs exceptions))     ; Exception handling
+(import (rnrs conditions))     ; Condition types
 
-; Import Chez-specific features
-> (import (chezscheme))
+; Import entire R6RS
+(import (rnrs))                ; All R6RS libraries
 
-; Multiple imports at once
-> (import (rnrs base)
-          (rnrs io simple)
-          (mylib))</code></pre>
+; Chez Scheme extensions
+(import (chezscheme))          ; All Chez features
+
+; Mixing R6RS and Chez
+(import (rnrs base)
+        (only (chezscheme) printf format))
+
+; Multiple imports
+(import (rnrs base)
+        (rnrs io simple)
+        (rnrs lists)
+        (mylib))
+</code></pre>
         <br/>
-        <li><b>Library search paths:</b></li>
-<pre><code class="language-scheme line-numbers">; Check current library paths
-> (library-directories)
-(("." . "."))
+        <li>Library search and configuration:</li>
+<pre><code class="language-scheme line-numbers">; Check library directories
+&gt; (library-directories)
+(("." . "."))                  ; Default: current directory
 
-; Add library path
-> (library-directories
+; Add library directories
+&gt; (library-directories
     '(("." . ".")
+      ("lib" . "lib/compiled")
       ("/usr/local/lib/scheme" . "/usr/local/lib/scheme/compiled")))
 
-; Now libraries in /usr/local/lib/scheme are searchable</code></pre>
+; Source and compiled directories can differ
+; Format: (source-dir . compiled-dir)
+
+; Library extensions
+&gt; (library-extensions)
+((".chezscheme.sls" . ".chezscheme.so")
+ (".ss" . ".so")
+ (".sls" . ".so")
+ (".scm" . ".so"))
+
+; Chez checks each extension in order
+; For (import (foo bar)):
+;   foo/bar.chezscheme.sls → foo/bar.chezscheme.so
+;   foo/bar.ss → foo/bar.so
+;   foo/bar.sls → foo/bar.so
+;   foo/bar.scm → foo/bar.so
+
+; Add custom extension
+&gt; (library-extensions
+    (cons '(".scheme" . ".so")
+          (library-extensions)))
+</code></pre>
         <br/>
-        <li><b>Creating a program with imports:</b></li>
+        <li>Library compilation:</li>
+<pre><code class="language-scheme line-numbers">; Compile a library
+&gt; (compile-library "mylib.sls")
+; Creates mylib.so
+
+; Compile with options
+&gt; (parameterize ([optimize-level 3])
+    (compile-library "mylib.sls"))
+
+; Auto-compile imported libraries
+&gt; (compile-imported-libraries #t)
+
+; Now imports trigger compilation if needed
+&gt; (import (mylib))
+; Compiles mylib.sls if mylib.so missing or outdated
+
+; Check compilation status
+&gt; (compile-imported-libraries)
+#f                             ; Not enabled by default
+
+; Enable import notification
+&gt; (import-notify #t)
+
+&gt; (import (mylib))
+importing (mylib) from mylib.so
+; Shows what's being imported from where
+</code></pre>
+        <br/>
+        <li>Creating programs with libraries:</li>
 <pre><code class="language-scheme line-numbers">; File: myprogram.ss
 #!chezscheme
 (import (chezscheme)
-        (mylib))
+        (mylib)
+        (rnrs))
 
 (define (main)
-  (display "Square of 10: ")
-  (display (square 10))
-  (newline)
+  (printf "Testing mylib:~%")
+  (printf "  square(5) = ~a~%" (square 5))
+  (printf "  cube(3) = ~a~%" (cube 3))
+  (printf "  double(7) = ~a~%" (double 7))
+  (printf "  clamp(15, 0, 10) = ~a~%" (clamp 15 0 10)))
 
-  (display "Cube of 5: ")
-  (display (cube 5))
-  (newline))
-
-(main)</code></pre>
+(main)
+</code></pre>
 <pre><code class="language-bash line-numbers"># Run the program
 $ scheme --program myprogram.ss
-Square of 10: 100
-Cube of 5: 125</code></pre>
+Testing mylib:
+  square(5) = 25
+  cube(3) = 27
+  double(7) = 14
+  clamp(15, 0, 10) = 10
+</code></pre>
+        <br/>
+        <li>Multi-file library structure:</li>
+<pre><code class="language-plaintext line-numbers">project/
+  lib/
+    mathlib/
+      core.sls           ; (mathlib core)
+      advanced.sls       ; (mathlib advanced)
+      utils.sls          ; (mathlib utils)
+    stringlib/
+      core.sls           ; (stringlib core)
+      parse.sls          ; (stringlib parse)
+  compiled/
+    mathlib/
+      core.so
+      advanced.so
+      utils.so
+    stringlib/
+      core.so
+      parse.so
+</code></pre>
+<pre><code class="language-scheme line-numbers">; Configure library paths
+(library-directories
+  '(("." . ".")
+    ("lib" . "compiled")))
+
+; Now can import
+(import (mathlib core))
+(import (mathlib advanced))
+(import (stringlib parse))
+</code></pre>
+        <br/>
+        <li>Library dependencies:</li>
+<pre><code class="language-scheme line-numbers">; File: lib/mathlib/advanced.sls
+(library (mathlib advanced)
+  (export
+    factorial
+    fibonacci
+    gcd)
+  (import (chezscheme)
+          (mathlib core))       ; Depends on (mathlib core)
+
+  (define (factorial n)
+    (if (zero? n)
+        1
+        (* n (factorial (- n 1)))))
+
+  (define (fibonacci n)
+    (if (&lt;= n 1)
+        n
+        (+ (fibonacci (- n 1))
+           (fibonacci (- n 2)))))
+
+  (define (gcd a b)
+    ; Uses square from (mathlib core)
+    (if (zero? b)
+        a
+        (gcd b (remainder a b)))))
+</code></pre>
+<pre><code class="language-scheme line-numbers">; Importing (mathlib advanced) automatically imports (mathlib core)
+&gt; (import (mathlib advanced))
+
+&gt; (factorial 5)
+120
+
+&gt; (square 4)                   ; From (mathlib core)
+16
+</code></pre>
+        <br/>
+        <li>Re-exporting from libraries:</li>
+<pre><code class="language-scheme line-numbers">; File: lib/mathlib.sls
+; Convenience library that re-exports everything
+(library (mathlib)
+  (export
+    ; Re-export from core
+    (import (mathlib core))
+    ; Re-export from advanced
+    (import (mathlib advanced)))
+  (import (mathlib core)
+          (mathlib advanced)))
+</code></pre>
+<pre><code class="language-scheme line-numbers">; Now can import everything at once
+&gt; (import (mathlib))
+
+; Get everything from mathlib/core and mathlib/advanced
+&gt; (square 5)
+25
+
+&gt; (factorial 5)
+120
+</code></pre>
+        <br/>
+        <li>Import visualization:</li>
+        <svg width="600" height="300" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead3" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Library Import Resolution</text>
+
+            <!-- Program -->
+            <rect x="30" y="50" width="130" height="60" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="95" y="75" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Program</text>
+            <text x="95" y="95" text-anchor="middle" font-family="Times New Roman" font-size="9">(import (mylib))</text>
+
+            <!-- Arrow to search -->
+            <line x1="160" y1="80" x2="210" y2="80" stroke="#666" stroke-width="2" marker-end="url(#arrowhead3)"/>
+
+            <!-- Search process -->
+            <rect x="220" y="50" width="140" height="180" fill="#f5f5f5" stroke="#999" stroke-width="2" rx="5"/>
+            <text x="290" y="70" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Search Process</text>
+
+            <rect x="235" y="85" width="110" height="25" fill="#fff" stroke="#999" stroke-width="1" rx="2"/>
+            <text x="245" y="102" font-family="Times New Roman" font-size="9">./mylib.sls?</text>
+
+            <rect x="235" y="115" width="110" height="25" fill="#fff" stroke="#999" stroke-width="1" rx="2"/>
+            <text x="245" y="132" font-family="Times New Roman" font-size="9">./mylib.so?</text>
+
+            <rect x="235" y="145" width="110" height="25" fill="#fff" stroke="#999" stroke-width="1" rx="2"/>
+            <text x="245" y="162" font-family="Times New Roman" font-size="9">lib/mylib.sls?</text>
+
+            <rect x="235" y="175" width="110" height="25" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="2"/>
+            <text x="245" y="192" font-family="Times New Roman" font-size="9">lib/mylib.so ✓</text>
+
+            <text x="290" y="218" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">Found!</text>
+
+            <!-- Arrow to load -->
+            <line x1="360" y1="140" x2="410" y2="140" stroke="#009900" stroke-width="2" marker-end="url(#arrowhead3)"/>
+
+            <!-- Loaded library -->
+            <rect x="420" y="50" width="150" height="180" fill="#e6ffe6" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="495" y="70" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Loaded Library</text>
+
+            <rect x="435" y="85" width="120" height="25" fill="#fff" stroke="#999" stroke-width="1" rx="2"/>
+            <text x="445" y="102" font-family="Times New Roman" font-size="9">Exports:</text>
+
+            <rect x="445" y="115" width="100" height="20" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="2"/>
+            <text x="455" y="130" font-family="Times New Roman" font-size="9">square</text>
+
+            <rect x="445" y="140" width="100" height="20" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="2"/>
+            <text x="455" y="155" font-family="Times New Roman" font-size="9">cube</text>
+
+            <rect x="445" y="165" width="100" height="20" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="2"/>
+            <text x="455" y="180" font-family="Times New Roman" font-size="9">double</text>
+
+            <text x="495" y="210" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#666">Available in program</text>
+
+            <!-- Configuration note -->
+            <rect x="30" y="250" width="540" height="35" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="3"/>
+            <text x="300" y="270" text-anchor="middle" font-family="Times New Roman" font-size="10">Configure with: (library-directories '(("." . ".") ("lib" . "lib/compiled")))</text>
+        </svg>
     </ul>
     <br/><br/>
 
 
-    <li>Compilation Options and Optimization</li>
+    <li>Compilation and Optimization</li>
     <br/>
     <ul>
-        <li>Chez Scheme provides optimization levels and compilation controls.</li>
-        <br/>
-        <li><b>Optimization levels:</b></li>
+        <li>Optimization levels:</li>
 <table>
     <thead>
         <tr>
             <th>Level</th>
-            <th>Description</th>
+            <th>Compile Speed</th>
+            <th>Run Speed</th>
+            <th>Debug Info</th>
             <th>Use Case</th>
         </tr>
     </thead>
     <tbody>
         <tr>
             <td><code>0</code></td>
-            <td>No optimization, fastest compile</td>
-            <td>Development, debugging</td>
+            <td>Fastest</td>
+            <td>Slowest</td>
+            <td>Full</td>
+            <td>Initial development, debugging</td>
         </tr>
         <tr>
             <td><code>1</code></td>
-            <td>Basic optimization</td>
-            <td>Default development</td>
+            <td>Fast</td>
+            <td>Moderate</td>
+            <td>Good</td>
+            <td>Active development</td>
         </tr>
         <tr>
             <td><code>2</code></td>
-            <td>Standard optimization</td>
+            <td>Moderate</td>
+            <td>Fast</td>
+            <td>Some</td>
             <td>Default (balanced)</td>
         </tr>
         <tr>
             <td><code>3</code></td>
-            <td>Aggressive optimization</td>
-            <td>Production, performance</td>
+            <td>Slowest</td>
+            <td>Fastest</td>
+            <td>Minimal</td>
+            <td>Production, performance-critical</td>
         </tr>
     </tbody>
 </table>
         <br/>
-        <li><b>Setting optimization level:</b></li>
-<pre><code class="language-scheme line-numbers">; In REPL
-> (optimize-level 3)
+        <li>Setting optimization:</li>
+<pre><code class="language-scheme line-numbers">; Check current optimization level
+&gt; (optimize-level)
+2                              ; Default
 
-; Now compilations use level 3
-> (compile-file "myfile.ss")
+; Set optimization level
+&gt; (optimize-level 3)
 
-; Check current level
-> (optimize-level)
-3</code></pre>
+; Compile with current level
+&gt; (compile-file "myfile.ss")
+; Uses level 3
+
+; Temporarily change for single compilation
+&gt; (parameterize ([optimize-level 0])
+    (compile-file "debug.ss"))
+
+; Back to level 3 after parameterize
+&gt; (optimize-level)
+3
+
+; Command-line optimization
+$ scheme --optimize-level 3 --eval '(compile-file "myfile.ss")' --eval '(exit)'
+</code></pre>
         <br/>
-        <li><b>Safety vs speed trade-offs:</b></li>
-<pre><code class="language-scheme line-numbers">; Debug mode (more checks)
-> (debug-level 3)
-> (optimize-level 0)
+        <li>Debug level control:</li>
+<pre><code class="language-scheme line-numbers">; Debug levels (0-3)
+&gt; (debug-level)
+2                              ; Default
 
-; Production mode (maximum speed)
-> (debug-level 0)
-> (optimize-level 3)
+; Set debug level
+&gt; (debug-level 3)              ; Maximum debugging info
 
-; Balanced (default)
-> (debug-level 2)
-> (optimize-level 2)</code></pre>
+; Effects of debug level:
+; Level 0: Minimal checks, minimal info
+; Level 1: Basic checks, basic info
+; Level 2: Standard checks, good info (default)
+; Level 3: Extra checks, full info, stack traces
+
+; Trade-off: higher debug = more info, slower execution
+
+; Development setup
+&gt; (optimize-level 1)
+&gt; (debug-level 3)
+
+; Production setup
+&gt; (optimize-level 3)
+&gt; (debug-level 0)
+</code></pre>
         <br/>
-        <li><b>Compiling with specific options:</b></li>
-<pre><code class="language-scheme line-numbers">; Set options before compiling
+        <li>Additional compilation parameters:</li>
+<pre><code class="language-scheme line-numbers">; Generate inspector information
+&gt; (generate-inspector-information)
+#f                             ; Default
+
+&gt; (generate-inspector-information #t)
+; Enables runtime inspection of closures
+
+; Generate procedure source information
+&gt; (generate-procedure-source-information)
+#f                             ; Default
+
+&gt; (generate-procedure-source-information #t)
+; Stores source location in procedures
+
+; Example benefit:
+&gt; (define (factorial n)
+    (if (= n 0) 1 (* n (factorial (- n 1)))))
+
+&gt; (procedure-source-information factorial)
+#f                             ; Without generation
+
+&gt; (generate-procedure-source-information #t)
+&gt; (define (factorial n)
+    (if (= n 0) 1 (* n (factorial (- n 1)))))
+
+&gt; (procedure-source-information factorial)
+((line . 2) (column . 0) (file . "repl"))
+
+; Enable compile-time constant folding
+&gt; (enable-cp0)
+#t                             ; Default (recommended)
+
+&gt; (enable-cp0 #f)              ; Disable (rarely needed)
+
+; Track compilation statistics
+&gt; (compile-time-statistics-level)
+0                              ; Default (off)
+
+&gt; (compile-time-statistics-level 3)
+&gt; (compile-file "myfile.ss")
+; Displays detailed compilation statistics
+
+; Case sensitivity (standard Scheme is case-sensitive)
+&gt; (case-sensitive)
+#t                             ; Default
+
+&gt; (case-sensitive #f)          ; Case-insensitive mode
+&gt; (eq? 'ABC 'abc)
+#t
+
+&gt; (case-sensitive #t)          ; Restore case-sensitivity
+&gt; (eq? 'ABC 'abc)
+#f
+</code></pre>
+        <br/>
+        <li>Whole-program optimization:</li>
+<pre><code class="language-scheme line-numbers">; Compile individual files normally first
+&gt; (compile-file "utils.ss")
+&gt; (compile-file "algorithms.ss")
+&gt; (compile-file "main.ss")
+
+; Then compile as whole program
+&gt; (compile-whole-program "app.wpo" "main.ss")
+; Creates app.wpo with cross-file optimizations
+
+; Run whole-program compiled code
+$ scheme --program app.wpo
+
+; Benefits:
+; - Cross-file inlining
+; - Better dead code elimination
+; - Global optimization
+; - Smaller code size
+; - Faster execution
+
+; Build script for whole-program compilation
 (parameterize ([optimize-level 3]
-               [debug-level 0])
-  (compile-file "myfile.ss"))
+               [debug-level 0]
+               [generate-inspector-information #f])
+  ; Compile all modules
+  (for-each compile-file
+    '("utils.ss" "data.ss" "algorithms.ss"))
 
-; Compile multiple files with settings
-(for-each
-  (lambda (file)
-    (parameterize ([optimize-level 3])
-      (compile-file file)))
-  '("file1.ss" "file2.ss" "file3.ss"))</code></pre>
-        <br/>
-        <li><b>Whole-program optimization:</b></li>
-<pre><code class="language-scheme line-numbers">; Compile library for whole-program optimization
-> (compile-library "mylib.sls")
+  ; Compile main as whole program
+  (compile-whole-program "app.wpo" "main.ss")
 
-; Or with options
-> (parameterize ([optimize-level 3]
-                 [generate-wpo-files #t])
-    (compile-library "mylib.sls"))</code></pre>
+  (printf "Build complete: app.wpo~%"))
+</code></pre>
         <br/>
-        <li><b>Performance tips:</b></li>
-        <ul>
-            <li>Use <code>(optimize-level 3)</code> for production code</li>
-            <li>Compile files to <code>.so</code> for faster loading</li>
-            <li>Use type declarations when possible</li>
-            <li>Profile with <code>time</code> to find bottlenecks</li>
-            <li>Avoid <code>eval</code> and <code>load</code> in performance-critical code</li>
-        </ul>
+        <li>Inline and constant folding:</li>
+<pre><code class="language-scheme line-numbers">; Example of optimization effects
+
+; Original code
+(define (compute x)
+  (let ([a (* 2 3)]        ; Constant expression
+        [b (+ x 10)])
+    (+ a b)))
+
+; Level 0: No optimization
+; - Computes (* 2 3) every call
+; - Allocates closure for let
+
+; Level 2: Standard optimization
+; - Folds (* 2 3) to 6 at compile time
+; - Optimizes simple let binding
+
+; Level 3: Aggressive optimization
+; - Folds (* 2 3) to 6
+; - Eliminates let binding entirely
+; - May inline small procedures
+; - Recognizes arithmetic patterns
+
+; Marking for inlining
+(define-inline (square x)
+  (* x x))
+
+; This encourages inlining at call sites
+(square 5)                     ; May become (* 5 5) inline
+
+; Discourage inlining (for large functions)
+(define (big-function x)
+  (define-inline-procedure (big-function$1 x)  ; Internal
+    ...)
+  (big-function$1 x))
+</code></pre>
+        <br/>
+        <li>Benchmarking optimization levels:</li>
+<pre><code class="language-scheme line-numbers">; Benchmark different optimization levels
+
+(define (benchmark-levels file)
+  (define (compile-and-time level)
+    (parameterize ([optimize-level level])
+      (let ([start (current-time)])
+        (compile-file file)
+        (let* ([compile-time (time-difference (current-time) start)]
+               [compiled (path-replace-extension file ".so")]
+               [start-run (current-time)])
+          (load compiled)
+          (test-function 10000)  ; Run benchmark
+          (let ([run-time (time-difference (current-time) start-run)])
+            (printf "Level ~a: compile=~as, run=~as~%"
+                    level
+                    (time-second compile-time)
+                    (time-second run-time)))))))
+
+  (for-each compile-and-time '(0 1 2 3)))
+
+; Example output:
+; Level 0: compile=0.12s, run=2.45s
+; Level 1: compile=0.18s, run=1.23s
+; Level 2: compile=0.25s, run=0.67s
+; Level 3: compile=0.41s, run=0.48s
+</code></pre>
+        <br/>
+        <li>Optimization visualization:</li>
+        <svg width="600" height="280" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Optimization Level Trade-offs</text>
+
+            <!-- Axes -->
+            <line x1="50" y1="240" x2="550" y2="240" stroke="#666" stroke-width="2"/>
+            <line x1="50" y1="60" x2="50" y2="240" stroke="#666" stroke-width="2"/>
+
+            <!-- X-axis label -->
+            <text x="300" y="265" text-anchor="middle" font-family="Times New Roman" font-size="11">Optimization Level</text>
+
+            <!-- Y-axis label -->
+            <text x="25" y="150" text-anchor="middle" font-family="Times New Roman" font-size="11" transform="rotate(-90 25 150)">Performance</text>
+
+            <!-- Level markers -->
+            <text x="125" y="255" text-anchor="middle" font-family="Times New Roman" font-size="10">0</text>
+            <text x="250" y="255" text-anchor="middle" font-family="Times New Roman" font-size="10">1</text>
+            <text x="375" y="255" text-anchor="middle" font-family="Times New Roman" font-size="10">2</text>
+            <text x="500" y="255" text-anchor="middle" font-family="Times New Roman" font-size="10">3</text>
+
+            <!-- Runtime speed line (improving) -->
+            <path d="M 125 210 L 250 165 L 375 110 L 500 70" stroke="#009900" stroke-width="3" fill="none"/>
+            <text x="510" y="65" font-family="Times New Roman" font-size="10" fill="#009900">Runtime Speed</text>
+
+            <!-- Compile speed line (degrading) -->
+            <path d="M 125 90 L 250 120 L 375 160 L 500 200" stroke="#cc0000" stroke-width="3" fill="none"/>
+            <text x="510" y="205" font-family="Times New Roman" font-size="10" fill="#cc0000">Compile Speed</text>
+
+            <!-- Debug info line (decreasing) -->
+            <path d="M 125 80 L 250 130 L 375 180 L 500 220" stroke="#0066cc" stroke-width="3" stroke-dasharray="5,5" fill="none"/>
+            <text x="510" y="225" font-family="Times New Roman" font-size="10" fill="#0066cc">Debug Info</text>
+
+            <!-- Markers for levels -->
+            <circle cx="125" cy="210" r="4" fill="#009900"/>
+            <circle cx="250" cy="165" r="4" fill="#009900"/>
+            <circle cx="375" cy="110" r="4" fill="#009900"/>
+            <circle cx="500" cy="70" r="4" fill="#009900"/>
+
+            <circle cx="125" cy="90" r="4" fill="#cc0000"/>
+            <circle cx="250" cy="120" r="4" fill="#cc0000"/>
+            <circle cx="375" cy="160" r="4" fill="#cc0000"/>
+            <circle cx="500" cy="200" r="4" fill="#cc0000"/>
+        </svg>
+        <br/><br/>
+        <li>Production build script:</li>
+<pre><code class="language-scheme line-numbers">; File: build-release.ss
+#!/usr/bin/env scheme --script
+
+(import (chezscheme))
+
+(define (build-release)
+  (printf "Building release version...~%")
+
+  ; Set production parameters
+  (optimize-level 3)
+  (debug-level 0)
+  (generate-inspector-information #f)
+  (generate-procedure-source-information #f)
+
+  ; Clean old compiled files
+  (printf "Cleaning old builds...~%")
+  (for-each
+    (lambda (file)
+      (when (file-exists? file)
+        (delete-file file)))
+    (directory-list "." "*.so"))
+
+  ; Compile all source files
+  (define sources
+    '("utils.ss"
+      "data-structures.ss"
+      "algorithms.ss"
+      "io.ss"
+      "main.ss"))
+
+  (printf "Compiling ~a files...~%" (length sources))
+  (for-each
+    (lambda (file)
+      (printf "  Compiling ~a...~%" file)
+      (compile-file file))
+    sources)
+
+  ; Create whole-program compilation
+  (printf "Creating whole-program binary...~%")
+  (compile-whole-program "app.wpo" "main.ss")
+
+  ; Create launcher script
+  (printf "Creating launcher...~%")
+  (call-with-output-file "app"
+    (lambda (port)
+      (display "#!/bin/sh\n" port)
+      (display "exec scheme --program app.wpo \"$@\"\n" port)))
+
+  (system "chmod +x app")
+
+  (printf "Build complete!~%")
+  (printf "Run with: ./app~%"))
+
+(build-release)
+</code></pre>
+<pre><code class="language-bash line-numbers">$ chmod +x build-release.ss
+$ ./build-release.ss
+Building release version...
+Cleaning old builds...
+Compiling 5 files...
+  Compiling utils.ss...
+  Compiling data-structures.ss...
+  Compiling algorithms.ss...
+  Compiling io.ss...
+  Compiling main.ss...
+Creating whole-program binary...
+Creating launcher...
+Build complete!
+Run with: ./app
+
+$ ./app
+; Production-optimized application runs
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -2859,69 +4253,148 @@ Cube of 5: 125</code></pre>
     <li>Debugging and Error Handling</li>
     <br/>
     <ul>
-        <li>Chez Scheme provides tools for debugging and error inspection.</li>
-        <br/>
-        <li><b>Reading error messages:</b></li>
-<pre><code class="language-scheme line-numbers">; Error example
-> (car 42)
-Exception in car: 42 is not a pair
+        <li>Understanding error messages:</li>
+<pre><code class="language-scheme line-numbers">; Basic error
+&gt; (car 42)
+Exception: car: 42 is not a pair
 
-; Error with context
-> (define (process x)
-    (car x))
-> (process 42)
-Exception in car: 42 is not a pair
-Exception occurred in process</code></pre>
-        <br/>
-        <li><b>Stack traces:</b></li>
-<pre><code class="language-scheme line-numbers">; Enable debug mode for better traces
-> (debug-level 3)
+; Error structure:
+; - Exception: indicates an error occurred
+; - car: the procedure that failed
+; - "42 is not a pair": explanation
 
-; Now errors show more context
-> (define (a) (b))
-> (define (b) (c))
-> (define (c) (car 42))
-> (a)
-Exception in car: 42 is not a pair
-  in c
-  in b
-  in a</code></pre>
-        <br/>
-        <li><b>Exception handling:</b></li>
-<pre><code class="language-scheme line-numbers">; Try-catch style with guard
-(guard (ex
-        [(error? ex)
-         (display "Error caught: ")
-         (display (error-object-message ex))
-         (newline)
-         #f])
-  (car 42))
-; Prints: Error caught: car: 42 is not a pair
-; Returns: #f
+; Type errors
+&gt; (+ "hello" 5)
+Exception: +: "hello" is not a number
 
-; With-exception-handler
-(with-exception-handler
-  (lambda (ex)
-    (display "Exception occurred")
-    (newline)
-    'error)
-  (lambda ()
-    (/ 1 0)))
-; Prints: Exception occurred
-; Returns: error</code></pre>
+; Undefined variable
+&gt; undefined-var
+Exception: undefined variable undefined-var
+
+; Arity errors
+&gt; (+ 1)
+1                              ; + accepts any number of args
+
+&gt; (car)
+Exception: car: incorrect number of arguments
+
+&gt; (car '(a b) '(c d))
+Exception: car: incorrect number of arguments
+</code></pre>
         <br/>
-        <li><b>Tracing procedures:</b></li>
-<pre><code class="language-scheme line-numbers">; Define a function
-> (define (factorial n)
+        <li>Stack traces and context:</li>
+<pre><code class="language-scheme line-numbers">; Enable better stack traces
+&gt; (debug-level 3)
+&gt; (generate-procedure-source-information #t)
+
+; Define nested procedures
+&gt; (define (a x) (b (* x 2)))
+&gt; (define (b x) (c (+ x 1)))
+&gt; (define (c x) (car x))
+
+; Call and trigger error
+&gt; (a 5)
+Exception in car: 11 is not a pair
+  at c
+  at b
+  at a
+  at top-level
+
+; Shows call chain leading to error
+
+; More detailed example
+&gt; (define (process-list lst)
+    (if (null? lst)
+        '()
+        (cons (process-item (car lst))
+              (process-list (cdr lst)))))
+
+&gt; (define (process-item x)
+    (* x x))
+
+&gt; (process-list '(1 2 "three" 4))
+Exception in *: "three" is not a number
+  at process-item
+  at process-list
+  at top-level
+
+; Stack trace shows:
+; 1. Error in *
+; 2. Called from process-item
+; 3. Called from process-list
+; 4. Called from REPL
+</code></pre>
+        <br/>
+        <li>Exception handling:</li>
+<pre><code class="language-scheme line-numbers">; guard for exception handling
+&gt; (guard (ex
+          [(error-object? ex)
+           (printf "Error: ~a~%" (error-object-message ex))
+           #f]
+          [else
+           (printf "Unknown exception: ~a~%" ex)
+           #f])
+    (car 42))
+Error: car: 42 is not a pair
+#f
+
+; Multiple condition clauses
+&gt; (guard (ex
+          [(assertion-violation? ex)
+           (display "Assertion violated!\n")
+           'assertion]
+          [(undefined-violation? ex)
+           (display "Undefined variable!\n")
+           'undefined]
+          [(error-object? ex)
+           (printf "General error: ~a~%" (error-object-message ex))
+           'error]
+          [else
+           (printf "Other: ~a~%" ex)
+           'other])
+    (car 42))
+General error: car: 42 is not a pair
+error
+
+; with-exception-handler
+&gt; (with-exception-handler
+    (lambda (ex)
+      (printf "Handler called: ~a~%" ex)
+      'handled)
+    (lambda ()
+      (car 42)))
+Handler called: Exception: car: 42 is not a pair
+handled
+
+; Nested handlers
+&gt; (with-exception-handler
+    (lambda (ex)
+      (printf "Outer handler~%")
+      (raise ex))
+    (lambda ()
+      (with-exception-handler
+        (lambda (ex)
+          (printf "Inner handler~%")
+          (raise ex))
+        (lambda ()
+          (car 42)))))
+Inner handler
+Outer handler
+Exception: car: 42 is not a pair
+</code></pre>
+        <br/>
+        <li>Tracing procedures:</li>
+<pre><code class="language-scheme line-numbers">; Define a recursive function
+&gt; (define (factorial n)
     (if (= n 0)
         1
         (* n (factorial (- n 1)))))
 
 ; Trace it
-> (trace factorial)
+&gt; (trace factorial)
 
-; Now calls are traced
-> (factorial 5)
+; Now calls show entry and exit
+&gt; (factorial 5)
 |(factorial 5)
 | (factorial 4)
 | |(factorial 3)
@@ -2936,43 +4409,260 @@ Exception in car: 42 is not a pair
 |120
 120
 
+; Trace shows:
+; - Each call with arguments
+; - Indentation for depth
+; - Return values
+
+; Trace multiple procedures
+&gt; (trace factorial fibonacci)
+
 ; Untrace
-> (untrace factorial)</code></pre>
-        <br/>
-        <li><b>Break and inspect:</b></li>
-<pre><code class="language-scheme line-numbers">; Insert breakpoint
-(define (compute x y)
-  (let ((a (* x 2))
-        (b (+ y 3)))
-    (break)  ; Stop here
-    (+ a b)))
+&gt; (untrace factorial)
 
-; When break is hit, can inspect variables
-> (compute 5 10)
-Break in compute
-debug> a
+; Untrace all
+&gt; (untrace)
+
+; Check what's traced
+&gt; (traced?)
+()                             ; Nothing traced
+
+; Conditional tracing
+&gt; (define (traced-fact n)
+    (when (&gt; n 10)
+      (trace factorial))
+    (let ([result (factorial n)])
+      (untrace factorial)
+      result))
+</code></pre>
+        <br/>
+        <li>Break points and inspection:</li>
+<pre><code class="language-scheme line-numbers">; Insert breakpoint in code
+&gt; (define (compute x y)
+    (let ([a (* x 2)]
+          [b (+ y 3)])
+      (break)                  ; Stop here
+      (+ a b)))
+
+; When break is hit
+&gt; (compute 5 10)
+Break at:
+  (+ a b)
+debug&gt;
+
+; At debug prompt, inspect variables
+debug&gt; x
+5
+
+debug&gt; y
 10
-debug> b
-13
-debug> (continue)</code></pre>
-        <br/>
-        <li><b>Pretty-printing for debugging:</b></li>
-<pre><code class="language-scheme line-numbers">; Pretty-print complex structures
-> (pretty-print '((a b c) (d (e f) g) (h i)))
-((a b c)
- (d (e f) g)
- (h i))
 
-; Print with line numbers
-> (pretty-print
+debug&gt; a
+10
+
+debug&gt; b
+13
+
+; Evaluate expressions
+debug&gt; (+ a b)
+23
+
+; Continue execution
+debug&gt; (continue)
+23
+
+&gt;                             ; Back to normal REPL
+
+; Conditional breakpoints
+&gt; (define (process-list lst)
+    (if (null? lst)
+        '()
+        (let ([item (car lst)])
+          (when (not (number? item))
+            (break))           ; Break only for non-numbers
+          (cons (* item 2) (process-list (cdr lst))))))
+
+&gt; (process-list '(1 2 "three" 4))
+Break at:
+  (cons (* item 2) (process-list (cdr lst)))
+debug&gt; item
+"three"
+
+debug&gt; lst
+("three" 4)
+</code></pre>
+        <br/>
+        <li>Inspector system:</li>
+<pre><code class="language-scheme line-numbers">; Enable inspector information
+&gt; (generate-inspector-information #t)
+
+; Define a closure
+&gt; (define (make-counter)
+    (let ([count 0])
+      (lambda ()
+        (set! count (+ count 1))
+        count)))
+
+&gt; (define counter (make-counter))
+
+; Inspect the closure
+&gt; (inspect counter)
+counter is a procedure
+  closed over: count = 0
+
+; Call and inspect again
+&gt; (counter)
+1
+
+&gt; (inspect counter)
+counter is a procedure
+  closed over: count = 1
+
+; Inspect data structures
+&gt; (define data '((name . "Alice")
+                 (age . 30)
+                 (city . "Boston")))
+
+&gt; (inspect data)
+data is a list:
+  ((name . "Alice")
+   (age . 30)
+   (city . "Boston"))
+
+; Inspect records
+&gt; (define-record-type person
+    (fields name age city))
+
+&gt; (define p (make-person "Bob" 25 "NYC"))
+
+&gt; (inspect p)
+p is a person record:
+  name: "Bob"
+  age: 25
+  city: "NYC"
+</code></pre>
+        <br/>
+        <li>Pretty-printing for debugging:</li>
+<pre><code class="language-scheme line-numbers">; Pretty-print nested structures
+&gt; (define complex-data
     '(define (long-function x y z)
-       (let ((a (+ x y))
-             (b (* y z)))
-         (+ a b))))
+       (let ([a (compute-alpha x)]
+             [b (compute-beta y)]
+             [c (compute-gamma z)])
+         (if (valid? a b c)
+             (process a b c)
+             (fallback x y z)))))
+
+&gt; complex-data
+; Without pretty-print (hard to read)
+(define (long-function x y z) (let ([a ...]) ...))
+
+&gt; (pretty-print complex-data)
+; With pretty-print (readable)
 (define (long-function x y z)
-  (let ((a (+ x y))
-        (b (* y z)))
-    (+ a b)))</code></pre>
+  (let ([a (compute-alpha x)]
+        [b (compute-beta y)]
+        [c (compute-gamma z)])
+    (if (valid? a b c)
+        (process a b c)
+        (fallback x y z))))
+
+; Control pretty-printing
+&gt; (pretty-maximum-lines)
+#f                             ; Unlimited
+
+&gt; (pretty-maximum-lines 10)
+; Truncates after 10 lines
+
+&gt; (pretty-line-length)
+80                             ; Characters per line
+
+&gt; (pretty-line-length 120)
+; Wider lines
+
+; Pretty-print to string
+&gt; (let ([str-port (open-output-string)])
+    (parameterize ([current-output-port str-port])
+      (pretty-print complex-data))
+    (get-output-string str-port))
+; Returns formatted string
+</code></pre>
+        <br/>
+        <li>Debugging visualization:</li>
+        <svg width="600" height="320" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead4" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Debugging Tools Workflow</text>
+
+            <!-- Code -->
+            <rect x="30" y="50" width="120" height="220" fill="#e6e6ff" stroke="#6600cc" stroke-width="2" rx="5"/>
+            <text x="90" y="70" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Your Code</text>
+
+            <text x="40" y="95" font-family="Times New Roman" font-size="9">(define (f x)</text>
+            <text x="50" y="115" font-family="Times New Roman" font-size="9">(g (* x 2)))</text>
+            <text x="40" y="145" font-family="Times New Roman" font-size="9">(define (g y)</text>
+            <text x="50" y="165" font-family="Times New Roman" font-size="9">(break)        ; Stop</text>
+            <text x="50" y="185" font-family="Times New Roman" font-size="9">(h (+ y 1)))</text>
+            <text x="40" y="215" font-family="Times New Roman" font-size="9">(define (h z)</text>
+            <text x="50" y="235" font-family="Times New Roman" font-size="9">(car z))       ; Error</text>
+
+            <!-- Arrow to debugging -->
+            <line x1="150" y1="155" x2="190" y2="155" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"/>
+
+            <!-- Debugging tools -->
+            <rect x="200" y="50" width="160" height="220" fill="#f5f5f5" stroke="#999" stroke-width="2" rx="5"/>
+            <text x="280" y="70" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Debugging Tools</text>
+
+            <!-- Trace -->
+            <rect x="215" y="85" width="130" height="35" fill="#ccffcc" stroke="#009900" stroke-width="1" rx="3"/>
+            <text x="225" y="102" font-family="Times New Roman" font-size="10" font-weight="bold">Trace</text>
+            <text x="225" y="117" font-family="Times New Roman" font-size="9">See call flow</text>
+
+            <!-- Break -->
+            <rect x="215" y="130" width="130" height="35" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="3"/>
+            <text x="225" y="147" font-family="Times New Roman" font-size="10" font-weight="bold">Break</text>
+            <text x="225" y="162" font-family="Times New Roman" font-size="9">Inspect state</text>
+
+            <!-- Inspector -->
+            <rect x="215" y="175" width="130" height="35" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="225" y="192" font-family="Times New Roman" font-size="10" font-weight="bold">Inspector</text>
+            <text x="225" y="207" font-family="Times New Roman" font-size="9">Examine values</text>
+
+            <!-- Stack trace -->
+            <rect x="215" y="220" width="130" height="35" fill="#ffe6cc" stroke="#cc6600" stroke-width="1" rx="3"/>
+            <text x="225" y="237" font-family="Times New Roman" font-size="10" font-weight="bold">Stack Trace</text>
+            <text x="225" y="252" font-family="Times New Roman" font-size="9">Show call chain</text>
+
+            <!-- Arrow to output -->
+            <line x1="360" y1="155" x2="400" y2="155" stroke="#666" stroke-width="2" marker-end="url(#arrowhead4)"/>
+
+            <!-- Output/Results -->
+            <rect x="410" y="50" width="160" height="220" fill="#e6ffe6" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="490" y="70" text-anchor="middle" font-family="Times New Roman" font-size="11" font-weight="bold">Information</text>
+
+            <text x="420" y="95" font-family="Times New Roman" font-size="9">Call trace:</text>
+            <text x="430" y="110" font-family="Times New Roman" font-size="8">|(f 5)</text>
+            <text x="430" y="125" font-family="Times New Roman" font-size="8">| (g 10)</text>
+
+            <text x="420" y="150" font-family="Times New Roman" font-size="9">At breakpoint:</text>
+            <text x="430" y="165" font-family="Times New Roman" font-size="8">y = 10</text>
+
+            <text x="420" y="190" font-family="Times New Roman" font-size="9">Stack:</text>
+            <text x="430" y="205" font-family="Times New Roman" font-size="8">at g</text>
+            <text x="430" y="220" font-family="Times New Roman" font-size="8">at f</text>
+            <text x="430" y="235" font-family="Times New Roman" font-size="8">at top-level</text>
+
+            <text x="420" y="260" font-family="Times New Roman" font-size="9" fill="#cc0000">Error found!</text>
+
+            <!-- Note -->
+            <rect x="30" y="285" width="540" height="25" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="3"/>
+            <text x="300" y="302" text-anchor="middle" font-family="Times New Roman" font-size="10">Enable with: (debug-level 3) (generate-procedure-source-information #t)</text>
+        </svg>
     </ul>
     <br/><br/>
 
@@ -2980,222 +4670,527 @@ debug> (continue)</code></pre>
     <li>Creating Standalone Executables</li>
     <br/>
     <ul>
-        <li>Chez Scheme can create standalone executable programs.</li>
-        <br/>
-        <li><b>Creating a boot file:</b></li>
-<pre><code class="language-scheme line-numbers">; Compile program to boot file
-$ echo '(make-boot-file "myapp.boot" '() "myprogram.ss")' | scheme
+        <li>Boot file creation:</li>
+<pre><code class="language-scheme line-numbers">; Boot files package compiled code and runtime
+; They enable standalone deployment
 
-; This creates a boot file containing your program</code></pre>
+; Create a boot file
+(make-boot-file "myapp.boot"
+                '()                ; List of additional boot files
+                "main.ss")         ; Entry point
+
+; This creates myapp.boot containing:
+; - Compiled code from main.ss and dependencies
+; - Chez runtime system
+; - Everything needed to run independently
+
+; With dependencies
+(make-boot-file "myapp.boot"
+                '()
+                "main.ss"
+                "utils.so"
+                "data.so")
+
+; Multiple entry points
+(make-boot-file "myapp.boot"
+                '()
+                "init.ss"
+                "main.ss"
+                "cleanup.ss")
+</code></pre>
         <br/>
-        <li><b>Running a boot file:</b></li>
-<pre><code class="language-bash line-numbers"># Run boot file with Scheme
+        <li>Running boot files:</li>
+<pre><code class="language-bash line-numbers"># Run boot file directly
 $ scheme -b myapp.boot
 
-# Or specify boot file and entry point
-$ scheme -b myapp.boot --eval '(main)'</code></pre>
+# Run with arguments
+$ scheme -b myapp.boot arg1 arg2
+
+# Specify entry point
+$ scheme -b myapp.boot --eval '(main)'
+
+# Silent mode
+$ scheme -q -b myapp.boot
+</code></pre>
         <br/>
-        <li><b>Creating shell script wrapper:</b></li>
+        <li>Creating shell wrapper:</li>
 <pre><code class="language-bash line-numbers">#!/bin/sh
 # File: myapp
-exec scheme -b myapp.boot "$@"</code></pre>
+
+# Find scheme executable
+SCHEME=$(which scheme)
+if [ -z "$SCHEME" ]; then
+    echo "Error: Chez Scheme not found"
+    exit 1
+fi
+
+# Get script directory
+DIR="$(cd "$(dirname "$0")" &amp;&amp; pwd)"
+
+# Run boot file
+exec "$SCHEME" -q -b "$DIR/myapp.boot" "$@"
+</code></pre>
 <pre><code class="language-bash line-numbers"># Make executable
 $ chmod +x myapp
 
-# Run like a normal program
+# Now can run like normal program
 $ ./myapp
-$ ./myapp arg1 arg2</code></pre>
+Hello from standalone app!
+
+$ ./myapp arg1 arg2
+Args: (arg1 arg2)
+</code></pre>
         <br/>
-        <li><b>Example: complete program structure</b></li>
+        <li>Complete application example:</li>
 <pre><code class="language-scheme line-numbers">; File: myapp.ss
 #!chezscheme
 
 (import (chezscheme))
 
+; Application configuration
+(define app-name "MyApp")
+(define app-version "1.0.0")
+
+; Main function
 (define (main args)
-  (display "MyApp v1.0")
+  ; Print banner
+  (printf "~a v~a~%" app-name app-version)
   (newline)
-  (when (> (length args) 1)
-    (display "Arguments: ")
-    (display (cdr args))
-    (newline))
-  (display "Hello from standalone app!")
-  (newline))
 
-; Auto-run main when loaded
-(main (command-line))</code></pre>
-<pre><code class="language-bash line-numbers"># Build steps
-$ scheme --compile-imported-libraries --program myapp.ss
-$ echo '(make-boot-file "myapp.boot" '() "myapp.ss")' | scheme
+  ; Process arguments
+  (let ([cmd-args (cdr args)])  ; Skip program name
+    (cond
+      [(null? cmd-args)
+       (print-usage)]
+      [(member "--help" cmd-args)
+       (print-usage)]
+      [(member "--version" cmd-args)
+       (printf "Version: ~a~%" app-version)]
+      [else
+       (process-args cmd-args)])))
 
-# Create wrapper script
-$ cat > myapp << 'EOF'
-#!/bin/sh
-exec scheme -b myapp.boot "$@"
-EOF
-$ chmod +x myapp
+; Print usage information
+(define (print-usage)
+  (display "Usage: myapp [options] [arguments]\n")
+  (display "\n")
+  (display "Options:\n")
+  (display "  --help       Show this help message\n")
+  (display "  --version    Show version information\n")
+  (display "  --verbose    Enable verbose output\n"))
 
-# Run
-$ ./myapp hello world
-MyApp v1.0
-Arguments: (hello world)
-Hello from standalone app!</code></pre>
-    </ul>
-    <br/><br/>
+; Process command-line arguments
+(define (process-args args)
+  (let ([verbose (member "--verbose" args)])
+    (when verbose
+      (display "Verbose mode enabled\n"))
 
+    ; Filter out options
+    (let ([inputs (filter
+                    (lambda (arg)
+                      (not (string-prefix? "--" arg)))
+                    args)])
+      (if (null? inputs)
+          (display "No input files specified\n")
+          (for-each process-file inputs)))))
 
-    <li>Common Workflow Examples</li>
-    <br/>
-    <ul>
-        <li><b>Interactive development workflow:</b></li>
-<pre><code class="language-scheme line-numbers">; 1. Start REPL
-$ scheme
+; Process a single file
+(define (process-file filename)
+  (printf "Processing: ~a~%" filename)
+  (if (file-exists? filename)
+      (begin
+        (printf "  Size: ~a bytes~%"
+                (file-size filename))
+        (display "  OK\n"))
+      (printf "  Error: file not found~%")))
 
-; 2. Load your code
-> (load "mycode.ss")
+; Helper: check if string starts with prefix
+(define (string-prefix? prefix str)
+  (and (&gt;= (string-length str)
+            (string-length prefix))
+       (string=? prefix
+                 (substring str 0 (string-length prefix)))))
 
-; 3. Test functions interactively
-> (my-function test-data)
-
-; 4. Modify code in editor
-
-; 5. Reload
-> (load "mycode.ss")
-
-; 6. Test again
-> (my-function test-data)
-
-; Repeat 4-6 until satisfied</code></pre>
+; Auto-run main
+(main (command-line))
+</code></pre>
         <br/>
-        <li><b>Library development workflow:</b></li>
-<pre><code class="language-bash line-numbers"># 1. Create library file
-$ cat > mylib.sls << 'EOF'
-(library (mylib)
-  (export func1 func2)
-  (import (chezscheme))
-  (define (func1 x) ...)
-  (define (func2 y) ...))
-EOF
-
-# 2. Compile library
-$ echo '(compile-library "mylib.sls")' | scheme
-
-# 3. Test in REPL
-$ scheme
-> (import (mylib))
-> (func1 test-input)
-
-# 4. Modify and recompile as needed</code></pre>
-        <br/>
-        <li><b>Script development workflow:</b></li>
-<pre><code class="language-bash line-numbers"># 1. Create script
-$ cat > myscript.ss << 'EOF'
+        <li>Building the standalone app:</li>
+<pre><code class="language-bash line-numbers"># Build script: build.ss
 #!/usr/bin/env scheme --script
-(display "Running script")
-(newline)
-EOF
 
-# 2. Make executable
-$ chmod +x myscript.ss
+(import (chezscheme))
 
-# 3. Test
-$ ./myscript.ss
+(printf "Building MyApp...~%")
 
-# 4. Debug if needed
-$ scheme
-> (load "myscript.ss")</code></pre>
-        <br/>
-        <li><b>Production deployment workflow:</b></li>
-<pre><code class="language-bash line-numbers"># 1. Set optimization and compile all files
-$ scheme &lt;&lt; 'EOF'
+; Set production parameters
 (optimize-level 3)
 (debug-level 0)
-(compile-file "module1.ss")
-(compile-file "module2.ss")
-(compile-library "mylib.sls")
-(compile-program "main.ss")
-EOF
 
-# 2. Create boot file
-$ echo '(make-boot-file "app.boot" '() "main.ss")' | scheme
+; Compile main file
+(printf "Compiling myapp.ss...~%")
+(compile-file "myapp.ss")
 
-# 3. Create launcher script
-$ cat > app << 'EOF'
-#!/bin/sh
-exec scheme -b app.boot "$@"
-EOF
-$ chmod +x app
+; Create boot file
+(printf "Creating boot file...~%")
+(make-boot-file "myapp.boot" '() "myapp.so")
 
-# 4. Deploy: copy app, app.boot, and .so files to target</code></pre>
+; Create wrapper script
+(printf "Creating launcher...~%")
+(call-with-output-file "myapp"
+  (lambda (port)
+    (fprintf port "#!/bin/sh~%")
+    (fprintf port "exec scheme -q -b \"$(dirname \"$0\")/myapp.boot\" \"$@\"~%")))
+
+(system "chmod +x myapp")
+
+(printf "Build complete!~%")
+(printf "Run with: ./myapp~%")
+</code></pre>
+<pre><code class="language-bash line-numbers"># Execute build
+$ chmod +x build.ss
+$ ./build.ss
+Building MyApp...
+Compiling myapp.ss...
+Creating boot file...
+Creating launcher...
+Build complete!
+Run with: ./myapp
+
+# Test the application
+$ ./myapp --help
+MyApp v1.0.0
+
+Usage: myapp [options] [arguments]
+
+Options:
+  --help       Show this help message
+  --version    Show version information
+  --verbose    Enable verbose output
+
+$ ./myapp --verbose file1.txt file2.txt
+MyApp v1.0.0
+
+Verbose mode enabled
+Processing: file1.txt
+  Size: 1234 bytes
+  OK
+Processing: file2.txt
+  Error: file not found
+</code></pre>
+        <br/>
+        <li>Deployment checklist:</li>
+        <svg width="600" height="300" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Times New Roman" font-size="14" font-weight="bold">Standalone Application Deployment</text>
+
+            <!-- Steps -->
+            <rect x="30" y="50" width="540" height="235" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="5"/>
+
+            <!-- Step 1 -->
+            <rect x="50" y="65" width="500" height="35" fill="#cce5ff" stroke="#0066cc" stroke-width="1" rx="3"/>
+            <text x="60" y="83" font-family="Times New Roman" font-size="11" font-weight="bold">1. Compile with Optimization</text>
+            <text x="70" y="98" font-family="Times New Roman" font-size="9">(optimize-level 3) (debug-level 0)</text>
+
+            <!-- Step 2 -->
+            <rect x="50" y="110" width="500" height="35" fill="#ccffcc" stroke="#009900" stroke-width="1" rx="3"/>
+            <text x="60" y="128" font-family="Times New Roman" font-size="11" font-weight="bold">2. Create Boot File</text>
+            <text x="70" y="143" font-family="Times New Roman" font-size="9">(make-boot-file "app.boot" '() "main.so")</text>
+
+            <!-- Step 3 -->
+            <rect x="50" y="155" width="500" height="35" fill="#ffe6cc" stroke="#cc6600" stroke-width="1" rx="3"/>
+            <text x="60" y="173" font-family="Times New Roman" font-size="11" font-weight="bold">3. Create Launcher Script</text>
+            <text x="70" y="188" font-family="Times New Roman" font-size="9">#!/bin/sh; exec scheme -q -b app.boot "$@"</text>
+
+            <!-- Step 4 -->
+            <rect x="50" y="200" width="500" height="35" fill="#ffffcc" stroke="#999900" stroke-width="1" rx="3"/>
+            <text x="60" y="218" font-family="Times New Roman" font-size="11" font-weight="bold">4. Test Thoroughly</text>
+            <text x="70" y="233" font-family="Times New Roman" font-size="9">Verify all features work with all arguments</text>
+
+            <!-- Step 5 -->
+            <rect x="50" y="245" width="500" height="35" fill="#e6e6ff" stroke="#6600cc" stroke-width="1" rx="3"/>
+            <text x="60" y="263" font-family="Times New Roman" font-size="11" font-weight="bold">5. Deploy Files</text>
+            <text x="70" y="278" font-family="Times New Roman" font-size="9">Copy launcher script + .boot file to target system</text>
+        </svg>
+        <br/><br/>
+        <li>Alternative: Fully static binary:</li>
+<pre><code class="language-bash line-numbers"># For truly standalone binary (no Scheme installation needed)
+# Requires Chez Scheme source and static build
+
+# 1. Build Chez with static linking
+$ cd ChezScheme
+$ ./configure --disable-shared
+$ make install
+
+# 2. Create boot file with scheme.boot included
+$ echo '(make-boot-file "standalone.boot"
+                        (list (scheme-boot-file))
+                        "myapp.so")' | scheme
+
+# 3. Create custom executable
+# This varies by platform and requires C compilation
+# See Chez documentation for platform-specific instructions
+
+# Result: single executable with no dependencies
+</code></pre>
     </ul>
     <br/><br/>
 
 
-    <li>Tips and Best Practices</li>
+    <li>Workflow Best Practices</li>
     <br/>
     <ul>
-        <li><b>Development mode setup:</b></li>
-<pre><code class="language-scheme line-numbers">; In your .chezscheme.rc or startup file
-(optimize-level 1)
-(debug-level 3)
-(case-sensitive #t)
-(print-gensym #t)
+        <li>Interactive development workflow:</li>
+<pre><code class="language-scheme line-numbers">; Recommended REPL-driven development process:
 
-; Load commonly used utilities
-(load "~/scheme/utils.ss")</code></pre>
-        <br/>
-        <li><b>REPL productivity tips:</b></li>
-        <ul>
-            <li>Use arrow keys for command history</li>
-            <li>Use Tab for completion (if enabled)</li>
-            <li>Define helper functions in a utils file</li>
-            <li>Keep a scratch file for experiments</li>
-            <li>Use <code>(trace ...)</code> liberally during debugging</li>
-        </ul>
-        <br/>
-        <li><b>File organization:</b></li>
-<pre><code class="language-plaintext line-numbers">project/
-  src/
-    mylib.sls          ; Library definitions
-    module1.ss         ; Module source
-    module2.ss         ; Module source
-  compiled/
-    mylib.so           ; Compiled library
-    module1.so         ; Compiled module
-    module2.so         ; Compiled module
-  tests/
-    test-mylib.ss      ; Tests
-  scripts/
-    build.ss           ; Build script
-  main.ss              ; Entry point</code></pre>
-        <br/>
-        <li><b>Avoid common pitfalls:</b></li>
-<pre><code class="language-scheme line-numbers">; Don't redefine in REPL without restarting
-; if you change function signatures
+; 1. Start REPL with configuration
+$ scheme -q
 
+; 2. Load your code
+&gt; (load "mycode.ss")
+
+; 3. Test functions interactively
+&gt; (my-function test-input)
+
+; 4. Modify code in editor (keep REPL running)
+
+; 5. Reload modified file
+&gt; (load "mycode.ss")
+
+; 6. Test again immediately
+&gt; (my-function test-input)
+
+; 7. Repeat steps 4-6 rapidly
+
+; Benefits:
+; - Fast iteration
+; - Immediate feedback
+; - No restart overhead
+; - Keep state between reloads (if desired)
+</code></pre>
+        <br/>
+        <li>Library development workflow:</li>
+<pre><code class="language-bash line-numbers"># Directory structure
+project/
+  lib/
+    mylib.sls           # Library source
+  test/
+    test-mylib.ss       # Tests
+  build.ss              # Build script
+
+# Workflow:
+
+# 1. Edit library
+$ vim lib/mylib.sls
+
+# 2. Compile library
+$ echo '(compile-library "lib/mylib.sls")' | scheme -q
+
+# 3. Run tests
+$ scheme --script test/test-mylib.ss
+
+# 4. Iterate on steps 1-3
+
+# 5. When satisfied, commit changes
+$ git add lib/mylib.sls
+$ git commit -m "Add new feature"
+</code></pre>
+        <br/>
+        <li>Makefile-based workflow:</li>
+<pre><code class="language-makefile line-numbers"># Makefile for Scheme project
+
+SCHEME = scheme
+SOURCES = $(wildcard src/*.ss)
+OBJECTS = $(SOURCES:.ss=.so)
+LIBS = $(wildcard lib/*.sls)
+LIB_OBJECTS = $(LIBS:.sls=.so)
+
+.PHONY: all clean test run
+
+all: $(OBJECTS) $(LIB_OBJECTS) app.boot
+
+# Compile source files
+%.so: %.ss
+	@echo "Compiling $&lt;..."
+	@echo '(optimize-level 3) (compile-file "$&lt;")' | $(SCHEME) -q
+
+# Compile libraries
+lib/%.so: lib/%.sls
+	@echo "Compiling library $&lt;..."
+	@echo '(compile-library "$&lt;")' | $(SCHEME) -q
+
+# Create boot file
+app.boot: $(OBJECTS) $(LIB_OBJECTS)
+	@echo "Creating boot file..."
+	@echo '(make-boot-file "app.boot" (quote ()) "src/main.so")' | $(SCHEME) -q
+
+# Run tests
+test: $(OBJECTS) $(LIB_OBJECTS)
+	@echo "Running tests..."
+	@$(SCHEME) --script test/run-tests.ss
+
+# Run application
+run: app.boot
+	@$(SCHEME) -q -b app.boot
+
+# Clean compiled files
+clean:
+	@echo "Cleaning..."
+	@rm -f $(OBJECTS) $(LIB_OBJECTS) app.boot
+	@rm -f src/*.so lib/*.so
+
+# Development mode (no optimization)
+dev:
+	@$(MAKE) SCHEME="scheme -q --eval '(optimize-level 0)' --eval"
+</code></pre>
+<pre><code class="language-bash line-numbers"># Usage
+$ make                  # Build everything
+$ make test             # Run tests
+$ make run              # Run application
+$ make clean            # Clean compiled files
+$ make dev              # Development build
+</code></pre>
+        <br/>
+        <li>Common pitfalls to avoid:</li>
+<pre><code class="language-scheme line-numbers">; PITFALL 1: Redefining with different signatures
 ; Don't:
-> (define (func x) ...)      ; Define with 1 arg
-> (define (func x y) ...)    ; Redefine with 2 args
-; Old callers may still use 1-arg version!
+&gt; (define (func x) ...)         ; One parameter
+&gt; (define (func x y) ...)       ; Two parameters
+; Old callers still use one parameter!
 
 ; Do: Restart REPL after signature changes
-; Or use parameterize for temporary changes
+; Or use different names for experimentation
 
-; Don't load same file multiple times
-; without understanding effects
+; PITFALL 2: Depending on load order side effects
+; Don't:
+; file1.ss:
+(define x 10)
+; file2.ss:
+(define y (* x 2))              ; Depends on x from file1
 
-; Don't rely on load order side effects
+; Do: Make dependencies explicit
+; file2.ss:
+(import (mylib))                ; Explicitly import
+(define y (* (get-x) 2))
 
-; Do use libraries for clean interfaces</code></pre>
+; PITFALL 3: Forgetting to recompile after changes
+; Don't:
+$ vim mylib.ss                  ; Edit source
+$ scheme --script test.ss       ; Still loads old .so!
+
+; Do: Recompile or delete .so files
+$ rm mylib.so
+$ scheme --script test.ss
+
+; Or enable auto-compilation:
+$ scheme --compile-imported-libraries --script test.ss
+
+; PITFALL 4: Mixing development and production settings
+; Don't:
+(optimize-level 3)
+; ... later ...
+(load "debug-utils.ss")         ; Needs debug info!
+
+; Do: Set parameters consistently
+; Development:
+(optimize-level 1)
+(debug-level 3)
+
+; Production:
+(optimize-level 3)
+(debug-level 0)
+
+; PITFALL 5: Not handling exceptions in scripts
+; Don't:
+#!/usr/bin/env scheme --script
+(import (chezscheme))
+(process-files (command-line))  ; May fail
+
+; Do: Add error handling
+#!/usr/bin/env scheme --script
+(import (chezscheme))
+(guard (ex
+        [else
+         (fprintf (current-error-port)
+                  "Error: ~a~%" ex)
+         (exit 1)])
+  (process-files (cdr (command-line))))
+</code></pre>
         <br/>
-        <li><b>Performance considerations:</b></li>
+        <li>Productivity tips:</li>
         <ul>
-            <li>Compile files for production use</li>
-            <li>Use <code>(optimize-level 3)</code> for hot paths</li>
-            <li>Profile before optimizing</li>
-            <li>Consider whole-program compilation for maximum performance</li>
-            <li>Avoid unnecessary <code>eval</code> calls</li>
+            <li><b>REPL shortcuts:</b>
+                <ul>
+                    <li>Up/Down arrows: command history</li>
+                    <li>Ctrl+R: reverse history search</li>
+                    <li>Ctrl+C: interrupt computation</li>
+                    <li>Ctrl+D: exit REPL</li>
+                </ul>
+            </li>
+            <li><b>Helper functions:</b> Define utilities in startup file</li>
+<pre><code class="language-scheme line-numbers">; In ~/.schemerc
+(define (reload file)
+  (load file)
+  (printf "Reloaded ~a~%" file))
+
+(define (compile-and-load file)
+  (compile-file file)
+  (load (path-replace-extension file ".so")))
+
+(define (time-n proc n)
+  (time
+    (do ([i 0 (+ i 1)])
+        ((= i n))
+      (proc))))
+
+(define (show x)
+  (pretty-print x)
+  x)
+</code></pre>
+            <li><b>Keep a scratch file:</b> For quick experiments</li>
+            <li><b>Use version control:</b> Commit frequently</li>
+            <li><b>Write tests early:</b> Makes iteration faster</li>
+            <li><b>Profile before optimizing:</b> Use <code>time</code> to find bottlenecks</li>
         </ul>
+        <br/>
+        <li>Complete project template:</li>
+<pre><code class="language-plaintext line-numbers">my-project/
+  README.md
+  LICENSE
+  Makefile                      # Build automation
+  .gitignore
+
+  src/
+    main.ss                     # Entry point
+    utils.ss                    # Utilities
+    core.ss                     # Core logic
+
+  lib/
+    myproject/
+      math.sls                  # (myproject math)
+      data.sls                  # (myproject data)
+      io.sls                    # (myproject io)
+
+  test/
+    test-math.ss                # Math tests
+    test-data.ss                # Data tests
+    test-io.ss                  # I/O tests
+    run-all.ss                  # Test runner
+
+  scripts/
+    build.ss                    # Build script
+    benchmark.ss                # Benchmarks
+
+  compiled/                     # .so files (gitignored)
+    lib/
+    src/
+
+  docs/
+    API.md                      # API documentation
+    EXAMPLES.md                 # Usage examples
+
+  app.boot                      # Compiled application (gitignored)
+  app                           # Launcher script (gitignored)
+</code></pre>
     </ul>
     <br/><br/>
 
@@ -9090,148 +11085,6 @@ counter                     ; 0 (restored)
     <li>Conditionals</li>
     <br/>
     <ul>
-        <li><code>if</code> is the fundamental conditional:</li>
-<pre><code class="language-scheme line-numbers">; Basic if with two branches
-(if (&gt; 5 3)
-    'yes
-    'no)                    ; yes
-
-; Without else branch (returns unspecified if false)
-(if (&gt; 5 3)
-    (display "5 is greater"))
-
-; Multiple expressions require begin
-(if (even? 4)
-    (begin
-      (display "It's even")
-      (newline)
-      'even)
-    (begin
-      (display "It's odd")
-      (newline)
-      'odd))
-
-; Nested if
-(define (sign n)
-  (if (&gt; n 0)
-      'positive
-      (if (&lt; n 0)
-          'negative
-          'zero)))&lt;/code&gt;&lt;/pre&gt;
-        &lt;br/&gt;
-        &lt;li&gt;&lt;code&gt;cond&lt;/code&gt; handles multiple conditions:&lt;/li&gt;
-&lt;pre&gt;&lt;code class="language-scheme line-numbers"&gt;; Basic cond
-(define (grade score)
-  (cond
-    [(&gt;= score 90) 'A]
-    [(&gt;= score 80) 'B]
-    [(&gt;= score 70) 'C]
-    [(&gt;= score 60) 'D]
-    [else 'F]))
-
-(grade 85)                  ; B
-
-; Multiple expressions per clause (implicit begin)
-(cond
-  [(assq 'name data)
-   =&gt; (lambda (pair)
-        (display "Found: ")
-        (display (cdr pair))
-        (cdr pair))]
-  [else
-   (display "Not found")
-   #f])
-
-; Using =&gt; with procedure
-(cond
-  [(assoc 'key alist) =&gt; cdr]  ; Apply cdr to result if truthy
-  [else 'not-found])
-
-; Guard expressions
-(define (safe-divide a b)
-  (cond
-    [(zero? b) 'division-by-zero]
-    [(and (integer? a) (integer? b)) (quotient a b)]
-    [else (/ a b)]))
-</code></pre>
-        <br/>
-        <li><code>case</code> dispatches on values:</li>
-<pre><code class="language-scheme line-numbers">; Basic case
-(define (day-type day)
-  (case day
-    [(saturday sunday) 'weekend]
-    [(monday tuesday wednesday thursday friday) 'weekday]
-    [else 'unknown]))
-
-(day-type 'saturday)        ; weekend
-(day-type 'monday)          ; weekday
-
-; Multiple values per clause
-(define (vowel? c)
-  (case c
-    [(#\a #\e #\i #\o #\u
-      #\A #\E #\I #\O #\U) #t]
-    [else #f]))
-
-; case uses eqv? for comparison
-(case (+ 1 1)
-  [(1) 'one]
-  [(2) 'two]
-  [(3) 'three]
-  [else 'many])             ; two
-
-; Numeric dispatch
-(define (month-name n)
-  (case n
-    [(1) "January"]
-    [(2) "February"]
-    [(3) "March"]
-    [(4) "April"]
-    [(5) "May"]
-    [(6) "June"]
-    [(7) "July"]
-    [(8) "August"]
-    [(9) "September"]
-    [(10) "October"]
-    [(11) "November"]
-    [(12) "December"]
-    [else "Invalid month"]))</code></pre>
-        <br/>
-        <li><code>when</code> and <code>unless</code> for one-sided conditionals:</li>
-<pre><code class="language-scheme line-numbers">; when executes body if test is true
-(when (&gt; x 0)
-  (display "Positive")
-  (newline)
-  (process-positive x))
-
-; Equivalent to:
-(if (&gt; x 0)
-    (begin
-      (display "Positive")
-      (newline)
-      (process-positive x)))
-
-; unless executes body if test is false
-(unless (null? lst)
-  (display "Processing: ")
-  (display (car lst))
-  (newline))
-
-; Equivalent to:
-(when (not (null? lst))
-  ...)
-
-; Common patterns
-(define (ensure-positive x)
-  (unless (positive? x)
-    (error 'ensure-positive "expected positive number" x))
-  x)
-
-(define (maybe-log message)
-  (when (current-debug-mode)
-    (fprintf (current-error-port) "DEBUG: ~a~n" message)))
-</code></pre>
-        <br/>
         <li><code>and</code> and <code>or</code> with short-circuit evaluation:</li>
 <pre><code class="language-scheme line-numbers">; and returns first false value or last value
 (and #t #t #t)              ; #t
@@ -9309,197 +11162,6 @@ counter                     ; 0 (restored)
     <li>Mapping and Folding</li>
     <br/>
     <ul>
-        <li><code>map</code> applies a procedure to each element:</li>
-<pre><code class="language-scheme line-numbers">; Single list
-(map add1 '(1 2 3 4 5))     ; (2 3 4 5 6)
-
-(map (lambda (x) (* x x)) '(1 2 3 4))
-; (1 4 9 16)
-
-; Multiple lists (must be same length)
-(map + '(1 2 3) '(10 20 30))
-; (11 22 33)
-
-(map cons '(a b c) '(1 2 3))
-; ((a . 1) (b . 2) (c . 3))
-
-(map (lambda (x y z) (+ x y z))
-     '(1 2 3)
-     '(4 5 6)
-     '(7 8 9))
-; (12 15 18)
-
-; map preserves list structure
-(map list '(a b c) '(1 2 3))
-; ((a 1) (b 2) (c 3))
-
-; Nested mapping
-(map (lambda (row)
-       (map (lambda (x) (* x 2)) row))
-     '((1 2 3) (4 5 6)))
-; ((2 4 6) (8 10 12))
-</code></pre>
-        <br/>
-        <li><code>for-each</code> for side effects:</li>
-<pre><code class="language-scheme line-numbers">; Like map but doesn't collect results
-(for-each display '(1 2 3 4 5))
-; Prints: 12345
-
-(for-each
-  (lambda (x)
-    (printf "Processing ~a~n" x))
-  '(a b c))
-; Processing a
-; Processing b
-; Processing c
-
-; Multiple lists
-(for-each
-  (lambda (name age)
-    (printf "~a is ~a years old~n" name age))
-  '("Alice" "Bob" "Carol")
-  '(30 25 35))
-
-; Returns unspecified value
-(for-each display '(1 2 3))  ; Returns #&lt;void&gt;
-</code></pre>
-        <br/>
-        <li><code>fold-left</code> accumulates left to right:</li>
-<pre><code class="language-scheme line-numbers">; (fold-left proc init list)
-; Computes: (proc (proc (proc init e1) e2) e3) ...
-
-; Sum of list
-(fold-left + 0 '(1 2 3 4 5))  ; 15
-
-; Product
-(fold-left * 1 '(1 2 3 4 5))  ; 120
-
-; Building a list (reverses)
-(fold-left (lambda (acc x) (cons x acc))
-           '()
-           '(1 2 3))        ; (3 2 1)
-
-; Finding maximum
-(fold-left max -inf.0 '(3 1 4 1 5 9 2 6))  ; 9
-
-; Counting elements
-(fold-left (lambda (count x)
-             (if (even? x) (+ count 1) count))
-           0
-           '(1 2 3 4 5 6))  ; 3
-
-; Multiple lists
-(fold-left (lambda (acc x y) (+ acc (* x y)))
-           0
-           '(1 2 3)
-           '(4 5 6))        ; 32 = 1*4 + 2*5 + 3*6
-
-; Association list from two lists
-(fold-left (lambda (acc k v) (cons (cons k v) acc))
-           '()
-           '(a b c)
-           '(1 2 3))        ; ((c . 3) (b . 2) (a . 1))
-</code></pre>
-        <br/>
-        <li><code>fold-right</code> accumulates right to left:</li>
-<pre><code class="language-scheme line-numbers">; (fold-right proc init list)
-; Computes: (proc e1 (proc e2 (proc e3 init))) ...
-
-; Building a list (preserves order)
-(fold-right cons '() '(1 2 3))
-; (1 2 3)
-
-; Append implementation
-(define (my-append lst1 lst2)
-  (fold-right cons lst2 lst1))
-
-(my-append '(1 2 3) '(4 5 6))  ; (1 2 3 4 5 6)
-
-; Flatten one level
-(fold-right append '() '((1 2) (3 4) (5 6)))
-; (1 2 3 4 5 6)
-
-; Filter implementation
-(define (my-filter pred lst)
-  (fold-right
-    (lambda (x acc)
-      (if (pred x) (cons x acc) acc))
-    '()
-    lst))
-
-(my-filter even? '(1 2 3 4 5 6))  ; (2 4 6)
-
-; Map implementation
-(define (my-map proc lst)
-  (fold-right
-    (lambda (x acc)
-      (cons (proc x) acc))
-    '()
-    lst))
-
-(my-map add1 '(1 2 3))      ; (2 3 4)
-</code></pre>
-        <br/>
-        <li><code>filter</code>, <code>partition</code>, and <code>remove</code>:</li>
-<pre><code class="language-scheme line-numbers">; filter keeps elements satisfying predicate
-(filter even? '(1 2 3 4 5 6))
-; (2 4 6)
-
-(filter (lambda (x) (&gt; x 3)) '(1 2 3 4 5))
-; (4 5)
-
-(filter string? '(1 "a" 2 "b" 3))
-; ("a" "b")
-
-; partition splits into matching and non-matching
-(partition even? '(1 2 3 4 5 6))
-; Returns two values: (2 4 6) and (1 3 5)
-
-(let-values ([(evens odds) (partition even? '(1 2 3 4 5 6))])
-  (printf "Evens: ~a, Odds: ~a~n" evens odds))
-
-; remove/remp removes elements
-(remove 3 '(1 2 3 4 3 5))   ; (1 2 4 5) - uses equal?
-(remv 3 '(1 2 3 4 3 5))     ; (1 2 4 5) - uses eqv?
-(remq 'a '(a b a c a))      ; (b c) - uses eq?
-
-(remp even? '(1 2 3 4 5 6)) ; (1 3 5) - removes if pred true
-
-; remove duplicates (Chez extension)
-(remove-duplicates '(1 2 1 3 2 4))  ; (1 2 3 4)
-</code></pre>
-        <br/>
-        <li><code>find</code>, <code>exists</code>, and <code>for-all</code>:</li>
-<pre><code class="language-scheme line-numbers">; find returns first match or #f
-(find even? '(1 3 5 6 7))   ; 6
-(find even? '(1 3 5 7))     ; #f
-
-(find (lambda (x) (&gt; x 10)) '(5 8 12 3))  ; 12
-
-; exists checks if any element satisfies predicate
-(exists even? '(1 3 5 6 7)) ; #t
-(exists even? '(1 3 5 7 9)) ; #f
-
-; Multiple lists - true if any tuple satisfies
-(exists &lt; '(1 2 3) '(2 2 2))  ; #t (1 &lt; 2)
-
-; for-all checks if all elements satisfy predicate
-(for-all even? '(2 4 6 8))  ; #t
-(for-all even? '(2 4 5 8))  ; #f
-
-; Multiple lists
-(for-all &lt; '(1 2 3) '(2 3 4))  ; #t (all pairs satisfy &lt;)
-
-; Short-circuit behavior
-(for-all
-  (lambda (x)
-    (printf "Checking ~a~n" x)
-    (even? x))
-  '(2 4 5 8))
-; Prints: Checking 2, Checking 4, Checking 5
-; Returns: #f (stops at first failure)
-</code></pre>
-        <br/>
         <li><code>map</code> variants and <code>andmap</code>/<code>ormap</code>:</li>
 <pre><code class="language-scheme line-numbers">; andmap - like for-all but returns last value
 (andmap even? '(2 4 6))     ; #t
@@ -10108,111 +11770,6 @@ counter                     ; 0 (restored)
         </tr>
     </tbody>
 </table>
-    </ul>
-    <br/><br/>
-
-
-    <li>Sequencing and Iteration</li>
-    <br/>
-    <ul>
-        <li><code>begin</code> sequences expressions:</li>
-<pre><code class="language-scheme line-numbers">; begin evaluates expressions in order, returns last
-(begin
-  (display "First")
-  (newline)
-  (display "Second")
-  (newline)
-  42)                       ; Returns 42
-
-; Implicit begin in lambda body
-(lambda (x)
-  (display "Computing...")
-  (newline)
-  (* x x))
-
-; Implicit begin in cond/case clauses
-(cond
-  [(positive? x)
-   (display "positive")
-   x]
-  [else
-   (display "non-positive")
-   0])
-</code></pre>
-        <br/>
-        <li><code>begin0</code> returns first value:</li>
-<pre><code class="language-scheme line-numbers">; begin0 evaluates all but returns first value
-(begin0
-  (compute-result)
-  (cleanup)
-  (log-completion))
-
-; Useful for returning value before side effects
-(define (pop! stack-ref)
-  (begin0
-    (car (stack-ref))       ; Return this
-    (stack-ref (cdr (stack-ref)))))  ; Then modify
-
-; Compare:
-(begin 1 2 3)               ; 3
-(begin0 1 2 3)              ; 1
-</code></pre>
-        <br/>
-        <li><code>do</code> loop:</li>
-<pre><code class="language-scheme line-numbers">; (do ((var init step) ...) (test result ...) body ...)
-
-; Factorial
-(do ([n 5 (- n 1)]
-     [acc 1 (* acc n)])
-    ((zero? n) acc))        ; 120
-
-; Build reversed list
-(do ([lst '(1 2 3 4 5) (cdr lst)]
-     [result '() (cons (car lst) result)])
-    ((null? lst) result))   ; (5 4 3 2 1)
-
-; With body for side effects
-(do ([i 0 (+ i 1)])
-    ((= i 5))
-  (printf "i = ~a~n" i))
-
-; Nested loops
-(do ([i 0 (+ i 1)])
-    ((= i 3))
-  (do ([j 0 (+ j 1)])
-      ((= j 3))
-    (printf "(~a,~a) " i j))
-  (newline))
-</code></pre>
-        <br/>
-        <li>Recursion patterns:</li>
-<pre><code class="language-scheme line-numbers">; Named let for tail-recursive loops
-(let loop ([n 10] [acc 0])
-  (if (zero? n)
-      acc
-      (loop (- n 1) (+ acc n))))  ; 55
-
-; Mutual recursion
-(letrec ([process-list
-          (lambda (lst)
-            (if (null? lst)
-                '()
-                (cons (process-item (car lst))
-                      (process-list (cdr lst)))))]
-         [process-item
-          (lambda (item)
-            (if (list? item)
-                (process-list item)
-                (* item 2)))])
-  (process-list '(1 (2 3) 4)))  ; (2 (4 6) 8)
-
-; Accumulator pattern
-(define (reverse-acc lst)
-  (let loop ([lst lst] [acc '()])
-    (if (null? lst)
-        acc
-        (loop (cdr lst) (cons (car lst) acc)))))
-</code></pre>
     </ul>
     <br/><br/>
 
