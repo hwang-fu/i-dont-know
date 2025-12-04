@@ -5344,10 +5344,10 @@ odds                            ; (1 3 5)
     <br/>
     <ul>
         <li><code>dynamic-wind</code> ensures cleanup with continuations:</li>
-<pre><code class="language-scheme line-numbers">; (dynamic-wind before thunk after)
-; before: called when entering
-; thunk: the main body
-; after: called when exiting (even via continuation!)
+<pre><code class="language-scheme line-numbers">; (dynamic-wind &lt;before&gt; &lt;thunk&gt; &lt;after&gt;)
+; &lt;before&gt;: called when entering
+; &lt;thunk&gt;: the main body
+; &lt;after&gt;: called when exiting (even via continuation!)
 
 (dynamic-wind
   (lambda () (display "entering\n"))
@@ -5358,14 +5358,15 @@ odds                            ; (1 3 5)
 ; leaving
 ; Returns: result
 
-; Crucial: after runs even if continuation jumps out
+; Crucial: &lt;after&gt; runs even if continuation jumps out
 (define escape #f)
 
 (dynamic-wind
   (lambda () (printf "open resource~n"))
   (lambda ()
-    (call/cc (lambda (k) (set! escape k)))
-    'normal-exit)
+    (call/cc (lambda (k)
+                (set! escape k)
+                'normal-exit)))
   (lambda () (printf "close resource~n")))
 ; open resource
 ; close resource
@@ -5407,6 +5408,7 @@ odds                            ; (1 3 5)
 </code></pre>
         <br/>
         <li>Dynamic wind visualization:</li>
+        <br/>
         <svg width="600" height="260" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
             <defs>
                 <marker id="arrowhead7" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -5450,7 +5452,7 @@ odds                            ; (1 3 5)
 
             <!-- Jump arrow -->
             <path d="M 485 105 Q 485 140 400 140" stroke="#cc0000" stroke-width="2" fill="none" stroke-dasharray="4,2"/>
-            <text x="450" y="135" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc0000">escape!</text>
+            <text x="450" y="145" text-anchor="middle" font-family="Times New Roman" font-size="9" fill="#cc0000">escape!</text>
 
             <!-- After still runs -->
             <line x1="400" y1="140" x2="350" y2="140" stroke="#cc0000" stroke-width="2" marker-end="url(#arrowheadRed)"/>
