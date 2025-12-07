@@ -160,6 +160,7 @@
         <li><a href="#abap-date-time">Date &amp; Time</a></li>
         <li><a href="#abap-exception-handling">Eception Handling</a></li>
         <li><a href="#abap-dictionary">Data Dictionary (DDIC)</a></li>
+        <li><a href="#abap-domains">Domains</a></li>
     </ol>
 </nav>
 <hr/>
@@ -9827,7 +9828,955 @@ SE14 can:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-domains">Domains</h3>
+<ol>
 
+    <li>What is a Domain</li>
+    <br/>
+    <ul>
+        <li>Definition:</li>
+<pre><code class="language-text line-numbers">Domain = technical definition of a field's value range.
+
+Defines:
+- Data type (CHAR, NUMC, DEC, etc.)
+- Length
+- Decimal places (for numeric types)
+- Fixed values (valid entries)
+- Value table (check table)
+- Conversion routine (input/output formatting)
+- Output characteristics (lowercase, sign)
+</code></pre>
+        <br/>
+        <li>Position in type hierarchy:</li>
+<pre><code class="language-text line-numbers">Domain              ← technical attributes (you are here)
+   ↓
+Data Element        ← semantic meaning (labels, docs)
+   ↓
+Table Field         ← actual storage
+</code></pre>
+        <br/>
+        <li>Why use domains:</li>
+<pre><code class="language-text line-numbers">1. Reusability
+   One domain → many data elements → many fields
+   Change domain → all fields updated
+
+2. Consistency
+   All fields using domain have same type/length
+
+3. Validation
+   Fixed values enforced automatically
+
+4. Formatting
+   Conversion routines applied consistently
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Domain (SE11)</li>
+    <br/>
+    <ul>
+        <li>Steps:</li>
+<pre><code class="language-text line-numbers">1. Transaction SE11
+2. Select "Domain"
+3. Enter name (e.g., ZSTATUS_D)
+4. Click Create
+5. Fill in:
+   - Short description
+   - Data type
+   - Length (Number of characters)
+   - Decimal places (if numeric)
+   - Output length
+6. Optionally add:
+   - Fixed values (Value Range tab)
+   - Conversion routine
+7. Save → Assign to package/transport
+8. Activate
+</code></pre>
+        <br/>
+        <li>Naming convention:</li>
+<pre><code class="language-text line-numbers">Z*_D or Y*_D
+
+Examples:
+  ZSTATUS_D       status domain
+  ZQUANTITY_D     quantity domain
+  ZCURRENCY_D     currency amount domain
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Data Types</li>
+    <br/>
+    <ul>
+        <li>Available types:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Length</th>
+            <th>ABAP type</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>CHAR</code></td>
+            <td>Character</td>
+            <td>1-30000</td>
+            <td>c</td>
+        </tr>
+        <tr>
+            <td><code>NUMC</code></td>
+            <td>Numeric text (digits only)</td>
+            <td>1-255</td>
+            <td>n</td>
+        </tr>
+        <tr>
+            <td><code>DATS</code></td>
+            <td>Date (YYYYMMDD)</td>
+            <td>8 (fixed)</td>
+            <td>d</td>
+        </tr>
+        <tr>
+            <td><code>TIMS</code></td>
+            <td>Time (HHMMSS)</td>
+            <td>6 (fixed)</td>
+            <td>t</td>
+        </tr>
+        <tr>
+            <td><code>DEC</code></td>
+            <td>Packed decimal</td>
+            <td>1-31</td>
+            <td>p</td>
+        </tr>
+        <tr>
+            <td><code>CURR</code></td>
+            <td>Currency amount</td>
+            <td>1-31</td>
+            <td>p</td>
+        </tr>
+        <tr>
+            <td><code>QUAN</code></td>
+            <td>Quantity</td>
+            <td>1-31</td>
+            <td>p</td>
+        </tr>
+        <tr>
+            <td><code>INT1</code></td>
+            <td>1-byte integer</td>
+            <td>3 (fixed)</td>
+            <td>b (0-255)</td>
+        </tr>
+        <tr>
+            <td><code>INT2</code></td>
+            <td>2-byte integer</td>
+            <td>5 (fixed)</td>
+            <td>s</td>
+        </tr>
+        <tr>
+            <td><code>INT4</code></td>
+            <td>4-byte integer</td>
+            <td>10 (fixed)</td>
+            <td>i</td>
+        </tr>
+        <tr>
+            <td><code>INT8</code></td>
+            <td>8-byte integer</td>
+            <td>19 (fixed)</td>
+            <td>int8</td>
+        </tr>
+        <tr>
+            <td><code>FLTP</code></td>
+            <td>Floating point</td>
+            <td>16 (fixed)</td>
+            <td>f</td>
+        </tr>
+        <tr>
+            <td><code>STRING</code></td>
+            <td>Variable string</td>
+            <td>variable</td>
+            <td>string</td>
+        </tr>
+        <tr>
+            <td><code>RAWSTRING</code></td>
+            <td>Variable bytes</td>
+            <td>variable</td>
+            <td>xstring</td>
+        </tr>
+        <tr>
+            <td><code>RAW</code></td>
+            <td>Fixed bytes</td>
+            <td>1-32000</td>
+            <td>x</td>
+        </tr>
+        <tr>
+            <td><code>CLNT</code></td>
+            <td>Client</td>
+            <td>3 (fixed)</td>
+            <td>c</td>
+        </tr>
+        <tr>
+            <td><code>LANG</code></td>
+            <td>Language key</td>
+            <td>1 (fixed)</td>
+            <td>c</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Choosing the right type:</li>
+<pre><code class="language-text line-numbers">Text that can contain any characters     → CHAR
+Text with only digits (IDs, codes)       → NUMC
+Dates                                    → DATS
+Times                                    → TIMS
+Money amounts                            → CURR (with reference to currency)
+Quantities                               → QUAN (with reference to unit)
+Other decimals                           → DEC
+Whole numbers                            → INT4 (or INT8 for large)
+Yes/no flags                             → CHAR length 1
+Binary data                              → RAW or RAWSTRING
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Length and Decimal Places</li>
+    <br/>
+    <ul>
+        <li>Character types (CHAR, NUMC):</li>
+<pre><code class="language-text line-numbers">Length = number of characters
+
+Domain ZCODE_D:
+  Type: CHAR
+  Length: 10
+
+→ Can store up to 10 characters
+→ Shorter values right-padded with spaces
+→ Longer values truncated
+</code></pre>
+        <br/>
+        <li>Decimal types (DEC, CURR, QUAN):</li>
+<pre><code class="language-text line-numbers">Length = total significant digits
+Decimal places = digits after decimal point
+
+Domain ZAMOUNT_D:
+  Type: DEC
+  Length: 15
+  Decimal places: 2
+
+→ Max value: 9999999999999.99 (13 integer + 2 decimal = 15 total)
+→ Stored as packed decimal (BCD)
+</code></pre>
+        <br/>
+        <li>Length calculation examples:</li>
+<pre><code class="language-text line-numbers">Length: 7, Decimals: 2
+  Integer part: 5 digits
+  Decimal part: 2 digits
+  Max: 99999.99
+
+Length: 11, Decimals: 4
+  Integer part: 7 digits
+  Decimal part: 4 digits
+  Max: 9999999.9999
+
+Length: 5, Decimals: 0
+  Integer part: 5 digits
+  No decimal
+  Max: 99999
+</code></pre>
+        <br/>
+        <li>Using in ABAP:</li>
+<pre><code class="language-abap line-numbers">* Domain ZAMOUNT_D: DEC 15,2
+DATA lv_amount TYPE zamount.   "data element using domain
+
+lv_amount = '12345678901234.56'.   "too large - error
+lv_amount = '9999999999999.99'.    "max value - OK
+lv_amount = '1234.567'.            "rounded to 1234.57
+
+WRITE: / lv_amount.
+</code></pre>
+<pre><code class="language-text line-numbers">1234.57
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Output Length</li>
+    <br/>
+    <ul>
+        <li>What it controls:</li>
+<pre><code class="language-text line-numbers">Output length = display width on screens/reports.
+
+Can be different from storage length.
+Includes: sign, decimal point, thousands separator.
+</code></pre>
+        <br/>
+        <li>Calculation:</li>
+<pre><code class="language-text line-numbers">For DEC with length 15, decimals 2:
+  Digits: 15
+  Decimal point: 1
+  Sign: 1 (optional)
+  Thousands separators: 4 (for 13 integer digits)
+  Output length: ~21
+
+SAP calculates default, but you can override.
+</code></pre>
+        <br/>
+        <li>Effect in ABAP:</li>
+<pre><code class="language-abap line-numbers">DATA lv_amount TYPE zamount VALUE '1234567.89'.
+
+* WRITE uses output length for formatting
+WRITE: / lv_amount.
+</code></pre>
+<pre><code class="language-text line-numbers">    1,234,567.89
+</code></pre>
+<p>Formatted according to output length and user settings.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Fixed Values</li>
+    <br/>
+    <ul>
+        <li>What they are:</li>
+<pre><code class="language-text line-numbers">Fixed values = enumeration of allowed values.
+Restricts what can be entered.
+Provides dropdown list on screens.
+</code></pre>
+        <br/>
+        <li>Defining in SE11:</li>
+<pre><code class="language-text line-numbers">Domain: ZSTATUS_D
+Type: CHAR
+Length: 1
+
+Value Range tab → Single values:
+  Value    Short description
+  A        Active
+  I        Inactive
+  P        Pending
+  C        Closed
+</code></pre>
+        <br/>
+        <li>Value intervals:</li>
+<pre><code class="language-text line-numbers">Can also define ranges:
+
+Domain: ZPRIORITY_D
+Type: NUMC
+Length: 2
+
+Intervals:
+  From    To    Description
+  01      03    Low priority
+  04      06    Medium priority
+  07      09    High priority
+</code></pre>
+        <br/>
+        <li>Effect on input:</li>
+<pre><code class="language-text line-numbers">Screen field using data element with this domain:
+
+1. F4 (dropdown) shows:
+   A - Active
+   I - Inactive
+   P - Pending
+   C - Closed
+
+2. Invalid values rejected:
+   User enters "X" → Error "Value X is not valid"
+</code></pre>
+        <br/>
+        <li>Checking in ABAP:</li>
+<pre><code class="language-abap line-numbers">* Fixed values are NOT automatically checked in ABAP code
+* Only enforced on screens
+
+DATA lv_status TYPE zstatus VALUE 'X'.   "compiles fine!
+
+* Manual check
+DATA lt_values TYPE TABLE OF dd07v.
+
+CALL FUNCTION 'DD_DOMVALUES_GET'
+  EXPORTING
+    domname   = 'ZSTATUS_D'
+    text      = 'X'
+  TABLES
+    dd07v_tab = lt_values.
+
+READ TABLE lt_values WITH KEY domvalue_l = lv_status TRANSPORTING NO FIELDS.
+IF sy-subrc <> 0.
+  WRITE: / 'Invalid status value'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Invalid status value
+</code></pre>
+        <br/>
+        <li>Getting fixed values list:</li>
+<pre><code class="language-abap line-numbers">DATA lt_values TYPE TABLE OF dd07v.
+
+CALL FUNCTION 'DD_DOMVALUES_GET'
+  EXPORTING
+    domname   = 'ZSTATUS_D'
+    text      = 'X'    "X = get texts too
+    langu     = sy-langu
+  TABLES
+    dd07v_tab = lt_values.
+
+LOOP AT lt_values INTO DATA(ls_val).
+  WRITE: / ls_val-domvalue_l, '-', ls_val-ddtext.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">A - Active
+I - Inactive
+P - Pending
+C - Closed
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Value Tables</li>
+    <br/>
+    <ul>
+        <li>What they are:</li>
+<pre><code class="language-text line-numbers">Value table = database table that contains valid values.
+Alternative to fixed values for dynamic/large value lists.
+</code></pre>
+        <br/>
+        <li>Defining in SE11:</li>
+<pre><code class="language-text line-numbers">Domain: ZCOUNTRY_D
+Type: CHAR
+Length: 3
+Value table: T005    (SAP country table)
+
+→ Valid values come from T005-LAND1
+</code></pre>
+        <br/>
+        <li>Difference from fixed values:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>Fixed values</th>
+            <th>Value table</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Storage</td>
+            <td>In domain definition</td>
+            <td>In database table</td>
+        </tr>
+        <tr>
+            <td>Maintenance</td>
+            <td>Change domain</td>
+            <td>Change table data</td>
+        </tr>
+        <tr>
+            <td>Size</td>
+            <td>Small lists</td>
+            <td>Large lists</td>
+        </tr>
+        <tr>
+            <td>Dynamic</td>
+            <td>No (requires transport)</td>
+            <td>Yes (data changes)</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Important note:</li>
+<pre><code class="language-text line-numbers">Value table alone does NOT enforce validation.
+Only suggests which table contains valid values.
+
+For actual enforcement:
+  Create foreign key on table field level.
+  Foreign key points to value table.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Conversion Routines</li>
+    <br/>
+    <ul>
+        <li>What they do:</li>
+<pre><code class="language-text line-numbers">Conversion routine = transforms value between:
+  - Internal format (stored in database)
+  - External format (shown to user)
+
+Two function modules:
+  CONVERSION_EXIT_xxxxx_INPUT   (external → internal)
+  CONVERSION_EXIT_xxxxx_OUTPUT  (internal → external)
+</code></pre>
+        <br/>
+        <li>Common conversion routines:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Routine</th>
+            <th>Purpose</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>ALPHA</code></td>
+            <td>Add/remove leading zeros</td>
+            <td>123 ↔ 0000000123</td>
+        </tr>
+        <tr>
+            <td><code>MATN1</code></td>
+            <td>Material number format</td>
+            <td>123 ↔ 000000000000000123</td>
+        </tr>
+        <tr>
+            <td><code>CUNIT</code></td>
+            <td>Unit of measure</td>
+            <td>KG ↔ KG (ISO conversion)</td>
+        </tr>
+        <tr>
+            <td><code>ISOLA</code></td>
+            <td>Language key</td>
+            <td>EN ↔ E</td>
+        </tr>
+        <tr>
+            <td><code>GJAHR</code></td>
+            <td>Fiscal year</td>
+            <td>2024 ↔ 2024</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>ALPHA example:</li>
+<pre><code class="language-text line-numbers">Domain: ZORDERNUM_D
+Type: NUMC
+Length: 10
+Conversion routine: ALPHA
+
+User enters: 123
+Stored as: 0000000123
+Displayed as: 123
+</code></pre>
+        <br/>
+        <li>Using in ABAP:</li>
+<pre><code class="language-abap line-numbers">DATA lv_matnr TYPE matnr.   "has MATN1 conversion
+
+* Stored internally with leading zeros
+lv_matnr = '000000000001234567'.
+
+* Display: conversion output applied
+WRITE: / lv_matnr.
+
+* In string template with ALPHA = OUT
+WRITE: / |Material: { lv_matnr ALPHA = OUT }|.
+</code></pre>
+<pre><code class="language-text line-numbers">000000000001234567
+Material: 1234567
+</code></pre>
+        <br/>
+        <li>Calling conversion manually:</li>
+<pre><code class="language-abap line-numbers">DATA lv_external TYPE char18 VALUE '123'.
+DATA lv_internal TYPE matnr.
+
+* External → Internal (add zeros)
+CALL FUNCTION 'CONVERSION_EXIT_MATN1_INPUT'
+  EXPORTING
+    input  = lv_external
+  IMPORTING
+    output = lv_internal.
+
+WRITE: / 'Internal:', lv_internal.
+
+* Internal → External (remove zeros)
+CALL FUNCTION 'CONVERSION_EXIT_MATN1_OUTPUT'
+  EXPORTING
+    input  = lv_internal
+  IMPORTING
+    output = lv_external.
+
+WRITE: / 'External:', lv_external.
+</code></pre>
+<pre><code class="language-text line-numbers">Internal: 000000000000000123
+External: 123
+</code></pre>
+        <br/>
+        <li>Creating custom conversion routine:</li>
+<pre><code class="language-text line-numbers">1. Create function module: CONVERSION_EXIT_ZTEST_INPUT
+   - Import: INPUT
+   - Export: OUTPUT
+   - Code: transform external → internal
+
+2. Create function module: CONVERSION_EXIT_ZTEST_OUTPUT
+   - Import: INPUT
+   - Export: OUTPUT
+   - Code: transform internal → external
+
+3. Assign to domain:
+   Conversion routine: ZTEST
+</code></pre>
+<pre><code class="language-abap line-numbers">* Example: CONVERSION_EXIT_ZTEST_INPUT
+FUNCTION conversion_exit_ztest_input.
+  "Add prefix 'X' to all values
+  output = 'X' &amp;&amp; input.
+ENDFUNCTION.
+
+* Example: CONVERSION_EXIT_ZTEST_OUTPUT
+FUNCTION conversion_exit_ztest_output.
+  "Remove prefix 'X'
+  IF input(1) = 'X'.
+    output = input+1.
+  ELSE.
+    output = input.
+  ENDIF.
+ENDFUNCTION.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Output Characteristics</li>
+    <br/>
+    <ul>
+        <li>Options available:</li>
+<pre><code class="language-text line-numbers">In SE11 domain → Output Characteristics tab:
+
+- Lowercase letters: allow lowercase (default: convert to upper)
+- Sign: display sign for negative numbers
+</code></pre>
+        <br/>
+        <li>Lowercase letters:</li>
+<pre><code class="language-text line-numbers">Domain ZDESC_D:
+  Type: CHAR
+  Length: 40
+  Lowercase: Yes (checked)
+
+→ User can enter: "Hello World"
+→ Stored as: "Hello World"
+
+Domain ZCODE_D:
+  Type: CHAR
+  Length: 10
+  Lowercase: No (unchecked)
+
+→ User enters: "Hello"
+→ Stored as: "HELLO"
+</code></pre>
+        <br/>
+        <li>Effect in ABAP:</li>
+<pre><code class="language-abap line-numbers">* Domain with lowercase = No
+DATA lv_code TYPE zcode VALUE 'Hello'.
+WRITE: / lv_code.   "depends on domain setting
+
+* Domain with lowercase = Yes
+DATA lv_desc TYPE zdesc VALUE 'Hello World'.
+WRITE: / lv_desc.
+</code></pre>
+<pre><code class="language-text line-numbers">HELLO
+Hello World
+</code></pre>
+<p>Uppercase conversion happens on screen input, not in ABAP assignment.</p>
+        <br/>
+        <li>Sign handling:</li>
+<pre><code class="language-text line-numbers">Domain ZBALANCE_D:
+  Type: DEC
+  Length: 15
+  Decimals: 2
+  Sign: checked
+
+→ Negative values display with sign: -1234.56
+→ Without: 1234.56- (trailing minus)
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Currency and Quantity Domains</li>
+    <br/>
+    <ul>
+        <li>CURR type (currency amounts):</li>
+<pre><code class="language-text line-numbers">Domain ZAMOUNT_D:
+  Type: CURR
+  Length: 15
+  Decimals: 2
+  Reference table: ZCURRENCY_TAB
+  Reference field: CURRENCY
+
+→ Decimals depend on currency
+→ JPY has 0 decimals, EUR has 2
+</code></pre>
+        <br/>
+        <li>QUAN type (quantities):</li>
+<pre><code class="language-text line-numbers">Domain ZQUANTITY_D:
+  Type: QUAN
+  Length: 13
+  Decimals: 3
+  Reference table: ZQUANT_TAB
+  Reference field: UNIT
+
+→ Decimals depend on unit of measure
+</code></pre>
+        <br/>
+        <li>Why reference is important:</li>
+<pre><code class="language-text line-numbers">Currency/quantity fields need unit field reference.
+Otherwise SAP doesn't know how to:
+- Format decimals correctly
+- Convert between currencies/units
+- Validate entries
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Domain Changes and Impact</li>
+    <br/>
+    <ul>
+        <li>What can be changed:</li>
+<pre><code class="language-text line-numbers">Safe changes (no data loss):
+- Increase length
+- Add fixed values
+- Change output length
+- Add/change conversion routine
+- Change description
+
+Risky changes (may lose data):
+- Decrease length
+- Change data type
+- Remove fixed values in use
+- Change decimal places
+</code></pre>
+        <br/>
+        <li>Activation with data:</li>
+<pre><code class="language-text line-numbers">When domain used in table with data:
+
+1. Increase length → ALTER TABLE (usually OK)
+2. Decrease length → may truncate data
+3. Type change → requires table conversion
+
+SE14 (Database Utility) handles adjustments.
+</code></pre>
+        <br/>
+        <li>Finding where domain is used:</li>
+<pre><code class="language-text line-numbers">SE11 → Domain → Display
+Menu: Where-Used List (Ctrl+Shift+F3)
+
+Shows:
+- Data elements using this domain
+- Tables (indirectly via data elements)
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Practical Examples</li>
+    <br/>
+    <ul>
+        <li>Status domain with fixed values:</li>
+<pre><code class="language-text line-numbers">Domain: ZORDER_STATUS_D
+Type: CHAR
+Length: 2
+Conversion routine: (none)
+Fixed values:
+  01 = New
+  02 = In Progress
+  03 = Completed
+  04 = Cancelled
+  99 = Error
+</code></pre>
+        <br/>
+        <li>ID domain with leading zeros:</li>
+<pre><code class="language-text line-numbers">Domain: ZDOCUMENT_ID_D
+Type: NUMC
+Length: 10
+Conversion routine: ALPHA
+
+User enters: 12345
+Stored: 0000012345
+Displayed: 12345
+</code></pre>
+        <br/>
+        <li>Amount domain for money:</li>
+<pre><code class="language-text line-numbers">Domain: ZPRICE_D
+Type: CURR
+Length: 11
+Decimals: 2
+</code></pre>
+        <br/>
+        <li>Flag domain (yes/no):</li>
+<pre><code class="language-text line-numbers">Domain: ZFLAG_D
+Type: CHAR
+Length: 1
+Fixed values:
+  X = Yes
+  (space) = No
+</code></pre>
+        <br/>
+        <li>Using these domains:</li>
+<pre><code class="language-abap line-numbers">* After creating data elements for each domain
+DATA lv_status TYPE zorder_status VALUE '02'.
+DATA lv_doc_id TYPE zdocument_id VALUE '0000012345'.
+DATA lv_price TYPE zprice VALUE '199.99'.
+DATA lv_active TYPE zflag VALUE 'X'.
+
+WRITE: / 'Status:', lv_status.
+WRITE: / 'Doc ID:', |{ lv_doc_id ALPHA = OUT }|.
+WRITE: / 'Price:', lv_price.
+WRITE: / 'Active:', lv_active.
+</code></pre>
+<pre><code class="language-text line-numbers">Status: 02
+Doc ID: 12345
+Price:       199.99
+Active: X
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Checking Domain at Runtime</li>
+    <br/>
+    <ul>
+        <li>Get domain information:</li>
+<pre><code class="language-abap line-numbers">DATA ls_domain TYPE dd01v.
+
+CALL FUNCTION 'DDIF_DOMA_GET'
+  EXPORTING
+    name      = 'MATNR_D'
+    langu     = sy-langu
+  IMPORTING
+    dd01v_wa  = ls_domain
+  EXCEPTIONS
+    OTHERS    = 1.
+
+IF sy-subrc = 0.
+  WRITE: / 'Domain:', ls_domain-domname.
+  WRITE: / 'Type:', ls_domain-datatype.
+  WRITE: / 'Length:', ls_domain-leng.
+  WRITE: / 'Decimals:', ls_domain-decimals.
+  WRITE: / 'Conversion:', ls_domain-convexit.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Domain: MATNR_D
+Type: CHAR
+Length:         18
+Decimals:          0
+Conversion: MATN1
+</code></pre>
+        <br/>
+        <li>Check if value is valid (fixed values):</li>
+<pre><code class="language-abap line-numbers">DATA lt_values TYPE TABLE OF dd07v.
+DATA lv_status TYPE c LENGTH 2 VALUE '05'.
+
+CALL FUNCTION 'DD_DOMVALUES_GET'
+  EXPORTING
+    domname   = 'ZORDER_STATUS_D'
+  TABLES
+    dd07v_tab = lt_values.
+
+READ TABLE lt_values WITH KEY domvalue_l = lv_status TRANSPORTING NO FIELDS.
+
+IF sy-subrc = 0.
+  WRITE: / lv_status, 'is valid'.
+ELSE.
+  WRITE: / lv_status, 'is NOT valid'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">05 is NOT valid
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices</li>
+    <br/>
+    <ul>
+        <li>Guidelines:</li>
+<pre><code class="language-text line-numbers">1. Create domain when:
+   - Multiple data elements share same technical properties
+   - Need fixed values (enumeration)
+   - Need conversion routine
+
+2. Skip domain when:
+   - One-off field with unique properties
+   - Using built-in type directly is clearer
+
+3. Use meaningful names:
+   - ZSTATUS_D not ZDOM1
+   - Include _D suffix for clarity
+
+4. Document fixed values:
+   - Clear descriptions for each value
+   - Consider future additions
+
+5. Plan for changes:
+   - Slightly larger length than current need
+   - Room for new fixed values
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Quick Reference</li>
+    <br/>
+    <ul>
+        <li>Domain properties:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Property</th>
+            <th>Purpose</th>
+            <th>Tab in SE11</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Data type</td>
+            <td>Base type (CHAR, DEC, etc.)</td>
+            <td>Definition</td>
+        </tr>
+        <tr>
+            <td>Length</td>
+            <td>Storage size</td>
+            <td>Definition</td>
+        </tr>
+        <tr>
+            <td>Decimals</td>
+            <td>Decimal places</td>
+            <td>Definition</td>
+        </tr>
+        <tr>
+            <td>Output length</td>
+            <td>Display width</td>
+            <td>Definition</td>
+        </tr>
+        <tr>
+            <td>Conversion routine</td>
+            <td>Format transformation</td>
+            <td>Definition</td>
+        </tr>
+        <tr>
+            <td>Fixed values</td>
+            <td>Allowed values list</td>
+            <td>Value Range</td>
+        </tr>
+        <tr>
+            <td>Value table</td>
+            <td>Reference table for values</td>
+            <td>Value Range</td>
+        </tr>
+        <tr>
+            <td>Lowercase</td>
+            <td>Allow lowercase input</td>
+            <td>Output Characteristics</td>
+        </tr>
+        <tr>
+            <td>Sign</td>
+            <td>Display sign for negatives</td>
+            <td>Output Characteristics</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
