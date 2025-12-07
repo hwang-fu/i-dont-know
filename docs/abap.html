@@ -161,6 +161,7 @@
         <li><a href="#abap-exception-handling">Eception Handling</a></li>
         <li><a href="#abap-dictionary">Data Dictionary (DDIC)</a></li>
         <li><a href="#abap-domains">Domains</a></li>
+        <li><a href="#abap-data-elements">Data Elements</a></li>
     </ol>
 </nav>
 <hr/>
@@ -10770,6 +10771,1176 @@ ENDIF.
             <td>Sign</td>
             <td>Display sign for negatives</td>
             <td>Output Characteristics</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-data-elements">Data Elements</h3>
+<ol>
+
+    <li>What is a Data Element</li>
+    <br/>
+    <ul>
+        <li>Definition:</li>
+<pre><code class="language-text line-numbers">Data element = semantic definition of a field.
+
+Defines:
+- Field labels (short, medium, long, heading)
+- Documentation (F1 help text)
+- Search help (F4)
+- Parameter ID (screen memory)
+- Technical type (from domain or direct)
+</code></pre>
+        <br/>
+        <li>Position in type hierarchy:</li>
+<pre><code class="language-text line-numbers">Domain              ← technical attributes (type, length, values)
+   ↓
+Data Element        ← semantic meaning (you are here)
+   ↓
+Table Field         ← actual storage location
+</code></pre>
+        <br/>
+        <li>Why use data elements:</li>
+<pre><code class="language-text line-numbers">1. Consistent labeling
+   Same field label everywhere in the system.
+   Change once → updates all screens/reports.
+
+2. Built-in documentation
+   F1 help available on any field using this element.
+
+3. Search help integration
+   F4 dropdown automatically attached.
+
+4. Screen field memory
+   Parameter ID remembers last entered value.
+
+5. Reusability
+   One definition → many table fields.
+</code></pre>
+        <br/>
+        <li>Domain vs Data Element:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>Domain</th>
+            <th>Data Element</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Focus</td>
+            <td>Technical (how stored)</td>
+            <td>Semantic (what it means)</td>
+        </tr>
+        <tr>
+            <td>Defines</td>
+            <td>Type, length, values</td>
+            <td>Labels, docs, help</td>
+        </tr>
+        <tr>
+            <td>Reuse</td>
+            <td>By multiple data elements</td>
+            <td>By multiple fields</td>
+        </tr>
+        <tr>
+            <td>Example</td>
+            <td>CHAR 18 with ALPHA</td>
+            <td>"Material Number"</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Data Element (SE11)</li>
+    <br/>
+    <ul>
+        <li>Steps:</li>
+<pre><code class="language-text line-numbers">1. Transaction SE11
+2. Select "Data type"
+3. Enter name (e.g., ZORDER_ID)
+4. Click Create
+5. Choose "Data element"
+6. Fill in:
+   - Short description
+   - Domain OR Built-in type
+7. Field Label tab:
+   - Short, Medium, Long, Heading texts
+8. Optionally:
+   - Documentation (Change Documentation button)
+   - Search help
+   - Parameter ID
+9. Save → Assign to package/transport
+10. Activate
+</code></pre>
+        <br/>
+        <li>Naming convention:</li>
+<pre><code class="language-text line-numbers">Z* or Y* prefix for custom objects.
+
+Examples:
+  ZORDER_ID       order identifier
+  ZCUSTOMER_NAME  customer name
+  ZSTATUS         status field
+  ZQUANTITY       quantity field
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Assignment</li>
+    <br/>
+    <ul>
+        <li>Two options:</li>
+<pre><code class="language-text line-numbers">Option 1: Reference to Domain
+  - Inherits type, length, decimals from domain
+  - Inherits conversion routine
+  - Inherits fixed values
+  - Recommended when domain exists
+
+Option 2: Direct Type (Built-in Type)
+  - Specify type and length directly
+  - No domain needed
+  - Less reusable
+  - OK for one-off fields
+</code></pre>
+        <br/>
+        <li>Using domain reference:</li>
+<pre><code class="language-text line-numbers">Data Element: ZMATNR
+Domain: MATNR_D
+
+→ Inherits: CHAR 18, conversion routine MATN1
+→ Change domain → data element updated automatically
+</code></pre>
+        <br/>
+        <li>Using direct type:</li>
+<pre><code class="language-text line-numbers">Data Element: ZDESCRIPTION
+Built-in type: CHAR
+Length: 60
+
+→ No domain
+→ Type defined directly in data element
+</code></pre>
+        <br/>
+        <li>In SE11 - Data Type tab:</li>
+<pre><code class="language-text line-numbers">
+┌─────────────────────────────────────┐
+│ Data Type                           │
+├─────────────────────────────────────┤
+│ ○ Domain          [MATNR_D    ]     │
+│ ○ Built-in Type   [          ]      │
+│   - Data Type     [CHAR      ]      │
+│   - Length        [18        ]      │
+│   - Decimals      [0         ]      │
+└─────────────────────────────────────┘
+
+Select one option:
+- Domain: enter domain name
+- Built-in Type: enter type details
+</code></pre>
+        <br/>
+        <li>When to use which:</li>
+<pre><code class="language-text line-numbers">Use Domain when:
+- Multiple data elements share same technical definition
+- Need fixed values or conversion routine
+- Type might change (change domain once)
+
+Use Direct Type when:
+- Unique field with no reuse
+- Simple type, no special formatting
+- No suitable domain exists and not worth creating one
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Field Labels</li>
+    <br/>
+    <ul>
+        <li>Four label types:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Label</th>
+            <th>Max Length</th>
+            <th>Used In</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Short</td>
+            <td>10 characters</td>
+            <td>Narrow columns, compact screens</td>
+        </tr>
+        <tr>
+            <td>Medium</td>
+            <td>20 characters</td>
+            <td>Standard screen fields</td>
+        </tr>
+        <tr>
+            <td>Long</td>
+            <td>40 characters</td>
+            <td>Wide displays, reports</td>
+        </tr>
+        <tr>
+            <td>Heading</td>
+            <td>55 characters</td>
+            <td>Column headers, report titles</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Example labels:</li>
+<pre><code class="language-text line-numbers">Data Element: MATNR (Material Number)
+
+Short:    Material
+Medium:   Material Number
+Long:     Material Number
+Heading:  Material Number
+
+Data Element: ERDAT (Created Date)
+
+Short:    Created
+Medium:   Created On
+Long:     Date Created
+Heading:  Date Record Was Created
+</code></pre>
+        <br/>
+        <li>In SE11 - Field Label tab:</li>
+<pre><code class="language-text line-numbers">
+┌───────────────────────────────────────────────┐
+│ Field Label                                   │
+├───────────────────────────────────────────────┤
+│ Short      [10] [Order     ]                  │
+│ Medium     [20] [Order Number    ]            │
+│ Long       [40] [Sales Order Number          ]│
+│ Heading    [55] [Sales Order Document Number ]│
+└───────────────────────────────────────────────┘
+
+Numbers in brackets = max length for that label.
+</code></pre>
+        <br/>
+        <li>How labels are used:</li>
+<pre><code class="language-text line-numbers">Screen Painter:
+  - Pulls label based on available space
+  - Short for narrow fields
+  - Medium for standard fields
+
+ALV Reports:
+  - Uses Heading for column header
+  - Uses Medium/Short if space limited
+
+Selection Screens:
+  - Uses Medium by default
+</code></pre>
+        <br/>
+        <li>Accessing labels in ABAP:</li>
+<pre><code class="language-abap line-numbers">DATA ls_dfies TYPE dfies.
+
+CALL FUNCTION 'DDIF_FIELDINFO_GET'
+  EXPORTING
+    tabname   = 'MARA'
+    fieldname = 'MATNR'
+    langu     = sy-langu
+  IMPORTING
+    dfies_wa  = ls_dfies
+  EXCEPTIONS
+    OTHERS    = 1.
+
+IF sy-subrc = 0.
+  WRITE: / 'Short:', ls_dfies-scrtext_s.
+  WRITE: / 'Medium:', ls_dfies-scrtext_m.
+  WRITE: / 'Long:', ls_dfies-scrtext_l.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Short: Material
+Medium: Material
+Long: Material Number
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Documentation (F1 Help)</li>
+    <br/>
+    <ul>
+        <li>What it provides:</li>
+<pre><code class="language-text line-numbers">User presses F1 on a field → Documentation displayed.
+
+Contains:
+- Field description
+- Valid values explanation
+- Business context
+- Usage guidelines
+</code></pre>
+        <br/>
+        <li>Creating documentation:</li>
+<pre><code class="language-text line-numbers">In SE11:
+1. Display data element
+2. Menu: Goto → Documentation
+   Or: Button "Documentation" (Ctrl+F7)
+3. Choose: "Create" or "Change"
+4. Write documentation using SAPscript editor
+5. Save and activate
+
+Documentation is language-dependent.
+Create for each supported language.
+</code></pre>
+        <br/>
+        <li>Documentation structure:</li>
+<pre><code class="language-text line-numbers">Typical sections:
+
+Definition
+  What this field represents.
+
+Use
+  When and how to use this field.
+
+Valid Values (if not obvious from fixed values)
+  A = Active order
+  I = Inactive order
+  etc.
+
+Example
+  Sample value: 0000001234
+
+Dependencies
+  Related fields that affect this one.
+</code></pre>
+        <br/>
+        <li>Reading documentation in ABAP:</li>
+<pre><code class="language-abap line-numbers">DATA lt_docu TYPE TABLE OF tline.
+
+CALL FUNCTION 'DOCU_READ'
+  EXPORTING
+    id      = 'DE'          "DE = data element
+    langu   = sy-langu
+    object  = 'MATNR'       "data element name
+  TABLES
+    line    = lt_docu
+  EXCEPTIONS
+    OTHERS  = 1.
+
+IF sy-subrc = 0.
+  LOOP AT lt_docu INTO DATA(ls_line).
+    WRITE: / ls_line-tdline.
+  ENDLOOP.
+ENDIF.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Search Help Assignment</li>
+    <br/>
+    <ul>
+        <li>What it does:</li>
+<pre><code class="language-text line-numbers">User presses F4 on field → Search help displayed.
+Shows list of valid values for selection.
+
+Search help can be attached at:
+1. Data element (applies everywhere)
+2. Table field (overrides data element)
+3. Screen field (overrides all)
+</code></pre>
+        <br/>
+        <li>Assigning in SE11:</li>
+<pre><code class="language-text line-numbers">In SE11 - Further Characteristics tab:
+
+Search help: [ZORDER_SH    ]
+
+→ Any field using this data element gets F4 help.
+</code></pre>
+        <br/>
+        <li>Inherited vs assigned:</li>
+<pre><code class="language-text line-numbers">If domain has value table:
+  → Basic search help auto-generated
+
+If search help explicitly assigned:
+  → Takes precedence over domain value table
+
+Best practice:
+  → Assign search help at data element level
+  → Most consistent experience
+</code></pre>
+        <br/>
+        <li>Effect in application:</li>
+<pre><code class="language-text line-numbers">User on screen field ORDER_ID (uses data element ZORDER_ID):
+
+Press F4:
+┌─────────────────────────────────────┐
+│ Order Number                        │
+├─────────────────────────────────────┤
+│ Order       Customer    Date        │
+├─────────────────────────────────────┤
+│ 0000000001  CUST001     2024-12-01  │
+│ 0000000002  CUST002     2024-12-05  │
+│ 0000000003  CUST001     2024-12-10  │
+└─────────────────────────────────────┘
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Parameter ID (SET/GET Parameters)</li>
+    <br/>
+    <ul>
+        <li>What it does:</li>
+<pre><code class="language-text line-numbers">Parameter ID = memory ID for screen field values.
+
+When user enters value in one screen:
+  → Value remembered (SET parameter)
+
+When user opens another screen with same parameter ID:
+  → Value pre-filled (GET parameter)
+
+Example: Enter company code 1000 in one transaction
+         → Automatically filled in next transaction
+</code></pre>
+        <br/>
+        <li>Assigning in SE11:</li>
+<pre><code class="language-text line-numbers">In SE11 - Further Characteristics tab:
+
+Parameter ID: [BUK]
+
+Common parameter IDs:
+  BUK = Company code
+  MAT = Material
+  KUN = Customer
+  WRK = Plant
+  VKO = Sales organization
+</code></pre>
+        <br/>
+        <li>Creating custom parameter ID:</li>
+<pre><code class="language-text line-numbers">Transaction SM30 → Table TPARA
+
+Or SE11 → Table TPARA → Maintain
+
+Add entry:
+  Parameter ID: ZORD
+  Description: Custom Order ID
+</code></pre>
+        <br/>
+        <li>Using in ABAP:</li>
+<pre><code class="language-abap line-numbers">DATA lv_value TYPE c LENGTH 10.
+
+* Get value from memory
+GET PARAMETER ID 'BUK' FIELD lv_value.
+WRITE: / 'Company code from memory:', lv_value.
+
+* Set value in memory
+lv_value = '2000'.
+SET PARAMETER ID 'BUK' FIELD lv_value.
+WRITE: / 'Set company code to:', lv_value.
+</code></pre>
+<pre><code class="language-text line-numbers">Company code from memory: 1000
+Set company code to: 2000
+</code></pre>
+        <br/>
+        <li>Screen field behavior:</li>
+<pre><code class="language-text line-numbers">Screen field with parameter ID needs flag set:
+
+Screen Painter → Field attributes:
+  ☑ SET parameter
+  ☑ GET parameter
+
+SET: Save entered value to memory
+GET: Retrieve value from memory on screen load
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Change Document Flag</li>
+    <br/>
+    <ul>
+        <li>What it does:</li>
+<pre><code class="language-text line-numbers">Change document = audit trail of field changes.
+
+If enabled:
+  → System logs old value, new value, who, when
+  → Viewable in change history
+
+Used for:
+  - Compliance/audit requirements
+  - Tracking who changed what
+</code></pre>
+        <br/>
+        <li>Setting in SE11:</li>
+<pre><code class="language-text line-numbers">In SE11 - Further Characteristics tab:
+
+☑ Change document
+
+When checked:
+  → Changes to this field logged (if table supports it)
+</code></pre>
+        <br/>
+        <li>Requirements:</li>
+<pre><code class="language-text line-numbers">For change documents to work:
+1. Data element has flag checked
+2. Table has change document object
+3. Application calls change document function modules
+
+Just checking the flag doesn't automatically log changes.
+Application must implement change document handling.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Data Elements in ABAP</li>
+    <br/>
+    <ul>
+        <li>Variable declaration:</li>
+<pre><code class="language-abap line-numbers">* Use data element as type
+DATA lv_matnr TYPE matnr.
+DATA lv_order_id TYPE vbeln.
+DATA lv_customer TYPE kunnr.
+
+lv_matnr = '000000000001234567'.
+lv_order_id = '0000000001'.
+lv_customer = '0000001234'.
+
+WRITE: / lv_matnr, lv_order_id, lv_customer.
+</code></pre>
+<pre><code class="language-text line-numbers">000000000001234567 0000000001 0000001234
+</code></pre>
+        <br/>
+        <li>Method parameters:</li>
+<pre><code class="language-abap line-numbers">CLASS lcl_order DEFINITION.
+  PUBLIC SECTION.
+    METHODS get_order
+      IMPORTING
+        iv_order_id TYPE vbeln       "sales order number
+      RETURNING
+        VALUE(rs_order) TYPE vbak.   "order header
+ENDCLASS.
+</code></pre>
+        <br/>
+        <li>Selection screen parameters:</li>
+<pre><code class="language-abap line-numbers">PARAMETERS: p_matnr TYPE matnr,        "Material number
+            p_werks TYPE werks_d,      "Plant
+            p_date  TYPE erdat.        "Date
+
+* Labels come from data element automatically
+* F4 help comes from data element/domain
+</code></pre>
+        <br/>
+        <li>Internal table with structure:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_order,
+         order_id   TYPE vbeln,
+         customer   TYPE kunnr,
+         order_date TYPE erdat,
+         amount     TYPE netwr,
+       END OF ty_order.
+
+DATA lt_orders TYPE TABLE OF ty_order.
+</code></pre>
+        <br/>
+        <li>Benefits of using data elements:</li>
+<pre><code class="language-abap line-numbers">* Without data element - no semantic info
+DATA lv_id TYPE c LENGTH 10.
+
+* With data element - semantic info available
+DATA lv_order TYPE vbeln.
+
+* Both work technically, but vbeln carries:
+* - Proper labels
+* - F1 documentation
+* - F4 search help
+* - Conversion routine
+* - Correct type/length
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Getting Data Element Information at Runtime</li>
+    <br/>
+    <ul>
+        <li>Using DDIF_DTEL_GET:</li>
+<pre><code class="language-abap line-numbers">DATA ls_dtel TYPE dd04v.
+
+CALL FUNCTION 'DDIF_DTEL_GET'
+  EXPORTING
+    name      = 'MATNR'
+    langu     = sy-langu
+  IMPORTING
+    dd04v_wa  = ls_dtel
+  EXCEPTIONS
+    OTHERS    = 1.
+
+IF sy-subrc = 0.
+  WRITE: / 'Data element:', ls_dtel-rollname.
+  WRITE: / 'Domain:', ls_dtel-domname.
+  WRITE: / 'Data type:', ls_dtel-datatype.
+  WRITE: / 'Length:', ls_dtel-leng.
+  WRITE: / 'Short text:', ls_dtel-scrtext_s.
+  WRITE: / 'Medium text:', ls_dtel-scrtext_m.
+  WRITE: / 'Long text:', ls_dtel-scrtext_l.
+  WRITE: / 'Heading:', ls_dtel-reptext.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Data element: MATNR
+Domain: MATNR_D
+Data type: CHAR
+Length:         18
+Short text: Material
+Medium text: Material
+Long text: Material Number
+Heading: Material Number
+</code></pre>
+        <br/>
+        <li>Using RTTI (runtime type info):</li>
+<pre><code class="language-abap line-numbers">DATA lv_matnr TYPE matnr.
+DATA lo_elem TYPE REF TO cl_abap_elemdescr.
+
+lo_elem ?= cl_abap_typedescr=&gt;describe_by_data( lv_matnr ).
+
+WRITE: / 'Type kind:', lo_elem-&gt;type_kind.
+WRITE: / 'Length:', lo_elem-&gt;length.
+WRITE: / 'Decimals:', lo_elem-&gt;decimals.
+
+* Get DDIC info
+DATA ls_ddic TYPE dfies.
+lo_elem-&gt;get_ddic_field( RECEIVING p_flddescr = ls_ddic ).
+
+WRITE: / 'Domain:', ls_ddic-domname.
+WRITE: / 'Short text:', ls_ddic-scrtext_s.
+</code></pre>
+<pre><code class="language-text line-numbers">Type kind: C
+Length:         18
+Decimals:          0
+Domain: MATNR_D
+Short text: Material
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Predefined Data Elements</li>
+    <br/>
+    <ul>
+        <li>Common SAP data elements:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Data Element</th>
+            <th>Description</th>
+            <th>Type</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>MATNR</code></td>
+            <td>Material Number</td>
+            <td>CHAR 40</td>
+        </tr>
+        <tr>
+            <td><code>KUNNR</code></td>
+            <td>Customer Number</td>
+            <td>CHAR 10</td>
+        </tr>
+        <tr>
+            <td><code>LIFNR</code></td>
+            <td>Vendor Number</td>
+            <td>CHAR 10</td>
+        </tr>
+        <tr>
+            <td><code>VBELN</code></td>
+            <td>Sales Document Number</td>
+            <td>CHAR 10</td>
+        </tr>
+        <tr>
+            <td><code>BUKRS</code></td>
+            <td>Company Code</td>
+            <td>CHAR 4</td>
+        </tr>
+        <tr>
+            <td><code>WERKS_D</code></td>
+            <td>Plant</td>
+            <td>CHAR 4</td>
+        </tr>
+        <tr>
+            <td><code>ERDAT</code></td>
+            <td>Created Date</td>
+            <td>DATS</td>
+        </tr>
+        <tr>
+            <td><code>ERNAM</code></td>
+            <td>Created By</td>
+            <td>CHAR 12</td>
+        </tr>
+        <tr>
+            <td><code>NETWR</code></td>
+            <td>Net Value</td>
+            <td>CURR 15,2</td>
+        </tr>
+        <tr>
+            <td><code>WAERS</code></td>
+            <td>Currency Key</td>
+            <td>CHAR 5</td>
+        </tr>
+        <tr>
+            <td><code>MENGE</code></td>
+            <td>Quantity</td>
+            <td>QUAN 13,3</td>
+        </tr>
+        <tr>
+            <td><code>MEINS</code></td>
+            <td>Unit of Measure</td>
+            <td>UNIT 3</td>
+        </tr>
+        <tr>
+            <td><code>SPRAS</code></td>
+            <td>Language Key</td>
+            <td>LANG 1</td>
+        </tr>
+        <tr>
+            <td><code>MANDT</code></td>
+            <td>Client</td>
+            <td>CLNT 3</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>ABAP built-in type elements:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Data Element</th>
+            <th>Description</th>
+            <th>ABAP Type</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>ABAP_BOOL</code></td>
+            <td>Boolean</td>
+            <td>c LENGTH 1</td>
+        </tr>
+        <tr>
+            <td><code>STRING</code></td>
+            <td>String</td>
+            <td>string</td>
+        </tr>
+        <tr>
+            <td><code>XSTRING</code></td>
+            <td>Byte string</td>
+            <td>xstring</td>
+        </tr>
+        <tr>
+            <td><code>TIMESTAMP</code></td>
+            <td>Timestamp</td>
+            <td>p LENGTH 8</td>
+        </tr>
+        <tr>
+            <td><code>TIMESTAMPL</code></td>
+            <td>Long timestamp</td>
+            <td>p LENGTH 11 DECIMALS 7</td>
+        </tr>
+        <tr>
+            <td><code>I</code></td>
+            <td>Integer</td>
+            <td>i</td>
+        </tr>
+        <tr>
+            <td><code>INT8</code></td>
+            <td>8-byte integer</td>
+            <td>int8</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Data Element vs Direct Type</li>
+    <br/>
+    <ul>
+        <li>Comparison:</li>
+<pre><code class="language-abap line-numbers">* Using data element (recommended)
+DATA lv_order TYPE vbeln.
+
+* Using direct type (less semantic info)
+DATA lv_order2 TYPE c LENGTH 10.
+</code></pre>
+        <br/>
+        <li>Feature comparison:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Feature</th>
+            <th>Data Element</th>
+            <th>Direct Type</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Field labels</td>
+            <td>✓ Yes</td>
+            <td>✗ No</td>
+        </tr>
+        <tr>
+            <td>F1 documentation</td>
+            <td>✓ Yes</td>
+            <td>✗ No</td>
+        </tr>
+        <tr>
+            <td>F4 search help</td>
+            <td>✓ Yes</td>
+            <td>✗ No</td>
+        </tr>
+        <tr>
+            <td>Conversion routine</td>
+            <td>✓ Yes (via domain)</td>
+            <td>✗ No</td>
+        </tr>
+        <tr>
+            <td>Fixed values</td>
+            <td>✓ Yes (via domain)</td>
+            <td>✗ No</td>
+        </tr>
+        <tr>
+            <td>Parameter ID</td>
+            <td>✓ Yes</td>
+            <td>✗ No</td>
+        </tr>
+        <tr>
+            <td>Type safety</td>
+            <td>✓ Named type</td>
+            <td>~ Generic type</td>
+        </tr>
+        <tr>
+            <td>Refactoring</td>
+            <td>✓ Change central definition</td>
+            <td>✗ Change everywhere</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>When direct type is acceptable:</li>
+<pre><code class="language-text line-numbers">- Temporary/local variables
+- Loop counters
+- Internal calculations
+- One-off processing variables
+</code></pre>
+<pre><code class="language-abap line-numbers">* OK to use direct type for internal work
+DATA lv_count TYPE i.
+DATA lv_flag TYPE abap_bool.
+DATA lv_temp TYPE string.
+
+* Use data element for business data
+DATA lv_order TYPE vbeln.
+DATA lv_customer TYPE kunnr.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Complete Data Element</li>
+    <br/>
+    <ul>
+        <li>Example: Custom order ID:</li>
+<pre><code class="language-text line-numbers">Step 1: Create domain (if needed)
+  Name: ZORDERID_D
+  Type: NUMC
+  Length: 10
+  Conversion routine: ALPHA
+
+Step 2: Create data element
+  Name: ZORDER_ID
+  Domain: ZORDERID_D
+
+  Field Labels:
+    Short:   Order
+    Medium:  Order ID
+    Long:    Customer Order ID
+    Heading: Customer Order Identification Number
+
+  Search help: ZORDER_SH (if exists)
+  Parameter ID: ZORD (if exists)
+
+  Documentation:
+    "Unique identifier for customer orders.
+     Generated automatically when order is created.
+     Format: 10-digit number with leading zeros."
+</code></pre>
+        <br/>
+        <li>Example: Status field with direct type:</li>
+<pre><code class="language-text line-numbers">Name: ZORDER_STATUS
+Built-in type: CHAR
+Length: 2
+
+Field Labels:
+  Short:   Status
+  Medium:  Order Status
+  Long:    Order Processing Status
+  Heading: Order Processing Status
+
+Documentation:
+  "Current status of the order.
+
+   Valid values:
+   01 - New
+   02 - In Progress
+   03 - Completed
+   04 - Cancelled"
+</code></pre>
+        <br/>
+        <li>Using in table definition:</li>
+<pre><code class="language-text line-numbers">Table: ZORDERS
+Fields:
+  MANDT       TYPE MANDT        (key)
+  ORDER_ID    TYPE ZORDER_ID    (key)
+  CUSTOMER    TYPE KUNNR
+  STATUS      TYPE ZORDER_STATUS
+  CREATED_AT  TYPE TIMESTAMP
+  CREATED_BY  TYPE ERNAM
+</code></pre>
+        <br/>
+        <li>Using in ABAP:</li>
+<pre><code class="language-abap line-numbers">DATA: ls_order TYPE zorders,
+      lt_orders TYPE TABLE OF zorders.
+
+ls_order-order_id = '0000000001'.
+ls_order-customer = '0000001234'.
+ls_order-status = '01'.
+GET TIME STAMP FIELD ls_order-created_at.
+ls_order-created_by = sy-uname.
+
+APPEND ls_order TO lt_orders.
+
+SELECT * FROM zorders INTO TABLE @lt_orders
+  WHERE status = '01'.
+
+LOOP AT lt_orders INTO ls_order.
+  WRITE: / |Order: { ls_order-order_id ALPHA = OUT }|,
+           |Status: { ls_order-status }|.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">Order: 1 Status: 01
+Order: 2 Status: 01
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Append Data Elements</li>
+    <br/>
+    <ul>
+        <li>What they are:</li>
+<pre><code class="language-text line-numbers">Cannot modify SAP standard data elements.
+But can extend their search help via append.
+
+Rare use case - usually just create own data element.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Finding Where Data Element is Used</li>
+    <br/>
+    <ul>
+        <li>Where-used list:</li>
+<pre><code class="language-text line-numbers">In SE11:
+1. Display data element
+2. Menu: Where-Used List (Ctrl+Shift+F3)
+
+Shows:
+- Tables using this element
+- Structures using this element
+- Programs referencing this element
+</code></pre>
+        <br/>
+        <li>Impact of changes:</li>
+<pre><code class="language-text line-numbers">Changing data element affects:
+- All tables using it (reactivation needed)
+- All screens using those tables
+- All programs using the type
+
+Safe changes:
+- Labels (no table impact)
+- Documentation (no table impact)
+- Search help (no table impact)
+
+Careful changes (via domain):
+- Length increase (usually OK)
+- Length decrease (may truncate data)
+- Type change (requires conversion)
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Translation</li>
+    <br/>
+    <ul>
+        <li>Multilingual labels:</li>
+<pre><code class="language-text line-numbers">Data element labels are language-dependent.
+Each language has its own texts.
+
+SE11 → Data element → Menu: Goto → Translation
+Or: Transaction SE63
+
+Translate:
+- Short text
+- Medium text
+- Long text
+- Heading text
+- Documentation
+</code></pre>
+        <br/>
+        <li>Effect at runtime:</li>
+<pre><code class="language-abap line-numbers">* User logged in with English
+* → Labels appear in English
+
+* User logged in with German
+* → Labels appear in German (if translated)
+
+* sy-langu contains current language
+WRITE: / 'Language:', sy-langu.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices</li>
+    <br/>
+    <ul>
+        <li>Guidelines:</li>
+<pre><code class="language-text line-numbers">1. Always use data elements for business fields
+   Not direct types (c, n, i, etc.)
+
+2. Create domain when:
+   - Multiple data elements share same technical properties
+   - Need fixed values or conversion routine
+
+3. Meaningful names:
+   - ZORDER_ID not ZFLD01
+   - Reflect business meaning
+
+4. Complete all labels:
+   - Don't leave any blank
+   - Short should be meaningful even if abbreviated
+
+5. Write documentation:
+   - Explain business meaning
+   - List valid values if applicable
+   - Include examples
+
+6. Assign search help:
+   - At data element level (most reusable)
+   - Consistent F4 experience
+
+7. Use parameter IDs:
+   - For frequently used fields
+   - Improves user experience
+
+8. Plan for translation:
+   - Keep texts simple
+   - Avoid technical jargon in labels
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Quick Reference</li>
+    <br/>
+    <ul>
+        <li>Data element properties:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Property</th>
+            <th>Purpose</th>
+            <th>Location</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Domain/Built-in type</td>
+            <td>Technical definition</td>
+            <td>Data Type tab</td>
+        </tr>
+        <tr>
+            <td>Short label</td>
+            <td>10-char label</td>
+            <td>Field Label tab</td>
+        </tr>
+        <tr>
+            <td>Medium label</td>
+            <td>20-char label</td>
+            <td>Field Label tab</td>
+        </tr>
+        <tr>
+            <td>Long label</td>
+            <td>40-char label</td>
+            <td>Field Label tab</td>
+        </tr>
+        <tr>
+            <td>Heading</td>
+            <td>55-char header</td>
+            <td>Field Label tab</td>
+        </tr>
+        <tr>
+            <td>Search help</td>
+            <td>F4 value help</td>
+            <td>Further Characteristics</td>
+        </tr>
+        <tr>
+            <td>Parameter ID</td>
+            <td>Screen memory</td>
+            <td>Further Characteristics</td>
+        </tr>
+        <tr>
+            <td>Change document</td>
+            <td>Audit logging</td>
+            <td>Further Characteristics</td>
+        </tr>
+        <tr>
+            <td>Documentation</td>
+            <td>F1 help text</td>
+            <td>Goto → Documentation</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Key function modules:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Function</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>DDIF_DTEL_GET</code></td>
+            <td>Get data element info</td>
+        </tr>
+        <tr>
+            <td><code>DDIF_FIELDINFO_GET</code></td>
+            <td>Get field info including labels</td>
+        </tr>
+        <tr>
+            <td><code>DD_DOMVALUES_GET</code></td>
+            <td>Get domain fixed values</td>
+        </tr>
+        <tr>
+            <td><code>DOCU_READ</code></td>
+            <td>Get documentation text</td>
         </tr>
     </tbody>
 </table>
