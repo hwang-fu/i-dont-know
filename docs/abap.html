@@ -155,6 +155,7 @@
         <li><a href="#abap-variables">Variables</a></li>
         <li><a href="#abap-constants-literals">Constants and Literals</a></li>
         <li><a href="#abap-operators">Operators</a></li>
+        <li><a href="#abap-control-flow">Contrl Flow</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4564,7 +4565,926 @@ lv_str = lv_str &amp;&amp; ' World'.
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-control-flow">Control Flow in ABAP</h3>
+<ol>
 
+    <li>IF Statement</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">IF &lt;condition&gt;.
+  &lt;statements&gt;
+ENDIF.
+
+IF &lt;condition&gt;.
+  &lt;statements&gt;
+ELSE.
+  &lt;statements&gt;
+ENDIF.
+
+IF &lt;condition1&gt;.
+  &lt;statements&gt;
+ELSEIF &lt;condition2&gt;.
+  &lt;statements&gt;
+ELSEIF &lt;condition3&gt;.
+  &lt;statements&gt;
+ELSE.
+  &lt;statements&gt;
+ENDIF.
+</code></pre>
+        <br/>
+        <li>Basic IF:</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i VALUE 10.
+
+IF lv_num &gt; 5.
+  WRITE: / 'Greater than 5'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Greater than 5
+</code></pre>
+        <br/>
+        <li>IF-ELSE:</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i VALUE 3.
+
+IF lv_num &gt; 5.
+  WRITE: / 'Greater than 5'.
+ELSE.
+  WRITE: / 'Not greater than 5'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Not greater than 5
+</code></pre>
+        <br/>
+        <li>IF-ELSEIF-ELSE:</li>
+<pre><code class="language-abap line-numbers">DATA lv_score TYPE i VALUE 75.
+
+IF lv_score &gt;= 90.
+  WRITE: / 'Grade: A'.
+ELSEIF lv_score &gt;= 80.
+  WRITE: / 'Grade: B'.
+ELSEIF lv_score &gt;= 70.
+  WRITE: / 'Grade: C'.
+ELSEIF lv_score &gt;= 60.
+  WRITE: / 'Grade: D'.
+ELSE.
+  WRITE: / 'Grade: F'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Grade: C
+</code></pre>
+<p>Conditions checked top to bottom. First true branch executes, rest skipped.</p>
+        <br/>
+        <li>Nested IF:</li>
+<pre><code class="language-abap line-numbers">DATA lv_age TYPE i VALUE 25.
+DATA lv_status TYPE c VALUE 'A'.
+
+IF lv_age &gt;= 18.
+  IF lv_status = 'A'.
+    WRITE: / 'Adult, Active'.
+  ELSE.
+    WRITE: / 'Adult, Inactive'.
+  ENDIF.
+ELSE.
+  WRITE: / 'Minor'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Adult, Active
+</code></pre>
+        <br/>
+        <li>Combining conditions:</li>
+<pre><code class="language-abap line-numbers">DATA lv_age TYPE i VALUE 25.
+DATA lv_status TYPE c VALUE 'A'.
+
+IF lv_age &gt;= 18 AND lv_status = 'A'.
+  WRITE: / 'Adult and Active'.
+ENDIF.
+
+IF lv_age &lt; 18 OR lv_status = 'I'.
+  WRITE: / 'Minor or Inactive'.
+ELSE.
+  WRITE: / 'Adult and not Inactive'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Adult and Active
+Adult and not Inactive
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>CASE Statement</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">CASE &lt;variable&gt;.
+  WHEN &lt;value1&gt;.
+    &lt;statements&gt;
+  WHEN &lt;value2&gt;.
+    &lt;statements&gt;
+  WHEN &lt;value3&gt; OR &lt;value4&gt;.
+    &lt;statements&gt;
+  WHEN OTHERS.
+    &lt;statements&gt;
+ENDCASE.
+</code></pre>
+        <br/>
+        <li>Basic CASE:</li>
+<pre><code class="language-abap line-numbers">DATA lv_day TYPE i VALUE 3.
+
+CASE lv_day.
+  WHEN 1.
+    WRITE: / 'Monday'.
+  WHEN 2.
+    WRITE: / 'Tuesday'.
+  WHEN 3.
+    WRITE: / 'Wednesday'.
+  WHEN 4.
+    WRITE: / 'Thursday'.
+  WHEN 5.
+    WRITE: / 'Friday'.
+  WHEN 6 OR 7.
+    WRITE: / 'Weekend'.
+  WHEN OTHERS.
+    WRITE: / 'Invalid day'.
+ENDCASE.
+</code></pre>
+<pre><code class="language-text line-numbers">Wednesday
+</code></pre>
+        <br/>
+        <li>Multiple values with OR:</li>
+<pre><code class="language-abap line-numbers">DATA lv_char TYPE c VALUE 'A'.
+
+CASE lv_char.
+  WHEN 'A' OR 'E' OR 'I' OR 'O' OR 'U'.
+    WRITE: / 'Vowel'.
+  WHEN OTHERS.
+    WRITE: / 'Consonant or other'.
+ENDCASE.
+</code></pre>
+<pre><code class="language-text line-numbers">Vowel
+</code></pre>
+        <br/>
+        <li>CASE with strings:</li>
+<pre><code class="language-abap line-numbers">DATA lv_status TYPE string VALUE 'ACTIVE'.
+
+CASE lv_status.
+  WHEN 'ACTIVE'.
+    WRITE: / 'Status is active'.
+  WHEN 'INACTIVE'.
+    WRITE: / 'Status is inactive'.
+  WHEN 'PENDING'.
+    WRITE: / 'Status is pending'.
+  WHEN OTHERS.
+    WRITE: / 'Unknown status'.
+ENDCASE.
+</code></pre>
+<pre><code class="language-text line-numbers">Status is active
+</code></pre>
+        <br/>
+        <li>WHEN OTHERS is optional but recommended:</li>
+<pre><code class="language-abap line-numbers">DATA lv_x TYPE i VALUE 99.
+
+CASE lv_x.
+  WHEN 1.
+    WRITE: / 'One'.
+  WHEN 2.
+    WRITE: / 'Two'.
+ENDCASE.
+
+WRITE: / 'Done'.
+</code></pre>
+<pre><code class="language-text line-numbers">Done
+</code></pre>
+<p>No match, no output from CASE. Program continues.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>DO Loop</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">DO [&lt;n&gt; TIMES].
+  &lt;statements&gt;
+ENDDO.
+</code></pre>
+        <br/>
+        <li>Fixed iterations:</li>
+<pre><code class="language-abap line-numbers">DO 5 TIMES.
+  WRITE: / 'Iteration:', sy-index.
+ENDDO.
+</code></pre>
+<pre><code class="language-text line-numbers">Iteration:          1
+Iteration:          2
+Iteration:          3
+Iteration:          4
+Iteration:          5
+</code></pre>
+<p><code>sy-index</code> is the current iteration number (1-based).</p>
+        <br/>
+        <li>Infinite loop (with EXIT):</li>
+<pre><code class="language-abap line-numbers">DATA lv_count TYPE i VALUE 0.
+
+DO.
+  lv_count = lv_count + 1.
+  WRITE: / 'Count:', lv_count.
+  IF lv_count &gt;= 3.
+    EXIT.   "break out of loop
+  ENDIF.
+ENDDO.
+
+WRITE: / 'Loop ended'.
+</code></pre>
+<pre><code class="language-text line-numbers">Count:          1
+Count:          2
+Count:          3
+Loop ended
+</code></pre>
+<p><code>DO.</code> without <code>TIMES</code> loops forever until <code>EXIT</code>.</p>
+        <br/>
+        <li>Using sy-index for calculations:</li>
+<pre><code class="language-abap line-numbers">DATA lv_sum TYPE i VALUE 0.
+
+DO 10 TIMES.
+  lv_sum = lv_sum + sy-index.
+ENDDO.
+
+WRITE: / 'Sum 1-10:', lv_sum.
+</code></pre>
+<pre><code class="language-text line-numbers">Sum 1-10:         55
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>WHILE Loop</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">WHILE &lt;condition&gt;.
+  &lt;statements&gt;
+ENDWHILE.
+</code></pre>
+        <br/>
+        <li>Basic WHILE:</li>
+<pre><code class="language-abap line-numbers">DATA lv_count TYPE i VALUE 1.
+
+WHILE lv_count &lt;= 5.
+  WRITE: / 'Count:', lv_count.
+  lv_count = lv_count + 1.
+ENDWHILE.
+</code></pre>
+<pre><code class="language-text line-numbers">Count:          1
+Count:          2
+Count:          3
+Count:          4
+Count:          5
+</code></pre>
+        <br/>
+        <li>WHILE with sy-index:</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i VALUE 1.
+
+WHILE lv_num &lt; 100.
+  lv_num = lv_num * 2.
+  WRITE: / 'Iteration:', sy-index, 'Value:', lv_num.
+ENDWHILE.
+</code></pre>
+<pre><code class="language-text line-numbers">Iteration:          1 Value:          2
+Iteration:          2 Value:          4
+Iteration:          3 Value:          8
+Iteration:          4 Value:         16
+Iteration:          5 Value:         32
+Iteration:          6 Value:         64
+Iteration:          7 Value:        128
+</code></pre>
+        <br/>
+        <li>Condition checked before each iteration:</li>
+<pre><code class="language-abap line-numbers">DATA lv_x TYPE i VALUE 10.
+
+WHILE lv_x &lt; 5.
+  WRITE: / 'This never prints'.
+ENDWHILE.
+
+WRITE: / 'Done'.
+</code></pre>
+<pre><code class="language-text line-numbers">Done
+</code></pre>
+<p>If condition is false initially, loop body never executes.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>LOOP AT (Internal Tables)</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">LOOP AT &lt;itab&gt; INTO &lt;work_area&gt;.
+  &lt;statements&gt;
+ENDLOOP.
+
+LOOP AT &lt;itab&gt; ASSIGNING FIELD-SYMBOL(&lt;&lt;fs&gt;&gt;).
+  &lt;statements&gt;
+ENDLOOP.
+
+LOOP AT &lt;itab&gt; REFERENCE INTO DATA(&lt;lr_ref&gt;).
+  &lt;statements&gt;
+ENDLOOP.
+</code></pre>
+        <br/>
+        <li>INTO (copies each row):</li>
+<pre><code class="language-abap line-numbers">DATA lt_nums TYPE TABLE OF i.
+APPEND 10 TO lt_nums.
+APPEND 20 TO lt_nums.
+APPEND 30 TO lt_nums.
+
+LOOP AT lt_nums INTO DATA(lv_num).
+  WRITE: / 'Row:', sy-tabix, 'Value:', lv_num.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">Row:          1 Value:         10
+Row:          2 Value:         20
+Row:          3 Value:         30
+</code></pre>
+<p><code>sy-tabix</code> is the current row index (1-based).</p>
+        <br/>
+        <li>ASSIGNING (direct access, no copy):</li>
+<pre><code class="language-abap line-numbers">DATA lt_nums TYPE TABLE OF i.
+APPEND 10 TO lt_nums.
+APPEND 20 TO lt_nums.
+APPEND 30 TO lt_nums.
+
+LOOP AT lt_nums ASSIGNING FIELD-SYMBOL(&lt;fs_num&gt;).
+  &lt;fs_num&gt; = &lt;fs_num&gt; * 2.   "modifies table directly
+ENDLOOP.
+
+LOOP AT lt_nums INTO DATA(lv_num).
+  WRITE: / lv_num.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">        20
+        40
+        60
+</code></pre>
+<p><code>ASSIGNING</code> is faster (no copy) and changes affect the table.</p>
+        <br/>
+        <li>INTO vs ASSIGNING comparison:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>INTO</th>
+            <th>ASSIGNING</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Creates copy</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Changes affect table</td>
+            <td>No</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td>Performance</td>
+            <td>Slower</td>
+            <td>Faster</td>
+        </tr>
+        <tr>
+            <td>Use when</td>
+            <td>Read only, need separate copy</td>
+            <td>Modify in place, large rows</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>LOOP with WHERE:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_person,
+         name TYPE string,
+         age  TYPE i,
+       END OF ty_person.
+
+DATA lt_people TYPE TABLE OF ty_person.
+APPEND VALUE #( name = 'Alice' age = 30 ) TO lt_people.
+APPEND VALUE #( name = 'Bob' age = 17 ) TO lt_people.
+APPEND VALUE #( name = 'Carol' age = 25 ) TO lt_people.
+
+LOOP AT lt_people INTO DATA(ls_person) WHERE age &gt;= 18.
+  WRITE: / ls_person-name, 'is an adult'.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">Alice is an adult
+Carol is an adult
+</code></pre>
+        <br/>
+        <li>LOOP with FROM/TO:</li>
+<pre><code class="language-abap line-numbers">DATA lt_nums TYPE TABLE OF i.
+DO 10 TIMES.
+  APPEND sy-index TO lt_nums.
+ENDDO.
+
+LOOP AT lt_nums INTO DATA(lv_num) FROM 3 TO 6.
+  WRITE: / 'Index:', sy-tabix, 'Value:', lv_num.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">Index:          3 Value:          3
+Index:          4 Value:          4
+Index:          5 Value:          5
+Index:          6 Value:          6
+</code></pre>
+        <br/>
+        <li>LOOP with GROUP BY (ABAP 7.40+):</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_order,
+         customer TYPE string,
+         amount   TYPE i,
+       END OF ty_order.
+
+DATA lt_orders TYPE TABLE OF ty_order.
+APPEND VALUE #( customer = 'A' amount = 100 ) TO lt_orders.
+APPEND VALUE #( customer = 'B' amount = 200 ) TO lt_orders.
+APPEND VALUE #( customer = 'A' amount = 150 ) TO lt_orders.
+APPEND VALUE #( customer = 'B' amount = 50 ) TO lt_orders.
+
+LOOP AT lt_orders INTO DATA(ls_order)
+     GROUP BY ls_order-customer INTO DATA(lv_customer).
+
+  DATA(lv_total) = 0.
+  LOOP AT GROUP lv_customer INTO DATA(ls_member).
+    lv_total = lv_total + ls_member-amount.
+  ENDLOOP.
+
+  WRITE: / 'Customer:', lv_customer, 'Total:', lv_total.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">Customer: A Total:        250
+Customer: B Total:        250
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Loop Control: EXIT, CONTINUE, CHECK</li>
+    <br/>
+    <ul>
+        <li>EXIT - break out of loop:</li>
+<pre><code class="language-abap line-numbers">DO 10 TIMES.
+  IF sy-index = 5.
+    EXIT.
+  ENDIF.
+  WRITE: / sy-index.
+ENDDO.
+
+WRITE: / 'After loop'.
+</code></pre>
+<pre><code class="language-text line-numbers">         1
+         2
+         3
+         4
+After loop
+</code></pre>
+<p><code>EXIT</code> immediately leaves the innermost loop.</p>
+        <br/>
+        <li>CONTINUE - skip to next iteration:</li>
+<pre><code class="language-abap line-numbers">DO 5 TIMES.
+  IF sy-index = 3.
+    CONTINUE.
+  ENDIF.
+  WRITE: / sy-index.
+ENDDO.
+</code></pre>
+<pre><code class="language-text line-numbers">         1
+         2
+         4
+         5
+</code></pre>
+<p><code>CONTINUE</code> skips rest of current iteration, goes to next.</p>
+        <br/>
+        <li>CHECK - conditional CONTINUE:</li>
+<pre><code class="language-text line-numbers">CHECK &lt;condition&gt;.
+
+If condition is false, acts like CONTINUE.
+If condition is true, continues execution.
+</code></pre>
+<pre><code class="language-abap line-numbers">DO 5 TIMES.
+  CHECK sy-index &lt;&gt; 3.   "skip when index = 3
+  WRITE: / sy-index.
+ENDDO.
+</code></pre>
+<pre><code class="language-text line-numbers">         1
+         2
+         4
+         5
+</code></pre>
+<p>Same result as CONTINUE example. <code>CHECK</code> is shorter for simple conditions.</p>
+        <br/>
+        <li>CHECK vs IF-CONTINUE:</li>
+<pre><code class="language-abap line-numbers">* These are equivalent:
+
+* Using CHECK
+DO 5 TIMES.
+  CHECK sy-index MOD 2 = 0.   "only even numbers
+  WRITE: / sy-index.
+ENDDO.
+
+* Using IF-CONTINUE
+DO 5 TIMES.
+  IF sy-index MOD 2 &lt;&gt; 0.
+    CONTINUE.
+  ENDIF.
+  WRITE: / sy-index.
+ENDDO.
+</code></pre>
+<pre><code class="language-text line-numbers">         2
+         4
+         2
+         4
+</code></pre>
+        <br/>
+        <li>EXIT in nested loops:</li>
+<pre><code class="language-abap line-numbers">DO 3 TIMES.
+  DATA(lv_outer) = sy-index.
+  DO 3 TIMES.
+    DATA(lv_inner) = sy-index.
+    IF lv_inner = 2.
+      EXIT.   "only exits inner loop
+    ENDIF.
+    WRITE: / 'Outer:', lv_outer, 'Inner:', lv_inner.
+  ENDDO.
+ENDDO.
+</code></pre>
+<pre><code class="language-text line-numbers">Outer:          1 Inner:          1
+Outer:          2 Inner:          1
+Outer:          3 Inner:          1
+</code></pre>
+<p><code>EXIT</code> only exits the innermost loop. Outer loop continues.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>EXIT, CHECK, RETURN Outside Loops</li>
+    <br/>
+    <ul>
+        <li>EXIT outside loop - exits processing block:</li>
+<pre><code class="language-abap line-numbers">START-OF-SELECTION.
+  WRITE: / 'Before EXIT'.
+  EXIT.
+  WRITE: / 'After EXIT'.   "never reached
+</code></pre>
+<pre><code class="language-text line-numbers">Before EXIT
+</code></pre>
+        <br/>
+        <li>CHECK outside loop - exits if false:</li>
+<pre><code class="language-abap line-numbers">DATA lv_flag TYPE c VALUE ' '.
+
+START-OF-SELECTION.
+  WRITE: / 'Before CHECK'.
+  CHECK lv_flag = 'X'.
+  WRITE: / 'After CHECK'.   "skipped because flag is not X
+</code></pre>
+<pre><code class="language-text line-numbers">Before CHECK
+</code></pre>
+        <br/>
+        <li>RETURN - exits current processing unit:</li>
+<pre><code class="language-abap line-numbers">FORM my_subroutine.
+  WRITE: / 'Before RETURN'.
+  RETURN.
+  WRITE: / 'After RETURN'.   "never reached
+ENDFORM.
+
+START-OF-SELECTION.
+  PERFORM my_subroutine.
+  WRITE: / 'Back in main'.
+</code></pre>
+<pre><code class="language-text line-numbers">Before RETURN
+Back in main
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>COND Expression (ABAP 7.40+)</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">COND &lt;type&gt;(
+  WHEN &lt;condition1&gt; THEN &lt;value1&gt;
+  WHEN &lt;condition2&gt; THEN &lt;value2&gt;
+  ...
+  ELSE &lt;default_value&gt; ).
+</code></pre>
+<p>Returns a value based on conditions. Like a conditional expression.</p>
+        <br/>
+        <li>Basic usage:</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i VALUE 75.
+
+DATA(lv_grade) = COND string(
+  WHEN lv_num &gt;= 90 THEN 'A'
+  WHEN lv_num &gt;= 80 THEN 'B'
+  WHEN lv_num &gt;= 70 THEN 'C'
+  WHEN lv_num &gt;= 60 THEN 'D'
+  ELSE 'F' ).
+
+WRITE: / 'Grade:', lv_grade.
+</code></pre>
+<pre><code class="language-text line-numbers">Grade: C
+</code></pre>
+        <br/>
+        <li>Using # for type inference:</li>
+<pre><code class="language-abap line-numbers">DATA lv_result TYPE string.
+
+lv_result = COND #(
+  WHEN sy-datum+4(2) &lt;= '03' THEN 'Q1'
+  WHEN sy-datum+4(2) &lt;= '06' THEN 'Q2'
+  WHEN sy-datum+4(2) &lt;= '09' THEN 'Q3'
+  ELSE 'Q4' ).
+
+WRITE: / 'Quarter:', lv_result.
+</code></pre>
+<pre><code class="language-text line-numbers">Quarter: Q4
+</code></pre>
+<p><code>#</code> infers type from target variable (<code>lv_result</code> is string).</p>
+        <br/>
+        <li>In string templates:</li>
+<pre><code class="language-abap line-numbers">DATA lv_count TYPE i VALUE 1.
+
+WRITE: / |{ lv_count } item{ COND string( WHEN lv_count &lt;&gt; 1 THEN 's' ) }|.
+
+lv_count = 5.
+WRITE: / |{ lv_count } item{ COND string( WHEN lv_count &lt;&gt; 1 THEN 's' ) }|.
+</code></pre>
+<pre><code class="language-text line-numbers">1 item
+5 items
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>SWITCH Expression (ABAP 7.40+)</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">SWITCH &lt;type&gt;( &lt;variable&gt;
+  WHEN &lt;value1&gt; THEN &lt;result1&gt;
+  WHEN &lt;value2&gt; THEN &lt;result2&gt;
+  ...
+  ELSE &lt;default_result&gt; ).
+</code></pre>
+<p>Like CASE but returns a value.</p>
+        <br/>
+        <li>Basic usage:</li>
+<pre><code class="language-abap line-numbers">DATA lv_day TYPE i VALUE 3.
+
+DATA(lv_name) = SWITCH string( lv_day
+  WHEN 1 THEN 'Monday'
+  WHEN 2 THEN 'Tuesday'
+  WHEN 3 THEN 'Wednesday'
+  WHEN 4 THEN 'Thursday'
+  WHEN 5 THEN 'Friday'
+  WHEN 6 THEN 'Saturday'
+  WHEN 7 THEN 'Sunday'
+  ELSE 'Invalid' ).
+
+WRITE: / 'Day:', lv_name.
+</code></pre>
+<pre><code class="language-text line-numbers">Day: Wednesday
+</code></pre>
+        <br/>
+        <li>Multiple values per WHEN:</li>
+<pre><code class="language-abap line-numbers">DATA lv_day TYPE i VALUE 6.
+
+DATA(lv_type) = SWITCH string( lv_day
+  WHEN 1 OR 2 OR 3 OR 4 OR 5 THEN 'Weekday'
+  WHEN 6 OR 7 THEN 'Weekend'
+  ELSE 'Invalid' ).
+
+WRITE: / lv_type.
+</code></pre>
+<pre><code class="language-text line-numbers">Weekend
+</code></pre>
+        <br/>
+        <li>COND vs SWITCH:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>COND</th>
+            <th>SWITCH</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Tests</td>
+            <td>Any conditions</td>
+            <td>Single variable against values</td>
+        </tr>
+        <tr>
+            <td>Like</td>
+            <td>IF-ELSEIF-ELSE</td>
+            <td>CASE-WHEN</td>
+        </tr>
+        <tr>
+            <td>Use when</td>
+            <td>Complex conditions</td>
+            <td>Matching against discrete values</td>
+        </tr>
+    </tbody>
+</table>
+<pre><code class="language-abap line-numbers">* COND - any conditions allowed
+DATA(lv_a) = COND string(
+  WHEN lv_x &gt; 10 AND lv_y &lt; 5 THEN 'A'
+  WHEN lv_x BETWEEN 5 AND 10 THEN 'B'
+  ELSE 'C' ).
+
+* SWITCH - only equality checks on one variable
+DATA(lv_b) = SWITCH string( lv_x
+  WHEN 1 THEN 'One'
+  WHEN 2 THEN 'Two'
+  ELSE 'Other' ).
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Conditional Loops: WHERE Clause</li>
+    <br/>
+    <ul>
+        <li>LOOP AT with WHERE:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_item,
+         id     TYPE i,
+         status TYPE c,
+         amount TYPE i,
+       END OF ty_item.
+
+DATA lt_items TYPE TABLE OF ty_item.
+APPEND VALUE #( id = 1 status = 'A' amount = 100 ) TO lt_items.
+APPEND VALUE #( id = 2 status = 'I' amount = 200 ) TO lt_items.
+APPEND VALUE #( id = 3 status = 'A' amount = 150 ) TO lt_items.
+APPEND VALUE #( id = 4 status = 'A' amount = 50 ) TO lt_items.
+
+* Filter by status
+LOOP AT lt_items INTO DATA(ls_item) WHERE status = 'A'.
+  WRITE: / 'Active item:', ls_item-id, ls_item-amount.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">Active item:          1        100
+Active item:          3        150
+Active item:          4         50
+</code></pre>
+        <br/>
+        <li>Multiple conditions in WHERE:</li>
+<pre><code class="language-abap line-numbers">LOOP AT lt_items INTO DATA(ls_item) WHERE status = 'A' AND amount > 75.
+  WRITE: / 'Filtered:', ls_item-id.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">Filtered:          1
+Filtered:          3
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>LOOP AT with STEP</li>
+    <br/>
+    <ul>
+        <li>Process every nth row (ABAP 7.40+):</li>
+<pre><code class="language-abap line-numbers">DATA lt_nums TYPE TABLE OF i.
+DO 10 TIMES.
+  APPEND sy-index TO lt_nums.
+ENDDO.
+
+* Every second row
+LOOP AT lt_nums INTO DATA(lv_num) STEP 2.
+  WRITE: / lv_num.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">         1
+         3
+         5
+         7
+         9
+</code></pre>
+        <br/>
+        <li>Reverse loop (negative STEP):</li>
+<pre><code class="language-abap line-numbers">LOOP AT lt_nums INTO DATA(lv_num) STEP -1.
+  WRITE: / lv_num.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">        10
+         9
+         8
+         7
+         6
+         5
+         4
+         3
+         2
+         1
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Control Flow Summary</li>
+    <br/>
+    <ul>
+        <li>Statement forms:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Statement</th>
+            <th>Purpose</th>
+            <th>Counter</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>IF...ENDIF</code></td>
+            <td>Conditional execution</td>
+            <td>—</td>
+        </tr>
+        <tr>
+            <td><code>CASE...ENDCASE</code></td>
+            <td>Match value against options</td>
+            <td>—</td>
+        </tr>
+        <tr>
+            <td><code>DO...ENDDO</code></td>
+            <td>Fixed or infinite loop</td>
+            <td><code>sy-index</code></td>
+        </tr>
+        <tr>
+            <td><code>WHILE...ENDWHILE</code></td>
+            <td>Conditional loop</td>
+            <td><code>sy-index</code></td>
+        </tr>
+        <tr>
+            <td><code>LOOP AT...ENDLOOP</code></td>
+            <td>Iterate internal table</td>
+            <td><code>sy-tabix</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Loop control:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Statement</th>
+            <th>In loop</th>
+            <th>Outside loop</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>EXIT</code></td>
+            <td>Break out of loop</td>
+            <td>Exit processing block</td>
+        </tr>
+        <tr>
+            <td><code>CONTINUE</code></td>
+            <td>Skip to next iteration</td>
+            <td>Skip rest of block</td>
+        </tr>
+        <tr>
+            <td><code>CHECK &lt;cond&gt;</code></td>
+            <td>CONTINUE if false</td>
+            <td>Exit block if false</td>
+        </tr>
+        <tr>
+            <td><code>RETURN</code></td>
+            <td colspan="2">Exit subroutine/method</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Expression forms (7.40+):</li>
+<table>
+    <thead>
+        <tr>
+            <th>Expression</th>
+            <th>Like statement</th>
+            <th>Returns</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>COND</code></td>
+            <td>IF-ELSEIF-ELSE</td>
+            <td>Value based on conditions</td>
+        </tr>
+        <tr>
+            <td><code>SWITCH</code></td>
+            <td>CASE-WHEN</td>
+            <td>Value based on match</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
