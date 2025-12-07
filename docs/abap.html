@@ -3,7 +3,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title></title>
+    <title>SAP ABAP</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/plugins/line-numbers/prism-line-numbers.min.css">
 
@@ -43,8 +43,8 @@
     }
 
     .nav-icon {
-        width: 18px;
-        height: 18px;
+        width: 58px;
+        height: 58px;
         object-fit: contain;
         vertical-align: middle;
         margin-left: 0.3rem;
@@ -147,9 +147,9 @@
 <!-- * * * * * * * * * * * * * * -->
 <hr/>
 <nav id="toc" style="margin-bottom: 2rem;">
-    <h2> <img src="resources/" alt="Logo" class="nav-icon"/> Documentation Index</h2>
+    <h2> <img src="resources/abap.png" alt="Logo" class="nav-icon"/> </h2>
     <ol style="line-height: 1.8;">
-        <li><a href="#"></a></li>
+        <li><a href="#abap-introduction">SAP ABAP</a></li>
     </ol>
 </nav>
 <hr/>
@@ -157,18 +157,1194 @@
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3></h3>
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-introduction">Introduction to SAP ABAP</h3>
 <ol>
-    <li></li>
+
+    <li>What is ABAP</li>
     <br/>
+    <ul>
+        <li>ABAP overview:</li>
+<pre><code class="language-abap line-numbers">* ABAP = Advanced Business Application Programming
+* Proprietary language developed by SAP
+* Runs exclusively on SAP Application Server (NetWeaver)
+
+* Key characteristics:
+* - Strongly typed, statically checked
+* - Built-in database integration (Open SQL)
+* - Event-driven programming model
+* - Backwards compatible (code from 1990s still runs)
+
+* Two syntax forms exist:
+* 1. Classic ABAP (statement-based)
+* 2. ABAP 7.40+ (expression-based, more modern)
+</code></pre>
+        <br/>
+        <li>ABAP in the SAP landscape:</li>
+        <svg width="600" height="220" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold">SAP Three-Tier Architecture</text>
+
+            <!-- Presentation Layer -->
+            <rect x="30" y="50" width="160" height="60" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="110" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Presentation Layer</text>
+            <text x="110" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="9">SAP GUI / Fiori / Web</text>
+
+            <!-- Application Layer -->
+            <rect x="220" y="50" width="160" height="60" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="300" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Application Layer</text>
+            <text x="300" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="9">ABAP runs here</text>
+
+            <!-- Database Layer -->
+            <rect x="410" y="50" width="160" height="60" fill="#ffe6cc" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="490" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Database Layer</text>
+            <text x="490" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="9">HANA / Oracle / DB2</text>
+
+            <!-- Arrows -->
+            <line x1="190" y1="80" x2="215" y2="80" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <line x1="380" y1="80" x2="405" y2="80" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+            <!-- ABAP detail box -->
+            <rect x="180" y="130" width="240" height="75" fill="#e6ffe6" stroke="#009900" stroke-width="1" rx="3"/>
+            <text x="300" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold">ABAP Application Server</text>
+            <text x="200" y="170" font-family="Arial, sans-serif" font-size="9">• Work processes execute ABAP</text>
+            <text x="200" y="185" font-family="Arial, sans-serif" font-size="9">• Shared memory for data buffering</text>
+            <text x="200" y="200" font-family="Arial, sans-serif" font-size="9">• Open SQL translates to native DB</text>
+        </svg>
+        <br/><br/>
+        <li>ABAP program types:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Code</th>
+            <th>Purpose</th>
+            <th>Execution</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Executable Program</td>
+            <td><code>1</code></td>
+            <td>Reports, batch jobs</td>
+            <td>Direct (SE38, SA38)</td>
+        </tr>
+        <tr>
+            <td>Module Pool</td>
+            <td><code>M</code></td>
+            <td>Dialog programs with screens</td>
+            <td>Via transaction code</td>
+        </tr>
+        <tr>
+            <td>Function Group</td>
+            <td><code>F</code></td>
+            <td>Container for function modules</td>
+            <td>Called by other programs</td>
+        </tr>
+        <tr>
+            <td>Class Pool</td>
+            <td><code>K</code></td>
+            <td>Global ABAP class</td>
+            <td>Instantiated/called</td>
+        </tr>
+        <tr>
+            <td>Interface Pool</td>
+            <td><code>J</code></td>
+            <td>Global interface definition</td>
+            <td>Implemented by classes</td>
+        </tr>
+        <tr>
+            <td>Include</td>
+            <td><code>I</code></td>
+            <td>Reusable code fragment</td>
+            <td>Included in other programs</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Development Environment</li>
     <br/>
-    <li></li>
+    <ul>
+        <li>SE80 - ABAP Workbench (classic):</li>
+<pre><code class="language-text line-numbers">Transaction Codes for Development:
+SE80  - Object Navigator (main development hub)
+SE38  - ABAP Editor (programs only)
+SE37  - Function Builder
+SE24  - Class Builder
+SE11  - Data Dictionary (tables, structures, data elements)
+SE16  - Data Browser (view table contents)
+ST22  - ABAP Dump Analysis (runtime errors)
+SE91  - Message Maintenance
+
+Navigation in SE80:
+1. Enter program/class/function group name
+2. Double-click to navigate to definitions
+3. F3 = Back, Ctrl+F3 = Check syntax
+4. Ctrl+F2 = Activate, F8 = Execute
+</code></pre>
+        <br/>
+        <li>ABAP Development Tools (ADT) - Eclipse-based:</li>
+<pre><code class="language-text line-numbers">Modern IDE features:
+- Code completion (Ctrl+Space)
+- Inline error checking
+- Refactoring tools
+- Git integration
+- Multiple system connections
+
+Installation:
+1. Download Eclipse (latest supported version)
+2. Help → Install New Software
+3. Add SAP repository: https://tools.hana.ondemand.com/latest
+4. Install "ABAP Development Tools"
+
+Project setup:
+1. File → New → ABAP Project
+2. Enter system connection details
+3. Provide SAP credentials
+4. Select package for development
+</code></pre>
+        <br/>
+        <li>Transport system overview:</li>
+        <svg width="600" height="200" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold">SAP Transport Landscape</text>
+
+            <!-- DEV -->
+            <rect x="50" y="60" width="120" height="70" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="110" y="85" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Development</text>
+            <text x="110" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="9">(DEV)</text>
+            <text x="110" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="9">Write code here</text>
+
+            <!-- QAS -->
+            <rect x="240" y="60" width="120" height="70" fill="#ffffcc" stroke="#999900" stroke-width="2" rx="5"/>
+            <text x="300" y="85" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Quality</text>
+            <text x="300" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="9">(QAS)</text>
+            <text x="300" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="9">Test here</text>
+
+            <!-- PRD -->
+            <rect x="430" y="60" width="120" height="70" fill="#ffcccc" stroke="#cc0000" stroke-width="2" rx="5"/>
+            <text x="490" y="85" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Production</text>
+            <text x="490" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="9">(PRD)</text>
+            <text x="490" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="9">Live system</text>
+
+            <!-- Arrows -->
+            <line x1="170" y1="95" x2="235" y2="95" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="202" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-size="8">Transport</text>
+
+            <line x1="360" y1="95" x2="425" y2="95" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="392" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-size="8">Transport</text>
+
+            <!-- Note -->
+            <rect x="100" y="150" width="400" height="35" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="172" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">All changes are recorded in transport requests and moved through the landscape</text>
+        </svg>
+        <br/><br/>
+        <li>Package and transport request:</li>
+<pre><code class="language-abap line-numbers">* When creating any object, you specify:
+* 1. Package - logical container for related objects
+* 2. Transport request - moves objects between systems
+
+* Package types:
+* $TMP        - Local, temporary (not transportable)
+* ZPACKAGE    - Customer package (Z/Y namespace)
+* /NAMESPACE/ - Registered namespace
+
+* Transport request format: &lt;SID&gt;K9&lt;number&gt;
+* Example: DEVK900123
+
+* Best practice:
+* - Use meaningful package names (Z_FI_REPORTING)
+* - One transport per logical change
+* - Document transport descriptions clearly
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Basic Syntax</li>
     <br/>
+    <ul>
+        <li>Statement structure:</li>
+<pre><code class="language-abap line-numbers">* Every ABAP statement ends with a period
+DATA lv_name TYPE string.
+
+* Statements can span multiple lines
+DATA lv_long_variable_name
+     TYPE string
+     VALUE 'Initial value'.
+
+* Chain statements (classic, less preferred now)
+DATA: lv_var1 TYPE i,
+      lv_var2 TYPE string,
+      lv_var3 TYPE c LENGTH 10.
+
+* Comments
+* This is a full-line comment (asterisk in column 1)
+DATA lv_x TYPE i. "This is an end-of-line comment
+
+* Case insensitivity
+* DATA, Data, data are all the same
+* But convention: KEYWORDS uppercase, variables lowercase
+</code></pre>
+        <br/>
+        <li>Variable declaration:</li>
+<pre><code class="language-abap line-numbers">* Classic declaration
+DATA lv_counter TYPE i.           "Integer
+DATA lv_amount TYPE p DECIMALS 2. "Packed decimal
+DATA lv_name TYPE string.         "Variable length string
+DATA lv_flag TYPE c LENGTH 1.     "Fixed character
+
+* With initial value
+DATA lv_status TYPE c LENGTH 1 VALUE 'A'.
+DATA lv_pi TYPE p DECIMALS 5 VALUE '3.14159'.
+
+* Modern inline declaration (ABAP 7.40+)
+DATA(lv_result) = 100.            "Type inferred as i
+DATA(lv_text) = |Hello World|.    "Type inferred as string
+
+* Constants
+CONSTANTS c_max_items TYPE i VALUE 999.
+CONSTANTS c_company TYPE c LENGTH 4 VALUE 'SAP'.
+
+* Field symbols (like pointers/references)
+FIELD-SYMBOLS &lt;fs_any&gt; TYPE any.
+FIELD-SYMBOLS &lt;fs_line&gt; TYPE mara.  "Typed field symbol
+</code></pre>
+        <br/>
+        <li>Elementary data types:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Default Length</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>C</code></td>
+            <td>Fixed-length character</td>
+            <td>1</td>
+            <td><code>'ABCD'</code></td>
+        </tr>
+        <tr>
+            <td><code>N</code></td>
+            <td>Numeric text (digits only)</td>
+            <td>1</td>
+            <td><code>'001234'</code></td>
+        </tr>
+        <tr>
+            <td><code>I</code></td>
+            <td>Integer (4 bytes)</td>
+            <td>4</td>
+            <td><code>12345</code></td>
+        </tr>
+        <tr>
+            <td><code>P</code></td>
+            <td>Packed decimal</td>
+            <td>8</td>
+            <td><code>123.45</code></td>
+        </tr>
+        <tr>
+            <td><code>F</code></td>
+            <td>Floating point (8 bytes)</td>
+            <td>8</td>
+            <td><code>'3.14E+00'</code></td>
+        </tr>
+        <tr>
+            <td><code>D</code></td>
+            <td>Date (YYYYMMDD)</td>
+            <td>8</td>
+            <td><code>'20241215'</code></td>
+        </tr>
+        <tr>
+            <td><code>T</code></td>
+            <td>Time (HHMMSS)</td>
+            <td>6</td>
+            <td><code>'143052'</code></td>
+        </tr>
+        <tr>
+            <td><code>STRING</code></td>
+            <td>Variable-length string</td>
+            <td>Variable</td>
+            <td><code>`Any length`</code></td>
+        </tr>
+        <tr>
+            <td><code>XSTRING</code></td>
+            <td>Variable-length byte sequence</td>
+            <td>Variable</td>
+            <td>Binary data</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>String templates (ABAP 7.40+):</li>
+<pre><code class="language-abap line-numbers">* String templates use | delimiters
+DATA(lv_greeting) = |Hello World|.
+
+* Embedded expressions in { }
+DATA(lv_name) = 'Alice'.
+DATA(lv_msg) = |Hello { lv_name }!|. "Hello Alice!
+
+* Formatting options
+DATA(lv_num) = 1234567.
+DATA(lv_formatted) = |Amount: { lv_num NUMBER = USER }|.
+
+* Date formatting
+DATA(lv_date) = sy-datum.
+DATA(lv_date_str) = |Today: { lv_date DATE = USER }|.
+
+* Width and alignment
+DATA(lv_padded) = |{ lv_name WIDTH = 10 ALIGN = LEFT PAD = '_' }|.
+" Result: 'Alice_____'
+
+* Combining multiple expressions
+DATA(lv_full) = |Name: { lv_name }, Date: { sy-datum DATE = ISO }|.
+</code></pre>
+        <br/>
+        <li>Control structures:</li>
+<pre><code class="language-abap line-numbers">* IF statement
+IF lv_amount &gt; 1000.
+  lv_status = 'H'.  "High
+ELSEIF lv_amount &gt; 100.
+  lv_status = 'M'.  "Medium
+ELSE.
+  lv_status = 'L'.  "Low
+ENDIF.
+
+* CASE statement
+CASE lv_status.
+  WHEN 'H'.
+    WRITE: / 'High value'.
+  WHEN 'M'.
+    WRITE: / 'Medium value'.
+  WHEN 'L'.
+    WRITE: / 'Low value'.
+  WHEN OTHERS.
+    WRITE: / 'Unknown'.
+ENDCASE.
+
+* DO loop (fixed iterations)
+DO 10 TIMES.
+  WRITE: / sy-index.  "sy-index = current iteration (1-based)
+ENDDO.
+
+* WHILE loop
+lv_counter = 0.
+WHILE lv_counter &lt; 10.
+  lv_counter = lv_counter + 1.
+ENDWHILE.
+
+* LOOP AT (for internal tables - see later section)
+LOOP AT lt_data INTO ls_line.
+  WRITE: / ls_line-field1.
+ENDLOOP.
+</code></pre>
+        <br/>
+        <li>Modern expressions (ABAP 7.40+):</li>
+<pre><code class="language-abap line-numbers">* Conditional expression (COND)
+DATA(lv_grade) = COND string(
+  WHEN lv_score &gt;= 90 THEN 'A'
+  WHEN lv_score &gt;= 80 THEN 'B'
+  WHEN lv_score &gt;= 70 THEN 'C'
+  ELSE 'F' ).
+
+* Switch expression (SWITCH)
+DATA(lv_day_name) = SWITCH string( lv_day_num
+  WHEN 1 THEN 'Monday'
+  WHEN 2 THEN 'Tuesday'
+  WHEN 3 THEN 'Wednesday'
+  WHEN 4 THEN 'Thursday'
+  WHEN 5 THEN 'Friday'
+  ELSE 'Weekend' ).
+
+* Constructor expressions
+DATA(lt_numbers) = VALUE int4_table( ( 1 ) ( 2 ) ( 3 ) ).
+
+* Iteration expression
+DATA(lt_doubled) = VALUE int4_table(
+  FOR wa IN lt_numbers ( wa * 2 ) ).
+
+* Corresponding - map fields by name
+ls_target = CORRESPONDING #( ls_source ).
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Program Structure</li>
     <br/>
-    <li></li>
+    <ul>
+        <li>Minimal executable program:</li>
+<pre><code class="language-abap line-numbers">REPORT zmy_first_program.
+
+* Global data declarations
+DATA: gv_message TYPE string.
+
+* Initialization event (runs once at start)
+INITIALIZATION.
+  gv_message = 'Program started'.
+
+* Start of selection (main processing)
+START-OF-SELECTION.
+  WRITE: / gv_message.
+  WRITE: / 'Hello, ABAP World!'.
+  WRITE: / 'Current date:', sy-datum.
+  WRITE: / 'Current time:', sy-uzeit.
+</code></pre>
+        <br/>
+        <li>Report events (execution order):</li>
+        <svg width="600" height="300" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Report Event Sequence</text>
+
+            <!-- Event boxes -->
+            <rect x="200" y="45" width="200" height="35" fill="#e6e6ff" stroke="#6600cc" stroke-width="2" rx="5"/>
+            <text x="300" y="68" text-anchor="middle" font-family="Arial, sans-serif" font-size="11">LOAD-OF-PROGRAM</text>
+
+            <rect x="200" y="90" width="200" height="35" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="300" y="113" text-anchor="middle" font-family="Arial, sans-serif" font-size="11">INITIALIZATION</text>
+
+            <rect x="200" y="135" width="200" height="35" fill="#ffffcc" stroke="#999900" stroke-width="2" rx="5"/>
+            <text x="300" y="158" text-anchor="middle" font-family="Arial, sans-serif" font-size="11">AT SELECTION-SCREEN</text>
+
+            <rect x="200" y="180" width="200" height="35" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="300" y="203" text-anchor="middle" font-family="Arial, sans-serif" font-size="11">START-OF-SELECTION</text>
+
+            <rect x="200" y="225" width="200" height="35" fill="#ffe6cc" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="300" y="248" text-anchor="middle" font-family="Arial, sans-serif" font-size="11">END-OF-SELECTION</text>
+
+            <!-- Arrows -->
+            <line x1="300" y1="80" x2="300" y2="88" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <line x1="300" y1="125" x2="300" y2="133" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <line x1="300" y1="170" x2="300" y2="178" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <line x1="300" y1="215" x2="300" y2="223" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+            <!-- Descriptions -->
+            <text x="420" y="68" font-family="Arial, sans-serif" font-size="9" fill="#666">Program loaded into memory</text>
+            <text x="420" y="113" font-family="Arial, sans-serif" font-size="9" fill="#666">Set default values</text>
+            <text x="420" y="158" font-family="Arial, sans-serif" font-size="9" fill="#666">Validate selection screen</text>
+            <text x="420" y="203" font-family="Arial, sans-serif" font-size="9" fill="#666">Main processing logic</text>
+            <text x="420" y="248" font-family="Arial, sans-serif" font-size="9" fill="#666">Final processing</text>
+
+            <!-- Note -->
+            <text x="300" y="285" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">Most programs only use INITIALIZATION and START-OF-SELECTION</text>
+        </svg>
+        <br/><br/>
+        <li>Selection screen (user input):</li>
+<pre><code class="language-abap line-numbers">REPORT zmy_report.
+
+* Single parameters
+PARAMETERS: p_matnr TYPE matnr,               "Material number
+            p_date  TYPE sy-datum DEFAULT sy-datum,
+            p_check AS CHECKBOX DEFAULT 'X'.
+
+* Select-options (ranges)
+SELECT-OPTIONS: s_werks FOR mara-werks,       "Plant range
+                s_mtart FOR mara-mtart.       "Material type range
+
+* Selection screen blocks
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+  PARAMETERS p_name TYPE string LOWER CASE.
+SELECTION-SCREEN END OF BLOCK b1.
+
+* Initialization - set defaults
+INITIALIZATION.
+  s_mtart-sign   = 'I'.
+  s_mtart-option = 'EQ'.
+  s_mtart-low    = 'FERT'.
+  APPEND s_mtart.
+
+* Validate input
+AT SELECTION-SCREEN.
+  IF p_matnr IS INITIAL.
+    MESSAGE 'Please enter material number' TYPE 'E'.
+  ENDIF.
+
+START-OF-SELECTION.
+  " Use parameters and select-options in queries
+  SELECT * FROM mara
+    WHERE matnr = @p_matnr
+      AND werks IN @s_werks
+    INTO TABLE @DATA(lt_mara).
+</code></pre>
+        <br/>
+        <li>Modularization with subroutines (FORM):</li>
+<pre><code class="language-abap line-numbers">REPORT zmodular_program.
+
+DATA: gv_result TYPE i.
+
+START-OF-SELECTION.
+  PERFORM calculate_sum USING 10 20 CHANGING gv_result.
+  WRITE: / 'Sum:', gv_result.
+
+  PERFORM display_message USING 'Processing complete'.
+
+*&amp;---------------------------------------------------------------------*
+*&amp; Form calculate_sum
+*&amp;---------------------------------------------------------------------*
+FORM calculate_sum USING pv_a TYPE i
+                         pv_b TYPE i
+                   CHANGING pv_result TYPE i.
+  pv_result = pv_a + pv_b.
+ENDFORM.
+
+*&amp;---------------------------------------------------------------------*
+*&amp; Form display_message
+*&amp;---------------------------------------------------------------------*
+FORM display_message USING pv_text TYPE string.
+  WRITE: / pv_text.
+ENDFORM.
+</code></pre>
+        <br/>
+        <li>Modularization with methods (preferred):</li>
+<pre><code class="language-abap line-numbers">REPORT zmethod_example.
+
+* Local class definition
+CLASS lcl_calculator DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS:
+      add IMPORTING iv_a TYPE i
+                    iv_b TYPE i
+          RETURNING VALUE(rv_result) TYPE i,
+
+      multiply IMPORTING iv_a TYPE i
+                         iv_b TYPE i
+               RETURNING VALUE(rv_result) TYPE i.
+ENDCLASS.
+
+* Local class implementation
+CLASS lcl_calculator IMPLEMENTATION.
+  METHOD add.
+    rv_result = iv_a + iv_b.
+  ENDMETHOD.
+
+  METHOD multiply.
+    rv_result = iv_a * iv_b.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA(lv_sum) = lcl_calculator=&gt;add( iv_a = 10 iv_b = 20 ).
+  DATA(lv_product) = lcl_calculator=&gt;multiply( iv_a = 5 iv_b = 6 ).
+
+  WRITE: / 'Sum:', lv_sum.
+  WRITE: / 'Product:', lv_product.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Internal Tables</li>
     <br/>
+    <ul>
+        <li>Internal table concept:</li>
+<pre><code class="language-abap line-numbers">* Internal tables = dynamic arrays in memory
+* Fundamental ABAP data structure for handling multiple records
+
+* Three components:
+* 1. Line type - structure of each row
+* 2. Table type - how data is organized (standard/sorted/hashed)
+* 3. Key - fields for identification
+
+* Memory visualization:
+* +--------+--------+--------+
+* | MATNR  | MAKTX  | MEINS  |  &lt;-- Header (optional, deprecated)
+* +--------+--------+--------+
+* | MAT001 | Widget | EA     |  &lt;-- Line 1
+* | MAT002 | Gadget | PC     |  &lt;-- Line 2
+* | MAT003 | Part   | KG     |  &lt;-- Line 3
+* +--------+--------+--------+
+</code></pre>
+        <br/>
+        <li>Table type comparison:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Access</th>
+            <th>Key</th>
+            <th>Duplicates</th>
+            <th>Use Case</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>STANDARD</td>
+            <td>Index or key (linear search)</td>
+            <td>Non-unique</td>
+            <td>Allowed</td>
+            <td>General purpose, small tables</td>
+        </tr>
+        <tr>
+            <td>SORTED</td>
+            <td>Index or key (binary search)</td>
+            <td>Unique or non-unique</td>
+            <td>Depends on key</td>
+            <td>Frequent key access, medium tables</td>
+        </tr>
+        <tr>
+            <td>HASHED</td>
+            <td>Key only (hash algorithm)</td>
+            <td>Unique only</td>
+            <td>Not allowed</td>
+            <td>Large tables, fast key lookup</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Declaration methods:</li>
+<pre><code class="language-abap line-numbers">* Work area (structure) for single line
+DATA: ls_material TYPE mara.
+
+* Classic declaration - internal table with header line (obsolete)
+DATA: lt_old TYPE TABLE OF mara WITH HEADER LINE.
+
+* Modern declaration - separate work area
+DATA: lt_materials TYPE TABLE OF mara,      "Standard table
+      ls_mat       TYPE mara.               "Work area
+
+* Sorted table with unique key
+DATA: lt_sorted TYPE SORTED TABLE OF mara
+        WITH UNIQUE KEY matnr.
+
+* Hashed table
+DATA: lt_hashed TYPE HASHED TABLE OF mara
+        WITH UNIQUE KEY matnr.
+
+* Inline declaration (7.40+)
+SELECT * FROM mara INTO TABLE @DATA(lt_mara_new).
+
+* Table type definition (reusable)
+TYPES: tt_materials TYPE STANDARD TABLE OF mara
+         WITH NON-UNIQUE KEY matnr.
+DATA: lt_mat TYPE tt_materials.
+</code></pre>
+        <br/>
+        <li>Basic operations:</li>
+<pre><code class="language-abap line-numbers">* Append a line
+ls_material-matnr = 'MAT001'.
+ls_material-mtart = 'FERT'.
+APPEND ls_material TO lt_materials.
+
+* Modern append with VALUE
+APPEND VALUE #( matnr = 'MAT002' mtart = 'HALB' ) TO lt_materials.
+
+* Insert at specific index
+INSERT ls_material INTO lt_materials INDEX 1.
+
+* Read by index
+READ TABLE lt_materials INTO ls_material INDEX 1.
+IF sy-subrc = 0.
+  " Found
+ENDIF.
+
+* Read by key
+READ TABLE lt_materials INTO ls_material
+  WITH KEY matnr = 'MAT001'.
+
+* Modern read with inline result (7.40+)
+DATA(ls_found) = lt_materials[ matnr = 'MAT001' ].
+
+* Safe read with line_exists (avoid dump on not found)
+IF line_exists( lt_materials[ matnr = 'MAT001' ] ).
+  DATA(ls_safe) = lt_materials[ matnr = 'MAT001' ].
+ENDIF.
+
+* Modify
+ls_material-mtart = 'ROH'.
+MODIFY TABLE lt_materials FROM ls_material.
+
+* Delete
+DELETE lt_materials WHERE mtart = 'ROH'.
+DELETE lt_materials INDEX 1.
+
+* Clear table
+CLEAR lt_materials.   "Keeps memory allocated
+FREE lt_materials.    "Releases memory
+</code></pre>
+        <br/>
+        <li>Loop processing:</li>
+<pre><code class="language-abap line-numbers">* Classic loop with work area
+LOOP AT lt_materials INTO ls_material.
+  WRITE: / ls_material-matnr, ls_material-mtart.
+ENDLOOP.
+
+* Loop with field symbol (better performance, direct access)
+LOOP AT lt_materials ASSIGNING FIELD-SYMBOL(&lt;fs_mat&gt;).
+  &lt;fs_mat&gt;-mtart = 'NEW'.  "Directly modifies table
+  WRITE: / &lt;fs_mat&gt;-matnr.
+ENDLOOP.
+
+* Loop with inline declaration (7.40+)
+LOOP AT lt_materials INTO DATA(ls_line).
+  WRITE: / ls_line-matnr.
+ENDLOOP.
+
+* Loop with index
+LOOP AT lt_materials INTO ls_material.
+  WRITE: / sy-tabix, ls_material-matnr.  "sy-tabix = current index
+ENDLOOP.
+
+* Loop with condition
+LOOP AT lt_materials INTO ls_material
+  WHERE mtart = 'FERT'.
+  WRITE: / ls_material-matnr.
+ENDLOOP.
+
+* Parallel cursor (efficient nested loops)
+LOOP AT lt_header INTO DATA(ls_header).
+  LOOP AT lt_item INTO DATA(ls_item)
+    WHERE docnum = ls_header-docnum.
+    " Process item
+  ENDLOOP.
+ENDLOOP.
+</code></pre>
+        <br/>
+        <li>Table expressions and operations (7.40+):</li>
+<pre><code class="language-abap line-numbers">* VALUE constructor - create table with data
+DATA(lt_numbers) = VALUE int4_table(
+  ( 10 ) ( 20 ) ( 30 ) ( 40 ) ).
+
+* Create table of structures
+DATA(lt_persons) = VALUE tt_person(
+  ( name = 'Alice' age = 30 )
+  ( name = 'Bob'   age = 25 )
+  ( name = 'Carol' age = 35 ) ).
+
+* CORRESPONDING - copy matching fields
+DATA(lt_target) = CORRESPONDING tt_target( lt_source ).
+
+* FOR iteration expression
+DATA(lt_doubled) = VALUE int4_table(
+  FOR wa IN lt_numbers ( wa * 2 ) ).
+
+* FOR with WHERE condition
+DATA(lt_adults) = VALUE tt_person(
+  FOR wa IN lt_persons WHERE ( age &gt;= 18 )
+  ( wa ) ).
+
+* FILTER - extract matching entries
+DATA(lt_filtered) = FILTER #( lt_persons
+  WHERE age &gt; 25 ).
+
+* REDUCE - aggregate values
+DATA(lv_sum) = REDUCE i(
+  INIT sum = 0
+  FOR wa IN lt_numbers
+  NEXT sum = sum + wa ).
+
+" Result: 100
+
+* Line exists and line index
+IF line_exists( lt_persons[ name = 'Alice' ] ).
+  DATA(lv_idx) = line_index( lt_persons[ name = 'Alice' ] ).
+ENDIF.
+</code></pre>
+        <br/>
+        <li>Internal table visualization:</li>
+        <svg width="600" height="280" xmlns="http://www.w3.org/2000/svg" style="background: #fafafa; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Title -->
+            <text x="300" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Internal Table Access Methods</text>
+
+            <!-- Standard Table -->
+            <rect x="30" y="50" width="160" height="110" fill="#cce5ff" stroke="#0066cc" stroke-width="2" rx="5"/>
+            <text x="110" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">STANDARD TABLE</text>
+            <text x="50" y="90" font-family="Arial, sans-serif" font-size="9">Index: O(1)</text>
+            <text x="50" y="105" font-family="Arial, sans-serif" font-size="9">Key: O(n) linear</text>
+            <text x="50" y="125" font-family="Arial, sans-serif" font-size="9">Insert: O(1) at end</text>
+            <text x="50" y="145" font-family="Arial, sans-serif" font-size="9">Memory: Dynamic</text>
+
+            <!-- Sorted Table -->
+            <rect x="220" y="50" width="160" height="110" fill="#ccffcc" stroke="#009900" stroke-width="2" rx="5"/>
+            <text x="300" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">SORTED TABLE</text>
+            <text x="240" y="90" font-family="Arial, sans-serif" font-size="9">Index: O(1)</text>
+            <text x="240" y="105" font-family="Arial, sans-serif" font-size="9">Key: O(log n) binary</text>
+            <text x="240" y="125" font-family="Arial, sans-serif" font-size="9">Insert: O(n) sorted</text>
+            <text x="240" y="145" font-family="Arial, sans-serif" font-size="9">Always sorted by key</text>
+
+            <!-- Hashed Table -->
+            <rect x="410" y="50" width="160" height="110" fill="#ffe6cc" stroke="#cc6600" stroke-width="2" rx="5"/>
+            <text x="490" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">HASHED TABLE</text>
+            <text x="430" y="90" font-family="Arial, sans-serif" font-size="9">Index: Not supported</text>
+            <text x="430" y="105" font-family="Arial, sans-serif" font-size="9">Key: O(1) hash</text>
+            <text x="430" y="125" font-family="Arial, sans-serif" font-size="9">Insert: O(1) average</text>
+            <text x="430" y="145" font-family="Arial, sans-serif" font-size="9">Unique keys only</text>
+
+            <!-- Recommendation box -->
+            <rect x="30" y="180" width="540" height="85" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="3"/>
+            <text x="300" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">When to Use Each Type</text>
+            <text x="50" y="220" font-family="Arial, sans-serif" font-size="9">• STANDARD: Small tables (&lt;100 rows), sequential processing, append-heavy</text>
+            <text x="50" y="237" font-family="Arial, sans-serif" font-size="9">• SORTED: Medium tables, need both index and key access, range reads</text>
+            <text x="50" y="254" font-family="Arial, sans-serif" font-size="9">• HASHED: Large tables (&gt;1000 rows), key-only access, unique key requirement</text>
+        </svg>
+    </ul>
+    <br/><br/>
+
+
+    <li>Database Operations (Open SQL)</li>
+    <br/>
+    <ul>
+        <li>Open SQL overview:</li>
+<pre><code class="language-abap line-numbers">* Open SQL = SAP's database abstraction layer
+* Translates to native SQL for any supported database
+* Provides syntax checking at compile time
+
+* Key features:
+* - Database-independent syntax
+* - Integrated with ABAP type system
+* - Automatic client handling (multi-tenant)
+* - Buffer integration
+
+* Supported statements:
+* SELECT, INSERT, UPDATE, DELETE, MODIFY
+</code></pre>
+        <br/>
+        <li>SELECT basics:</li>
+<pre><code class="language-abap line-numbers">* Select single record
+SELECT SINGLE * FROM mara
+  WHERE matnr = 'MAT001'
+  INTO @DATA(ls_material).
+
+IF sy-subrc = 0.
+  WRITE: / 'Found:', ls_material-matnr.
+ENDIF.
+
+* Select into internal table
+SELECT * FROM mara
+  WHERE mtart = 'FERT'
+  INTO TABLE @DATA(lt_materials).
+
+* Select specific fields
+SELECT matnr, mtart, meins
+  FROM mara
+  WHERE mtart IN @s_mtart
+  INTO TABLE @DATA(lt_result).
+
+* Select with join
+SELECT m~matnr, m~mtart, t~maktx
+  FROM mara AS m
+  INNER JOIN makt AS t ON t~matnr = m~matnr
+  WHERE m~mtart = 'FERT'
+    AND t~spras = @sy-langu
+  INTO TABLE @DATA(lt_with_text).
+
+* Select with aggregation
+SELECT mtart, COUNT(*) AS count
+  FROM mara
+  GROUP BY mtart
+  INTO TABLE @DATA(lt_counts).
+</code></pre>
+        <br/>
+        <li>Classic vs modern syntax:</li>
+<pre><code class="language-abap line-numbers">* Classic syntax (still valid)
+SELECT * FROM mara INTO TABLE lt_materials
+  WHERE mtart = 'FERT'.
+
+* Modern syntax (7.40+) - @ escapes host variables
+SELECT * FROM mara
+  INTO TABLE @lt_materials
+  WHERE mtart = @lv_type.
+
+* Classic field list
+SELECT matnr mtart meins FROM mara INTO TABLE lt_result.
+
+* Modern field list (comma separated)
+SELECT matnr, mtart, meins FROM mara INTO TABLE @lt_result.
+
+* Classic - work area loop
+SELECT * FROM mara INTO ls_material
+  WHERE mtart = 'FERT'.
+  WRITE: / ls_material-matnr.
+ENDSELECT.
+
+* Modern - package processing (better for large data)
+SELECT * FROM mara
+  WHERE mtart = 'FERT'
+  INTO TABLE @DATA(lt_package) PACKAGE SIZE 1000.
+  " Process lt_package
+ENDSELECT.
+</code></pre>
+        <br/>
+        <li>INSERT, UPDATE, DELETE:</li>
+<pre><code class="language-abap line-numbers">* Insert single row
+DATA(ls_new) = VALUE zmytable(
+  key_field = 'KEY01'
+  data_field = 'Some value'
+  created_on = sy-datum ).
+
+INSERT zmytable FROM @ls_new.
+IF sy-subrc = 0.
+  WRITE: / 'Insert successful'.
+ENDIF.
+
+* Insert multiple rows
+INSERT zmytable FROM TABLE @lt_new_entries.
+" sy-dbcnt = number of rows inserted
+
+* Update by key
+ls_new-data_field = 'Updated value'.
+UPDATE zmytable FROM @ls_new.
+
+* Update with SET
+UPDATE zmytable SET data_field = 'New value'
+  WHERE key_field = 'KEY01'.
+
+* Delete by key
+DELETE zmytable FROM @ls_new.
+
+* Delete with condition
+DELETE FROM zmytable WHERE created_on &lt; @lv_cutoff_date.
+
+* Modify = Insert or Update (upsert)
+MODIFY zmytable FROM @ls_data.
+MODIFY zmytable FROM TABLE @lt_data.
+</code></pre>
+        <br/>
+        <li>FOR ALL ENTRIES (common pattern):</li>
+<pre><code class="language-abap line-numbers">* Get related data for entries in an internal table
+* CRITICAL: Always check if driver table is not empty!
+
+IF lt_orders IS NOT INITIAL.
+  SELECT vbeln, posnr, matnr, kwmeng
+    FROM vbap
+    FOR ALL ENTRIES IN @lt_orders
+    WHERE vbeln = @lt_orders-vbeln
+    INTO TABLE @DATA(lt_items).
+ENDIF.
+
+* How it works:
+* 1. ABAP sends multiple queries to database
+* 2. Results are collected and duplicates removed
+* 3. If driver table is empty, ALL records are returned!
+
+* Best practices:
+* - Always check IF ... IS NOT INITIAL
+* - Remove duplicates from driver table
+* - Use for mass data retrieval
+* - Consider JOINs for better performance with SAP HANA
+</code></pre>
+        <br/>
+        <li>Open SQL quick reference:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operation</th>
+            <th>Syntax</th>
+            <th>sy-subrc</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Select single</td>
+            <td><code>SELECT SINGLE ... WHERE ...</code></td>
+            <td>0=found, 4=not found</td>
+        </tr>
+        <tr>
+            <td>Select multiple</td>
+            <td><code>SELECT ... INTO TABLE ...</code></td>
+            <td>0=found, 4=empty</td>
+        </tr>
+        <tr>
+            <td>Insert</td>
+            <td><code>INSERT &lt;table&gt; FROM ...</code></td>
+            <td>0=success, 4=duplicate key</td>
+        </tr>
+        <tr>
+            <td>Update</td>
+            <td><code>UPDATE &lt;table&gt; FROM/SET ...</code></td>
+            <td>0=success, 4=not found</td>
+        </tr>
+        <tr>
+            <td>Delete</td>
+            <td><code>DELETE &lt;table&gt; FROM/WHERE ...</code></td>
+            <td>0=deleted, 4=not found</td>
+        </tr>
+        <tr>
+            <td>Modify</td>
+            <td><code>MODIFY &lt;table&gt; FROM ...</code></td>
+            <td>Always 0 (insert or update)</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>System Fields</li>
+    <br/>
+    <ul>
+        <li>Commonly used system fields (sy-*):</li>
+<pre><code class="language-abap line-numbers">* System fields are in structure SYST, accessed via SY-*
+
+* Return codes
+sy-subrc    "Return code (0 = success, others = various errors)
+sy-dbcnt    "Number of database rows processed
+
+* Loop counters
+sy-tabix    "Current line index in LOOP AT
+sy-index    "Current iteration in DO/WHILE
+
+* Date and time
+sy-datum    "Current date (YYYYMMDD)
+sy-uzeit    "Current time (HHMMSS)
+sy-timezone "User's time zone
+
+* User and system
+sy-uname    "Current username
+sy-langu    "User's logon language
+sy-mandt    "Current client (tenant)
+sy-sysid    "System ID (DEV, QAS, PRD)
+
+* Program information
+sy-repid    "Current program name
+sy-tcode    "Current transaction code
+sy-cprog    "Calling program name
+
+* Screen-related
+sy-dynnr    "Current screen number
+sy-pfkey    "Current GUI status
+
+* Message handling
+sy-msgty    "Message type (E/W/I/S/A)
+sy-msgid    "Message class
+sy-msgno    "Message number
+sy-msgv1-4  "Message variables
+</code></pre>
+        <br/>
+        <li>Using system fields:</li>
+<pre><code class="language-abap line-numbers">* Check operation success
+SELECT * FROM mara INTO TABLE @DATA(lt_mara)
+  WHERE mtart = 'FERT'.
+
+IF sy-subrc &lt;&gt; 0.
+  WRITE: / 'No materials found'.
+ELSE.
+  WRITE: / 'Found', sy-dbcnt, 'materials'.
+ENDIF.
+
+* Loop index usage
+LOOP AT lt_mara INTO DATA(ls_mara).
+  IF sy-tabix = 1.
+    WRITE: / 'First item:', ls_mara-matnr.
+  ENDIF.
+  WRITE: / sy-tabix, ls_mara-matnr.
+ENDLOOP.
+
+* Date calculations
+DATA(lv_yesterday) = sy-datum - 1.
+DATA(lv_next_month) = sy-datum + 30.
+
+* User and system info
+WRITE: / 'User:', sy-uname.
+WRITE: / 'Client:', sy-mandt.
+WRITE: / 'System:', sy-sysid.
+WRITE: / 'Program:', sy-repid.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Error Handling</li>
+    <br/>
+    <ul>
+        <li>Messages:</li>
+<pre><code class="language-abap line-numbers">* Message types
+* E - Error     (stops processing, requires correction)
+* W - Warning   (can be overridden)
+* I - Info      (popup, continues after OK)
+* S - Success   (status bar, continues)
+* A - Abend     (terminates transaction)
+* X - Exit      (short dump with message)
+
+* Direct message
+MESSAGE 'Material not found' TYPE 'E'.
+
+* Message from message class (SE91)
+MESSAGE e001(zmsg_class) WITH lv_matnr.
+
+* Modern syntax
+MESSAGE e001(zmsg_class) WITH lv_matnr INTO DATA(lv_msg).
+
+* Inline message (often used with exceptions)
+MESSAGE |Material { lv_matnr } not found| TYPE 'E'.
+</code></pre>
+        <br/>
+        <li>Exception handling (TRY-CATCH):</li>
+<pre><code class="language-abap line-numbers">* Class-based exceptions (modern approach)
+TRY.
+    DATA(lv_result) = 100 / lv_divisor.
+    WRITE: / 'Result:', lv_result.
+
+  CATCH cx_sy_zerodivide INTO DATA(lx_error).
+    WRITE: / 'Error:', lx_error-&gt;get_text( ).
+
+  CATCH cx_root INTO DATA(lx_any).
+    " Catch any exception
+    WRITE: / 'Unexpected error:', lx_any-&gt;get_text( ).
+
+  CLEANUP.
+    " Always executed before leaving TRY block on exception
+    " Use for resource cleanup
+ENDTRY.
+
+* Raise exception
+IF lv_input IS INITIAL.
+  RAISE EXCEPTION TYPE cx_sy_illegal_argument
+    EXPORTING textid = cx_sy_illegal_argument=&gt;value_missing.
+ENDIF.
+
+* Propagate exception (in method signature)
+METHODS process
+  IMPORTING iv_data TYPE string
+  RAISING   cx_custom_exception.
+</code></pre>
+        <br/>
+        <li>Classic exception handling (for older code):</li>
+<pre><code class="language-abap line-numbers">* CATCH SYSTEM-EXCEPTIONS (classic, limited)
+DATA lv_result TYPE i.
+
+CATCH SYSTEM-EXCEPTIONS arithmetic_errors = 1
+                         others = 2.
+  lv_result = 100 / 0.
+ENDCATCH.
+
+CASE sy-subrc.
+  WHEN 1.
+    WRITE: / 'Arithmetic error'.
+  WHEN 2.
+    WRITE: / 'Other error'.
+ENDCASE.
+
+* Function module exceptions (classic)
+CALL FUNCTION 'CONVERSION_EXIT_MATN1_INPUT'
+  EXPORTING
+    input  = lv_input
+  IMPORTING
+    output = lv_output
+  EXCEPTIONS
+    not_found = 1
+    OTHERS    = 2.
+
+IF sy-subrc &lt;&gt; 0.
+  " Handle error
+ENDIF.
+</code></pre>
+    </ul>
+    <br/><br/>
+
 </ol>
-<br/>
+<!-- * * * * * * * * * * * * * * -->
 <!-- * * * * * * * * * * * * * * -->
 
 
