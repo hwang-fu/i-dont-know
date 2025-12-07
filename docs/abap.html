@@ -159,6 +159,7 @@
         <li><a href="#abap-strings">Strings</a></li>
         <li><a href="#abap-date-time">Date &amp; Time</a></li>
         <li><a href="#abap-exception-handling">Eception Handling</a></li>
+        <li><a href="#abap-dictionary">Data Dictionary (DDIC)</a></li>
     </ol>
 </nav>
 <hr/>
@@ -8613,6 +8614,1228 @@ ENDMETHOD.
     <br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-dictionary">Data Dictionary (DDIC)</h3>
+<ol>
+
+    <li>What is the Data Dictionary</li>
+    <br/>
+    <ul>
+        <li>Overview:</li>
+<pre><code class="language-text line-numbers">Data Dictionary (DDIC) = central repository for data definitions.
+
+- Defines database tables, views, data types
+- Shared across all ABAP programs
+- Managed via transaction SE11
+- Changes automatically update database schema
+</code></pre>
+        <br/>
+        <li>Why use DDIC:</li>
+<pre><code class="language-text line-numbers">1. Consistency - same type definition everywhere
+2. Reusability - define once, use in many programs
+3. Documentation - descriptions, labels, help texts
+4. Database independence - SAP handles DB-specific SQL
+5. Referential integrity - foreign keys, constraints
+</code></pre>
+        <br/>
+        <li>Key transactions:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Transaction</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>SE11</code></td>
+            <td>ABAP Dictionary (main)</td>
+        </tr>
+        <tr>
+            <td><code>SE12</code></td>
+            <td>Dictionary display (read-only)</td>
+        </tr>
+        <tr>
+            <td><code>SE13</code></td>
+            <td>Technical settings</td>
+        </tr>
+        <tr>
+            <td><code>SE14</code></td>
+            <td>Database utility</td>
+        </tr>
+        <tr>
+            <td><code>SE16</code></td>
+            <td>Data browser (view table contents)</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Hierarchy</li>
+    <br/>
+    <ul>
+        <li>Three-layer structure:</li>
+<pre><code class="language-text line-numbers">Domain
+   ↓ (technical attributes: type, length)
+Data Element
+   ↓ (semantic meaning: labels, documentation)
+Table Field / Structure Field
+   ↓ (where data is stored)
+</code></pre>
+        <br/>
+        <li>Visual example:</li>
+<pre><code class="language-text line-numbers">Domain: MATNR_D
+  Type: CHAR
+  Length: 18
+       ↓
+Data Element: MATNR
+  Short text: "Material Number"
+  Labels: "Material", "Mat. No."
+       ↓
+Table MARA, field MATNR
+Table MARC, field MATNR
+Table MSEG, field MATNR
+... (all use same definition)
+</code></pre>
+        <br/>
+        <li>Benefits:</li>
+<pre><code class="language-text line-numbers">Change domain length → all data elements updated
+Change data element label → all screens updated
+One definition, consistent everywhere
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Domains</li>
+    <br/>
+    <ul>
+        <li>What domains define:</li>
+<pre><code class="language-text line-numbers">- Data type (CHAR, NUMC, DEC, INT, etc.)
+- Length
+- Decimal places (for numeric)
+- Value range (fixed values or value table)
+- Conversion routine (input/output formatting)
+</code></pre>
+        <br/>
+        <li>Built-in data types for domains:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>ABAP equivalent</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>CHAR</code></td>
+            <td>Character</td>
+            <td>c</td>
+        </tr>
+        <tr>
+            <td><code>NUMC</code></td>
+            <td>Numeric text</td>
+            <td>n</td>
+        </tr>
+        <tr>
+            <td><code>DATS</code></td>
+            <td>Date (YYYYMMDD)</td>
+            <td>d</td>
+        </tr>
+        <tr>
+            <td><code>TIMS</code></td>
+            <td>Time (HHMMSS)</td>
+            <td>t</td>
+        </tr>
+        <tr>
+            <td><code>DEC</code></td>
+            <td>Packed decimal</td>
+            <td>p</td>
+        </tr>
+        <tr>
+            <td><code>INT1</code></td>
+            <td>1-byte integer</td>
+            <td>b</td>
+        </tr>
+        <tr>
+            <td><code>INT2</code></td>
+            <td>2-byte integer</td>
+            <td>s</td>
+        </tr>
+        <tr>
+            <td><code>INT4</code></td>
+            <td>4-byte integer</td>
+            <td>i</td>
+        </tr>
+        <tr>
+            <td><code>INT8</code></td>
+            <td>8-byte integer</td>
+            <td>int8</td>
+        </tr>
+        <tr>
+            <td><code>FLTP</code></td>
+            <td>Floating point</td>
+            <td>f</td>
+        </tr>
+        <tr>
+            <td><code>STRING</code></td>
+            <td>Variable string</td>
+            <td>string</td>
+        </tr>
+        <tr>
+            <td><code>RAWSTRING</code></td>
+            <td>Variable bytes</td>
+            <td>xstring</td>
+        </tr>
+        <tr>
+            <td><code>RAW</code></td>
+            <td>Fixed bytes</td>
+            <td>x</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Fixed values (enumeration):</li>
+<pre><code class="language-text line-numbers">Domain: ZSTATUS_D
+Type: CHAR, Length: 1
+
+Fixed values:
+  'A' = Active
+  'I' = Inactive
+  'P' = Pending
+  'C' = Closed
+
+→ Dropdown list appears in screens
+→ Input validated automatically
+</code></pre>
+        <br/>
+        <li>Conversion routine:</li>
+<pre><code class="language-text line-numbers">Domain: MATNR_D
+Conversion routine: MATN1
+
+Input:  User enters "123"
+Output: Stored as "000000000000000123" (18 chars, left-padded)
+
+Display: Shown as "123" (leading zeros removed)
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_matnr TYPE matnr VALUE '000000000000000123'.
+
+* CONVERSION_EXIT_MATN1_OUTPUT removes leading zeros
+WRITE: / |External: { lv_matnr ALPHA = OUT }|.
+
+* CONVERSION_EXIT_MATN1_INPUT adds leading zeros
+DATA lv_input TYPE matnr.
+lv_input = |{ '123' ALPHA = IN WIDTH = 18 }|.
+WRITE: / |Internal: { lv_input }|.
+</code></pre>
+<pre><code class="language-text line-numbers">External: 123
+Internal: 000000000000000123
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Data Elements</li>
+    <br/>
+    <ul>
+        <li>What data elements define:</li>
+<pre><code class="language-text line-numbers">- Reference to domain (or direct type)
+- Field labels (short, medium, long, heading)
+- Documentation (F1 help text)
+- Search help assignment
+</code></pre>
+        <br/>
+        <li>Label lengths:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Label type</th>
+            <th>Max length</th>
+            <th>Used in</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Short</td>
+            <td>10 chars</td>
+            <td>Narrow columns</td>
+        </tr>
+        <tr>
+            <td>Medium</td>
+            <td>20 chars</td>
+            <td>Standard fields</td>
+        </tr>
+        <tr>
+            <td>Long</td>
+            <td>40 chars</td>
+            <td>Wide displays</td>
+        </tr>
+        <tr>
+            <td>Heading</td>
+            <td>55 chars</td>
+            <td>Report headers</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Using data elements in ABAP:</li>
+<pre><code class="language-abap line-numbers">* Reference data element type
+DATA lv_matnr TYPE matnr.        "material number
+DATA lv_bukrs TYPE bukrs.        "company code
+DATA lv_werks TYPE werks_d.      "plant
+
+lv_matnr = '000000000001234567'.
+lv_bukrs = '1000'.
+lv_werks = 'P001'.
+
+WRITE: / lv_matnr, lv_bukrs, lv_werks.
+</code></pre>
+<pre><code class="language-text line-numbers">000000000001234567 1000 P001
+</code></pre>
+        <br/>
+        <li>Direct type vs domain reference:</li>
+<pre><code class="language-text line-numbers">Data element can either:
+1. Reference a domain (recommended)
+   → inherits technical attributes from domain
+
+2. Define direct type (built-in type)
+   → standalone, no domain reuse
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Structures</li>
+    <br/>
+    <ul>
+        <li>What structures are:</li>
+<pre><code class="language-text line-numbers">Structure = collection of fields (no database table).
+Used for: work areas, parameters, temporary data.
+</code></pre>
+        <br/>
+        <li>Creating in SE11:</li>
+<pre><code class="language-text line-numbers">Transaction SE11 → Data type → Create → Structure
+
+Fields:
+  CUSTOMER_ID  TYPE KUNNR
+  NAME         TYPE NAME1
+  CITY         TYPE ORT01
+  COUNTRY      TYPE LAND1
+</code></pre>
+        <br/>
+        <li>Using DDIC structure in ABAP:</li>
+<pre><code class="language-abap line-numbers">* Declare variable with DDIC structure type
+DATA ls_customer TYPE zcustomer_str.
+
+ls_customer-customer_id = '0000001234'.
+ls_customer-name = 'Acme Corp'.
+ls_customer-city = 'Berlin'.
+ls_customer-country = 'DE'.
+
+WRITE: / ls_customer-name, ls_customer-city.
+</code></pre>
+<pre><code class="language-text line-numbers">Acme Corp Berlin
+</code></pre>
+        <br/>
+        <li>Include structures:</li>
+<pre><code class="language-text line-numbers">Structure ZADDR_STR:
+  STREET   TYPE CHAR40
+  CITY     TYPE CHAR40
+  COUNTRY  TYPE LAND1
+
+Structure ZCUSTOMER_STR:
+  CUSTOMER_ID  TYPE KUNNR
+  NAME         TYPE NAME1
+  .INCLUDE     ZADDR_STR    ← includes all fields from ZADDR_STR
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA ls_cust TYPE zcustomer_str.
+
+ls_cust-customer_id = '123'.
+ls_cust-name = 'Test'.
+ls_cust-street = '123 Main St'.    "from included structure
+ls_cust-city = 'Munich'.           "from included structure
+</code></pre>
+        <br/>
+        <li>Append structures:</li>
+<pre><code class="language-text line-numbers">Append structure = add custom fields to SAP standard structure.
+Used for enhancements without modifying original.
+
+Standard structure: VBAK (sales order header)
+Append structure: ZZVBAK_APPEND
+  ZZ_CUSTOM_FIELD  TYPE CHAR10
+
+→ ZZ_CUSTOM_FIELD appears in VBAK
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Table Types</li>
+    <br/>
+    <ul>
+        <li>What table types are:</li>
+<pre><code class="language-text line-numbers">Table type = definition of internal table structure.
+Defines: line type, key, table kind.
+</code></pre>
+        <br/>
+        <li>Creating in SE11:</li>
+<pre><code class="language-text line-numbers">Transaction SE11 → Data type → Create → Table type
+
+Line type: ZCUSTOMER_STR (or data element, or built-in)
+Access: STANDARD TABLE / SORTED TABLE / HASHED TABLE
+Key: DEFAULT KEY / specific fields
+</code></pre>
+        <br/>
+        <li>Using table type in ABAP:</li>
+<pre><code class="language-abap line-numbers">* DDIC table type
+DATA lt_customers TYPE zcustomer_tab.
+
+APPEND VALUE #( customer_id = '001' name = 'Alice' ) TO lt_customers.
+APPEND VALUE #( customer_id = '002' name = 'Bob' ) TO lt_customers.
+
+LOOP AT lt_customers INTO DATA(ls_cust).
+  WRITE: / ls_cust-customer_id, ls_cust-name.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">001 Alice
+002 Bob
+</code></pre>
+        <br/>
+        <li>Table type with key:</li>
+<pre><code class="language-text line-numbers">Table type: ZCUST_SORTED_TAB
+Line type: ZCUSTOMER_STR
+Access: SORTED TABLE
+Key: UNIQUE KEY CUSTOMER_ID
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lt_sorted TYPE zcust_sorted_tab.
+
+"automatically sorted by customer_id
+INSERT VALUE #( customer_id = '003' name = 'Carol' ) INTO TABLE lt_sorted.
+INSERT VALUE #( customer_id = '001' name = 'Alice' ) INTO TABLE lt_sorted.
+INSERT VALUE #( customer_id = '002' name = 'Bob' ) INTO TABLE lt_sorted.
+
+LOOP AT lt_sorted INTO DATA(ls_cust).
+  WRITE: / ls_cust-customer_id.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">001
+002
+003
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Database Tables</li>
+    <br/>
+    <ul>
+        <li>Table types in DDIC:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Use</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Transparent</td>
+            <td>1:1 with database table</td>
+            <td>Most application tables</td>
+        </tr>
+        <tr>
+            <td>Pooled</td>
+            <td>Multiple tables in one DB table</td>
+            <td>Small tables (obsolete)</td>
+        </tr>
+        <tr>
+            <td>Cluster</td>
+            <td>Compressed storage</td>
+            <td>Large data (obsolete)</td>
+        </tr>
+    </tbody>
+</table>
+<p>Modern SAP uses transparent tables almost exclusively.</p>
+        <br/>
+        <li>Table structure:</li>
+<pre><code class="language-text line-numbers">Table ZCUSTOMERS:
+
+Fields:
+  MANDT       TYPE MANDT       (client - key)
+  CUSTOMER_ID TYPE KUNNR       (key)
+  NAME        TYPE NAME1
+  CITY        TYPE ORT01
+  CREATED_AT  TYPE TIMESTAMP
+
+Primary key: MANDT + CUSTOMER_ID
+</code></pre>
+        <br/>
+        <li>Client handling (MANDT):</li>
+<pre><code class="language-text line-numbers">MANDT = client (tenant) field.
+SAP is multi-tenant - data separated by client.
+
+Table definition:
+  Delivery class: A (application data)
+  Client-dependent: Yes → MANDT field required
+
+Open SQL automatically filters by sy-mandt.
+</code></pre>
+<pre><code class="language-abap line-numbers">* These are equivalent (client handled automatically):
+SELECT * FROM zcustomers INTO TABLE @DATA(lt_cust).
+
+SELECT * FROM zcustomers INTO TABLE @DATA(lt_cust)
+  WHERE mandt = @sy-mandt.
+</code></pre>
+        <br/>
+        <li>Delivery class:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Class</th>
+            <th>Meaning</th>
+            <th>Transport behavior</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>A</code></td>
+            <td>Application table</td>
+            <td>Data not transported</td>
+        </tr>
+        <tr>
+            <td><code>C</code></td>
+            <td>Customizing table</td>
+            <td>Data transported</td>
+        </tr>
+        <tr>
+            <td><code>L</code></td>
+            <td>Temporary data</td>
+            <td>Data deleted on import</td>
+        </tr>
+        <tr>
+            <td><code>G</code></td>
+            <td>Customer customizing</td>
+            <td>Protected from SAP upgrades</td>
+        </tr>
+        <tr>
+            <td><code>S</code></td>
+            <td>System table</td>
+            <td>SAP controlled</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Technical settings:</li>
+<pre><code class="language-text line-numbers">Data class:
+  APPL0 = Master data (few changes)
+  APPL1 = Transaction data (frequent changes)
+  APPL2 = Org and customizing
+
+Size category:
+  0 = 0-100 rows
+  1 = 100-1000 rows
+  2 = 1000-10000 rows
+  ...
+
+Buffering:
+  Not buffered
+  Fully buffered (small tables)
+  Generic buffering (by key fields)
+  Single record buffered
+</code></pre>
+        <br/>
+        <li>Using table in ABAP:</li>
+<pre><code class="language-abap line-numbers">* Use table name as type (structure)
+DATA ls_customer TYPE zcustomers.
+
+* Internal table of table rows
+DATA lt_customers TYPE TABLE OF zcustomers.
+
+* Select into internal table
+SELECT * FROM zcustomers INTO TABLE @lt_customers.
+
+* Insert row
+ls_customer-customer_id = '0000001234'.
+ls_customer-name = 'Test Customer'.
+INSERT zcustomers FROM ls_customer.
+
+IF sy-subrc = 0.
+  WRITE: / 'Inserted successfully'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Inserted successfully
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Primary Keys and Indexes</li>
+    <br/>
+    <ul>
+        <li>Primary key:</li>
+<pre><code class="language-text line-numbers">- Uniquely identifies each row
+- Always includes MANDT (if client-dependent)
+- Created automatically in database
+- Cannot be changed after activation (with data)
+</code></pre>
+        <br/>
+        <li>Secondary indexes:</li>
+<pre><code class="language-text line-numbers">Purpose: Speed up queries on non-key fields.
+
+Table ZCUSTOMERS:
+  Primary key: MANDT, CUSTOMER_ID
+
+  Index Z01: CITY          (queries by city)
+  Index Z02: NAME, CITY    (queries by name+city)
+</code></pre>
+        <br/>
+        <li>Creating index in SE11:</li>
+<pre><code class="language-text line-numbers">1. Open table in SE11
+2. Menu: Goto → Indexes
+3. Create index
+4. Add fields
+5. Activate
+
+Index naming: Z + table name + number (e.g., ZCUSTOMERS~Z01)
+</code></pre>
+        <br/>
+        <li>When to create indexes:</li>
+<pre><code class="language-text line-numbers">Create index when:
+- Field frequently in WHERE clause
+- Field frequently in JOIN condition
+- Significant performance improvement measured
+
+Avoid:
+- Too many indexes (slows INSERT/UPDATE)
+- Indexes on small tables
+- Indexes on frequently changing fields
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Foreign Keys</li>
+    <br/>
+    <ul>
+        <li>What foreign keys do:</li>
+<pre><code class="language-text line-numbers">- Define relationships between tables
+- Enable value check (input validation)
+- Enable search helps (F4)
+- Document data model
+</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-text line-numbers">Table ZORDERS:
+  ORDER_ID     (key)
+  CUSTOMER_ID  → foreign key to ZCUSTOMERS-CUSTOMER_ID
+  ORDER_DATE
+
+When entering CUSTOMER_ID:
+- F4 shows list from ZCUSTOMERS
+- Invalid values rejected
+</code></pre>
+        <br/>
+        <li>Cardinality:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1:1</td>
+            <td>One foreign row per dependent row</td>
+        </tr>
+        <tr>
+            <td>1:N</td>
+            <td>One foreign row, many dependent rows</td>
+        </tr>
+        <tr>
+            <td>1:C</td>
+            <td>Zero or one foreign row</td>
+        </tr>
+        <tr>
+            <td>1:CN</td>
+            <td>Zero, one, or many dependent rows</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Creating in SE11:</li>
+<pre><code class="language-text line-numbers">1. Open table
+2. Click on field
+3. Button: Foreign keys
+4. Enter check table
+5. Define key fields mapping
+6. Set cardinality
+7. Activate
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Views</li>
+    <br/>
+    <ul>
+        <li>View types:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Purpose</th>
+            <th>Database object</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Database view</td>
+            <td>Inner join of tables</td>
+            <td>Yes (created in DB)</td>
+        </tr>
+        <tr>
+            <td>Projection view</td>
+            <td>Subset of fields from one table</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td>Maintenance view</td>
+            <td>Data maintenance (SM30)</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Help view</td>
+            <td>Search help (outer join)</td>
+            <td>No</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Database view example:</li>
+<pre><code class="language-text line-numbers">View ZCUST_ORDER_V:
+  Join: ZCUSTOMERS + ZORDERS
+  Join condition: ZCUSTOMERS-CUSTOMER_ID = ZORDERS-CUSTOMER_ID
+
+  Fields:
+    CUSTOMER_ID  (from ZCUSTOMERS)
+    NAME         (from ZCUSTOMERS)
+    ORDER_ID     (from ZORDERS)
+    ORDER_DATE   (from ZORDERS)
+</code></pre>
+<pre><code class="language-abap line-numbers">* Use view like a table
+SELECT * FROM zcust_order_v INTO TABLE @DATA(lt_data)
+  WHERE name LIKE 'A%'.
+
+LOOP AT lt_data INTO DATA(ls_row).
+  WRITE: / ls_row-name, ls_row-order_id, ls_row-order_date.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">Acme Corp 0000000001 20241215
+Acme Corp 0000000002 20241218
+Alpha Inc 0000000003 20241220
+</code></pre>
+        <br/>
+        <li>CDS Views (modern):</li>
+<pre><code class="language-text line-numbers">Core Data Services = modern view technology.
+Defined in ADT (Eclipse), not SE11.
+More powerful than DDIC views.
+
+Features:
+- Annotations
+- Expressions
+- Associations
+- Parameters
+- Aggregations
+</code></pre>
+<pre><code class="language-sql line-numbers">@AbapCatalog.sqlViewName: 'ZCUSTORDERV'
+@AbapCatalog.compiler.compareFilter: true
+define view Z_Cust_Order as select from zcustomers as c
+  inner join zorders as o on c.customer_id = o.customer_id
+{
+  key c.customer_id,
+  c.name,
+  o.order_id,
+  o.order_date
+}
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Search Helps</li>
+    <br/>
+    <ul>
+        <li>What search helps do:</li>
+<pre><code class="language-text line-numbers">Search help = F4 value selection.
+Shows list of valid values for a field.
+User can search and select.
+</code></pre>
+        <br/>
+        <li>Types:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Elementary</td>
+            <td>Single search path</td>
+        </tr>
+        <tr>
+            <td>Collective</td>
+            <td>Multiple search paths (tabs)</td>
+        </tr>
+        <tr>
+            <td>Append</td>
+            <td>Add to existing search help</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Elementary search help:</li>
+<pre><code class="language-text line-numbers">Search help: ZCUST_SH
+Selection method: ZCUSTOMERS (table or view)
+
+Parameters:
+  CUSTOMER_ID  IMP, EXP, LPos 1, SPos 1
+  NAME         IMP,      LPos 2, SPos 2
+  CITY               LPos 3
+
+IMP = can be used for filtering (import)
+EXP = returned to screen (export)
+LPos = position in list
+SPos = position in search screen
+</code></pre>
+        <br/>
+        <li>Attaching search help:</li>
+<pre><code class="language-text line-numbers">Attach at:
+1. Data element level (applies everywhere)
+2. Table field level (applies to that table)
+3. Screen field level (applies to that screen)
+4. ABAP code (PARAMETERS, SELECT-OPTIONS)
+</code></pre>
+<pre><code class="language-abap line-numbers">* Search help in selection screen
+PARAMETERS p_cust TYPE kunnr MATCHCODE OBJECT zcust_sh.
+
+* Alternative: attach via data element
+PARAMETERS p_cust TYPE kunnr.  "uses search help from data element
+</code></pre>
+        <br/>
+        <li>Programmatic search help:</li>
+<pre><code class="language-abap line-numbers">DATA lt_return TYPE TABLE OF ddshretval.
+DATA ls_return TYPE ddshretval.
+
+CALL FUNCTION 'F4IF_FIELD_VALUE_REQUEST'
+  EXPORTING
+    tabname     = 'ZCUSTOMERS'
+    fieldname   = 'CUSTOMER_ID'
+  TABLES
+    return_tab  = lt_return
+  EXCEPTIONS
+    OTHERS      = 1.
+
+IF sy-subrc = 0.
+  READ TABLE lt_return INTO ls_return INDEX 1.
+  IF sy-subrc = 0.
+    WRITE: / 'Selected:', ls_return-fieldval.
+  ENDIF.
+ENDIF.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Lock Objects</li>
+    <br/>
+    <ul>
+        <li>What lock objects do:</li>
+<pre><code class="language-text line-numbers">Lock object = logical lock on database records.
+Prevents concurrent modification.
+SAP-specific (not database locks).
+</code></pre>
+        <br/>
+        <li>Creating lock object:</li>
+<pre><code class="language-text line-numbers">Transaction SE11 → Lock object → Create
+
+Name: EZZCUSTOMERS (must start with E)
+Tables: ZCUSTOMERS
+Lock mode: Write lock / Read lock / Enhanced write lock
+
+→ Generates function modules:
+   ENQUEUE_EZZCUSTOMERS (acquire lock)
+   DEQUEUE_EZZCUSTOMERS (release lock)
+</code></pre>
+        <br/>
+        <li>Using lock object:</li>
+<pre><code class="language-abap line-numbers">DATA lv_customer_id TYPE kunnr VALUE '0000001234'.
+
+* Acquire lock
+CALL FUNCTION 'ENQUEUE_EZZCUSTOMERS'
+  EXPORTING
+    customer_id    = lv_customer_id
+  EXCEPTIONS
+    foreign_lock   = 1    "locked by another user
+    system_failure = 2
+    OTHERS         = 3.
+
+IF sy-subrc = 0.
+  WRITE: / 'Lock acquired'.
+
+  "... do work ...
+
+  * Release lock
+  CALL FUNCTION 'DEQUEUE_EZZCUSTOMERS'
+    EXPORTING
+      customer_id = lv_customer_id.
+
+  WRITE: / 'Lock released'.
+ELSE.
+  WRITE: / 'Could not acquire lock'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Lock acquired
+Lock released
+</code></pre>
+        <br/>
+        <li>Lock modes:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Mode</th>
+            <th>Description</th>
+            <th>Collisions with</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>E (Exclusive)</td>
+            <td>Write lock</td>
+            <td>E, S, X</td>
+        </tr>
+        <tr>
+            <td>S (Shared)</td>
+            <td>Read lock</td>
+            <td>E, X</td>
+        </tr>
+        <tr>
+            <td>X (Exclusive)</td>
+            <td>Enhanced write</td>
+            <td>E, S, X (cumulative)</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Release all locks:</li>
+<pre><code class="language-abap line-numbers">* Release all locks held by current program
+CALL FUNCTION 'DEQUEUE_ALL'.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Table Maintenance Generator</li>
+    <br/>
+    <ul>
+        <li>What it does:</li>
+<pre><code class="language-text line-numbers">Generates screens for maintaining table data.
+No ABAP coding required.
+Access via SM30 or SE16.
+</code></pre>
+        <br/>
+        <li>Creating maintenance view:</li>
+<pre><code class="language-text line-numbers">1. SE11 → Table → Display
+2. Menu: Utilities → Table Maintenance Generator
+3. Authorization group: &amp;NC&amp;
+4. Function group: ZZCUST_MNT
+5. Maintenance type: One step / Two step
+6. Generate
+
+→ Can now maintain data via SM30
+</code></pre>
+        <br/>
+        <li>Using SM30:</li>
+<pre><code class="language-text line-numbers">Transaction SM30:
+  Table/View: ZCUSTOMERS
+  Button: Maintain
+
+→ Opens generated maintenance screen
+→ Can add, change, delete records
+</code></pre>
+        <br/>
+        <li>Restricting access:</li>
+<pre><code class="language-text line-numbers">Authorization group in table maintenance.
+Object: S_TABU_DIS
+Field: DICBERCLS (table class)
+
+Control who can maintain which tables.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Groups (Obsolete)</li>
+    <br/>
+    <ul>
+        <li>What they were:</li>
+<pre><code class="language-text line-numbers">Type groups = collections of type definitions.
+Used before ABAP Objects for shared types.
+Still exists but obsolete in modern ABAP.
+</code></pre>
+        <br/>
+        <li>Usage (legacy code):</li>
+<pre><code class="language-abap line-numbers">* Old style - required TYPE-POOLS statement
+TYPE-POOLS: slis.   "ALV types
+
+DATA ls_layout TYPE slis_layout_alv.
+</code></pre>
+<pre><code class="language-abap line-numbers">* Modern - type groups available without TYPE-POOLS
+DATA ls_layout TYPE slis_layout_alv.
+</code></pre>
+<p>Since ABAP 7.40, TYPE-POOLS statement optional.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using DDIC Types in ABAP</li>
+    <br/>
+    <ul>
+        <li>Reference patterns:</li>
+<pre><code class="language-abap line-numbers">* Data element
+DATA lv_matnr TYPE matnr.
+
+* Table as structure
+DATA ls_material TYPE mara.
+
+* Internal table of table
+DATA lt_materials TYPE TABLE OF mara.
+
+* Specific structure
+DATA ls_data TYPE zmystructure.
+
+* Table type
+DATA lt_data TYPE zmytabletype.
+
+* Reference to DDIC type
+DATA lr_data TYPE REF TO mara.
+</code></pre>
+        <br/>
+        <li>Getting type information:</li>
+<pre><code class="language-abap line-numbers">* Describe a DDIC type
+DATA lo_type TYPE REF TO cl_abap_typedescr.
+DATA lo_struct TYPE REF TO cl_abap_structdescr.
+
+lo_type = cl_abap_typedescr=&gt;describe_by_name( 'MARA' ).
+
+IF lo_type-&gt;kind = cl_abap_typedescr=&gt;kind_struct.
+  lo_struct ?= lo_type.
+
+  LOOP AT lo_struct-&gt;components INTO DATA(ls_comp).
+    WRITE: / ls_comp-name, ls_comp-type_kind.
+  ENDLOOP.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">MANDT C
+MATNR C
+ERSDA D
+ERNAM C
+...
+</code></pre>
+        <br/>
+        <li>Dynamic type creation:</li>
+<pre><code class="language-abap line-numbers">DATA lr_data TYPE REF TO data.
+FIELD-SYMBOLS &lt;fs_table&gt; TYPE ANY TABLE.
+
+* Create internal table from DDIC table name
+CREATE DATA lr_data TYPE TABLE OF (p_tabname).
+ASSIGN lr_data-&gt;* TO &lt;fs_table&gt;.
+
+SELECT * FROM (p_tabname) INTO TABLE @&lt;fs_table&gt;.
+
+WRITE: / 'Rows:', lines( &lt;fs_table&gt; ).
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Activation and Transport</li>
+    <br/>
+    <ul>
+        <li>Activation:</li>
+<pre><code class="language-text line-numbers">After creating/changing DDIC object:
+1. Save (stores in database)
+2. Activate (makes available for use)
+
+Inactive objects cannot be used in programs.
+Activation creates/updates database objects.
+</code></pre>
+        <br/>
+        <li>Mass activation:</li>
+<pre><code class="language-text line-numbers">Transaction SE11 menu: Utilities → Activate multiple
+
+Or transaction: SACT
+</code></pre>
+        <br/>
+        <li>Transport:</li>
+<pre><code class="language-text line-numbers">DDIC objects assigned to package + transport request.
+
+Z* / Y* = customer namespace
+/NAMESPACE/ = registered namespace
+
+Changes transported: DEV → QAS → PRD
+</code></pre>
+        <br/>
+        <li>Database adjustments:</li>
+<pre><code class="language-text line-numbers">Transaction SE14: Database Utility
+
+When table structure changes:
+- Add field: ALTER TABLE (usually)
+- Remove field: requires conversion
+- Change key: requires new table + data migration
+- Change field type: may require conversion
+
+SE14 can:
+- Activate and adjust database
+- Delete data
+- Convert table
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Quick Reference</li>
+    <br/>
+    <ul>
+        <li>Object types:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Object</th>
+            <th>Purpose</th>
+            <th>Create in</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Domain</td>
+            <td>Technical attributes</td>
+            <td>SE11</td>
+        </tr>
+        <tr>
+            <td>Data element</td>
+            <td>Semantic meaning</td>
+            <td>SE11</td>
+        </tr>
+        <tr>
+            <td>Structure</td>
+            <td>Field collection</td>
+            <td>SE11</td>
+        </tr>
+        <tr>
+            <td>Table type</td>
+            <td>Internal table definition</td>
+            <td>SE11</td>
+        </tr>
+        <tr>
+            <td>Database table</td>
+            <td>Persistent storage</td>
+            <td>SE11</td>
+        </tr>
+        <tr>
+            <td>View</td>
+            <td>Table join/projection</td>
+            <td>SE11</td>
+        </tr>
+        <tr>
+            <td>Search help</td>
+            <td>F4 value selection</td>
+            <td>SE11</td>
+        </tr>
+        <tr>
+            <td>Lock object</td>
+            <td>Logical locking</td>
+            <td>SE11</td>
+        </tr>
+        <tr>
+            <td>CDS View</td>
+            <td>Modern views</td>
+            <td>ADT</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Naming conventions:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Prefix</th>
+            <th>Object type</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>Z*</code> / <code>Y*</code></td>
+            <td>Customer objects</td>
+        </tr>
+        <tr>
+            <td><code>E*</code></td>
+            <td>Lock objects</td>
+        </tr>
+        <tr>
+            <td><code>*_D</code></td>
+            <td>Domain (convention)</td>
+        </tr>
+        <tr>
+            <td><code>*_STR</code></td>
+            <td>Structure (convention)</td>
+        </tr>
+        <tr>
+            <td><code>*_TAB</code></td>
+            <td>Table type (convention)</td>
+        </tr>
+        <tr>
+            <td><code>*_SH</code></td>
+            <td>Search help (convention)</td>
+        </tr>
+        <tr>
+            <td><code>*_V</code></td>
+            <td>View (convention)</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
