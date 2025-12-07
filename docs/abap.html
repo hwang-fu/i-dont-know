@@ -153,6 +153,7 @@
         <li><a href="#abap-basic-syntax">Basic Syntax</a></li>
         <li><a href="#abap-data-types">Data Types</a></li>
         <li><a href="#abap-variables">Variables</a></li>
+        <li><a href="#abap-constants-literals">Constants and Literals</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3146,7 +3147,492 @@ ENDIF.
 
 
 <!-- * * * * * * * * * * * * * * -->
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-constants-literals">Constants and Literals in ABAP</h3>
+<ol>
 
+    <li>Literals vs Constants</li>
+    <br/>
+    <ul>
+        <li>Definitions:</li>
+<pre><code class="language-text line-numbers">Literal  = a value written directly in code (no name)
+Constant = a named value that cannot change
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_x TYPE i.
+
+lv_x = 42.           "42 is a literal
+
+CONSTANTS lc_max TYPE i VALUE 100.
+lv_x = lc_max.       "lc_max is a constant
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Numeric Literals</li>
+    <br/>
+    <ul>
+        <li>Integer literals:</li>
+<pre><code class="language-abap line-numbers">DATA lv_i TYPE i.
+
+lv_i = 42.
+lv_i = -100.
+lv_i = 0.
+
+WRITE: / lv_i.
+</code></pre>
+<pre><code class="language-text line-numbers">0
+</code></pre>
+<p>No quotes. Just the digits. Negative with minus sign.</p>
+        <br/>
+        <li>Decimal literals:</li>
+<pre><code class="language-abap line-numbers">DATA lv_p TYPE p DECIMALS 2.
+
+lv_p = '123.45'.     "quotes required for decimal
+lv_p = '-99.99'.
+
+WRITE: / lv_p.
+</code></pre>
+<pre><code class="language-text line-numbers">99.99-
+</code></pre>
+<p>Decimal point requires quotes. Without quotes, <code>123.45</code> is a syntax error.</p>
+        <br/>
+        <li>Scientific notation:</li>
+<pre><code class="language-abap line-numbers">DATA lv_f TYPE f.
+
+lv_f = '1.5E+03'.    "1500
+lv_f = '2.5E-02'.    "0.025
+
+WRITE: / lv_f.
+</code></pre>
+<pre><code class="language-text line-numbers">2.5000000000000001E-02
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Character Literals</li>
+    <br/>
+    <ul>
+        <li>Three forms:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Syntax</th>
+            <th>Type</th>
+            <th>Trailing spaces</th>
+            <th>Expressions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>'...'</code></td>
+            <td>c (fixed length)</td>
+            <td>Trimmed</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>`...`</code></td>
+            <td>string</td>
+            <td>Preserved</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>|...|</code></td>
+            <td>string</td>
+            <td>Preserved</td>
+            <td>Yes <code>{ }</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Single quotes (<code>'...'</code>) - text field literal:</li>
+<pre><code class="language-abap line-numbers">DATA lv_c TYPE c LENGTH 10.
+DATA lv_str TYPE string.
+
+lv_c = 'Hello'.
+lv_str = 'Hello'.
+
+WRITE: / '&gt;', lv_c, '&lt;'.
+WRITE: / '&gt;', lv_str, '&lt;'.
+</code></pre>
+<pre><code class="language-text line-numbers">&gt;Hello
+&gt;Hello
+</code></pre>
+<p>Type <code>c</code> pads to declared length. When assigned to <code>string</code>, trailing spaces are trimmed.</p>
+        <br/>
+        <li>Single quotes - trailing spaces trimmed:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string.
+
+lv_str = 'Hello   '.    "3 trailing spaces
+
+WRITE: / '&gt;', lv_str, '&lt;'.
+WRITE: / 'Length:', strlen( lv_str ).
+</code></pre>
+<pre><code class="language-text line-numbers">&gt;Hello
+Length:          5
+</code></pre>
+<p>Spaces at end disappear. This is often unexpected.</p>
+        <br/>
+        <li>Backticks (<code>`...`</code>) - string literal:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string.
+
+lv_str = `Hello   `.    "3 trailing spaces
+
+WRITE: / '&gt;', lv_str, '&lt;'.
+WRITE: / 'Length:', strlen( lv_str ).
+</code></pre>
+<pre><code class="language-text line-numbers">&gt;Hello
+Length:          8
+</code></pre>
+<p>Spaces preserved. Use backticks when spaces matter.</p>
+        <br/>
+        <li>Pipes (<code>|...|</code>) - string template:</li>
+<pre><code class="language-abap line-numbers">DATA lv_name TYPE string VALUE 'Alice'.
+DATA lv_age TYPE i VALUE 30.
+
+DATA(lv_msg) = |Name: { lv_name }, Age: { lv_age }|.
+
+WRITE: / lv_msg.
+</code></pre>
+<pre><code class="language-text line-numbers">Name: Alice, Age: 30
+</code></pre>
+<p>Expressions inside <code>{ }</code> are evaluated. Like f-strings in Python or template literals in JavaScript.</p>
+        <br/>
+        <li>String template formatting:</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE p DECIMALS 2 VALUE '1234.50'.
+DATA lv_date TYPE d VALUE '20241215'.
+
+WRITE: / |Number: { lv_num }|.
+WRITE: / |Formatted: { lv_num NUMBER = USER }|.
+WRITE: / |Date: { lv_date }|.
+WRITE: / |Formatted: { lv_date DATE = USER }|.
+</code></pre>
+<pre><code class="language-text line-numbers">Number: 1234.50
+Formatted: 1,234.50
+Date: 20241215
+Formatted: 12/15/2024
+</code></pre>
+<p><code>NUMBER = USER</code> and <code>DATE = USER</code> format according to user settings.</p>
+        <br/>
+        <li>String template - width and alignment:</li>
+<pre><code class="language-abap line-numbers">DATA lv_name TYPE string VALUE 'Bob'.
+
+WRITE: / |>{ lv_name WIDTH = 10 }<|.
+WRITE: / |>{ lv_name WIDTH = 10 ALIGN = LEFT }<|.
+WRITE: / |>{ lv_name WIDTH = 10 ALIGN = RIGHT }<|.
+WRITE: / |>{ lv_name WIDTH = 10 ALIGN = CENTER }<|.
+WRITE: / |>{ lv_name WIDTH = 10 PAD = '_' }<|.
+</code></pre>
+<pre><code class="language-text line-numbers">>Bob
+>Bob
+>       Bob
+>   Bob
+>Bob_______
+</code></pre>
+        <br/>
+        <li>Escaping special characters:</li>
+<pre><code class="language-abap line-numbers">* In single quotes - double the quote
+DATA(lv_1) = 'It''s OK'.
+WRITE: / lv_1.
+
+* In backticks - double the backtick
+DATA(lv_2) = `Say ``hello``.
+WRITE: / lv_2.
+
+* In pipes - use backslash
+DATA(lv_3) = |Pipe: \|, Brace: \{, Backslash: \\|.
+WRITE: / lv_3.
+</code></pre>
+<pre><code class="language-text line-numbers">It's OK
+Say `hello`
+Pipe: |, Brace: {, Backslash: \
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Hexadecimal Literals</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">X'&lt;hex_digits&gt;'     "for type x (fixed bytes)
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_x TYPE x LENGTH 4.
+DATA lv_xs TYPE xstring.
+
+lv_x = 'DEADBEEF'.
+lv_xs = '48454C4C4F'.    "hex for ASCII 'HELLO'
+
+WRITE: / lv_x.
+WRITE: / lv_xs.
+</code></pre>
+<pre><code class="language-text line-numbers">DEADBEEF
+48454C4C4F
+</code></pre>
+<p>Each byte is 2 hex characters. For binary data, raw bytes, hashes.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>CONSTANTS Statement</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">CONSTANTS &lt;name&gt; TYPE &lt;type&gt; VALUE &lt;value&gt;.
+CONSTANTS &lt;name&gt; TYPE &lt;type&gt; LENGTH &lt;n&gt; VALUE &lt;value&gt;.
+</code></pre>
+<p>VALUE is mandatory. Cannot be changed after declaration.</p>
+        <br/>
+        <li>Basic usage:</li>
+<pre><code class="language-abap line-numbers">CONSTANTS lc_pi TYPE p DECIMALS 5 VALUE '3.14159'.
+CONSTANTS lc_max_rows TYPE i VALUE 1000.
+CONSTANTS lc_company TYPE c LENGTH 4 VALUE 'SAP'.
+
+WRITE: / lc_pi.
+WRITE: / lc_max_rows.
+WRITE: / lc_company.
+</code></pre>
+<pre><code class="language-text line-numbers">3.14159
+      1000
+SAP
+</code></pre>
+        <br/>
+        <li>Attempting to change:</li>
+<pre><code class="language-abap line-numbers">CONSTANTS lc_max TYPE i VALUE 100.
+lc_max = 200.
+</code></pre>
+<pre><code class="language-text line-numbers">Syntax error: "LC_MAX" cannot be changed.
+</code></pre>
+        <br/>
+        <li>Chain syntax:</li>
+<pre><code class="language-abap line-numbers">CONSTANTS: lc_status_new    TYPE c VALUE 'N',
+           lc_status_open   TYPE c VALUE 'O',
+           lc_status_closed TYPE c VALUE 'C'.
+</code></pre>
+        <br/>
+        <li>Structure constants:</li>
+<pre><code class="language-abap line-numbers">CONSTANTS: BEGIN OF lc_defaults,
+             max_items TYPE i VALUE 100,
+             currency  TYPE c LENGTH 3 VALUE 'EUR',
+           END OF lc_defaults.
+
+WRITE: / lc_defaults-max_items.
+WRITE: / lc_defaults-currency.
+</code></pre>
+<pre><code class="language-text line-numbers">       100
+EUR
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Built-in Constants</li>
+    <br/>
+    <ul>
+        <li>Boolean constants:</li>
+<pre><code class="language-abap line-numbers">DATA lv_flag TYPE abap_bool.
+
+lv_flag = abap_true.
+WRITE: / 'True:', lv_flag.
+
+lv_flag = abap_false.
+WRITE: / 'False:', lv_flag.
+</code></pre>
+<pre><code class="language-text line-numbers">True: X
+False:
+</code></pre>
+<p><code>abap_true</code> = 'X', <code>abap_false</code> = ' ' (space). Type <code>abap_bool</code> is <code>c LENGTH 1</code>.</p>
+        <br/>
+        <li>Common usage:</li>
+<pre><code class="language-abap line-numbers">DATA lv_success TYPE abap_bool.
+
+lv_success = abap_true.
+
+IF lv_success = abap_true.
+  WRITE: / 'Success'.
+ENDIF.
+
+* Also works (but less readable)
+IF lv_success = 'X'.
+  WRITE: / 'Also success'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Success
+Also success
+</code></pre>
+        <br/>
+        <li>Other built-in constants:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Constant</th>
+            <th>Value</th>
+            <th>Use</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>abap_true</code></td>
+            <td>'X'</td>
+            <td>Boolean true</td>
+        </tr>
+        <tr>
+            <td><code>abap_false</code></td>
+            <td>' '</td>
+            <td>Boolean false</td>
+        </tr>
+        <tr>
+            <td><code>abap_undefined</code></td>
+            <td>'-'</td>
+            <td>Undefined/not applicable</td>
+        </tr>
+        <tr>
+            <td><code>space</code></td>
+            <td>' '</td>
+            <td>Single space character</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Using space constant:</li>
+<pre><code class="language-abap line-numbers">DATA lv_c TYPE c LENGTH 1 VALUE 'X'.
+
+IF lv_c = space.
+  WRITE: / 'Empty'.
+ELSE.
+  WRITE: / 'Has value'.
+ENDIF.
+
+lv_c = space.    "clear to space
+WRITE: / '&gt;', lv_c, '&lt;'.
+</code></pre>
+<pre><code class="language-text line-numbers">Has value
+&gt;
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>IS INITIAL vs Comparing to space</li>
+    <br/>
+    <ul>
+        <li>The difference:</li>
+<pre><code class="language-abap line-numbers">DATA lv_c TYPE c LENGTH 1.
+DATA lv_str TYPE string.
+
+* For type c, initial value IS space
+lv_c = space.
+IF lv_c IS INITIAL.
+  WRITE: / 'c is initial'.
+ENDIF.
+IF lv_c = space.
+  WRITE: / 'c = space'.
+ENDIF.
+
+* For string, initial is empty (not space)
+lv_str = ``.
+IF lv_str IS INITIAL.
+  WRITE: / 'string is initial'.
+ENDIF.
+
+lv_str = ` `.    "one space
+IF lv_str IS INITIAL.
+  WRITE: / 'string with space is initial'.
+ELSE.
+  WRITE: / 'string with space is NOT initial'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">c is initial
+c = space
+string is initial
+string with space is NOT initial
+</code></pre>
+<p>For <code>c</code>: initial = filled with spaces.<br/>For <code>string</code>: initial = zero length (empty).</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Literal Type Inference</li>
+    <br/>
+    <ul>
+        <li>What type does a literal have?</li>
+<pre><code class="language-abap line-numbers">* Integer literal → type i
+DATA(lv_1) = 42.
+cl_abap_typedescr=&gt;describe_by_data( lv_1 )-&gt;get_relative_name( ).  "I
+
+* Quoted number → type c
+DATA(lv_2) = '42'.
+cl_abap_typedescr=&gt;describe_by_data( lv_2 )-&gt;get_relative_name( ).  "C
+
+* Backtick → type string
+DATA(lv_3) = `42`.
+cl_abap_typedescr=&gt;describe_by_data( lv_3 )-&gt;get_relative_name( ).  "STRING
+
+* Pipe → type string
+DATA(lv_4) = |42|.
+cl_abap_typedescr=&gt;describe_by_data( lv_4 )-&gt;get_relative_name( ).  "STRING
+</code></pre>
+        <br/>
+        <li>Why it matters:</li>
+<pre><code class="language-abap line-numbers">* These are NOT the same
+DATA(lv_a) = 42.       "type i (integer)
+DATA(lv_b) = '42'.     "type c LENGTH 2 (character)
+
+* Comparison works but types differ
+IF lv_a = lv_b.
+  WRITE: / 'Equal value'.
+ENDIF.
+
+* But behavior differs
+DATA(lv_sum_a) = lv_a + 8.    "50 (math)
+DATA(lv_sum_b) = lv_b + 8.    "50 (converted then math)
+
+DATA(lv_cat_a) = |{ lv_a }X|.   "'42X'
+DATA(lv_cat_b) = lv_b &amp;&amp; 'X'.   "'42X'
+
+WRITE: / lv_sum_a, lv_sum_b.
+WRITE: / lv_cat_a, lv_cat_b.
+</code></pre>
+<pre><code class="language-text line-numbers">        50         50
+42X 42X
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Constants vs Literals - When to Use</li>
+    <br/>
+    <ul>
+        <li>Use constants when:</li>
+<pre><code class="language-text line-numbers">- Value is used multiple times
+- Value has meaning (give it a name)
+- Value might change in future (single place to update)
+</code></pre>
+<pre><code class="language-abap line-numbers">* Bad - magic numbers
+IF lv_status = 'A'.
+IF lv_count &gt; 100.
+
+* Good - named constants
+CONSTANTS lc_status_active TYPE c VALUE 'A'.
+CONSTANTS lc_max_items TYPE i VALUE 100.
+
+IF lv_status = lc_status_active.
+IF lv_count &gt; lc_max_items.
+</code></pre>
+        <br/>
+        <li>Use literals when:</li>
+<pre><code class="language-text line-numbers">- Value is obvious (0, 1, '', etc.)
+- Used only once
+- In string templates
+</code></pre>
+<pre><code class="language-abap line-numbers">lv_count = 0.                    "obvious reset
+lv_msg = |Error in line { sy-tabix }|.  "template
+</code></pre>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
