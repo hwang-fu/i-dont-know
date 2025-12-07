@@ -152,6 +152,7 @@
         <li><a href="#abap-introduction">SAP ABAP</a></li>
         <li><a href="#abap-basic-syntax">Basic Syntax</a></li>
         <li><a href="#abap-data-types">Data Types</a></li>
+        <li><a href="#abap-variables">Variables</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2282,7 +2283,591 @@ DATA(ls_t3) = CORRESPONDING ty_target( ls_source MAPPING new = old ).
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-variables">Variables in ABAP</h3>
+<ol>
 
+    <li>DATA Statement</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE &lt;type&gt; [LENGTH &lt;n&gt;] [DECIMALS &lt;d&gt;] [VALUE &lt;initial&gt;].
+</code></pre>
+        <br/>
+        <li>Basic declaration:</li>
+<pre><code class="language-abap line-numbers">DATA lv_count TYPE i.
+DATA lv_name TYPE string.
+
+lv_count = 42.
+lv_name = 'Alice'.
+
+WRITE: / lv_count, lv_name.
+</code></pre>
+<pre><code class="language-text line-numbers">42 Alice
+</code></pre>
+        <br/>
+        <li>With initial value:</li>
+<pre><code class="language-abap line-numbers">DATA lv_count TYPE i VALUE 100.
+DATA lv_name TYPE string VALUE 'Bob'.
+
+WRITE: / lv_count, lv_name.
+</code></pre>
+<pre><code class="language-text line-numbers">100 Bob
+</code></pre>
+        <br/>
+        <li>With length (for c, n, x types):</li>
+<pre><code class="language-abap line-numbers">DATA lv_code TYPE c LENGTH 5.
+DATA lv_docnum TYPE n LENGTH 10.
+
+lv_code = 'ABCDEFGH'.    "too long
+lv_docnum = '123'.       "too short
+
+WRITE: / lv_code, / lv_docnum.
+</code></pre>
+<pre><code class="language-text line-numbers">ABCDE
+0000000123
+</code></pre>
+<p><code>c</code> truncates from right. <code>n</code> pads with zeros from left.</p>
+        <br/>
+        <li>With decimals (for packed decimal):</li>
+<pre><code class="language-abap line-numbers">DATA lv_amount TYPE p LENGTH 8 DECIMALS 2.
+
+lv_amount = '1234.567'.
+
+WRITE: / lv_amount.
+</code></pre>
+<pre><code class="language-text line-numbers">1234.57
+</code></pre>
+<p>Rounded to 2 decimal places. LENGTH 8 means 8 bytes storage (up to 15 digits).</p>
+        <br/>
+        <li>Chain declaration:</li>
+<pre><code class="language-abap line-numbers">DATA: lv_a TYPE i VALUE 1,
+      lv_b TYPE i VALUE 2,
+      lv_c TYPE i VALUE 3.
+
+WRITE: / lv_a, lv_b, lv_c.
+</code></pre>
+<pre><code class="language-text line-numbers">1          2          3
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Inline Declaration (ABAP 7.40+)</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">DATA(&lt;name&gt;) = &lt;expression&gt;.
+</code></pre>
+<p>Type is inferred from the right side. Cannot specify type or initial value separately.</p>
+        <br/>
+        <li>From literal:</li>
+<pre><code class="language-abap line-numbers">DATA(lv_int) = 42.
+DATA(lv_char) = 'Hello'.
+DATA(lv_str) = |Hello|.
+
+WRITE: / lv_int, / lv_char, / lv_str.
+</code></pre>
+<pre><code class="language-text line-numbers">42
+Hello
+Hello
+</code></pre>
+<p><code>'Hello'</code> becomes type <code>c LENGTH 5</code>. <code>|Hello|</code> becomes type <code>string</code>.</p>
+        <br/>
+        <li>From SELECT:</li>
+<pre><code class="language-abap line-numbers">SELECT * FROM mara WHERE mtart = 'FERT' INTO TABLE @DATA(lt_materials).
+
+WRITE: / lines( lt_materials ), 'rows'.
+</code></pre>
+<pre><code class="language-text line-numbers">127 rows
+</code></pre>
+<p><code>lt_materials</code> gets type <code>TABLE OF mara</code> automatically.</p>
+        <br/>
+        <li>From LOOP:</li>
+<pre><code class="language-abap line-numbers">LOOP AT lt_materials INTO DATA(ls_mat).
+  WRITE: / ls_mat-matnr.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">MAT001
+MAT002
+MAT003
+...
+</code></pre>
+<p><code>ls_mat</code> gets the row type of <code>lt_materials</code>.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>CONSTANTS Statement</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">CONSTANTS &lt;name&gt; TYPE &lt;type&gt; VALUE &lt;value&gt;.
+</code></pre>
+<p>VALUE is mandatory. Cannot be changed after declaration.</p>
+        <br/>
+        <li>Usage:</li>
+<pre><code class="language-abap line-numbers">CONSTANTS lc_max TYPE i VALUE 100.
+CONSTANTS lc_pi TYPE p DECIMALS 5 VALUE '3.14159'.
+
+WRITE: / lc_max, / lc_pi.
+</code></pre>
+<pre><code class="language-text line-numbers">100
+3.14159
+</code></pre>
+        <br/>
+        <li>Attempting to change:</li>
+<pre><code class="language-abap line-numbers">lc_max = 200.
+</code></pre>
+<pre><code class="language-text line-numbers">Syntax error: "LC_MAX" cannot be changed.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>TYPE vs LIKE</li>
+    <br/>
+    <ul>
+        <li>TYPE - refers to a type definition:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE &lt;type&gt;.
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i.              "built-in type
+DATA lv_matnr TYPE matnr.        "DDIC data element
+DATA ls_mat TYPE mara.           "DDIC structure
+DATA lt_mat TYPE TABLE OF mara.  "table of DDIC structure
+</code></pre>
+        <br/>
+        <li>LIKE - copies type from existing variable:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; LIKE &lt;variable&gt;.
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_original TYPE i VALUE 100.
+DATA lv_copy LIKE lv_original.
+
+WRITE: / 'original:', lv_original.
+WRITE: / 'copy:', lv_copy.
+</code></pre>
+<pre><code class="language-text line-numbers">original:        100
+copy:          0
+</code></pre>
+<p>Same type (<code>i</code>), but VALUE is not copied. <code>lv_copy</code> gets initial value 0.</p>
+        <br/>
+        <li>LIKE LINE OF - row type from table:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; LIKE LINE OF &lt;internal_table&gt;.
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lt_materials TYPE TABLE OF mara.
+DATA ls_single LIKE LINE OF lt_materials.
+
+ls_single-matnr = 'TEST01'.
+WRITE: / ls_single-matnr.
+</code></pre>
+<pre><code class="language-text line-numbers">TEST01
+</code></pre>
+<p><code>ls_single</code> has type <code>mara</code> (the row type of the table).</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>TYPES Statement</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">TYPES &lt;name&gt; TYPE &lt;type&gt; [LENGTH &lt;n&gt;] [DECIMALS &lt;d&gt;].
+</code></pre>
+<p>Defines a reusable type. No memory allocated. No VALUE allowed.</p>
+        <br/>
+        <li>Simple type alias:</li>
+<pre><code class="language-abap line-numbers">TYPES ty_money TYPE p LENGTH 8 DECIMALS 2.
+
+DATA lv_price TYPE ty_money VALUE '19.99'.
+DATA lv_tax TYPE ty_money VALUE '1.60'.
+DATA lv_total TYPE ty_money.
+
+lv_total = lv_price + lv_tax.
+WRITE: / lv_total.
+</code></pre>
+<pre><code class="language-text line-numbers">21.59
+</code></pre>
+        <br/>
+        <li>Structure type:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_person,
+         name TYPE string,
+         age  TYPE i,
+       END OF ty_person.
+
+DATA ls_person TYPE ty_person.
+
+ls_person-name = 'Alice'.
+ls_person-age = 30.
+
+WRITE: / ls_person-name, ls_person-age.
+</code></pre>
+<pre><code class="language-text line-numbers">Alice         30
+</code></pre>
+        <br/>
+        <li>Table type:</li>
+<pre><code class="language-abap line-numbers">TYPES ty_person_tab TYPE TABLE OF ty_person WITH DEFAULT KEY.
+
+DATA lt_people TYPE ty_person_tab.
+
+APPEND VALUE #( name = 'Alice' age = 30 ) TO lt_people.
+APPEND VALUE #( name = 'Bob' age = 25 ) TO lt_people.
+
+WRITE: / lines( lt_people ), 'people'.
+</code></pre>
+<pre><code class="language-text line-numbers">2 people
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>STATICS Statement</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">STATICS &lt;name&gt; TYPE &lt;type&gt; [VALUE &lt;initial&gt;].
+</code></pre>
+<p>Like DATA, but retains value between calls. Only inside FORM/METHOD.</p>
+        <br/>
+        <li>Usage:</li>
+<pre><code class="language-abap line-numbers">FORM count_calls.
+  STATICS sv_count TYPE i.
+  sv_count = sv_count + 1.
+  WRITE: / 'Call number:', sv_count.
+ENDFORM.
+
+PERFORM count_calls.
+PERFORM count_calls.
+PERFORM count_calls.
+</code></pre>
+<pre><code class="language-text line-numbers">Call number:          1
+Call number:          2
+Call number:          3
+</code></pre>
+        <br/>
+        <li>Compare with DATA:</li>
+<pre><code class="language-abap line-numbers">FORM count_calls_data.
+  DATA lv_count TYPE i.
+  lv_count = lv_count + 1.
+  WRITE: / 'Call number:', lv_count.
+ENDFORM.
+
+PERFORM count_calls_data.
+PERFORM count_calls_data.
+PERFORM count_calls_data.
+</code></pre>
+<pre><code class="language-text line-numbers">Call number:          1
+Call number:          1
+Call number:          1
+</code></pre>
+<p>DATA resets to initial value (0) each call. STATICS persists.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Scope</li>
+    <br/>
+    <ul>
+        <li>Global scope (top of program):</li>
+<pre><code class="language-abap line-numbers">REPORT ztest.
+
+DATA gv_global TYPE i VALUE 10.
+
+START-OF-SELECTION.
+  WRITE: / 'Before:', gv_global.
+  PERFORM change_it.
+  WRITE: / 'After:', gv_global.
+
+FORM change_it.
+  gv_global = 99.
+ENDFORM.
+</code></pre>
+<pre><code class="language-text line-numbers">Before:         10
+After:         99
+</code></pre>
+        <br/>
+        <li>Local scope (inside FORM/METHOD):</li>
+<pre><code class="language-abap line-numbers">FORM my_form.
+  DATA lv_local TYPE i VALUE 5.
+  WRITE: / lv_local.
+ENDFORM.
+
+PERFORM my_form.
+WRITE: / lv_local.  "syntax error
+</code></pre>
+<pre><code class="language-text line-numbers">Syntax error: "LV_LOCAL" is unknown.
+</code></pre>
+        <br/>
+        <li>No block scope (important!):</li>
+<pre><code class="language-abap line-numbers">FORM test.
+  DATA lv_outside TYPE i VALUE 1.
+
+  IF lv_outside = 1.
+    DATA lv_inside TYPE i VALUE 100.
+  ENDIF.
+
+  WRITE: / lv_inside.  "works!
+ENDFORM.
+</code></pre>
+<pre><code class="language-text line-numbers">100
+</code></pre>
+<p>DATA is hoisted to the procedure level. There is no block scope in ABAP. The variable exists throughout the entire FORM, regardless of where it's declared.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Initial Values and CLEAR</li>
+    <br/>
+    <ul>
+        <li>Every type has a default initial value:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Initial value</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>i</code>, <code>int8</code>, <code>p</code>, <code>f</code></td>
+            <td>0</td>
+            <td><code>0</code></td>
+        </tr>
+        <tr>
+            <td><code>c</code></td>
+            <td>spaces</td>
+            <td><code>'    '</code></td>
+        </tr>
+        <tr>
+            <td><code>n</code></td>
+            <td>zeros</td>
+            <td><code>'0000'</code></td>
+        </tr>
+        <tr>
+            <td><code>string</code></td>
+            <td>empty</td>
+            <td><code>''</code></td>
+        </tr>
+        <tr>
+            <td><code>d</code></td>
+            <td>zero date</td>
+            <td><code>'00000000'</code></td>
+        </tr>
+        <tr>
+            <td><code>t</code></td>
+            <td>zero time</td>
+            <td><code>'000000'</code></td>
+        </tr>
+        <tr>
+            <td>reference</td>
+            <td>unbound (null)</td>
+            <td>—</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>IS INITIAL test:</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i.
+DATA lv_str TYPE string.
+
+IF lv_num IS INITIAL.
+  WRITE: / 'lv_num is initial'.
+ENDIF.
+
+lv_str = 'Hello'.
+IF lv_str IS NOT INITIAL.
+  WRITE: / 'lv_str has value'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">lv_num is initial
+lv_str has value
+</code></pre>
+        <br/>
+        <li>CLEAR - reset to initial:</li>
+<pre><code class="language-text line-numbers">CLEAR &lt;variable&gt;.
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i VALUE 100.
+WRITE: / 'Before:', lv_num.
+CLEAR lv_num.
+WRITE: / 'After:', lv_num.
+</code></pre>
+<pre><code class="language-text line-numbers">Before:        100
+After:          0
+</code></pre>
+        <br/>
+        <li>CLEAR on structures:</li>
+<pre><code class="language-abap line-numbers">DATA: BEGIN OF ls_person,
+        name TYPE string VALUE 'Alice',
+        age  TYPE i VALUE 30,
+      END OF ls_person.
+
+WRITE: / ls_person-name, ls_person-age.
+CLEAR ls_person.
+WRITE: / ls_person-name, ls_person-age.
+</code></pre>
+<pre><code class="language-text line-numbers">Alice         30
+              0
+</code></pre>
+        <br/>
+        <li>CLEAR vs FREE on tables:</li>
+<pre><code class="language-abap line-numbers">DATA lt_data TYPE TABLE OF i.
+APPEND 1 TO lt_data.
+APPEND 2 TO lt_data.
+
+CLEAR lt_data.  "rows removed, memory still allocated
+FREE lt_data.   "rows removed, memory released
+</code></pre>
+<p>Use CLEAR for tables you'll refill. Use FREE when done with the table entirely.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>System Variables (sy-)</li>
+    <br/>
+    <ul>
+        <li>What they are:</li>
+<p>Predefined read-only variables in structure <code>SYST</code>. Accessed as <code>sy-&lt;field&gt;</code>. Automatically filled by the runtime.</p>
+        <br/>
+        <li>Return codes:</li>
+<pre><code class="language-abap line-numbers">DATA lt_mat TYPE TABLE OF mara.
+SELECT * FROM mara WHERE mtart = 'XXXX' INTO TABLE @lt_mat.
+
+WRITE: / 'sy-subrc:', sy-subrc.
+WRITE: / 'sy-dbcnt:', sy-dbcnt.
+</code></pre>
+<pre><code class="language-text line-numbers">sy-subrc:          4
+sy-dbcnt:          0
+</code></pre>
+<p><code>sy-subrc = 0</code> means success. Non-zero means something went wrong or nothing found. <code>sy-dbcnt</code> = rows affected.</p>
+        <br/>
+        <li>Date and time:</li>
+<pre><code class="language-abap line-numbers">WRITE: / 'Date:', sy-datum.
+WRITE: / 'Time:', sy-uzeit.
+WRITE: / 'User:', sy-uname.
+</code></pre>
+<pre><code class="language-text line-numbers">Date: 20241215
+Time: 143052
+User: JSMITH
+</code></pre>
+        <br/>
+        <li>Loop counters:</li>
+<pre><code class="language-abap line-numbers">DO 3 TIMES.
+  WRITE: / 'DO iteration:', sy-index.
+ENDDO.
+
+DATA lt_nums TYPE TABLE OF i.
+APPEND 10 TO lt_nums.
+APPEND 20 TO lt_nums.
+
+LOOP AT lt_nums INTO DATA(lv_num).
+  WRITE: / 'LOOP row:', sy-tabix, 'value:', lv_num.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">DO iteration:          1
+DO iteration:          2
+DO iteration:          3
+LOOP row:          1 value:         10
+LOOP row:          2 value:         20
+</code></pre>
+<p><code>sy-index</code> for DO/WHILE. <code>sy-tabix</code> for LOOP AT.</p>
+        <br/>
+        <li>Common pattern:</li>
+<pre><code class="language-abap line-numbers">READ TABLE lt_nums INTO DATA(lv_found) INDEX 99.
+IF sy-subrc <> 0.
+  WRITE: / 'Not found'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Not found
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Naming Conventions</li>
+    <br/>
+    <ul>
+        <li>Rules:</li>
+<pre><code class="language-text line-numbers">- Maximum 30 characters
+- Must start with letter
+- Only letters, digits, underscore
+- Case insensitive (LV_NAME = lv_name)
+- Cannot use ABAP reserved words
+</code></pre>
+        <br/>
+        <li>Hungarian notation (widely used):</li>
+<table>
+    <thead>
+        <tr>
+            <th>Prefix</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>lv_</code></td>
+            <td>Local variable</td>
+        </tr>
+        <tr>
+            <td><code>gv_</code></td>
+            <td>Global variable</td>
+        </tr>
+        <tr>
+            <td><code>ls_</code></td>
+            <td>Local structure</td>
+        </tr>
+        <tr>
+            <td><code>gs_</code></td>
+            <td>Global structure</td>
+        </tr>
+        <tr>
+            <td><code>lt_</code></td>
+            <td>Local table</td>
+        </tr>
+        <tr>
+            <td><code>gt_</code></td>
+            <td>Global table</td>
+        </tr>
+        <tr>
+            <td><code>lr_</code></td>
+            <td>Local reference (data)</td>
+        </tr>
+        <tr>
+            <td><code>lo_</code></td>
+            <td>Local object reference</td>
+        </tr>
+        <tr>
+            <td><code>lc_</code></td>
+            <td>Local constant</td>
+        </tr>
+        <tr>
+            <td><code>iv_</code></td>
+            <td>Importing parameter (value)</td>
+        </tr>
+        <tr>
+            <td><code>ev_</code></td>
+            <td>Exporting parameter</td>
+        </tr>
+        <tr>
+            <td><code>cv_</code></td>
+            <td>Changing parameter</td>
+        </tr>
+        <tr>
+            <td><code>rv_</code></td>
+            <td>Returning value</td>
+        </tr>
+        <tr>
+            <td><code>ty_</code></td>
+            <td>Local type</td>
+        </tr>
+        <tr>
+            <td><code>tt_</code></td>
+            <td>Table type</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
