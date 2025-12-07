@@ -150,13 +150,13 @@
     <h2> <img src="resources/abap.png" alt="Logo" class="nav-icon"/> </h2>
     <ol style="line-height: 1.8;">
         <li><a href="#abap-introduction">SAP ABAP</a></li>
+        <li><a href="#abap-basic-syntax">Basic Syntax</a></li>
     </ol>
 </nav>
 <hr/>
 <!-- * * * * * * * * * * * * * * -->
 
 
-<!-- * * * * * * * * * * * * * * -->
 <!-- * * * * * * * * * * * * * * -->
 <h3 id="abap-introduction">Introduction to SAP ABAP</h3>
 <ol>
@@ -1345,14 +1345,384 @@ ENDIF.
 
 </ol>
 <!-- * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * -->
 
 
 <hr/>
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-basic-syntax">Basic Syntax in ABAP</h3>
+<ol>
 
+    <li>Statement Structure</li>
+    <br/>
+    <ul>
+        <li>The period rule:</li>
+<pre><code class="language-abap line-numbers">* Every statement ends with a period. No exceptions.
+DATA lv_count TYPE i.
+lv_count = 42.
+WRITE lv_count.
+</code></pre>
+        <br/>
+        <li>Statements can span lines freely:</li>
+<pre><code class="language-abap line-numbers">DATA lv_very_long_variable_name
+     TYPE string
+     VALUE 'Hello'.
+</code></pre>
+        <br/>
+        <li>Chain statements (colon + commas):</li>
+<pre><code class="language-abap line-numbers">* Instead of:
+DATA lv_a TYPE i.
+DATA lv_b TYPE i.
+DATA lv_c TYPE i.
+
+* You can write:
+DATA: lv_a TYPE i,
+      lv_b TYPE i,
+      lv_c TYPE i.
+
+* Also works with WRITE:
+WRITE: / lv_a, / lv_b, / lv_c.
+</code></pre>
+        <br/>
+        <li>Comments:</li>
+<pre><code class="language-abap line-numbers">* Asterisk in column 1 = full line comment
+DATA lv_x TYPE i. "Double quote = end of line comment
+</code></pre>
+        <br/>
+        <li>Case insensitivity:</li>
+<pre><code class="language-abap line-numbers">* These are identical:
+DATA lv_name TYPE string.
+data lv_name type string.
+Data Lv_Name Type String.
+
+* Convention: KEYWORDS uppercase, variables lowercase
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Variables and Types</li>
+    <br/>
+    <ul>
+        <li>Declaration:</li>
+<pre><code class="language-abap line-numbers">DATA lv_count  TYPE i.              "integer (4 bytes)
+DATA lv_amount TYPE p DECIMALS 2.   "packed decimal (BCD)
+DATA lv_name   TYPE string.         "variable length
+DATA lv_code   TYPE c LENGTH 10.    "fixed length char
+DATA lv_date   TYPE d.              "date: YYYYMMDD
+DATA lv_time   TYPE t.              "time: HHMMSS
+</code></pre>
+        <br/>
+        <li>Elementary types:</li>
+        <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Meaning</th>
+            <th>Similar to</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>i</code></td>
+            <td>Integer</td>
+            <td>int32</td>
+        </tr>
+        <tr>
+            <td><code>int8</code></td>
+            <td>64-bit integer</td>
+            <td>int64</td>
+        </tr>
+        <tr>
+            <td><code>p</code></td>
+            <td>Packed decimal (BCD)</td>
+            <td>decimal (C#)</td>
+        </tr>
+        <tr>
+            <td><code>f</code></td>
+            <td>Floating point</td>
+            <td>double</td>
+        </tr>
+        <tr>
+            <td><code>c</code></td>
+            <td>Fixed-length character</td>
+            <td>char[n]</td>
+        </tr>
+        <tr>
+            <td><code>n</code></td>
+            <td>Numeric text (digits only)</td>
+            <td>—</td>
+        </tr>
+        <tr>
+            <td><code>string</code></td>
+            <td>Variable-length string</td>
+            <td>std::string</td>
+        </tr>
+        <tr>
+            <td><code>d</code></td>
+            <td>Date (8 chars: YYYYMMDD)</td>
+            <td>—</td>
+        </tr>
+        <tr>
+            <td><code>t</code></td>
+            <td>Time (6 chars: HHMMSS)</td>
+            <td>—</td>
+        </tr>
+        <tr>
+            <td><code>x</code></td>
+            <td>Fixed-length byte</td>
+            <td>byte[n]</td>
+        </tr>
+        <tr>
+            <td><code>xstring</code></td>
+            <td>Variable-length byte</td>
+            <td>byte[]</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Initial values and constants:</li>
+<pre><code class="language-abap line-numbers">DATA lv_status TYPE c LENGTH 1 VALUE 'A'.
+DATA lv_pi     TYPE p DECIMALS 5 VALUE '3.14159'.
+
+CONSTANTS c_max TYPE i VALUE 100.
+
+* Check if variable has default value
+IF lv_count IS INITIAL.
+  " i is initial when = 0, string when empty, etc.
+ENDIF.
+</code></pre>
+        <br/>
+        <li>Inline declaration (ABAP 7.40+):</li>
+<pre><code class="language-abap line-numbers">* Type inferred from right side
+DATA(lv_num) = 42.            "i
+DATA(lv_txt) = 'Hello'.       "c (length 5)
+DATA(lv_str) = |Hello|.       "string
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Operators</li>
+    <br/>
+    <ul>
+        <li>Arithmetic:</li>
+<pre><code class="language-abap line-numbers">lv_result = lv_a + lv_b.
+lv_result = lv_a - lv_b.
+lv_result = lv_a * lv_b.
+lv_result = lv_a / lv_b.
+lv_result = lv_a MOD lv_b.    "modulo
+lv_result = lv_a DIV lv_b.    "integer division
+lv_result = lv_a ** 2.        "power
+</code></pre>
+        <br/>
+        <li>Comparison:</li>
+<pre><code class="language-abap line-numbers">* Symbolic         or    Keyword
+lv_a = lv_b              lv_a EQ lv_b
+lv_a &lt;&gt; lv_b             lv_a NE lv_b
+lv_a &lt; lv_b              lv_a LT lv_b
+lv_a &gt; lv_b              lv_a GT lv_b
+lv_a &lt;= lv_b             lv_a LE lv_b
+lv_a &gt;= lv_b             lv_a GE lv_b
+
+* String specific
+lv_s CS 'abc'           "contains string
+lv_s CP '*test*'        "covers pattern (wildcard)
+lv_s CO '0123456789'    "contains only
+</code></pre>
+        <br/>
+        <li>Logical:</li>
+<pre><code class="language-abap line-numbers">IF lv_a &gt; 0 AND lv_b &gt; 0.
+IF lv_a &gt; 0 OR  lv_b &gt; 0.
+IF NOT lv_flag IS INITIAL.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Control Flow</li>
+    <br/>
+    <ul>
+        <li>IF:</li>
+<pre><code class="language-abap line-numbers">IF lv_amount &gt; 1000.
+  lv_status = 'H'.
+ELSEIF lv_amount &gt; 100.
+  lv_status = 'M'.
+ELSE.
+  lv_status = 'L'.
+ENDIF.
+</code></pre>
+        <br/>
+        <li>CASE:</li>
+<pre><code class="language-abap line-numbers">CASE lv_status.
+  WHEN 'H'.
+    WRITE 'High'.
+  WHEN 'M' OR 'L'.
+    WRITE 'Not high'.
+  WHEN OTHERS.
+    WRITE 'Unknown'.
+ENDCASE.
+</code></pre>
+        <br/>
+        <li>Loops:</li>
+<pre><code class="language-abap line-numbers">* Fixed count
+DO 10 TIMES.
+  WRITE sy-index.  "1, 2, 3, ... 10
+ENDDO.
+
+* Conditional
+WHILE lv_count < 10.
+  lv_count = lv_count + 1.
+ENDWHILE.
+
+* Exit and continue
+DO 100 TIMES.
+  IF sy-index = 5.
+    CONTINUE.  "skip to next iteration
+  ENDIF.
+  IF sy-index = 50.
+    EXIT.      "break out of loop
+  ENDIF.
+ENDDO.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Strings</li>
+    <br/>
+    <ul>
+        <li>Literals:</li>
+<pre><code class="language-abap line-numbers">'Text literal'      "type c, trailing spaces trimmed
+`Text literal`      "type string, spaces preserved
+|Text literal|      "string template (see below)
+</code></pre>
+        <br/>
+        <li>String templates (7.40+):</li>
+<pre><code class="language-abap line-numbers">DATA(lv_name) = 'Alice'.
+DATA(lv_age)  = 30.
+
+* Embedded expressions with { }
+DATA(lv_msg) = |Hello { lv_name }, you are { lv_age }|.
+
+* Formatting
+DATA(lv_formatted) = |Date: { sy-datum DATE = USER }|.
+DATA(lv_padded)    = |{ lv_name WIDTH = 10 ALIGN = RIGHT }|.
+</code></pre>
+        <br/>
+        <li>Concatenation:</li>
+<pre><code class="language-abap line-numbers">* Classic
+CONCATENATE lv_first lv_last INTO lv_full SEPARATED BY ' '.
+
+* Modern
+lv_full = lv_first &amp;&amp; ' ' &amp;&amp; lv_last.
+lv_full = |{ lv_first } { lv_last }|.
+</code></pre>
+        <br/>
+        <li>Common operations:</li>
+<pre><code class="language-abap line-numbers">DATA(lv_len)   = strlen( lv_str ).
+DATA(lv_upper) = to_upper( lv_str ).
+DATA(lv_lower) = to_lower( lv_str ).
+DATA(lv_part)  = substring( val = lv_str off = 0 len = 5 ).
+
+* Find and replace
+FIND 'abc' IN lv_str MATCH OFFSET DATA(lv_pos).
+REPLACE ALL OCCURRENCES OF 'old' IN lv_str WITH 'new'.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>System Fields</li>
+    <br/>
+    <ul>
+        <li>The sy- structure:</li>
+<pre><code class="language-abap line-numbers">* Accessed as sy-fieldname, always available
+
+sy-subrc     "return code of last operation (0 = success)
+sy-datum     "current date
+sy-uzeit     "current time
+sy-uname     "current user
+sy-index     "loop counter in DO/WHILE
+sy-tabix     "current row in LOOP AT internal table
+sy-dbcnt     "rows affected by database operation
+</code></pre>
+        <br/>
+        <li>sy-subrc is everywhere:</li>
+<pre><code class="language-abap line-numbers">READ TABLE lt_data INTO ls_row INDEX 5.
+IF sy-subrc &lt;&gt; 0.
+  WRITE 'Not found'.
+ENDIF.
+
+SELECT SINGLE * FROM mara WHERE matnr = 'X' INTO @DATA(ls_mat).
+IF sy-subrc &lt;&gt; 0.
+  WRITE 'No such material'.
+ENDIF.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Structures</li>
+    <br/>
+    <ul>
+        <li>Like a C struct:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_person,
+         name TYPE string,
+         age  TYPE i,
+         city TYPE string,
+       END OF ty_person.
+
+DATA ls_person TYPE ty_person.
+
+ls_person-name = 'Alice'.
+ls_person-age  = 30.
+ls_person-city = 'Berlin'.
+</code></pre>
+        <br/>
+        <li>Using dictionary types:</li>
+<pre><code class="language-abap line-numbers">* Instead of defining your own structure,
+* use existing table structures from the database
+DATA ls_material TYPE mara.   "structure of MARA table
+
+ls_material-matnr = 'MAT001'.
+ls_material-mtart = 'FERT'.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Modern Expression Syntax (7.40+)</li>
+    <br/>
+    <ul>
+        <li>Conditional expressions:</li>
+<pre><code class="language-abap line-numbers">* COND - like ternary operator, but chainable
+DATA(lv_grade) = COND string(
+  WHEN lv_score &gt;= 90 THEN 'A'
+  WHEN lv_score &gt;= 80 THEN 'B'
+  WHEN lv_score &gt;= 70 THEN 'C'
+  ELSE 'F' ).
+
+* SWITCH - pattern matching on single value
+DATA(lv_name) = SWITCH string( lv_day
+  WHEN 1 THEN 'Monday'
+  WHEN 2 THEN 'Tuesday'
+  ELSE 'Other' ).
+</code></pre>
+        <br/>
+        <li>Why both styles exist:</li>
+<pre><code class="language-text line-numbers">Classic syntax: 1980s-2012
+Modern syntax:  ABAP 7.40 (2013) onwards
+
+Existing SAP systems have millions of lines of classic code.
+You'll read classic, but write modern when your system supports it.
+</code></pre>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
