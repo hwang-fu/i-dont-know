@@ -156,6 +156,7 @@
         <li><a href="#abap-constants-literals">Constants and Literals</a></li>
         <li><a href="#abap-operators">Operators</a></li>
         <li><a href="#abap-control-flow">Contrl Flow</a></li>
+        <li><a href="#abap-strings">Strings</a></li>
     </ol>
 </nav>
 <hr/>
@@ -5492,7 +5493,1091 @@ ENDLOOP.
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-strings">Strings in ABAP</h3>
+<ol>
 
+    <li>String Types</li>
+    <br/>
+    <ul>
+        <li>Three character-based types:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Length</th>
+            <th>Padding</th>
+            <th>Use case</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>c</code></td>
+            <td>Fixed</td>
+            <td>Spaces (right)</td>
+            <td>Fixed-format fields, flags</td>
+        </tr>
+        <tr>
+            <td><code>string</code></td>
+            <td>Variable</td>
+            <td>None</td>
+            <td>General text processing</td>
+        </tr>
+        <tr>
+            <td><code>n</code></td>
+            <td>Fixed</td>
+            <td>Zeros (left)</td>
+            <td>Numeric IDs, document numbers</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Type c (fixed-length character):</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE c [LENGTH &lt;n&gt;].
+
+Default length is 1. Maximum is 262143.
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_c TYPE c LENGTH 10.
+
+lv_c = 'Hello'.
+WRITE: / '&gt;', lv_c, '&lt;'.
+WRITE: / 'Length:', strlen( lv_c ).
+
+lv_c = 'Hello World!!!'.
+WRITE: / '&gt;', lv_c, '&lt;'.
+</code></pre>
+<pre><code class="language-text line-numbers">&gt;Hello
+Length:          5
+&gt;Hello Worl
+</code></pre>
+<p>Short values padded with spaces. Long values truncated. <code>strlen()</code> returns length without trailing spaces.</p>
+        <br/>
+        <li>Type string (variable-length):</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE string.
+
+No length limit. No padding. No truncation.
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string.
+
+lv_str = 'Hello'.
+WRITE: / '&gt;', lv_str, '&lt;'.
+WRITE: / 'Length:', strlen( lv_str ).
+
+lv_str = 'This can be any length without truncation'.
+WRITE: / lv_str.
+</code></pre>
+<pre><code class="language-text line-numbers">&gt;Hello
+Length:          5
+This can be any length without truncation
+</code></pre>
+        <br/>
+        <li>Type n (numeric text):</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE n [LENGTH &lt;n&gt;].
+
+Only digits 0-9. Left-padded with zeros.
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_n TYPE n LENGTH 10.
+
+lv_n = '123'.
+WRITE: / lv_n.
+
+lv_n = 456.
+WRITE: / lv_n.
+
+lv_n = 'ABC123'.    "non-digits become 0
+WRITE: / lv_n.
+</code></pre>
+<pre><code class="language-text line-numbers">0000000123
+0000000456
+0000000123
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Literals</li>
+    <br/>
+    <ul>
+        <li>Three forms:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Syntax</th>
+            <th>Type</th>
+            <th>Trailing spaces</th>
+            <th>Embedded expressions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>'...'</code></td>
+            <td>c</td>
+            <td>Trimmed</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>`...`</code></td>
+            <td>string</td>
+            <td>Preserved</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>|...|</code></td>
+            <td>string</td>
+            <td>Preserved</td>
+            <td>Yes <code>{ }</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Single quotes (<code>'...'</code>):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string.
+
+lv_str = 'Hello   '.    "3 trailing spaces
+WRITE: / '&gt;', lv_str, '&lt;'.
+WRITE: / 'Length:', strlen( lv_str ).
+</code></pre>
+<pre><code class="language-text line-numbers">>Hello
+Length:          5
+</code></pre>
+<p>Trailing spaces removed when assigned to string.</p>
+        <br/>
+        <li>Backticks (<code>`...`</code>):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string.
+
+lv_str = `Hello   `.    "3 trailing spaces
+WRITE: / '&gt;', lv_str, '&lt;'.
+WRITE: / 'Length:', strlen( lv_str ).
+</code></pre>
+<pre><code class="language-text line-numbers">>Hello
+Length:          8
+</code></pre>
+<p>Spaces preserved. Use when whitespace matters.</p>
+        <br/>
+        <li>Pipes (<code>|...|</code>) - string templates:</li>
+<pre><code class="language-abap line-numbers">DATA lv_name TYPE string VALUE 'Alice'.
+DATA lv_age TYPE i VALUE 30.
+
+DATA(lv_msg) = |Name: { lv_name }, Age: { lv_age }|.
+WRITE: / lv_msg.
+</code></pre>
+<pre><code class="language-text line-numbers">Name: Alice, Age: 30
+</code></pre>
+<p>Expressions inside <code>{ }</code> are evaluated and inserted.</p>
+        <br/>
+        <li>Escaping special characters:</li>
+<pre><code class="language-abap line-numbers">* Single quote in single quotes - double it
+DATA(lv_1) = 'It''s OK'.
+WRITE: / lv_1.
+
+* Backtick in backticks - double it
+DATA(lv_2) = `Say ``hello`` `.
+WRITE: / lv_2.
+
+* In pipes - use backslash
+DATA(lv_3) = |Pipe: \|, Brace: \{, Backslash: \\|.
+WRITE: / lv_3.
+</code></pre>
+<pre><code class="language-text line-numbers">It's OK
+Say `hello`
+Pipe: |, Brace: {, Backslash: \
+</code></pre>
+        <br/>
+        <li>Newline and tab in string templates:</li>
+<pre><code class="language-abap line-numbers">DATA(lv_multiline) = |Line 1\nLine 2\nLine 3|.
+WRITE: / lv_multiline.
+
+DATA(lv_tabbed) = |Col1\tCol2\tCol3|.
+WRITE: / lv_tabbed.
+</code></pre>
+<pre><code class="language-text line-numbers">Line 1
+Line 2
+Line 3
+Col1    Col2    Col3
+</code></pre>
+<table>
+    <thead>
+        <tr>
+            <th>Escape</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>\n</code></td>
+            <td>Newline</td>
+        </tr>
+        <tr>
+            <td><code>\r</code></td>
+            <td>Carriage return</td>
+        </tr>
+        <tr>
+            <td><code>\t</code></td>
+            <td>Tab</td>
+        </tr>
+        <tr>
+            <td><code>\\</code></td>
+            <td>Backslash</td>
+        </tr>
+        <tr>
+            <td><code>\|</code></td>
+            <td>Pipe</td>
+        </tr>
+        <tr>
+            <td><code>\{</code></td>
+            <td>Open brace</td>
+        </tr>
+        <tr>
+            <td><code>\}</code></td>
+            <td>Close brace</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Template Formatting</li>
+    <br/>
+    <ul>
+        <li>Basic expression:</li>
+<pre><code class="language-text line-numbers">|{ &lt;expression&gt; [&lt;formatting_options&gt;] }|
+</code></pre>
+        <br/>
+        <li>WIDTH and ALIGN:</li>
+<pre><code class="language-abap line-numbers">DATA lv_name TYPE string VALUE 'Bob'.
+
+WRITE: / |&gt;{ lv_name }&lt;|.
+WRITE: / |&gt;{ lv_name WIDTH = 10 }&lt;|.
+WRITE: / |&gt;{ lv_name WIDTH = 10 ALIGN = LEFT }&lt;|.
+WRITE: / |&gt;{ lv_name WIDTH = 10 ALIGN = RIGHT }&lt;|.
+WRITE: / |&gt;{ lv_name WIDTH = 10 ALIGN = CENTER }&lt;|.
+</code></pre>
+<pre><code class="language-text line-numbers">&gt;Bob
+&gt;Bob
+&gt;Bob
+&gt;       Bob
+&gt;   Bob
+</code></pre>
+        <br/>
+        <li>PAD:</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i VALUE 42.
+
+WRITE: / |&gt;{ lv_num WIDTH = 6 PAD = '0' }&lt;|.
+WRITE: / |&gt;{ lv_num WIDTH = 6 PAD = '_' ALIGN = RIGHT }&lt;|.
+</code></pre>
+<pre><code class="language-text line-numbers">&gt;000042
+&gt;____42
+</code></pre>
+        <br/>
+        <li>CASE - upper/lower:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+WRITE: / |{ lv_str CASE = UPPER }|.
+WRITE: / |{ lv_str CASE = LOWER }|.
+WRITE: / |{ lv_str CASE = RAW }|.
+</code></pre>
+<pre><code class="language-text line-numbers">HELLO WORLD
+hello world
+Hello World
+</code></pre>
+        <br/>
+        <li>Number formatting:</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE p DECIMALS 2 VALUE '1234567.89'.
+
+WRITE: / |{ lv_num }|.
+WRITE: / |{ lv_num NUMBER = RAW }|.
+WRITE: / |{ lv_num NUMBER = USER }|.
+WRITE: / |{ lv_num NUMBER = ENVIRONMENT }|.
+WRITE: / |{ lv_num DECIMALS = 1 }|.
+WRITE: / |{ lv_num SIGN = LEFT }|.
+WRITE: / |{ lv_num SIGN = LEFTPLUS }|.
+</code></pre>
+<pre><code class="language-text line-numbers">1234567.89
+1234567.89
+1,234,567.89
+1,234,567.89
+1234567.9
+1234567.89
++1234567.89
+</code></pre>
+<p><code>NUMBER = USER</code> formats according to user's locale settings.</p>
+        <br/>
+        <li>Date formatting:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+
+WRITE: / |{ lv_date }|.
+WRITE: / |{ lv_date DATE = RAW }|.
+WRITE: / |{ lv_date DATE = USER }|.
+WRITE: / |{ lv_date DATE = ISO }|.
+WRITE: / |{ lv_date DATE = ENVIRONMENT }|.
+</code></pre>
+<pre><code class="language-text line-numbers">20241215
+20241215
+12/15/2024
+2024-12-15
+12/15/2024
+</code></pre>
+        <br/>
+        <li>Time formatting:</li>
+<pre><code class="language-abap line-numbers">DATA lv_time TYPE t VALUE '143052'.
+
+WRITE: / |{ lv_time }|.
+WRITE: / |{ lv_time TIME = RAW }|.
+WRITE: / |{ lv_time TIME = USER }|.
+WRITE: / |{ lv_time TIME = ISO }|.
+</code></pre>
+<pre><code class="language-text line-numbers">143052
+143052
+2:30:52 PM
+14:30:52
+</code></pre>
+        <br/>
+        <li>Timestamp formatting:</li>
+<pre><code class="language-abap line-numbers">DATA lv_ts TYPE timestamp VALUE '20241215143052'.
+
+WRITE: / |{ lv_ts TIMESTAMP = ISO }|.
+WRITE: / |{ lv_ts TIMESTAMP = USER }|.
+WRITE: / |{ lv_ts TIMESTAMP = SPACE }|.
+</code></pre>
+<pre><code class="language-text line-numbers">2024-12-15T14:30:52
+12/15/2024 2:30:52 PM
+2024-12-15 14:30:52
+</code></pre>
+        <br/>
+        <li>ALPHA - add/remove leading zeros:</li>
+<pre><code class="language-abap line-numbers">DATA lv_matnr TYPE c LENGTH 18 VALUE '000000000001234567'.
+
+WRITE: / |{ lv_matnr }|.
+WRITE: / |{ lv_matnr ALPHA = OUT }|.    "remove leading zeros
+
+DATA lv_short TYPE c LENGTH 10 VALUE '1234567'.
+WRITE: / |{ lv_short ALPHA = IN WIDTH = 18 }|.    "add leading zeros
+</code></pre>
+<pre><code class="language-text line-numbers">000000000001234567
+1234567
+000000000001234567
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Concatenation</li>
+    <br/>
+    <ul>
+        <li>Using <code>&amp;&amp;</code> operator:</li>
+<pre><code class="language-abap line-numbers">DATA lv_first TYPE string VALUE 'Hello'.
+DATA lv_second TYPE string VALUE 'World'.
+
+DATA(lv_result) = lv_first &amp;&amp; ' ' &amp;&amp; lv_second.
+WRITE: / lv_result.
+</code></pre>
+<pre><code class="language-text line-numbers">Hello World
+</code></pre>
+        <br/>
+        <li>Using string template:</li>
+<pre><code class="language-abap line-numbers">DATA lv_first TYPE string VALUE 'Hello'.
+DATA lv_second TYPE string VALUE 'World'.
+
+DATA(lv_result) = |{ lv_first } { lv_second }|.
+WRITE: / lv_result.
+</code></pre>
+<pre><code class="language-text line-numbers">Hello World
+</code></pre>
+        <br/>
+        <li>CONCATENATE statement (classic):</li>
+<pre><code class="language-text line-numbers">CONCATENATE &lt;s1&gt; &lt;s2&gt; ... INTO &lt;result&gt; [SEPARATED BY &lt;sep&gt;].
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_result TYPE string.
+
+CONCATENATE 'Hello' 'World' INTO lv_result SEPARATED BY ' '.
+WRITE: / lv_result.
+
+CONCATENATE 'A' 'B' 'C' INTO lv_result.
+WRITE: / lv_result.
+</code></pre>
+<pre><code class="language-text line-numbers">Hello World
+ABC
+</code></pre>
+        <br/>
+        <li>concat_lines_of - join table rows:</li>
+<pre><code class="language-abap line-numbers">DATA lt_words TYPE TABLE OF string.
+APPEND 'One' TO lt_words.
+APPEND 'Two' TO lt_words.
+APPEND 'Three' TO lt_words.
+
+DATA(lv_joined) = concat_lines_of( table = lt_words sep = ', ' ).
+WRITE: / lv_joined.
+</code></pre>
+<pre><code class="language-text line-numbers">One, Two, Three
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Substrings</li>
+    <br/>
+    <ul>
+        <li>Offset/length syntax:</li>
+<pre><code class="language-text line-numbers">&lt;string&gt;+&lt;offset&gt;(&lt;length&gt;)
+
+offset = starting position (0-based)
+length = number of characters
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+WRITE: / lv_str+0(5).    "first 5 chars
+WRITE: / lv_str+6(5).    "chars 6-10
+WRITE: / lv_str+6(*).    "from position 6 to end
+</code></pre>
+<pre><code class="language-text line-numbers">Hello
+World
+World
+</code></pre>
+        <br/>
+        <li>substring function:</li>
+<pre><code class="language-text line-numbers">substring( val = &lt;string&gt; off = &lt;offset&gt; len = &lt;length&gt; )
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+DATA(lv_sub1) = substring( val = lv_str off = 0 len = 5 ).
+WRITE: / lv_sub1.
+
+DATA(lv_sub2) = substring( val = lv_str off = 6 len = 5 ).
+WRITE: / lv_sub2.
+</code></pre>
+<pre><code class="language-text line-numbers">Hello
+World
+</code></pre>
+        <br/>
+        <li>Related functions:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+DATA(lv_from) = substring_from( val = lv_str sub = 'Wo' ).
+WRITE: / 'From "Wo":', lv_from.
+
+DATA(lv_after) = substring_after( val = lv_str sub = 'o ' ).
+WRITE: / 'After "o ":', lv_after.
+
+DATA(lv_before) = substring_before( val = lv_str sub = ' Wo' ).
+WRITE: / 'Before " Wo":', lv_before.
+
+DATA(lv_to) = substring_to( val = lv_str sub = 'o W' ).
+WRITE: / 'To "o W":', lv_to.
+</code></pre>
+<pre><code class="language-text line-numbers">From "Wo": World
+After "o ": World
+Before " Wo": Hell
+To "o W": Hello W
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Length</li>
+    <br/>
+    <ul>
+        <li>strlen function:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello'.
+DATA lv_c TYPE c LENGTH 10 VALUE 'Hello'.
+
+WRITE: / 'string length:', strlen( lv_str ).
+WRITE: / 'c length:', strlen( lv_c ).
+</code></pre>
+<pre><code class="language-text line-numbers">string length:          5
+c length:          5
+</code></pre>
+<p>For type <code>c</code>, <code>strlen()</code> excludes trailing spaces.</p>
+        <br/>
+        <li>numofchar - actual characters:</li>
+<pre><code class="language-abap line-numbers">DATA lv_c TYPE c LENGTH 10 VALUE 'Hello'.
+
+WRITE: / 'strlen:', strlen( lv_c ).
+WRITE: / 'numofchar:', numofchar( lv_c ).
+</code></pre>
+<pre><code class="language-text line-numbers">strlen:          5
+numofchar:          5
+</code></pre>
+<p>Same for most cases. <code>numofchar()</code> handles multi-byte characters.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Case Conversion</li>
+    <br/>
+    <ul>
+        <li>Functions:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+DATA(lv_upper) = to_upper( lv_str ).
+WRITE: / lv_upper.
+
+DATA(lv_lower) = to_lower( lv_str ).
+WRITE: / lv_lower.
+
+DATA(lv_mixed) = to_mixed( val = 'HELLO_WORLD' sep = '_' ).
+WRITE: / lv_mixed.
+</code></pre>
+<pre><code class="language-text line-numbers">HELLO WORLD
+hello world
+HelloWorld
+</code></pre>
+        <br/>
+        <li>Classic statements:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+TRANSLATE lv_str TO UPPER CASE.
+WRITE: / lv_str.
+
+TRANSLATE lv_str TO LOWER CASE.
+WRITE: / lv_str.
+</code></pre>
+<pre><code class="language-text line-numbers">HELLO WORLD
+hello world
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Trimming and Shifting</li>
+    <br/>
+    <ul>
+        <li>condense - remove extra spaces:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE '  Hello   World  '.
+
+DATA(lv_condensed) = condense( lv_str ).
+WRITE: / '&gt;', lv_condensed, '&lt;'.
+
+DATA(lv_no_gaps) = condense( val = lv_str del = ' ' ).
+WRITE: / '&gt;', lv_no_gaps, '&lt;'.
+</code></pre>
+<pre><code class="language-text line-numbers">&gt;Hello World
+&gt;&gt;HelloWorld
+</code></pre>
+<p>Default: trims ends and reduces multiple spaces to single space.</p>
+        <br/>
+        <li>shift_left, shift_right:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE '  Hello  '.
+
+DATA(lv_left) = shift_left( val = lv_str sub = ' ' ).
+WRITE: / '&gt;', lv_left, '&lt;'.
+
+DATA(lv_right) = shift_right( val = lv_str sub = ' ' ).
+WRITE: / '&gt;', lv_right, '&lt;'.
+</code></pre>
+<pre><code class="language-text line-numbers">&gt;Hello
+&gt;  Hello
+</code></pre>
+        <br/>
+        <li>SHIFT statement (classic):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE c LENGTH 10 VALUE '  Hello'.
+
+SHIFT lv_str LEFT DELETING LEADING ' '.
+WRITE: / '&gt;', lv_str, '&lt;'.
+
+lv_str = 'Hello  '.
+SHIFT lv_str RIGHT DELETING TRAILING ' '.
+WRITE: / '&gt;', lv_str, '&lt;'.
+</code></pre>
+<pre><code class="language-text line-numbers">>Hello
+>     Hello
+</code></pre>
+        <br/>
+        <li>SHIFT by positions:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE c LENGTH 10 VALUE 'ABCDEFGHIJ'.
+
+SHIFT lv_str BY 3 PLACES LEFT.
+WRITE: / lv_str.
+
+lv_str = 'ABCDEFGHIJ'.
+SHIFT lv_str BY 3 PLACES RIGHT.
+WRITE: / lv_str.
+
+lv_str = 'ABCDEFGHIJ'.
+SHIFT lv_str BY 3 PLACES CIRCULAR.
+WRITE: / lv_str.
+</code></pre>
+<pre><code class="language-text line-numbers">DEFGHIJ
+   ABCDEFG
+DEFGHIJABC
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Find and Replace</li>
+    <br/>
+    <ul>
+        <li>find function:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+DATA(lv_pos) = find( val = lv_str sub = 'World' ).
+WRITE: / 'Position of "World":', lv_pos.
+
+lv_pos = find( val = lv_str sub = 'xyz' ).
+WRITE: / 'Position of "xyz":', lv_pos.
+</code></pre>
+<pre><code class="language-text line-numbers">Position of "World":          6
+Position of "xyz":         -1
+</code></pre>
+<p>Returns 0-based position. -1 if not found.</p>
+        <br/>
+        <li>find with options:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World World'.
+
+DATA(lv_pos) = find( val = lv_str sub = 'World' occ = 2 ).
+WRITE: / 'Second "World" at:', lv_pos.
+
+lv_pos = find( val = lv_str sub = 'WORLD' case = abap_false ).
+WRITE: / 'Case insensitive:', lv_pos.
+</code></pre>
+<pre><code class="language-text line-numbers">Second "World" at:         12
+Case insensitive:          6
+</code></pre>
+        <br/>
+        <li>count:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'abracadabra'.
+
+DATA(lv_count) = count( val = lv_str sub = 'a' ).
+WRITE: / 'Count of "a":', lv_count.
+
+lv_count = count( val = lv_str sub = 'bra' ).
+WRITE: / 'Count of "bra":', lv_count.
+</code></pre>
+<pre><code class="language-text line-numbers">Count of "a":          5
+Count of "bra":          2
+</code></pre>
+        <br/>
+        <li>replace function:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+DATA(lv_new) = replace( val = lv_str sub = 'World' with = 'ABAP' ).
+WRITE: / lv_new.
+
+lv_str = 'aaa bbb aaa'.
+DATA(lv_all) = replace( val = lv_str sub = 'aaa' with = 'xxx' occ = 0 ).
+WRITE: / lv_all.
+</code></pre>
+<pre><code class="language-text line-numbers">Hello ABAP
+xxx bbb xxx
+</code></pre>
+<p><code>occ = 0</code> replaces all occurrences.</p>
+        <br/>
+        <li>FIND statement (classic):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+FIND 'World' IN lv_str MATCH OFFSET DATA(lv_off) MATCH LENGTH DATA(lv_len).
+IF sy-subrc = 0.
+  WRITE: / 'Found at offset:', lv_off, 'length:', lv_len.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Found at offset:          6 length:          5
+</code></pre>
+        <br/>
+        <li>REPLACE statement (classic):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World World'.
+
+REPLACE 'World' IN lv_str WITH 'ABAP'.
+WRITE: / lv_str.
+
+lv_str = 'Hello World World'.
+REPLACE ALL OCCURRENCES OF 'World' IN lv_str WITH 'ABAP'.
+WRITE: / lv_str.
+</code></pre>
+<pre><code class="language-text line-numbers">Hello ABAP World
+Hello ABAP ABAP
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Comparison Operators</li>
+    <br/>
+    <ul>
+        <li>CO (Contains Only):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string.
+
+lv_str = '12345'.
+IF lv_str CO '0123456789'.
+  WRITE: / 'Only digits'.
+ENDIF.
+
+lv_str = '123A5'.
+IF lv_str CN '0123456789'.
+  WRITE: / 'Contains non-digits at position:', sy-fdpos.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Only digits
+Contains non-digits at position:          3
+</code></pre>
+        <br/>
+        <li>CA (Contains Any):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+IF lv_str CA 'aeiou'.
+  WRITE: / 'Has vowel at position:', sy-fdpos.
+ENDIF.
+
+IF lv_str NA '0123456789'.
+  WRITE: / 'Contains no digits'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Has vowel at position:          1
+Contains no digits
+</code></pre>
+        <br/>
+        <li>CS (Contains String):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+IF lv_str CS 'World'.
+  WRITE: / 'Contains "World" at:', sy-fdpos.
+ENDIF.
+
+IF lv_str CS 'WORLD'.    "case insensitive!
+  WRITE: / 'CS is case insensitive'.
+ENDIF.
+
+IF lv_str NS 'xyz'.
+  WRITE: / 'Does not contain "xyz"'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Contains "World" at:          6
+CS is case insensitive
+Does not contain "xyz"
+</code></pre>
+        <br/>
+        <li>CP (Covers Pattern):</li>
+<pre><code class="language-text line-numbers">Pattern wildcards:
+*  = any characters (including none)
++  = exactly one character
+#  = escape (to match literal * + #)
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'HELLO123'.
+
+IF lv_str CP 'HELLO*'.
+  WRITE: / 'Starts with HELLO'.
+ENDIF.
+
+IF lv_str CP '*123'.
+  WRITE: / 'Ends with 123'.
+ENDIF.
+
+IF lv_str CP 'HELLO+++'.
+  WRITE: / 'HELLO + exactly 3 chars'.
+ENDIF.
+
+IF lv_str CP '*LO*'.
+  WRITE: / 'Contains LO'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Starts with HELLO
+Ends with 123
+HELLO + exactly 3 chars
+Contains LO
+</code></pre>
+        <br/>
+        <li>Summary table:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operator</th>
+            <th>True when</th>
+            <th>Negative</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>CO</code></td>
+            <td>Contains Only chars from right</td>
+            <td><code>CN</code></td>
+        </tr>
+        <tr>
+            <td><code>CA</code></td>
+            <td>Contains Any char from right</td>
+            <td><code>NA</code></td>
+        </tr>
+        <tr>
+            <td><code>CS</code></td>
+            <td>Contains String (case insensitive)</td>
+            <td><code>NS</code></td>
+        </tr>
+        <tr>
+            <td><code>CP</code></td>
+            <td>Covers Pattern (wildcards)</td>
+            <td><code>NP</code></td>
+        </tr>
+    </tbody>
+</table>
+<p>After these operators, <code>sy-fdpos</code> contains the position found (or first mismatch for CO).</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Regular Expressions</li>
+    <br/>
+    <ul>
+        <li>find with regex:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Order 12345 confirmed'.
+
+DATA(lv_pos) = find( val = lv_str regex = '\d+' ).
+WRITE: / 'Digits found at:', lv_pos.
+</code></pre>
+<pre><code class="language-text line-numbers">Digits found at:          6
+</code></pre>
+        <br/>
+        <li>replace with regex:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Price: $100 or $200'.
+
+DATA(lv_new) = replace( val = lv_str regex = '\$\d+' with = 'XXX' occ = 0 ).
+WRITE: / lv_new.
+</code></pre>
+<pre><code class="language-text line-numbers">Price: XXX or XXX
+</code></pre>
+        <br/>
+        <li>FIND with REGEX (classic):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Email: test@example.com'.
+DATA lv_email TYPE string.
+
+FIND REGEX '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+     IN lv_str MATCH OFFSET DATA(lv_off) MATCH LENGTH DATA(lv_len).
+
+IF sy-subrc = 0.
+  lv_email = lv_str+lv_off(lv_len).
+  WRITE: / 'Email found:', lv_email.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Email found: test@example.com
+</code></pre>
+        <br/>
+        <li>contains/matches predicates:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'ABC123'.
+
+IF contains( val = lv_str regex = '^\d+$' ).
+  WRITE: / 'Only digits'.
+ELSE.
+  WRITE: / 'Not only digits'.
+ENDIF.
+
+IF matches( val = lv_str regex = '^[A-Z]+\d+$' ).
+  WRITE: / 'Letters followed by digits'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Not only digits
+Letters followed by digits
+</code></pre>
+<p><code>contains</code> checks if regex matches anywhere. <code>matches</code> checks if entire string matches.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Split and Join</li>
+    <br/>
+    <ul>
+        <li>SPLIT statement:</li>
+<pre><code class="language-text line-numbers">SPLIT &lt;string&gt; AT &lt;separator&gt; INTO &lt;v1&gt; &lt;v2&gt; ... .
+SPLIT &lt;string&gt; AT &lt;separator&gt; INTO TABLE &lt;itab&gt;.
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'One,Two,Three'.
+DATA lt_parts TYPE TABLE OF string.
+
+SPLIT lv_str AT ',' INTO TABLE lt_parts.
+
+LOOP AT lt_parts INTO DATA(lv_part).
+  WRITE: / lv_part.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">One
+Two
+Three
+</code></pre>
+        <br/>
+        <li>Split into variables:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE '2024-12-15'.
+DATA: lv_year TYPE string,
+      lv_month TYPE string,
+      lv_day TYPE string.
+
+SPLIT lv_str AT '-' INTO lv_year lv_month lv_day.
+
+WRITE: / 'Year:', lv_year.
+WRITE: / 'Month:', lv_month.
+WRITE: / 'Day:', lv_day.
+</code></pre>
+<pre><code class="language-text line-numbers">Year: 2024
+Month: 12
+Day: 15
+</code></pre>
+        <br/>
+        <li>Join with concat_lines_of:</li>
+<pre><code class="language-abap line-numbers">DATA lt_parts TYPE TABLE OF string.
+APPEND 'One' TO lt_parts.
+APPEND 'Two' TO lt_parts.
+APPEND 'Three' TO lt_parts.
+
+DATA(lv_joined) = concat_lines_of( table = lt_parts sep = ',' ).
+WRITE: / lv_joined.
+
+DATA(lv_lines) = concat_lines_of( table = lt_parts sep = cl_abap_char_utilities=&gt;newline ).
+WRITE: / lv_lines.
+</code></pre>
+<pre><code class="language-text line-numbers">One,Two,Three
+One
+Two
+Three
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Reverse</li>
+    <br/>
+    <ul>
+        <li>reverse function:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello'.
+
+DATA(lv_rev) = reverse( lv_str ).
+WRITE: / lv_rev.
+
+* Check palindrome
+DATA lv_word TYPE string VALUE 'radar'.
+IF lv_word = reverse( lv_word ).
+  WRITE: / lv_word, 'is a palindrome'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">olleH
+radar is a palindrome
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Repeat</li>
+    <br/>
+    <ul>
+        <li>repeat function:</li>
+<pre><code class="language-abap line-numbers">DATA(lv_line) = repeat( val = '-' occ = 20 ).
+WRITE: / lv_line.
+
+DATA(lv_pattern) = repeat( val = 'AB' occ = 5 ).
+WRITE: / lv_pattern.
+</code></pre>
+<pre><code class="language-text line-numbers">--------------------
+ABABABABAB
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Character Utilities</li>
+    <br/>
+    <ul>
+        <li>cl_abap_char_utilities constants:</li>
+<pre><code class="language-abap line-numbers">* Newline
+DATA(lv_with_newline) = |Line1{ cl_abap_char_utilities=&gt;newline }Line2|.
+WRITE: / lv_with_newline.
+
+* Carriage return + line feed (Windows)
+DATA(lv_crlf) = cl_abap_char_utilities=&gt;cr_lf.
+
+* Tab
+DATA(lv_with_tab) = |Col1{ cl_abap_char_utilities=&gt;horizontal_tab }Col2|.
+WRITE: / lv_with_tab.
+
+* Check for digits only
+IF cl_abap_char_utilities=&gt;str_is_digit( '12345' ) = abap_true.
+  WRITE: / 'Only digits'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Line1
+Line2
+Col1    Col2
+Only digits
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Function Summary</li>
+    <br/>
+    <ul>
+        <li>Quick reference:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Function</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>strlen( )</code></td>
+            <td>Length excluding trailing spaces</td>
+        </tr>
+        <tr>
+            <td><code>substring( )</code></td>
+            <td>Extract part of string</td>
+        </tr>
+        <tr>
+            <td><code>to_upper( )</code></td>
+            <td>Convert to uppercase</td>
+        </tr>
+        <tr>
+            <td><code>to_lower( )</code></td>
+            <td>Convert to lowercase</td>
+        </tr>
+        <tr>
+            <td><code>to_mixed( )</code></td>
+            <td>Convert to mixed case</td>
+        </tr>
+        <tr>
+            <td><code>condense( )</code></td>
+            <td>Remove extra spaces</td>
+        </tr>
+        <tr>
+            <td><code>shift_left( )</code></td>
+            <td>Remove leading characters</td>
+        </tr>
+        <tr>
+            <td><code>shift_right( )</code></td>
+            <td>Remove trailing characters</td>
+        </tr>
+        <tr>
+            <td><code>find( )</code></td>
+            <td>Find substring position</td>
+        </tr>
+        <tr>
+            <td><code>count( )</code></td>
+            <td>Count occurrences</td>
+        </tr>
+        <tr>
+            <td><code>replace( )</code></td>
+            <td>Replace substring</td>
+        </tr>
+        <tr>
+            <td><code>reverse( )</code></td>
+            <td>Reverse string</td>
+        </tr>
+        <tr>
+            <td><code>repeat( )</code></td>
+            <td>Repeat string n times</td>
+        </tr>
+        <tr>
+            <td><code>concat_lines_of( )</code></td>
+            <td>Join table rows</td>
+        </tr>
+        <tr>
+            <td><code>contains( )</code></td>
+            <td>Check if contains substring/regex</td>
+        </tr>
+        <tr>
+            <td><code>matches( )</code></td>
+            <td>Check if entire string matches regex</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
