@@ -157,6 +157,7 @@
         <li><a href="#abap-operators">Operators</a></li>
         <li><a href="#abap-control-flow">Contrl Flow</a></li>
         <li><a href="#abap-strings">Strings</a></li>
+        <li><a href="#abap-date-time">Date &amp; Time</a></li>
     </ol>
 </nav>
 <hr/>
@@ -6578,6 +6579,1002 @@ Only digits
     <br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-date-time">Date and Time in ABAP</h3>
+<ol>
+
+    <li>Date Type (d)</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE d.
+
+Always 8 characters. Format: YYYYMMDD.
+Stored as character but supports date arithmetic.
+</code></pre>
+        <br/>
+        <li>Declaration and assignment:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d.
+
+lv_date = '20241215'.       "direct assignment
+WRITE: / lv_date.
+
+lv_date = sy-datum.         "current date
+WRITE: / 'Today:', lv_date.
+</code></pre>
+<pre><code class="language-text line-numbers">20241215
+Today: 20241215
+</code></pre>
+        <br/>
+        <li>Initial value:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d.
+
+WRITE: / 'Initial:', lv_date.
+
+IF lv_date IS INITIAL.
+  WRITE: / 'Date is initial (00000000)'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Initial: 00000000
+Date is initial (00000000)
+</code></pre>
+        <br/>
+        <li>Extracting parts (offset/length):</li>
+<pre><code class="language-text line-numbers">Date format: YYYYMMDD
+             01234567  (positions)
+
+lv_date+0(4) = year   (positions 0-3)
+lv_date+4(2) = month  (positions 4-5)
+lv_date+6(2) = day    (positions 6-7)
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+
+DATA(lv_year)  = lv_date+0(4).
+DATA(lv_month) = lv_date+4(2).
+DATA(lv_day)   = lv_date+6(2).
+
+WRITE: / 'Year:', lv_year.
+WRITE: / 'Month:', lv_month.
+WRITE: / 'Day:', lv_day.
+</code></pre>
+<pre><code class="language-text line-numbers">Year: 2024
+Month: 12
+Day: 15
+</code></pre>
+        <br/>
+        <li>Setting parts:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+
+lv_date+4(2) = '06'.    "change month to June
+WRITE: / lv_date.
+
+lv_date+6(2) = '01'.    "change day to 1st
+WRITE: / lv_date.
+</code></pre>
+<pre><code class="language-text line-numbers">20240615
+20240601
+</code></pre>
+        <br/>
+        <li>Invalid dates:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d.
+
+lv_date = '20241315'.    "month 13 - invalid but accepted
+WRITE: / lv_date.
+
+lv_date = '20240230'.    "Feb 30 - invalid but accepted
+WRITE: / lv_date.
+</code></pre>
+<pre><code class="language-text line-numbers">20241315
+20240230
+</code></pre>
+<p>ABAP stores any 8 digits. Validation is your responsibility.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Time Type (t)</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE t.
+
+Always 6 characters. Format: HHMMSS.
+24-hour format. Stored as character.
+</code></pre>
+        <br/>
+        <li>Declaration and assignment:</li>
+<pre><code class="language-abap line-numbers">DATA lv_time TYPE t.
+
+lv_time = '143052'.       "14:30:52
+WRITE: / lv_time.
+
+lv_time = sy-uzeit.       "current time
+WRITE: / 'Now:', lv_time.
+</code></pre>
+<pre><code class="language-text line-numbers">143052
+Now: 102345
+</code></pre>
+        <br/>
+        <li>Initial value:</li>
+<pre><code class="language-abap line-numbers">DATA lv_time TYPE t.
+
+WRITE: / 'Initial:', lv_time.
+
+IF lv_time IS INITIAL.
+  WRITE: / 'Time is initial (000000)'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Initial: 000000
+Time is initial (000000)
+</code></pre>
+        <br/>
+        <li>Extracting parts:</li>
+<pre><code class="language-text line-numbers">Time format: HHMMSS
+             012345  (positions)
+
+lv_time+0(2) = hours   (positions 0-1)
+lv_time+2(2) = minutes (positions 2-3)
+lv_time+4(2) = seconds (positions 4-5)
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_time TYPE t VALUE '143052'.
+
+DATA(lv_hour) = lv_time+0(2).
+DATA(lv_min)  = lv_time+2(2).
+DATA(lv_sec)  = lv_time+4(2).
+
+WRITE: / 'Hour:', lv_hour.
+WRITE: / 'Minute:', lv_min.
+WRITE: / 'Second:', lv_sec.
+</code></pre>
+<pre><code class="language-text line-numbers">Hour: 14
+Minute: 30
+Second: 52
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Date Arithmetic</li>
+    <br/>
+    <ul>
+        <li>Adding/subtracting days:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+
+lv_date = lv_date + 7.      "add 7 days
+WRITE: / '+7 days:', lv_date.
+
+lv_date = lv_date - 20.     "subtract 20 days
+WRITE: / '-20 days:', lv_date.
+</code></pre>
+<pre><code class="language-text line-numbers">+7 days: 20241222
+-20 days: 20241202
+</code></pre>
+<p>Arithmetic is in days. Handles month/year boundaries automatically.</p>
+        <br/>
+        <li>Month boundaries:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241231'.
+
+lv_date = lv_date + 1.
+WRITE: / 'Dec 31 + 1:', lv_date.
+
+lv_date = '20240101'.
+lv_date = lv_date - 1.
+WRITE: / 'Jan 1 - 1:', lv_date.
+</code></pre>
+<pre><code class="language-text line-numbers">Dec 31 + 1: 20250101
+Jan 1 - 1: 20231231
+</code></pre>
+        <br/>
+        <li>Difference between dates:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date1 TYPE d VALUE '20241201'.
+DATA lv_date2 TYPE d VALUE '20241215'.
+
+DATA(lv_diff) = lv_date2 - lv_date1.
+WRITE: / 'Difference:', lv_diff, 'days'.
+
+lv_diff = lv_date1 - lv_date2.
+WRITE: / 'Reversed:', lv_diff, 'days'.
+</code></pre>
+<pre><code class="language-text line-numbers">Difference:         14 days
+Reversed:        -14 days
+</code></pre>
+        <br/>
+        <li>Adding months (no direct operator):</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+DATA lv_month TYPE i.
+
+lv_month = lv_date+4(2).    "get month
+lv_month = lv_month + 3.    "add 3 months
+
+IF lv_month &gt; 12.
+  lv_month = lv_month - 12.
+  lv_date+0(4) = lv_date+0(4) + 1.   "increment year
+ENDIF.
+
+lv_date+4(2) = lv_month.
+
+WRITE: / '+3 months:', lv_date.
+</code></pre>
+<pre><code class="language-text line-numbers">+3 months: 20250315
+</code></pre>
+<p>Month arithmetic requires manual handling. Use function modules for complex cases.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Time Arithmetic</li>
+    <br/>
+    <ul>
+        <li>Adding/subtracting seconds:</li>
+<pre><code class="language-abap line-numbers">DATA lv_time TYPE t VALUE '143052'.
+
+lv_time = lv_time + 60.       "add 60 seconds (1 minute)
+WRITE: / '+60 sec:', lv_time.
+
+lv_time = lv_time + 3600.     "add 3600 seconds (1 hour)
+WRITE: / '+1 hour:', lv_time.
+
+lv_time = lv_time - 7200.     "subtract 2 hours
+WRITE: / '-2 hours:', lv_time.
+</code></pre>
+<pre><code class="language-text line-numbers">+60 sec: 143152
++1 hour: 153152
+-2 hours: 133152
+</code></pre>
+<p>Arithmetic is in seconds.</p>
+        <br/>
+        <li>Day overflow:</li>
+<pre><code class="language-abap line-numbers">DATA lv_time TYPE t VALUE '235900'.
+
+lv_time = lv_time + 120.    "add 2 minutes
+WRITE: / '23:59 + 2min:', lv_time.
+</code></pre>
+<pre><code class="language-text line-numbers">23:59 + 2min: 000100
+</code></pre>
+<p>Time wraps at midnight. No date change (type t is time only).</p>
+        <br/>
+        <li>Difference between times:</li>
+<pre><code class="language-abap line-numbers">DATA lv_time1 TYPE t VALUE '090000'.
+DATA lv_time2 TYPE t VALUE '173000'.
+
+DATA(lv_diff) = lv_time2 - lv_time1.
+WRITE: / 'Difference:', lv_diff, 'seconds'.
+
+DATA(lv_hours) = lv_diff / 3600.
+WRITE: / 'That is', lv_hours, 'hours'.
+</code></pre>
+<pre><code class="language-text line-numbers">Difference:      30600 seconds
+That is       8.50000000000000E+00 hours
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Timestamps</li>
+    <br/>
+    <ul>
+        <li>Two timestamp types:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Format</th>
+            <th>Precision</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>timestamp</code></td>
+            <td>YYYYMMDDhhmmss</td>
+            <td>Seconds</td>
+        </tr>
+        <tr>
+            <td><code>timestampl</code></td>
+            <td>YYYYMMDDhhmmss.mmmuuun</td>
+            <td>Nanoseconds (7 decimals)</td>
+        </tr>
+    </tbody>
+</table>
+<p>Both stored as packed decimal. Represent UTC time.</p>
+        <br/>
+        <li>Getting current timestamp:</li>
+<pre><code class="language-abap line-numbers">DATA lv_ts TYPE timestamp.
+DATA lv_tsl TYPE timestampl.
+
+GET TIME STAMP FIELD lv_ts.
+WRITE: / 'Timestamp:', lv_ts.
+
+GET TIME STAMP FIELD lv_tsl.
+WRITE: / 'Long timestamp:', lv_tsl.
+</code></pre>
+<pre><code class="language-text line-numbers">Timestamp: 20241215102345
+Long timestamp: 20241215102345.1234567
+</code></pre>
+        <br/>
+        <li>Creating timestamp from date/time:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+DATA lv_time TYPE t VALUE '143052'.
+DATA lv_ts TYPE timestamp.
+
+CONVERT DATE lv_date TIME lv_time INTO TIME STAMP lv_ts TIME ZONE 'UTC'.
+WRITE: / 'Timestamp:', lv_ts.
+</code></pre>
+<pre><code class="language-text line-numbers">Timestamp: 20241215143052
+</code></pre>
+        <br/>
+        <li>Extracting date/time from timestamp:</li>
+<pre><code class="language-abap line-numbers">DATA lv_ts TYPE timestamp VALUE '20241215143052'.
+DATA lv_date TYPE d.
+DATA lv_time TYPE t.
+
+CONVERT TIME STAMP lv_ts TIME ZONE 'UTC' INTO DATE lv_date TIME lv_time.
+WRITE: / 'Date:', lv_date.
+WRITE: / 'Time:', lv_time.
+</code></pre>
+<pre><code class="language-text line-numbers">Date: 20241215
+Time: 143052
+</code></pre>
+        <br/>
+        <li>Timestamp arithmetic:</li>
+<pre><code class="language-abap line-numbers">DATA lv_ts TYPE timestamp.
+
+GET TIME STAMP FIELD lv_ts.
+WRITE: / 'Now:', lv_ts.
+
+lv_ts = lv_ts + 3600.    "add 1 hour (3600 seconds)
+WRITE: / '+1 hour:', lv_ts.
+</code></pre>
+<pre><code class="language-text line-numbers">Now: 20241215102345
++1 hour: 20241215112345
+</code></pre>
+        <br/>
+        <li>Timestamp difference:</li>
+<pre><code class="language-abap line-numbers">DATA lv_ts1 TYPE timestamp VALUE '20241215090000'.
+DATA lv_ts2 TYPE timestamp VALUE '20241215173000'.
+
+DATA(lv_diff) = cl_abap_tstmp=&gt;subtract( tstmp1 = lv_ts2 tstmp2 = lv_ts1 ).
+WRITE: / 'Difference:', lv_diff, 'seconds'.
+</code></pre>
+<pre><code class="language-text line-numbers">Difference:      30600 seconds
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Time Zones</li>
+    <br/>
+    <ul>
+        <li>System time zones:</li>
+<pre><code class="language-abap line-numbers">* sy-zonlo = user's time zone
+WRITE: / 'User time zone:', sy-zonlo.
+
+* Common time zones: UTC, CET, EST, PST, etc.
+</code></pre>
+        <br/>
+        <li>Converting between time zones:</li>
+<pre><code class="language-abap line-numbers">DATA lv_ts TYPE timestamp VALUE '20241215120000'.  "12:00 UTC
+DATA lv_date TYPE d.
+DATA lv_time TYPE t.
+
+* Convert to different time zones
+CONVERT TIME STAMP lv_ts TIME ZONE 'UTC' INTO DATE lv_date TIME lv_time.
+WRITE: / 'UTC:', lv_date, lv_time.
+
+CONVERT TIME STAMP lv_ts TIME ZONE 'CET' INTO DATE lv_date TIME lv_time.
+WRITE: / 'CET:', lv_date, lv_time.
+
+CONVERT TIME STAMP lv_ts TIME ZONE 'EST' INTO DATE lv_date TIME lv_time.
+WRITE: / 'EST:', lv_date, lv_time.
+</code></pre>
+<pre><code class="language-text line-numbers">UTC: 20241215 120000
+CET: 20241215 130000
+EST: 20241215 070000
+</code></pre>
+        <br/>
+        <li>User's local date/time:</li>
+<pre><code class="language-abap line-numbers">* sy-datum, sy-uzeit are in server time
+* sy-datlo, sy-timlo are in user's local time
+
+WRITE: / 'Server date:', sy-datum.
+WRITE: / 'Server time:', sy-uzeit.
+WRITE: / 'Local date:', sy-datlo.
+WRITE: / 'Local time:', sy-timlo.
+</code></pre>
+<pre><code class="language-text line-numbers">Server date: 20241215
+Server time: 102345
+Local date: 20241215
+Local time: 112345
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Date Comparison</li>
+    <br/>
+    <ul>
+        <li>Standard comparison:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date1 TYPE d VALUE '20241215'.
+DATA lv_date2 TYPE d VALUE '20241220'.
+
+IF lv_date1 < lv_date2.
+  WRITE: / 'date1 is earlier'.
+ENDIF.
+
+IF lv_date1 = lv_date2.
+  WRITE: / 'Same date'.
+ELSE.
+  WRITE: / 'Different dates'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">date1 is earlier
+Different dates
+</code></pre>
+        <br/>
+        <li>Checking date ranges:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+DATA lv_start TYPE d VALUE '20241201'.
+DATA lv_end TYPE d VALUE '20241231'.
+
+IF lv_date BETWEEN lv_start AND lv_end.
+  WRITE: / 'Date is in December 2024'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Date is in December 2024
+</code></pre>
+        <br/>
+        <li>Checking for initial date:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d.
+
+IF lv_date IS INITIAL.
+  WRITE: / 'No date set'.
+ENDIF.
+
+IF lv_date = '00000000'.
+  WRITE: / 'Also means no date'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">No date set
+Also means no date
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Formatting for Output</li>
+    <br/>
+    <ul>
+        <li>String templates with DATE:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+
+WRITE: / |{ lv_date }|.                   "raw
+WRITE: / |{ lv_date DATE = RAW }|.        "raw
+WRITE: / |{ lv_date DATE = ISO }|.        "ISO format
+WRITE: / |{ lv_date DATE = USER }|.       "user settings
+WRITE: / |{ lv_date DATE = ENVIRONMENT }|. "environment
+</code></pre>
+<pre><code class="language-text line-numbers">20241215
+20241215
+2024-12-15
+12/15/2024
+12/15/2024
+</code></pre>
+        <br/>
+        <li>String templates with TIME:</li>
+<pre><code class="language-abap line-numbers">DATA lv_time TYPE t VALUE '143052'.
+
+WRITE: / |{ lv_time }|.                   "raw
+WRITE: / |{ lv_time TIME = RAW }|.        "raw
+WRITE: / |{ lv_time TIME = ISO }|.        "ISO format
+WRITE: / |{ lv_time TIME = USER }|.       "user settings
+</code></pre>
+<pre><code class="language-text line-numbers">143052
+143052
+14:30:52
+2:30:52 PM
+</code></pre>
+        <br/>
+        <li>String templates with TIMESTAMP:</li>
+<pre><code class="language-abap line-numbers">DATA lv_ts TYPE timestamp VALUE '20241215143052'.
+
+WRITE: / |{ lv_ts TIMESTAMP = ISO }|.
+WRITE: / |{ lv_ts TIMESTAMP = USER }|.
+WRITE: / |{ lv_ts TIMESTAMP = SPACE }|.
+</code></pre>
+<pre><code class="language-text line-numbers">2024-12-15T14:30:52
+12/15/2024 2:30:52 PM
+2024-12-15 14:30:52
+</code></pre>
+        <br/>
+        <li>Custom formatting (manual):</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+
+DATA(lv_formatted) = |{ lv_date+6(2) }.{ lv_date+4(2) }.{ lv_date+0(4) }|.
+WRITE: / lv_formatted.
+
+lv_formatted = |{ lv_date+4(2) }/{ lv_date+6(2) }/{ lv_date+0(4) }|.
+WRITE: / lv_formatted.
+</code></pre>
+<pre><code class="language-text line-numbers">15.12.2024
+12/15/2024
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Date Validation</li>
+    <br/>
+    <ul>
+        <li>Check if date is valid:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d.
+
+lv_date = '20241215'.
+CALL FUNCTION 'DATE_CHECK_PLAUSIBILITY'
+  EXPORTING
+    date   = lv_date
+  EXCEPTIONS
+    OTHERS = 1.
+IF sy-subrc = 0.
+  WRITE: / lv_date, 'is valid'.
+ELSE.
+  WRITE: / lv_date, 'is invalid'.
+ENDIF.
+
+lv_date = '20240230'.   "Feb 30
+CALL FUNCTION 'DATE_CHECK_PLAUSIBILITY'
+  EXPORTING
+    date   = lv_date
+  EXCEPTIONS
+    OTHERS = 1.
+IF sy-subrc = 0.
+  WRITE: / lv_date, 'is valid'.
+ELSE.
+  WRITE: / lv_date, 'is invalid'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">20241215 is valid
+20240230 is invalid
+</code></pre>
+        <br/>
+        <li>Simple validation with class:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20240230'.
+
+TRY.
+    cl_abap_datfm=&gt;conv_date_int_to_ext(
+      im_datint = lv_date
+      im_datfmdes = '1' ).
+    WRITE: / 'Valid date'.
+  CATCH cx_abap_datfm_no_date.
+    WRITE: / 'Invalid date'.
+ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Invalid date
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Useful Date Functions</li>
+    <br/>
+    <ul>
+        <li>Day of week:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+DATA lv_day TYPE c.
+
+CALL FUNCTION 'DATE_COMPUTE_DAY'
+  EXPORTING
+    date = lv_date
+  IMPORTING
+    day  = lv_day.
+
+WRITE: / 'Day of week:', lv_day.   "1=Mon, 7=Sun
+
+CASE lv_day.
+  WHEN 1. WRITE: / 'Monday'.
+  WHEN 2. WRITE: / 'Tuesday'.
+  WHEN 3. WRITE: / 'Wednesday'.
+  WHEN 4. WRITE: / 'Thursday'.
+  WHEN 5. WRITE: / 'Friday'.
+  WHEN 6. WRITE: / 'Saturday'.
+  WHEN 7. WRITE: / 'Sunday'.
+ENDCASE.
+</code></pre>
+<pre><code class="language-text line-numbers">Day of week: 7
+Sunday
+</code></pre>
+        <br/>
+        <li>First/last day of month:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+DATA lv_first TYPE d.
+DATA lv_last TYPE d.
+
+* First day of month
+lv_first = lv_date.
+lv_first+6(2) = '01'.
+WRITE: / 'First day:', lv_first.
+
+* Last day of month
+CALL FUNCTION 'RP_LAST_DAY_OF_MONTHS'
+  EXPORTING
+    day_in = lv_date
+  IMPORTING
+    last_day_of_month = lv_last.
+WRITE: / 'Last day:', lv_last.
+</code></pre>
+<pre><code class="language-text line-numbers">First day: 20241201
+Last day: 20241231
+</code></pre>
+        <br/>
+        <li>Add months:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+DATA lv_result TYPE d.
+
+CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+  EXPORTING
+    date      = lv_date
+    days      = 0
+    months    = 3
+    sigession = '+'
+    years     = 0
+  IMPORTING
+    calc_date = lv_result.
+
+WRITE: / 'Original:', lv_date.
+WRITE: / '+3 months:', lv_result.
+</code></pre>
+<pre><code class="language-text line-numbers">Original: 20241215
++3 months: 20250315
+</code></pre>
+        <br/>
+        <li>Difference in days/months/years:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date1 TYPE d VALUE '20230115'.
+DATA lv_date2 TYPE d VALUE '20241215'.
+DATA: lv_days   TYPE i,
+      lv_months TYPE i,
+      lv_years  TYPE i.
+
+CALL FUNCTION 'FIMA_DAYS_AND_MONTHS_AND_YEARS'
+  EXPORTING
+    i_date_from = lv_date1
+    i_date_to   = lv_date2
+  IMPORTING
+    e_days      = lv_days
+    e_months    = lv_months
+    e_years     = lv_years.
+
+WRITE: / 'Years:', lv_years.
+WRITE: / 'Months:', lv_months.
+WRITE: / 'Days:', lv_days.
+</code></pre>
+<pre><code class="language-text line-numbers">Years:          1
+Months:         11
+Days:          0
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Working Days and Factory Calendar</li>
+    <br/>
+    <ul>
+        <li>What is factory calendar:</li>
+<pre><code class="language-text line-numbers">Factory calendar = defines working days for a location/plant.
+Contains: holidays, weekends, special closing days.
+Configured in SAP (transaction SCAL).
+</code></pre>
+        <br/>
+        <li>Add working days:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241213'.   "Friday
+DATA lv_result TYPE d.
+
+CALL FUNCTION 'BKK_ADD_WORKINGDAY'
+  EXPORTING
+    i_date    = lv_date
+    i_days    = 3
+    i_calendar = '01'    "factory calendar ID
+  IMPORTING
+    e_date    = lv_result.
+
+WRITE: / 'Original:', lv_date.
+WRITE: / '+3 working days:', lv_result.
+</code></pre>
+<pre><code class="language-text line-numbers">Original: 20241213
++3 working days: 20241218
+</code></pre>
+<p>Skips weekends and holidays defined in factory calendar.</p>
+        <br/>
+        <li>Check if working day:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.   "Sunday
+DATA lv_workday TYPE c.
+
+CALL FUNCTION 'DATE_CONVERT_TO_FACTORYDATE'
+  EXPORTING
+    date                         = lv_date
+    factory_calendar_id          = '01'
+  IMPORTING
+    workingday_indicator         = lv_workday
+  EXCEPTIONS
+    OTHERS                       = 1.
+
+IF lv_workday = 'X'.
+  WRITE: / lv_date, 'is a working day'.
+ELSE.
+  WRITE: / lv_date, 'is not a working day'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">20241215 is not a working day
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>System Date/Time Fields</li>
+    <br/>
+    <ul>
+        <li>Available sy- fields:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>sy-datum</code></td>
+            <td>d</td>
+            <td>Current date (server)</td>
+        </tr>
+        <tr>
+            <td><code>sy-uzeit</code></td>
+            <td>t</td>
+            <td>Current time (server)</td>
+        </tr>
+        <tr>
+            <td><code>sy-datlo</code></td>
+            <td>d</td>
+            <td>Current date (user local)</td>
+        </tr>
+        <tr>
+            <td><code>sy-timlo</code></td>
+            <td>t</td>
+            <td>Current time (user local)</td>
+        </tr>
+        <tr>
+            <td><code>sy-zonlo</code></td>
+            <td>c</td>
+            <td>User's time zone</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Usage:</li>
+<pre><code class="language-abap line-numbers">WRITE: / 'Server date:', sy-datum.
+WRITE: / 'Server time:', sy-uzeit.
+WRITE: / 'Local date:', sy-datlo.
+WRITE: / 'Local time:', sy-timlo.
+WRITE: / 'Time zone:', sy-zonlo.
+</code></pre>
+<pre><code class="language-text line-numbers">Server date: 20241215
+Server time: 102345
+Local date: 20241215
+Local time: 112345
+Time zone: CET
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>CL_ABAP_TSTMP Class</li>
+    <br/>
+    <ul>
+        <li>Timestamp utility methods:</li>
+<pre><code class="language-abap line-numbers">DATA lv_ts1 TYPE timestamp.
+DATA lv_ts2 TYPE timestamp.
+
+GET TIME STAMP FIELD lv_ts1.
+
+* Add seconds
+lv_ts2 = cl_abap_tstmp=&gt;add(
+  tstmp = lv_ts1
+  secs  = 3600 ).   "add 1 hour
+WRITE: / 'Original:', lv_ts1.
+WRITE: / '+1 hour:', lv_ts2.
+
+* Subtract timestamps (get difference in seconds)
+DATA(lv_diff) = cl_abap_tstmp=&gt;subtract( tstmp1 = lv_ts2 tstmp2 = lv_ts1 ).
+WRITE: / 'Difference:', lv_diff, 'seconds'.
+</code></pre>
+<pre><code class="language-text line-numbers">Original: 20241215102345
++1 hour: 20241215112345
+Difference:       3600 seconds
+</code></pre>
+        <br/>
+        <li>Get current UTC timestamp:</li>
+<pre><code class="language-abap line-numbers">DATA lv_ts TYPE timestamp.
+
+lv_ts = cl_abap_tstmp=&gt;get_utc_timestamp( ).
+WRITE: / 'UTC timestamp:', lv_ts.
+</code></pre>
+<pre><code class="language-text line-numbers">UTC timestamp: 20241215092345
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common Patterns</li>
+    <br/>
+    <ul>
+        <li>Start/end of current month:</li>
+<pre><code class="language-abap line-numbers">DATA lv_start TYPE d.
+DATA lv_end TYPE d.
+
+* First day of current month
+lv_start = sy-datum.
+lv_start+6(2) = '01'.
+
+* Last day of current month
+CALL FUNCTION 'RP_LAST_DAY_OF_MONTHS'
+  EXPORTING
+    day_in = sy-datum
+  IMPORTING
+    last_day_of_month = lv_end.
+
+WRITE: / 'Month start:', lv_start.
+WRITE: / 'Month end:', lv_end.
+</code></pre>
+<pre><code class="language-text line-numbers">Month start: 20241201
+Month end: 20241231
+</code></pre>
+        <br/>
+        <li>Age calculation:</li>
+<pre><code class="language-abap line-numbers">DATA lv_birthdate TYPE d VALUE '19900315'.
+DATA: lv_days TYPE i, lv_months TYPE i, lv_years TYPE i.
+
+CALL FUNCTION 'FIMA_DAYS_AND_MONTHS_AND_YEARS'
+  EXPORTING
+    i_date_from = lv_birthdate
+    i_date_to   = sy-datum
+  IMPORTING
+    e_days      = lv_days
+    e_months    = lv_months
+    e_years     = lv_years.
+
+WRITE: / 'Age:', lv_years, 'years'.
+</code></pre>
+<pre><code class="language-text line-numbers">Age:         34 years
+</code></pre>
+        <br/>
+        <li>Check if date is in past/future:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241220'.
+
+IF lv_date < sy-datum.
+  WRITE: / 'Date is in the past'.
+ELSEIF lv_date > sy-datum.
+  WRITE: / 'Date is in the future'.
+ELSE.
+  WRITE: / 'Date is today'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Date is in the future
+</code></pre>
+        <br/>
+        <li>Days until date:</li>
+<pre><code class="language-abap line-numbers">DATA lv_target TYPE d VALUE '20241225'.   "Christmas
+
+DATA(lv_days) = lv_target - sy-datum.
+
+IF lv_days &gt; 0.
+  WRITE: / lv_days, 'days until', lv_target.
+ELSEIF lv_days &lt; 0.
+  WRITE: / 'Date has passed'.
+ELSE.
+  WRITE: / 'That is today'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">        10 days until 20241225
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Quick Reference</li>
+    <br/>
+    <ul>
+        <li>Types:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Format</th>
+            <th>Arithmetic unit</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>d</code></td>
+            <td>YYYYMMDD (8 chars)</td>
+            <td>Days</td>
+        </tr>
+        <tr>
+            <td><code>t</code></td>
+            <td>HHMMSS (6 chars)</td>
+            <td>Seconds</td>
+        </tr>
+        <tr>
+            <td><code>timestamp</code></td>
+            <td>YYYYMMDDhhmmss</td>
+            <td>Seconds</td>
+        </tr>
+        <tr>
+            <td><code>timestampl</code></td>
+            <td>YYYYMMDDhhmmss.nnnnnnn</td>
+            <td>Seconds</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Key functions:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Function module</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>DATE_CHECK_PLAUSIBILITY</code></td>
+            <td>Validate date</td>
+        </tr>
+        <tr>
+            <td><code>DATE_COMPUTE_DAY</code></td>
+            <td>Get day of week</td>
+        </tr>
+        <tr>
+            <td><code>RP_LAST_DAY_OF_MONTHS</code></td>
+            <td>Last day of month</td>
+        </tr>
+        <tr>
+            <td><code>RP_CALC_DATE_IN_INTERVAL</code></td>
+            <td>Add days/months/years</td>
+        </tr>
+        <tr>
+            <td><code>FIMA_DAYS_AND_MONTHS_AND_YEARS</code></td>
+            <td>Difference between dates</td>
+        </tr>
+        <tr>
+            <td><code>BKK_ADD_WORKINGDAY</code></td>
+            <td>Add working days</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
