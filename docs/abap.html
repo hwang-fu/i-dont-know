@@ -154,6 +154,7 @@
         <li><a href="#abap-data-types">Data Types</a></li>
         <li><a href="#abap-variables">Variables</a></li>
         <li><a href="#abap-constants-literals">Constants and Literals</a></li>
+        <li><a href="#abap-operators">Operators</a></li>
     </ol>
 </nav>
 <hr/>
@@ -3044,7 +3045,7 @@ LOOP row:          2 value:         20
         <br/>
         <li>Common pattern:</li>
 <pre><code class="language-abap line-numbers">READ TABLE lt_nums INTO DATA(lv_found) INDEX 99.
-IF sy-subrc <> 0.
+IF sy-subrc &lt;&gt; 0.
   WRITE: / 'Not found'.
 ENDIF.
 </code></pre>
@@ -3633,6 +3634,945 @@ lv_msg = |Error in line { sy-tabix }|.  "template
     <br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-operators">Operators in ABAP</h3>
+<ol>
+
+    <li>Assignment Operator</li>
+    <br/>
+    <ul>
+        <li>Single equals (<code>=</code>):</li>
+<pre><code class="language-abap line-numbers">DATA lv_a TYPE i.
+DATA lv_b TYPE i.
+
+lv_a = 10.
+lv_b = lv_a.
+
+WRITE: / lv_a, lv_b.
+</code></pre>
+<pre><code class="language-text line-numbers">        10         10
+</code></pre>
+<p>In ABAP, <code>=</code> is both assignment and comparison. Context determines which.</p>
+        <br/>
+        <li>Chained assignment (not supported):</li>
+<pre><code class="language-abap line-numbers">* This does NOT work in ABAP
+lv_a = lv_b = lv_c = 10.   "syntax error
+
+* Must assign separately
+lv_a = 10.
+lv_b = 10.
+lv_c = 10.
+</code></pre>
+        <br/>
+        <li>MOVE - classic alternative:</li>
+<pre><code class="language-abap line-numbers">MOVE 10 TO lv_a.       "same as: lv_a = 10.
+MOVE lv_a TO lv_b.     "same as: lv_b = lv_a.
+
+WRITE: / lv_a, lv_b.
+</code></pre>
+<pre><code class="language-text line-numbers">        10         10
+</code></pre>
+<p><code>MOVE</code> is older syntax. <code>=</code> is preferred in modern code.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Arithmetic Operators</li>
+    <br/>
+    <ul>
+        <li>Basic operators:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operator</th>
+            <th>Meaning</th>
+            <th>Example</th>
+            <th>Result</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>+</code></td>
+            <td>Addition</td>
+            <td><code>5 + 3</code></td>
+            <td>8</td>
+        </tr>
+        <tr>
+            <td><code>-</code></td>
+            <td>Subtraction</td>
+            <td><code>5 - 3</code></td>
+            <td>2</td>
+        </tr>
+        <tr>
+            <td><code>*</code></td>
+            <td>Multiplication</td>
+            <td><code>5 * 3</code></td>
+            <td>15</td>
+        </tr>
+        <tr>
+            <td><code>/</code></td>
+            <td>Division</td>
+            <td><code>7 / 2</code></td>
+            <td>3.5</td>
+        </tr>
+        <tr>
+            <td><code>DIV</code></td>
+            <td>Integer division</td>
+            <td><code>7 DIV 2</code></td>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td><code>MOD</code></td>
+            <td>Modulo (remainder)</td>
+            <td><code>7 MOD 2</code></td>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td><code>**</code></td>
+            <td>Power</td>
+            <td><code>2 ** 3</code></td>
+            <td>8</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-abap line-numbers">DATA lv_result TYPE p DECIMALS 2.
+
+lv_result = 5 + 3.
+WRITE: / '5 + 3 =', lv_result.
+
+lv_result = 5 - 3.
+WRITE: / '5 - 3 =', lv_result.
+
+lv_result = 5 * 3.
+WRITE: / '5 * 3 =', lv_result.
+
+lv_result = 7 / 2.
+WRITE: / '7 / 2 =', lv_result.
+</code></pre>
+<pre><code class="language-text line-numbers">5 + 3 =                 8.00
+5 - 3 =                 2.00
+5 * 3 =                15.00
+7 / 2 =                 3.50
+</code></pre>
+        <br/>
+        <li>DIV vs / (division):</li>
+<pre><code class="language-abap line-numbers">DATA lv_i TYPE i.
+DATA lv_p TYPE p DECIMALS 2.
+
+lv_i = 7 / 2.        "result truncated to integer
+lv_p = 7 / 2.        "result kept as decimal
+
+WRITE: / '7 / 2 into i:', lv_i.
+WRITE: / '7 / 2 into p:', lv_p.
+
+lv_i = 7 DIV 2.      "explicit integer division
+WRITE: / '7 DIV 2:', lv_i.
+</code></pre>
+<pre><code class="language-text line-numbers">7 / 2 into i:          3
+7 / 2 into p:                 3.50
+7 DIV 2:          3
+</code></pre>
+<p><code>/</code> does decimal division, result depends on target type. <code>DIV</code> always integer division.</p>
+        <br/>
+        <li>MOD (modulo):</li>
+<pre><code class="language-abap line-numbers">DATA lv_i TYPE i.
+
+lv_i = 7 MOD 2.
+WRITE: / '7 MOD 2 =', lv_i.
+
+lv_i = 10 MOD 3.
+WRITE: / '10 MOD 3 =', lv_i.
+
+lv_i = 8 MOD 4.
+WRITE: / '8 MOD 4 =', lv_i.
+
+* Common use: check if even/odd
+IF 7 MOD 2 = 0.
+  WRITE: / '7 is even'.
+ELSE.
+  WRITE: / '7 is odd'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">7 MOD 2 =          1
+10 MOD 3 =          1
+8 MOD 4 =          0
+7 is odd
+</code></pre>
+        <br/>
+        <li>Power (**):</li>
+<pre><code class="language-abap line-numbers">DATA lv_result TYPE p DECIMALS 2.
+
+lv_result = 2 ** 3.
+WRITE: / '2 ** 3 =', lv_result.
+
+lv_result = 10 ** 2.
+WRITE: / '10 ** 2 =', lv_result.
+
+lv_result = 9 ** '0.5'.    "square root
+WRITE: / '9 ** 0.5 =', lv_result.
+</code></pre>
+<pre><code class="language-text line-numbers">2 ** 3 =                 8.00
+10 ** 2 =               100.00
+9 ** 0.5 =                 3.00
+</code></pre>
+        <br/>
+        <li>Operator precedence:</li>
+<pre><code class="language-text line-numbers">Highest to lowest:
+1. **           (power)
+2. *, /, DIV, MOD
+3. +, -
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_i TYPE i.
+
+lv_i = 2 + 3 * 4.      "3 * 4 first, then + 2
+WRITE: / '2 + 3 * 4 =', lv_i.
+
+lv_i = ( 2 + 3 ) * 4.  "parentheses first
+WRITE: / '(2 + 3) * 4 =', lv_i.
+</code></pre>
+<pre><code class="language-text line-numbers">2 + 3 * 4 =         14
+(2 + 3) * 4 =         20
+</code></pre>
+        <br/>
+        <li>Spaces required:</li>
+<pre><code class="language-abap line-numbers">* ABAP requires spaces around operators
+lv_i = 5+3.    "syntax error
+lv_i = 5 + 3.  "correct
+
+lv_i = 10/2.   "syntax error
+lv_i = 10 / 2. "correct
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Comparison Operators</li>
+    <br/>
+    <ul>
+        <li>Two forms (symbol and keyword):</li>
+<table>
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Keyword</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>=</code></td>
+            <td><code>EQ</code></td>
+            <td>Equal</td>
+        </tr>
+        <tr>
+            <td><code>&lt;&gt;</code></td>
+            <td><code>NE</code></td>
+            <td>Not equal</td>
+        </tr>
+        <tr>
+            <td><code>&lt;</code></td>
+            <td><code>LT</code></td>
+            <td>Less than</td>
+        </tr>
+        <tr>
+            <td><code>&gt;</code></td>
+            <td><code>GT</code></td>
+            <td>Greater than</td>
+        </tr>
+        <tr>
+            <td><code>&lt;=</code></td>
+            <td><code>LE</code></td>
+            <td>Less than or equal</td>
+        </tr>
+        <tr>
+            <td><code>&gt;=</code></td>
+            <td><code>GE</code></td>
+            <td>Greater than or equal</td>
+        </tr>
+    </tbody>
+</table>
+<p>Both forms are equivalent. Use whichever is clearer.</p>
+        <br/>
+        <li>Examples:</li>
+<pre><code class="language-abap line-numbers">DATA lv_a TYPE i VALUE 10.
+DATA lv_b TYPE i VALUE 20.
+
+IF lv_a = lv_b.
+  WRITE: / 'a = b'.
+ENDIF.
+
+IF lv_a &lt;&gt; lv_b.
+  WRITE: / 'a &lt;&gt; b'.
+ENDIF.
+
+IF lv_a &lt; lv_b.
+  WRITE: / 'a &lt; b'.
+ENDIF.
+
+IF lv_a &lt;= lv_b.
+  WRITE: / 'a &lt;= b'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">a &lt;&gt; b
+a &lt; b
+a &lt;= b
+</code></pre>
+        <br/>
+        <li>Using keyword form:</li>
+<pre><code class="language-abap line-numbers">IF lv_a EQ lv_b.
+  WRITE: / 'Equal'.
+ENDIF.
+
+IF lv_a NE lv_b.
+  WRITE: / 'Not equal'.
+ENDIF.
+
+IF lv_a LT lv_b.
+  WRITE: / 'Less than'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Not equal
+Less than
+</code></pre>
+        <br/>
+        <li>String comparison:</li>
+<pre><code class="language-abap line-numbers">DATA lv_s1 TYPE string VALUE 'ABC'.
+DATA lv_s2 TYPE string VALUE 'ABD'.
+
+IF lv_s1 &lt; lv_s2.
+  WRITE: / 'ABC &lt; ABD'.
+ENDIF.
+
+IF 'apple' &lt; 'banana'.
+  WRITE: / 'apple &lt; banana'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">ABC < ABD
+apple &lt; banana
+</code></pre>
+<p>Strings compared lexicographically (character by character).</p>
+        <br/>
+        <li>Type c comparison - trailing spaces:</li>
+<pre><code class="language-abap line-numbers">DATA lv_c1 TYPE c LENGTH 10 VALUE 'ABC'.
+DATA lv_c2 TYPE c LENGTH 5 VALUE 'ABC'.
+
+IF lv_c1 = lv_c2.
+  WRITE: / 'Equal (spaces ignored)'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Equal (spaces ignored)
+</code></pre>
+<p>For type <code>c</code>, trailing spaces are ignored in comparison.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Logical Operators</li>
+    <br/>
+    <ul>
+        <li>Operators:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operator</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>AND</code></td>
+            <td>Both must be true</td>
+        </tr>
+        <tr>
+            <td><code>OR</code></td>
+            <td>At least one must be true</td>
+        </tr>
+        <tr>
+            <td><code>NOT</code></td>
+            <td>Negation</td>
+        </tr>
+        <tr>
+            <td><code>EQUIV</code></td>
+            <td>Both same (both true or both false)</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>AND:</li>
+<pre><code class="language-abap line-numbers">DATA lv_a TYPE i VALUE 10.
+DATA lv_b TYPE i VALUE 20.
+
+IF lv_a &gt; 5 AND lv_b &gt; 15.
+  WRITE: / 'Both conditions true'.
+ENDIF.
+
+IF lv_a &gt; 5 AND lv_b &gt; 25.
+  WRITE: / 'This will not print'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Both conditions true
+</code></pre>
+        <br/>
+        <li>OR:</li>
+<pre><code class="language-abap line-numbers">DATA lv_status TYPE c VALUE 'A'.
+
+IF lv_status = 'A' OR lv_status = 'B'.
+  WRITE: / 'Status is A or B'.
+ENDIF.
+
+IF lv_status = 'X' OR lv_status = 'Y'.
+  WRITE: / 'This will not print'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Status is A or B
+</code></pre>
+        <br/>
+        <li>NOT:</li>
+<pre><code class="language-abap line-numbers">DATA lv_flag TYPE abap_bool VALUE abap_false.
+
+IF NOT lv_flag = abap_true.
+  WRITE: / 'Flag is not true'.
+ENDIF.
+
+* Cleaner way
+IF lv_flag &lt;&gt; abap_true.
+  WRITE: / 'Flag is not true (cleaner)'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Flag is not true
+Flag is not true (cleaner)
+</code></pre>
+        <br/>
+        <li>Combining operators:</li>
+<pre><code class="language-abap line-numbers">DATA lv_age TYPE i VALUE 25.
+DATA lv_status TYPE c VALUE 'A'.
+
+IF ( lv_age &gt;= 18 AND lv_age &lt;= 65 ) AND lv_status = 'A'.
+  WRITE: / 'Adult with active status'.
+ENDIF.
+
+IF lv_age &lt; 18 OR lv_age &gt; 65 OR lv_status &lt;&gt; 'A'.
+  WRITE: / 'Does not qualify'.
+ELSE.
+  WRITE: / 'Qualifies'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Adult with active status
+Qualifies
+</code></pre>
+        <br/>
+        <li>Precedence:</li>
+<pre><code class="language-text line-numbers">Highest to lowest:
+1. NOT
+2. AND
+3. OR
+</code></pre>
+<pre><code class="language-abap line-numbers">* These are different:
+IF a OR b AND c.       "means: a OR (b AND c)
+IF ( a OR b ) AND c.   "means: (a OR b) AND c
+
+* Use parentheses to be explicit
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Special Comparison Operators</li>
+    <br/>
+    <ul>
+        <li>IS INITIAL:</li>
+<pre><code class="language-abap line-numbers">DATA lv_i TYPE i.
+DATA lv_s TYPE string.
+
+IF lv_i IS INITIAL.
+  WRITE: / 'Integer is initial (0)'.
+ENDIF.
+
+IF lv_s IS INITIAL.
+  WRITE: / 'String is initial (empty)'.
+ENDIF.
+
+lv_s = 'Hello'.
+IF lv_s IS NOT INITIAL.
+  WRITE: / 'String has value'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Integer is initial (0)
+String is initial (empty)
+String has value
+</code></pre>
+        <br/>
+        <li>IS BOUND (for references):</li>
+<pre><code class="language-abap line-numbers">DATA lr_ref TYPE REF TO i.
+
+IF lr_ref IS INITIAL.
+  WRITE: / 'Reference is initial (null)'.
+ENDIF.
+
+IF lr_ref IS NOT BOUND.
+  WRITE: / 'Reference is not bound'.
+ENDIF.
+
+DATA lv_num TYPE i VALUE 10.
+lr_ref = REF #( lv_num ).
+
+IF lr_ref IS BOUND.
+  WRITE: / 'Reference is bound'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Reference is initial (null)
+Reference is not bound
+Reference is bound
+</code></pre>
+        <br/>
+        <li>IS ASSIGNED (for field symbols):</li>
+<pre><code class="language-abap line-numbers">FIELD-SYMBOLS <fs> TYPE i.
+
+IF <fs> IS NOT ASSIGNED.
+  WRITE: / 'Field symbol not assigned'.
+ENDIF.
+
+DATA lv_num TYPE i VALUE 42.
+ASSIGN lv_num TO <fs>.
+
+IF <fs> IS ASSIGNED.
+  WRITE: / 'Field symbol assigned, value:', <fs>.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Field symbol not assigned
+Field symbol assigned, value:         42
+</code></pre>
+        <br/>
+        <li>IS INSTANCE OF (for objects):</li>
+<pre><code class="language-abap line-numbers">DATA lo_obj TYPE REF TO object.
+
+lo_obj = NEW zcl_child( ).
+
+IF lo_obj IS INSTANCE OF zcl_parent.
+  WRITE: / 'Object is instance of zcl_parent'.
+ENDIF.
+
+IF lo_obj IS INSTANCE OF zcl_child.
+  WRITE: / 'Object is instance of zcl_child'.
+ENDIF.
+</code></pre>
+        <br/>
+        <li>BETWEEN:</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i VALUE 50.
+
+IF lv_num BETWEEN 1 AND 100.
+  WRITE: / 'Number is between 1 and 100'.
+ENDIF.
+
+IF lv_num NOT BETWEEN 60 AND 70.
+  WRITE: / 'Number is not between 60 and 70'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Number is between 1 and 100
+Number is not between 60 and 70
+</code></pre>
+<p><code>BETWEEN</code> is inclusive on both ends.</p>
+        <br/>
+        <li>IN (for ranges/select-options):</li>
+<pre><code class="language-abap line-numbers">DATA lt_range TYPE RANGE OF i.
+
+lt_range = VALUE #(
+  ( sign = 'I' option = 'BT' low = 1 high = 10 )
+  ( sign = 'I' option = 'EQ' low = 50 )
+).
+
+DATA lv_num TYPE i VALUE 5.
+IF lv_num IN lt_range.
+  WRITE: / '5 is in range'.
+ENDIF.
+
+lv_num = 50.
+IF lv_num IN lt_range.
+  WRITE: / '50 is in range'.
+ENDIF.
+
+lv_num = 25.
+IF lv_num NOT IN lt_range.
+  WRITE: / '25 is not in range'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">5 is in range
+50 is in range
+25 is not in range
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>String Operators</li>
+    <br/>
+    <ul>
+        <li>Concatenation (<code>&amp;&amp;</code>):</li>
+<pre><code class="language-abap line-numbers">DATA lv_full TYPE string.
+
+lv_full = 'Hello' &amp;&amp; ' ' &amp;&amp; 'World'.
+WRITE: / lv_full.
+
+DATA lv_first TYPE string VALUE 'John'.
+DATA lv_last TYPE string VALUE 'Doe'.
+lv_full = lv_first &amp;&amp; | | &amp;&amp; lv_last.
+WRITE: / lv_full.
+</code></pre>
+<pre><code class="language-text line-numbers">Hello World
+John Doe
+</code></pre>
+        <br/>
+        <li>String comparison operators:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operator</th>
+            <th>Meaning</th>
+            <th>True when</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>CO</code></td>
+            <td>Contains Only</td>
+            <td>Left contains only characters from right</td>
+        </tr>
+        <tr>
+            <td><code>CN</code></td>
+            <td>Contains Not only</td>
+            <td>Left contains characters not in right</td>
+        </tr>
+        <tr>
+            <td><code>CA</code></td>
+            <td>Contains Any</td>
+            <td>Left contains at least one char from right</td>
+        </tr>
+        <tr>
+            <td><code>NA</code></td>
+            <td>contains No Any</td>
+            <td>Left contains no characters from right</td>
+        </tr>
+        <tr>
+            <td><code>CS</code></td>
+            <td>Contains String</td>
+            <td>Left contains right as substring</td>
+        </tr>
+        <tr>
+            <td><code>NS</code></td>
+            <td>contains No String</td>
+            <td>Left does not contain right</td>
+        </tr>
+        <tr>
+            <td><code>CP</code></td>
+            <td>Covers Pattern</td>
+            <td>Left matches pattern in right</td>
+        </tr>
+        <tr>
+            <td><code>NP</code></td>
+            <td>No Pattern</td>
+            <td>Left does not match pattern</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>CO (Contains Only):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string.
+
+lv_str = '12345'.
+IF lv_str CO '0123456789'.
+  WRITE: / 'Contains only digits'.
+ENDIF.
+
+lv_str = '123A5'.
+IF lv_str CN '0123456789'.
+  WRITE: / 'Contains non-digit characters'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Contains only digits
+Contains non-digit characters
+</code></pre>
+        <br/>
+        <li>CA (Contains Any):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+IF lv_str CA 'aeiou'.
+  WRITE: / 'Contains at least one vowel'.
+ENDIF.
+
+IF lv_str NA 'xyz'.
+  WRITE: / 'Contains no x, y, or z'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Contains at least one vowel
+Contains no x, y, or z
+</code></pre>
+        <br/>
+        <li>CS (Contains String):</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+IF lv_str CS 'World'.
+  WRITE: / 'Contains "World"'.
+ENDIF.
+
+IF lv_str CS 'world'.    "case insensitive!
+  WRITE: / 'Contains "world" (case insensitive)'.
+ENDIF.
+
+IF lv_str NS 'xyz'.
+  WRITE: / 'Does not contain "xyz"'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Contains "World"
+Contains "world" (case insensitive)
+Does not contain "xyz"
+</code></pre>
+<p><code>CS</code> is case-insensitive by default.</p>
+        <br/>
+        <li>CP (Covers Pattern):</li>
+<pre><code class="language-text line-numbers">Pattern wildcards:
+*  = any sequence of characters (including empty)
++  = exactly one character
+#  = escape next character (to match literal * or +)
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'HELLO123'.
+
+IF lv_str CP 'HELLO*'.
+  WRITE: / 'Starts with HELLO'.
+ENDIF.
+
+IF lv_str CP '*123'.
+  WRITE: / 'Ends with 123'.
+ENDIF.
+
+IF lv_str CP 'HELLO+++'.
+  WRITE: / 'HELLO followed by exactly 3 chars'.
+ENDIF.
+
+IF lv_str CP '*LO*'.
+  WRITE: / 'Contains LO somewhere'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Starts with HELLO
+Ends with 123
+HELLO followed by exactly 3 chars
+Contains LO somewhere
+</code></pre>
+        <br/>
+        <li>sy-fdpos - position found:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello World'.
+
+IF lv_str CS 'World'.
+  WRITE: / 'Found at position:', sy-fdpos.
+ENDIF.
+
+IF lv_str CA 'W'.
+  WRITE: / 'W found at position:', sy-fdpos.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Found at position:          6
+W found at position:          6
+</code></pre>
+<p>After <code>CO</code>, <code>CA</code>, <code>CS</code>, <code>CP</code>, <code>sy-fdpos</code> contains the position (0-based).</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Bit Operators</li>
+    <br/>
+    <ul>
+        <li>Operators:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operator</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>BIT-AND</code></td>
+            <td>Bitwise AND</td>
+        </tr>
+        <tr>
+            <td><code>BIT-OR</code></td>
+            <td>Bitwise OR</td>
+        </tr>
+        <tr>
+            <td><code>BIT-XOR</code></td>
+            <td>Bitwise exclusive OR</td>
+        </tr>
+        <tr>
+            <td><code>BIT-NOT</code></td>
+            <td>Bitwise NOT (complement)</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Usage:</li>
+<pre><code class="language-abap line-numbers">DATA lv_a TYPE x LENGTH 1 VALUE 'F0'.    "11110000
+DATA lv_b TYPE x LENGTH 1 VALUE '0F'.    "00001111
+DATA lv_result TYPE x LENGTH 1.
+
+lv_result = lv_a BIT-AND lv_b.
+WRITE: / 'F0 AND 0F =', lv_result.
+
+lv_result = lv_a BIT-OR lv_b.
+WRITE: / 'F0 OR 0F =', lv_result.
+
+lv_result = lv_a BIT-XOR lv_b.
+WRITE: / 'F0 XOR 0F =', lv_result.
+
+lv_result = BIT-NOT lv_a.
+WRITE: / 'NOT F0 =', lv_result.
+</code></pre>
+<pre><code class="language-text line-numbers">F0 AND 0F = 00
+F0 OR 0F = FF
+F0 XOR 0F = FF
+NOT F0 = 0F
+</code></pre>
+        <br/>
+        <li>Setting and checking flags:</li>
+<pre><code class="language-abap line-numbers">CONSTANTS: lc_flag_read   TYPE x VALUE '01',   "00000001
+           lc_flag_write  TYPE x VALUE '02',   "00000010
+           lc_flag_delete TYPE x VALUE '04'.   "00000100
+
+DATA lv_permissions TYPE x VALUE '00'.
+
+* Set read and write flags
+lv_permissions = lv_permissions BIT-OR lc_flag_read.
+lv_permissions = lv_permissions BIT-OR lc_flag_write.
+WRITE: / 'Permissions:', lv_permissions.
+
+* Check if read flag is set
+DATA lv_check TYPE x.
+lv_check = lv_permissions BIT-AND lc_flag_read.
+IF lv_check &lt;&gt; '00'.
+  WRITE: / 'Read permission is set'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Permissions: 03
+Read permission is set
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Calculation Assignments</li>
+    <br/>
+    <ul>
+        <li>Compound assignment operators (ABAP 7.54+):</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i VALUE 10.
+
+lv_num += 5.     "same as: lv_num = lv_num + 5.
+WRITE: / '+= 5:', lv_num.
+
+lv_num -= 3.     "same as: lv_num = lv_num - 3.
+WRITE: / '-= 3:', lv_num.
+
+lv_num *= 2.     "same as: lv_num = lv_num * 2.
+WRITE: / '*= 2:', lv_num.
+
+lv_num /= 4.     "same as: lv_num = lv_num / 4.
+WRITE: / '/= 4:', lv_num.
+</code></pre>
+<pre><code class="language-text line-numbers">+= 5:         15
+-= 3:         12
+*= 2:         24
+/= 4:          6
+</code></pre>
+        <br/>
+        <li>String concatenation assignment:</li>
+<pre><code class="language-abap line-numbers">DATA lv_str TYPE string VALUE 'Hello'.
+
+lv_str &amp;&amp;= ' World'.
+WRITE: / lv_str.
+</code></pre>
+<pre><code class="language-text line-numbers">Hello World
+</code></pre>
+        <br/>
+        <li>If not available (older systems):</li>
+<pre><code class="language-abap line-numbers">* Use explicit form
+lv_num = lv_num + 5.
+lv_str = lv_str &amp;&amp; ' World'.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Operator Summary</li>
+    <br/>
+    <ul>
+        <li>Quick reference:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th>Operators</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Arithmetic</td>
+            <td><code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>DIV</code> <code>MOD</code> <code>**</code></td>
+        </tr>
+        <tr>
+            <td>Comparison</td>
+            <td><code>=</code> <code>&lt;&gt;</code> <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></td>
+        </tr>
+        <tr>
+            <td>Comparison (keyword)</td>
+            <td><code>EQ</code> <code>NE</code> <code>LT</code> <code>GT</code> <code>LE</code> <code>GE</code></td>
+        </tr>
+        <tr>
+            <td>Logical</td>
+            <td><code>AND</code> <code>OR</code> <code>NOT</code> <code>EQUIV</code></td>
+        </tr>
+        <tr>
+            <td>Special comparison</td>
+            <td><code>BETWEEN</code> <code>IN</code> <code>IS INITIAL</code> <code>IS BOUND</code> <code>IS ASSIGNED</code></td>
+        </tr>
+        <tr>
+            <td>String</td>
+            <td><code>&amp;&amp;</code> <code>CO</code> <code>CN</code> <code>CA</code> <code>NA</code> <code>CS</code> <code>NS</code> <code>CP</code> <code>NP</code></td>
+        </tr>
+        <tr>
+            <td>Bit</td>
+            <td><code>BIT-AND</code> <code>BIT-OR</code> <code>BIT-XOR</code> <code>BIT-NOT</code></td>
+        </tr>
+        <tr>
+            <td>Assignment</td>
+            <td><code>=</code> <code>+=</code> <code>-=</code> <code>*=</code> <code>/=</code> <code>&amp;&amp;=</code></td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
