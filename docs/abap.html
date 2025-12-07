@@ -162,6 +162,7 @@
         <li><a href="#abap-dictionary">Data Dictionary (DDIC)</a></li>
         <li><a href="#abap-domains">Domains</a></li>
         <li><a href="#abap-data-elements">Data Elements</a></li>
+        <li><a href="#abap-tables">Tables</a></li>
     </ol>
 </nav>
 <hr/>
@@ -11955,7 +11956,1423 @@ WRITE: / 'Language:', sy-langu.
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-tables">Database Tables</h3>
+<ol>
 
+    <li>What is a Database Table</li>
+    <br/>
+    <ul>
+        <li>Definition:</li>
+<pre><code class="language-text line-numbers">Database table = persistent storage structure in SAP.
+
+Defined in ABAP Dictionary (SE11).
+Creates actual table in underlying database.
+Holds application data (customers, orders, materials, etc.).
+</code></pre>
+        <br/>
+        <li>Table vs Internal Table:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>Database Table</th>
+            <th>Internal Table</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Storage</td>
+            <td>Database (persistent)</td>
+            <td>Memory (temporary)</td>
+        </tr>
+        <tr>
+            <td>Lifespan</td>
+            <td>Permanent</td>
+            <td>Program runtime only</td>
+        </tr>
+        <tr>
+            <td>Access</td>
+            <td>SQL (SELECT, INSERT...)</td>
+            <td>ABAP statements (LOOP, READ...)</td>
+        </tr>
+        <tr>
+            <td>Definition</td>
+            <td>SE11 (DDIC)</td>
+            <td>ABAP code (DATA, TYPES)</td>
+        </tr>
+        <tr>
+            <td>Shared</td>
+            <td>All programs</td>
+            <td>Single program instance</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Position in DDIC hierarchy:</li>
+<pre><code class="language-text line-numbers">Domain          ← technical type
+   ↓
+Data Element    ← semantic meaning
+   ↓
+Table Field     ← you are here (uses data element)
+   ↓
+Database        ← physical storage
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Table Types</li>
+    <br/>
+    <ul>
+        <li>Three categories:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Usage</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Transparent</td>
+            <td>1:1 mapping to database table</td>
+            <td>Most tables (99%+)</td>
+        </tr>
+        <tr>
+            <td>Pooled</td>
+            <td>Multiple DDIC tables in one DB table</td>
+            <td>Obsolete</td>
+        </tr>
+        <tr>
+            <td>Cluster</td>
+            <td>Compressed storage in DB table</td>
+            <td>Obsolete</td>
+        </tr>
+    </tbody>
+</table>
+<p>Modern SAP uses transparent tables exclusively. Pooled/cluster tables exist only in legacy systems.</p>
+        <br/>
+        <li>Transparent table:</li>
+<pre><code class="language-text line-numbers">DDIC Table: ZCUSTOMERS
+   ↓ (1:1 mapping)
+Database Table: ZCUSTOMERS
+
+Same name, same structure.
+Each DDIC field = one database column.
+</code></pre>
+        <br/>
+        <li>Why transparent:</li>
+<pre><code class="language-text line-numbers">- Direct SQL access possible (native SQL)
+- Standard database tools work
+- Better performance
+- Indexes work normally
+- Database-level constraints apply
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating a Table (SE11)</li>
+    <br/>
+    <ul>
+        <li>Steps:</li>
+<pre><code class="language-text line-numbers">1. Transaction SE11
+2. Enter table name (e.g., ZCUSTOMERS)
+3. Click Create
+4. Fill in:
+   - Short description
+   - Delivery class
+   - Fields (name, data element, key flag)
+5. Technical settings (Goto → Technical Settings)
+6. Save → Assign package/transport
+7. Activate
+</code></pre>
+        <br/>
+        <li>Naming conventions:</li>
+<pre><code class="language-text line-numbers">Z* or Y* = customer namespace
+/NAMESPACE/* = registered namespace
+
+Examples:
+  ZCUSTOMERS     customer master
+  ZORDERS        order header
+  ZORDER_ITEMS   order line items
+  ZMM_STOCK      inventory data
+</code></pre>
+        <br/>
+        <li>Table properties screen:</li>
+<pre><code class="language-text line-numbers">
+┌─────────────────────────────────────────────────┐
+│ Dictionary: Maintain Table                      │
+├─────────────────────────────────────────────────┤
+│ Table: ZCUSTOMERS                               │
+│ Short Description: Customer Master Data         │
+│                                                 │
+│ Attributes:                                     │
+│   Delivery Class: [A  ] (Application table)     │
+│   Table Category: [Transparent table]           │
+└─────────────────────────────────────────────────┘
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Table Fields</li>
+    <br/>
+    <ul>
+        <li>Field definition:</li>
+<pre><code class="language-text line-numbers">Each field has:
+- Field name (column name)
+- Key flag (part of primary key?)
+- Data element (type and semantics)
+- Or: Direct type (built-in type without data element)
+</code></pre>
+        <br/>
+        <li>Example field list:</li>
+<pre><code class="language-text line-numbers">
+Table: ZCUSTOMERS
+
+Field        Key   Data Element   Description
+─────────────────────────────────────────────
+MANDT        X     MANDT          Client
+CUSTOMER_ID  X     ZCUSTOMER_ID   Customer Number
+NAME               NAME1          Name
+CITY               ORT01          City
+COUNTRY            LAND1          Country
+CREATED_AT         TIMESTAMP      Created Timestamp
+CREATED_BY         ERNAM          Created By
+</code></pre>
+        <br/>
+        <li>MANDT (Client) field:</li>
+<pre><code class="language-text line-numbers">First field in most tables.
+Always key field.
+Enables multi-tenancy (data separation by client).
+
+Without MANDT = cross-client table (rare).
+</code></pre>
+        <br/>
+        <li>Adding fields in SE11:</li>
+<pre><code class="language-text line-numbers">
+┌────────────────────────────────────────────────────────┐
+│ Fields                                                 │
+├──────┬─────────────┬──────┬──────────────┬─────────────┤
+│ Key  │ Field       │ Init │ Data Element │ Description │
+├──────┼─────────────┼──────┼──────────────┼─────────────┤
+│  X   │ MANDT       │      │ MANDT        │ Client      │
+│  X   │ CUSTOMER_ID │      │ ZCUSTOMER_ID │ Customer No │
+│      │ NAME        │      │ NAME1        │ Name        │
+│      │ CITY        │      │ ORT01        │ City        │
+└──────┴─────────────┴──────┴──────────────┴─────────────┘
+
+Key = primary key field
+Init = initial value required (rare)
+</code></pre>
+        <br/>
+        <li>Using direct type (without data element):</li>
+<pre><code class="language-text line-numbers">Click "Predefined Type" button.
+
+Field        Key   Type    Length  Decimals
+─────────────────────────────────────────────
+TEMP_FLAG         CHAR    1
+COUNTER           INT4
+
+Not recommended - loses semantic information.
+Use data elements when possible.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Primary Keys</li>
+    <br/>
+    <ul>
+        <li>What primary key does:</li>
+<pre><code class="language-text line-numbers">- Uniquely identifies each row
+- Created as database index automatically
+- Cannot have duplicate combinations
+- Cannot be NULL
+</code></pre>
+        <br/>
+        <li>Key field rules:</li>
+<pre><code class="language-text line-numbers">1. Key fields must be first in field list
+2. Key fields must be contiguous (no gaps)
+3. MANDT typically first key field
+4. Cannot change key after table has data
+
+Valid:
+  MANDT (key), ORDER_ID (key), ITEM_NO (key), MATERIAL, QTY
+
+Invalid:
+  MANDT (key), ORDER_ID (key), MATERIAL, ITEM_NO (key)
+                               ↑ non-key before key
+</code></pre>
+        <br/>
+        <li>Example keys:</li>
+<pre><code class="language-text line-numbers">Header table (ZORDERS):
+  Key: MANDT + ORDER_ID
+
+Item table (ZORDER_ITEMS):
+  Key: MANDT + ORDER_ID + ITEM_NO
+
+Config table (ZCONFIG):
+  Key: MANDT + CONFIG_KEY
+</code></pre>
+        <br/>
+        <li>Accessing by key in ABAP:</li>
+<pre><code class="language-abap line-numbers">* Full key access - fastest
+SELECT SINGLE * FROM zcustomers
+  INTO @DATA(ls_cust)
+  WHERE mandt = @sy-mandt
+    AND customer_id = '0000001234'.
+
+* Partial key - uses index partially
+SELECT * FROM zorder_items
+  INTO TABLE @DATA(lt_items)
+  WHERE mandt = @sy-mandt
+    AND order_id = '0000000001'.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Technical Settings</li>
+    <br/>
+    <ul>
+        <li>Accessing technical settings:</li>
+<pre><code class="language-text line-numbers">SE11 → Table → Menu: Goto → Technical Settings
+Or: Button "Technical Settings"
+
+Must be maintained before activation.
+</code></pre>
+        <br/>
+        <li>Data class:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Class</th>
+            <th>Description</th>
+            <th>Use for</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>APPL0</code></td>
+            <td>Master data</td>
+            <td>Customers, materials, vendors</td>
+        </tr>
+        <tr>
+            <td><code>APPL1</code></td>
+            <td>Transaction data</td>
+            <td>Orders, invoices, postings</td>
+        </tr>
+        <tr>
+            <td><code>APPL2</code></td>
+            <td>Org/customizing</td>
+            <td>Config tables</td>
+        </tr>
+        <tr>
+            <td><code>USR</code></td>
+            <td>User data</td>
+            <td>User settings</td>
+        </tr>
+        <tr>
+            <td><code>USR1</code></td>
+            <td>User data (large)</td>
+            <td>Large user data</td>
+        </tr>
+    </tbody>
+</table>
+<p>Data class affects database storage location (tablespace).</p>
+        <br/>
+        <li>Size category:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th>Expected rows</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>0</code></td>
+            <td>0 to 100</td>
+        </tr>
+        <tr>
+            <td><code>1</code></td>
+            <td>100 to 1,000</td>
+        </tr>
+        <tr>
+            <td><code>2</code></td>
+            <td>1,000 to 10,000</td>
+        </tr>
+        <tr>
+            <td><code>3</code></td>
+            <td>10,000 to 100,000</td>
+        </tr>
+        <tr>
+            <td><code>4</code></td>
+            <td>100,000+</td>
+        </tr>
+    </tbody>
+</table>
+<p>Affects initial storage allocation. Can be changed later.</p>
+        <br/>
+        <li>Buffering:</li>
+<pre><code class="language-text line-numbers">Buffering = cache table data in application server memory.
+
+Options:
+- Not buffered (default for large/frequently changing)
+- Fully buffered (entire table in memory)
+- Generic buffered (by key fields)
+- Single record buffered
+
+Benefits: Faster reads, reduced database load
+Risks: Stale data if modified by other means
+</code></pre>
+<table>
+    <thead>
+        <tr>
+            <th>Buffering type</th>
+            <th>Best for</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Not buffered</td>
+            <td>Large tables, frequent changes</td>
+        </tr>
+        <tr>
+            <td>Fully buffered</td>
+            <td>Small config tables (&lt;100 rows)</td>
+        </tr>
+        <tr>
+            <td>Generic</td>
+            <td>Medium tables, access by partial key</td>
+        </tr>
+        <tr>
+            <td>Single record</td>
+            <td>Large tables, single row access</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Technical settings screen:</li>
+<pre><code class="language-text line-numbers">
+┌─────────────────────────────────────────────┐
+│ Technical Settings                          │
+├─────────────────────────────────────────────┤
+│ Data class:     [APPL1      ]               │
+│ Size category:  [2          ]               │
+│                                             │
+│ Buffering:                                  │
+│   ○ Buffering not allowed                   │
+│   ○ Buffering allowed but switched off      │
+│   ● Buffering switched on                   │
+│                                             │
+│ Buffering type:                             │
+│   ○ Full                                    │
+│   ● Generic (number of key fields: 2)       │
+│   ○ Single records                          │
+└─────────────────────────────────────────────┘
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Delivery Class</li>
+    <br/>
+    <ul>
+        <li>What it controls:</li>
+<pre><code class="language-text line-numbers">Delivery class = how table data is handled during:
+- Transport (moved between systems)
+- Upgrades (SAP updates)
+- Client copy
+</code></pre>
+        <br/>
+        <li>Options:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Class</th>
+            <th>Description</th>
+            <th>Data transported?</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>A</code></td>
+            <td>Application table</td>
+            <td>No (data stays in each system)</td>
+        </tr>
+        <tr>
+            <td><code>C</code></td>
+            <td>Customizing table</td>
+            <td>Yes (data moved with transport)</td>
+        </tr>
+        <tr>
+            <td><code>L</code></td>
+            <td>Temporary data</td>
+            <td>No (deleted on import)</td>
+        </tr>
+        <tr>
+            <td><code>G</code></td>
+            <td>Customer customizing</td>
+            <td>Protected from SAP changes</td>
+        </tr>
+        <tr>
+            <td><code>E</code></td>
+            <td>System table (control)</td>
+            <td>SAP controls</td>
+        </tr>
+        <tr>
+            <td><code>S</code></td>
+            <td>System table (data)</td>
+            <td>SAP controls</td>
+        </tr>
+        <tr>
+            <td><code>W</code></td>
+            <td>System table (protected)</td>
+            <td>SAP controls</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Common choices:</li>
+<pre><code class="language-text line-numbers">A - Application table
+    Orders, invoices, master data
+    Data created by users
+    Different data in DEV/QAS/PRD
+
+C - Customizing table
+    Config settings, mappings
+    Same data needed in all systems
+    Transported DEV → QAS → PRD
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Foreign Keys</li>
+    <br/>
+    <ul>
+        <li>What they do:</li>
+<pre><code class="language-text line-numbers">Foreign key = relationship between tables.
+
+Provides:
+- Input validation (only valid values allowed)
+- F4 help (dropdown from related table)
+- Documentation of data model
+</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-text line-numbers">Table ZORDERS:
+  ORDER_ID (key)
+  CUSTOMER_ID  → foreign key to ZCUSTOMERS-CUSTOMER_ID
+
+When entering CUSTOMER_ID:
+- F4 shows customers from ZCUSTOMERS
+- Invalid values rejected (if check enabled)
+</code></pre>
+        <br/>
+        <li>Creating in SE11:</li>
+<pre><code class="language-text line-numbers">1. Position cursor on field
+2. Menu: Goto → Foreign Keys
+   Or: Button "Foreign keys"
+3. Enter check table
+4. System proposes field assignment
+5. Set cardinality
+6. Save and activate
+
+Check table = table containing valid values
+</code></pre>
+        <br/>
+        <li>Cardinality:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Setting</th>
+            <th>Meaning</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1:1</td>
+            <td>Exactly one related row</td>
+            <td>Order → One customer</td>
+        </tr>
+        <tr>
+            <td>1:N</td>
+            <td>One or more related rows</td>
+            <td>Customer → Many orders</td>
+        </tr>
+        <tr>
+            <td>1:C</td>
+            <td>Zero or one related row</td>
+            <td>Optional relationship</td>
+        </tr>
+        <tr>
+            <td>1:CN</td>
+            <td>Zero, one, or many</td>
+            <td>Optional, multiple</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Foreign key screen:</li>
+<pre><code class="language-text line-numbers">
+┌───────────────────────────────────────────────┐
+│ Foreign Key for Field CUSTOMER_ID             │
+├───────────────────────────────────────────────┤
+│ Check table: ZCUSTOMERS                       │
+│                                               │
+│ Foreign key fields:                           │
+│   ZCUSTOMERS-MANDT       = ZORDERS-MANDT      │
+│   ZCUSTOMERS-CUSTOMER_ID = ZORDERS-CUSTOMER_ID│
+│                                               │
+│ Cardinality:                                  │
+│   Foreign key table: [1  ]                    │
+│   Check table:       [CN ]                    │
+└───────────────────────────────────────────────┘
+</code></pre>
+        <br/>
+        <li>Important note:</li>
+<pre><code class="language-text line-numbers">Foreign keys do NOT enforce referential integrity in database.
+Only provides:
+- Screen validation
+- F4 help
+- Where-used documentation
+
+For actual enforcement:
+- Application logic must check
+- Or use database triggers (rare in SAP)
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Secondary Indexes</li>
+    <br/>
+    <ul>
+        <li>What they do:</li>
+<pre><code class="language-text line-numbers">Index = database structure for faster lookups.
+
+Primary key index: created automatically
+Secondary indexes: created manually for non-key fields
+</code></pre>
+        <br/>
+        <li>When to create:</li>
+<pre><code class="language-text line-numbers">Create index when:
+- Field frequently used in WHERE clause
+- Field used in JOIN conditions
+- Query performance is slow
+
+Do NOT create when:
+- Table is small (< 1000 rows)
+- Field has few unique values
+- Field changes frequently
+- Too many indexes already (slows writes)
+</code></pre>
+        <br/>
+        <li>Creating in SE11:</li>
+<pre><code class="language-text line-numbers">1. SE11 → Display table
+2. Menu: Goto → Indexes
+3. Click Create
+4. Enter index ID (3 chars, e.g., Z01)
+5. Add fields
+6. Save and activate
+
+Index name in DB: tablename~indexid
+Example: ZCUSTOMERS~Z01
+</code></pre>
+        <br/>
+        <li>Index definition:</li>
+<pre><code class="language-text line-numbers">Table: ZCUSTOMERS
+Index: Z01
+
+Fields:
+  CITY
+  COUNTRY
+
+→ Speeds up: SELECT * FROM zcustomers WHERE city = 'Berlin'
+</code></pre>
+        <br/>
+        <li>Unique index:</li>
+<pre><code class="language-text line-numbers">☑ Unique index
+
+Enforces uniqueness at database level.
+Duplicate combinations rejected.
+Alternative to primary key for business keys.
+</code></pre>
+        <br/>
+        <li>Index usage in ABAP:</li>
+<pre><code class="language-abap line-numbers">* Query uses index Z01 automatically
+SELECT * FROM zcustomers
+  INTO TABLE @DATA(lt_cust)
+  WHERE city = 'Berlin'.
+
+* Explain plan shows index usage
+* Transaction ST05 (SQL trace) to verify
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Include Structures</li>
+    <br/>
+    <ul>
+        <li>What they do:</li>
+<pre><code class="language-text line-numbers">Include = embed all fields from another structure.
+Reuse common field groups across tables.
+</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-text line-numbers">Structure ZADDRESS:
+  STREET    TYPE CHAR40
+  CITY      TYPE ORT01
+  COUNTRY   TYPE LAND1
+  POSTAL    TYPE PSTLZ
+
+Table ZCUSTOMERS:
+  MANDT        (key)
+  CUSTOMER_ID  (key)
+  NAME
+  .INCLUDE ZADDRESS    ← all address fields added
+
+Result - ZCUSTOMERS has:
+  MANDT, CUSTOMER_ID, NAME, STREET, CITY, COUNTRY, POSTAL
+</code></pre>
+        <br/>
+        <li>Adding include in SE11:</li>
+<pre><code class="language-text line-numbers">1. Position cursor in field list
+2. Menu: Edit → Include → Insert
+3. Enter structure name
+4. Optionally add suffix/prefix to field names
+
+Alternative: Type ".INCLUDE" in field name column
+</code></pre>
+        <br/>
+        <li>Include with group name:</li>
+<pre><code class="language-text line-numbers">.INCLUDE ZADDRESS AS ADDR GROUP ADDR
+
+Adds fields with prefix:
+  ADDR-STREET
+  ADDR-CITY
+  etc.
+
+Useful when including same structure multiple times.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Append Structures</li>
+    <br/>
+    <ul>
+        <li>What they do:</li>
+<pre><code class="language-text line-numbers">Append structure = add custom fields to SAP table.
+No modification of original table.
+Fields added at end of table.
+</code></pre>
+        <br/>
+        <li>When to use:</li>
+<pre><code class="language-text line-numbers">Adding fields to SAP standard tables:
+  VBAK (sales order header) → add ZZ_CUSTOM_FIELD
+  MARA (material master) → add ZZ_DIVISION
+
+Cannot modify SAP tables directly.
+Append structure is the official enhancement method.
+</code></pre>
+        <br/>
+        <li>Creating in SE11:</li>
+<pre><code class="language-text line-numbers">1. SE11 → Table (e.g., VBAK) → Display
+2. Menu: Goto → Append Structures
+3. Click Create
+4. Enter name (e.g., ZZVBAK_APPEND)
+5. Add fields (must start with ZZ or YY)
+6. Save and activate
+
+Field naming: ZZ* or YY* (customer namespace in field names)
+</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-text line-numbers">Append Structure: ZZVBAK_APPEND
+For Table: VBAK
+
+Fields:
+  ZZPROJECT_ID    TYPE ZPROJECT_ID
+  ZZCUSTOM_FLAG   TYPE FLAG
+
+→ VBAK now has these additional fields
+→ Survives SAP upgrades
+</code></pre>
+        <br/>
+        <li>Using in ABAP:</li>
+<pre><code class="language-abap line-numbers">* Append fields accessible like regular fields
+DATA ls_vbak TYPE vbak.
+
+SELECT SINGLE * FROM vbak INTO @ls_vbak
+  WHERE vbeln = '0000000001'.
+
+WRITE: / 'Custom field:', ls_vbak-zzproject_id.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Table Enhancement Category</li>
+    <br/>
+    <ul>
+        <li>What it controls:</li>
+<pre><code class="language-text line-numbers">Enhancement category = rules for extending the table.
+
+Determines if/how append structures can be added.
+Must be set for all tables (activation warning if missing).
+</code></pre>
+        <br/>
+        <li>Options:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th>Append allowed</th>
+            <th>Use for</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Cannot be enhanced</td>
+            <td>No</td>
+            <td>System tables</td>
+        </tr>
+        <tr>
+            <td>Can be enhanced (char)</td>
+            <td>Character-like only</td>
+            <td>Tables with structure issues</td>
+        </tr>
+        <tr>
+            <td>Can be enhanced (char/num)</td>
+            <td>Char and numeric</td>
+            <td>Most custom tables</td>
+        </tr>
+        <tr>
+            <td>Can be enhanced (deep)</td>
+            <td>All types incl. strings</td>
+            <td>Flexible tables</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Setting in SE11:</li>
+<pre><code class="language-text line-numbers">Menu: Extras → Enhancement Category
+
+Select appropriate option.
+"Can be enhanced (character-type or numeric)" is typical.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Using Tables in ABAP</li>
+    <br/>
+    <ul>
+        <li>Table as type:</li>
+<pre><code class="language-abap line-numbers">* Structure (one row)
+DATA ls_customer TYPE zcustomers.
+
+* Internal table (multiple rows)
+DATA lt_customers TYPE TABLE OF zcustomers.
+
+* With explicit key
+DATA lt_customers TYPE SORTED TABLE OF zcustomers
+  WITH UNIQUE KEY mandt customer_id.
+</code></pre>
+        <br/>
+        <li>SELECT - reading data:</li>
+<pre><code class="language-abap line-numbers">* Single row
+SELECT SINGLE * FROM zcustomers
+  INTO @DATA(ls_cust)
+  WHERE customer_id = '0000001234'.
+
+IF sy-subrc = 0.
+  WRITE: / 'Found:', ls_cust-name.
+ENDIF.
+
+* Multiple rows
+SELECT * FROM zcustomers
+  INTO TABLE @DATA(lt_cust)
+  WHERE country = 'DE'.
+
+WRITE: / 'Found:', lines( lt_cust ), 'customers'.
+
+* Specific fields
+SELECT customer_id, name, city
+  FROM zcustomers
+  INTO TABLE @DATA(lt_partial)
+  WHERE country = 'US'.
+</code></pre>
+<pre><code class="language-text line-numbers">Found: Acme Corp
+Found: 42 customers
+</code></pre>
+        <br/>
+        <li>INSERT - adding data:</li>
+<pre><code class="language-abap line-numbers">DATA ls_new TYPE zcustomers.
+
+ls_new-mandt = sy-mandt.
+ls_new-customer_id = '0000009999'.
+ls_new-name = 'New Customer'.
+ls_new-city = 'Berlin'.
+ls_new-country = 'DE'.
+GET TIME STAMP FIELD ls_new-created_at.
+ls_new-created_by = sy-uname.
+
+INSERT zcustomers FROM ls_new.
+
+IF sy-subrc = 0.
+  WRITE: / 'Inserted successfully'.
+ELSE.
+  WRITE: / 'Insert failed (duplicate key?)'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Inserted successfully
+</code></pre>
+        <br/>
+        <li>INSERT multiple rows:</li>
+<pre><code class="language-abap line-numbers">DATA lt_new TYPE TABLE OF zcustomers.
+
+APPEND VALUE #(
+  mandt = sy-mandt
+  customer_id = '0000009997'
+  name = 'Customer A'
+) TO lt_new.
+
+APPEND VALUE #(
+  mandt = sy-mandt
+  customer_id = '0000009998'
+  name = 'Customer B'
+) TO lt_new.
+
+INSERT zcustomers FROM TABLE lt_new.
+
+WRITE: / 'Inserted:', sy-dbcnt, 'rows'.
+</code></pre>
+<pre><code class="language-text line-numbers">Inserted: 2 rows
+</code></pre>
+        <br/>
+        <li>UPDATE - modifying data:</li>
+<pre><code class="language-abap line-numbers">* Update specific fields
+UPDATE zcustomers
+  SET city = 'Munich'
+      country = 'DE'
+  WHERE customer_id = '0000001234'.
+
+IF sy-subrc = 0.
+  WRITE: / 'Updated:', sy-dbcnt, 'rows'.
+ENDIF.
+
+* Update from structure (full row)
+ls_cust-city = 'Hamburg'.
+UPDATE zcustomers FROM ls_cust.
+</code></pre>
+<pre><code class="language-text line-numbers">Updated: 1 rows
+</code></pre>
+        <br/>
+        <li>MODIFY - insert or update:</li>
+<pre><code class="language-abap line-numbers">* If key exists: UPDATE
+* If key doesn't exist: INSERT
+
+DATA ls_cust TYPE zcustomers.
+ls_cust-mandt = sy-mandt.
+ls_cust-customer_id = '0000001234'.
+ls_cust-name = 'Modified Name'.
+ls_cust-city = 'Frankfurt'.
+
+MODIFY zcustomers FROM ls_cust.
+
+WRITE: / 'Modified:', sy-dbcnt, 'rows'.
+</code></pre>
+<pre><code class="language-text line-numbers">Modified: 1 rows
+</code></pre>
+        <br/>
+        <li>DELETE - removing data:</li>
+<pre><code class="language-abap line-numbers">* Delete by condition
+DELETE FROM zcustomers
+  WHERE customer_id = '0000009999'.
+
+IF sy-subrc = 0.
+  WRITE: / 'Deleted:', sy-dbcnt, 'rows'.
+ENDIF.
+
+* Delete from structure (by key)
+DELETE zcustomers FROM ls_cust.
+
+* Delete all (dangerous!)
+DELETE FROM zcustomers.
+</code></pre>
+<pre><code class="language-text line-numbers">Deleted: 1 rows
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Commit and Rollback</li>
+    <br/>
+    <ul>
+        <li>Database LUW:</li>
+<pre><code class="language-text line-numbers">Changes are not permanent until COMMIT.
+
+INSERT, UPDATE, DELETE → held in database buffer
+COMMIT WORK → writes to database permanently
+ROLLBACK WORK → discards all changes
+</code></pre>
+        <br/>
+        <li>Usage:</li>
+<pre><code class="language-abap line-numbers">TRY.
+    INSERT zcustomers FROM ls_cust1.
+    INSERT zorders FROM ls_order.
+    INSERT zorder_items FROM TABLE lt_items.
+
+    COMMIT WORK AND WAIT.
+    WRITE: / 'All changes committed'.
+
+  CATCH cx_root INTO DATA(lx_error).
+    ROLLBACK WORK.
+    WRITE: / 'Error - changes rolled back:', lx_error-&gt;get_text( ).
+ENDTRY.
+</code></pre>
+        <br/>
+        <li>COMMIT options:</li>
+<pre><code class="language-abap line-numbers">* Asynchronous (faster, less safe)
+COMMIT WORK.
+
+* Synchronous (waits for DB confirmation)
+COMMIT WORK AND WAIT.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Table Maintenance (SM30)</li>
+    <br/>
+    <ul>
+        <li>What it is:</li>
+<pre><code class="language-text line-numbers">Table maintenance generator = auto-generated screens.
+For maintaining table data without coding.
+Used for config/customizing tables.
+</code></pre>
+        <br/>
+        <li>Generating maintenance view:</li>
+<pre><code class="language-text line-numbers">1. SE11 → Table → Display
+2. Menu: Utilities → Table Maintenance Generator
+3. Fill in:
+   - Authorization group: &amp;NC&amp; (or custom)
+   - Function group: ZZCUST_MNT
+   - Maintenance type: One step or Two step
+4. Click Create
+</code></pre>
+        <br/>
+        <li>Maintenance types:</li>
+<pre><code class="language-text line-numbers">One step:
+  Single screen showing all records.
+  Good for simple tables.
+
+Two step:
+  Overview screen → Detail screen.
+  Good for tables with many fields.
+</code></pre>
+        <br/>
+        <li>Using SM30:</li>
+<pre><code class="language-text line-numbers">Transaction SM30:
+  Table/View: ZCUSTOMERS
+  Click: Maintain
+
+Opens generated maintenance screen.
+Can add, change, delete records.
+</code></pre>
+        <br/>
+        <li>Authorization:</li>
+<pre><code class="language-text line-numbers">Authorization group controls access.
+
+Object: S_TABU_DIS
+Field: DICBERCLS (authorization group)
+
+Create custom group in SM30 → table TBRG.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Activation and Database</li>
+    <br/>
+    <ul>
+        <li>Activation process:</li>
+<pre><code class="language-text line-numbers">Save → stores in DDIC repository
+Activate → creates/updates database table
+
+First activation:
+  → CREATE TABLE in database
+
+Field added:
+  → ALTER TABLE ADD COLUMN
+
+Field removed:
+  → Requires table conversion
+</code></pre>
+        <br/>
+        <li>Database utility (SE14):</li>
+<pre><code class="language-text line-numbers">Transaction SE14 for:
+- Activate and adjust database
+- Delete table data
+- Convert table structure
+- Check table consistency
+
+Use when normal activation fails.
+</code></pre>
+        <br/>
+        <li>Structural changes with data:</li>
+<pre><code class="language-text line-numbers">Safe changes (table has data):
+- Add new field
+- Increase field length
+- Add index
+
+Requires conversion:
+- Delete field
+- Decrease field length
+- Change data type
+- Change key fields
+
+SE14 → "Activate and adjust database"
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>View Table Contents</li>
+    <br/>
+    <ul>
+        <li>Transactions:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Transaction</th>
+            <th>Purpose</th>
+            <th>Edit?</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>SE16</code></td>
+            <td>Data Browser</td>
+            <td>No (display only)</td>
+        </tr>
+        <tr>
+            <td><code>SE16N</code></td>
+            <td>General Table Display</td>
+            <td>No (display only)</td>
+        </tr>
+        <tr>
+            <td><code>SM30</code></td>
+            <td>Table Maintenance</td>
+            <td>Yes (if generated)</td>
+        </tr>
+        <tr>
+            <td><code>SE11</code></td>
+            <td>Dictionary (Contents button)</td>
+            <td>No</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>SE16N features:</li>
+<pre><code class="language-text line-numbers">- Selection screen with all fields
+- Output formatting options
+- Download to Excel
+- Record count
+- Field documentation (F1)
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common SAP Tables</li>
+    <br/>
+    <ul>
+        <li>Master data:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Table</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>MARA</code></td>
+            <td>Material master (general)</td>
+        </tr>
+        <tr>
+            <td><code>MARC</code></td>
+            <td>Material master (plant)</td>
+        </tr>
+        <tr>
+            <td><code>KNA1</code></td>
+            <td>Customer master (general)</td>
+        </tr>
+        <tr>
+            <td><code>LFA1</code></td>
+            <td>Vendor master (general)</td>
+        </tr>
+        <tr>
+            <td><code>T001</code></td>
+            <td>Company codes</td>
+        </tr>
+        <tr>
+            <td><code>T001W</code></td>
+            <td>Plants</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Transaction data:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Table</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>VBAK</code></td>
+            <td>Sales order header</td>
+        </tr>
+        <tr>
+            <td><code>VBAP</code></td>
+            <td>Sales order items</td>
+        </tr>
+        <tr>
+            <td><code>EKKO</code></td>
+            <td>Purchase order header</td>
+        </tr>
+        <tr>
+            <td><code>EKPO</code></td>
+            <td>Purchase order items</td>
+        </tr>
+        <tr>
+            <td><code>BKPF</code></td>
+            <td>Accounting document header</td>
+        </tr>
+        <tr>
+            <td><code>BSEG</code></td>
+            <td>Accounting document items</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>System tables:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Table</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>DD02L</code></td>
+            <td>DDIC table definitions</td>
+        </tr>
+        <tr>
+            <td><code>DD03L</code></td>
+            <td>DDIC field definitions</td>
+        </tr>
+        <tr>
+            <td><code>TADIR</code></td>
+            <td>Repository objects</td>
+        </tr>
+        <tr>
+            <td><code>USR02</code></td>
+            <td>User logon data</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices</li>
+    <br/>
+    <ul>
+        <li>Design guidelines:</li>
+<pre><code class="language-text line-numbers">1. Always include MANDT as first key field
+   (unless cross-client table is required)
+
+2. Use data elements, not direct types
+   → Better documentation and reuse
+
+3. Set appropriate technical settings
+   → Data class matches usage
+   → Size category realistic
+
+4. Create indexes for frequent queries
+   → But don't over-index
+
+5. Use foreign keys for relationships
+   → Documents data model
+   → Enables F4 help
+
+6. Set enhancement category
+   → Allows future extensions
+
+7. Choose correct delivery class
+   → A for application data
+   → C for config data
+</code></pre>
+        <br/>
+        <li>Naming guidelines:</li>
+<pre><code class="language-text line-numbers">Table name:
+  Z + module + description
+  ZMMSTOCK, ZSDORDERS, ZFICUSTOM
+
+Fields:
+  Use standard SAP names when applicable
+  MATNR for material, KUNNR for customer
+
+Indexes:
+  Z01, Z02, Z03...
+
+Append structures:
+  ZZ + table + _APPEND
+  ZZVBAK_APPEND
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Quick Reference</li>
+    <br/>
+    <ul>
+        <li>Table properties:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Property</th>
+            <th>Where to set</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Delivery class</td>
+            <td>Attributes tab</td>
+        </tr>
+        <tr>
+            <td>Data class</td>
+            <td>Technical Settings</td>
+        </tr>
+        <tr>
+            <td>Size category</td>
+            <td>Technical Settings</td>
+        </tr>
+        <tr>
+            <td>Buffering</td>
+            <td>Technical Settings</td>
+        </tr>
+        <tr>
+            <td>Enhancement category</td>
+            <td>Extras menu</td>
+        </tr>
+        <tr>
+            <td>Indexes</td>
+            <td>Goto → Indexes</td>
+        </tr>
+        <tr>
+            <td>Foreign keys</td>
+            <td>Field → Foreign keys</td>
+        </tr>
+        <tr>
+            <td>Append structures</td>
+            <td>Goto → Append Structures</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>SQL statements:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Statement</th>
+            <th>Purpose</th>
+            <th>sy-subrc</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>SELECT</code></td>
+            <td>Read data</td>
+            <td>0=found, 4=not found</td>
+        </tr>
+        <tr>
+            <td><code>INSERT</code></td>
+            <td>Add rows</td>
+            <td>0=OK, 4=duplicate</td>
+        </tr>
+        <tr>
+            <td><code>UPDATE</code></td>
+            <td>Modify rows</td>
+            <td>0=OK, 4=not found</td>
+        </tr>
+        <tr>
+            <td><code>MODIFY</code></td>
+            <td>Insert or update</td>
+            <td>0=OK</td>
+        </tr>
+        <tr>
+            <td><code>DELETE</code></td>
+            <td>Remove rows</td>
+            <td>0=OK, 4=not found</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Key transactions:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Transaction</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>SE11</code></td>
+            <td>DDIC - create/maintain tables</td>
+        </tr>
+        <tr>
+            <td><code>SE14</code></td>
+            <td>Database utility</td>
+        </tr>
+        <tr>
+            <td><code>SE16</code></td>
+            <td>Data Browser</td>
+        </tr>
+        <tr>
+            <td><code>SE16N</code></td>
+            <td>General Table Display</td>
+        </tr>
+        <tr>
+            <td><code>SM30</code></td>
+            <td>Table Maintenance</td>
+        </tr>
+        <tr>
+            <td><code>ST05</code></td>
+            <td>SQL Trace (performance)</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
