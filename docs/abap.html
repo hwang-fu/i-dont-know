@@ -1735,63 +1735,226 @@ You'll read classic, but write modern when your system supports it.
 <h3 id="abap-data-types">Data Types in ABAP</h3>
 <ol>
 
-    <li>Type System Overview</li>
+    <li>Syntax Basics</li>
     <br/>
     <ul>
-        <li>Three categories:</li>
-<pre><code class="language-text line-numbers">1. Elementary types   - single values (integer, string, date...)
-2. Complex types      - structures and internal tables
-3. Reference types    - pointers to data or objects
+        <li>Period (<code>.</code>) - statement terminator:</li>
+<pre><code class="language-abap line-numbers">DATA lv_a TYPE i.
+DATA lv_b TYPE i.
+lv_a = 10.
 </code></pre>
+<p>Every ABAP statement ends with a period. Forgetting it causes syntax errors.</p>
         <br/>
-        <li>Two ways to define types:</li>
-<pre><code class="language-abap line-numbers">* Local types - defined in your program
-TYPES ty_name TYPE string.
-DATA lv_name TYPE ty_name.
+        <li>Colon (<code>:</code>) and comma (<code>,</code>) - chain statements:</li>
+<pre><code class="language-abap line-numbers">* Without chaining:
+DATA lv_a TYPE i.
+DATA lv_b TYPE i.
+DATA lv_c TYPE i.
 
-* DDIC types - defined in Data Dictionary (SE11), shared across system
-DATA lv_matnr TYPE matnr.    "material number, defined globally
-DATA ls_material TYPE mara.  "structure of MARA table
+* With chaining (equivalent):
+DATA: lv_a TYPE i,
+      lv_b TYPE i,
+      lv_c TYPE i.
+</code></pre>
+<p>Colon after keyword, commas between items, period at end.</p>
+        <br/>
+        <li>Slash (<code>/</code>) in WRITE - new line:</li>
+<pre><code class="language-abap line-numbers">WRITE 'One'.
+WRITE 'Two'.
+WRITE 'Three'.
+</code></pre>
+<pre><code class="language-text line-numbers">OneTwoThree
+</code></pre>
+<pre><code class="language-abap line-numbers">WRITE / 'One'.
+WRITE / 'Two'.
+WRITE / 'Three'.
+</code></pre>
+<pre><code class="language-text line-numbers">
+One
+Two
+Three
+</code></pre>
+<p><code>/</code> means "start new line before printing".</p>
+        <br/>
+        <li>WRITE with multiple values:</li>
+<pre><code class="language-abap line-numbers">DATA lv_a TYPE i VALUE 10.
+DATA lv_b TYPE i VALUE 20.
+
+WRITE: / lv_a, lv_b.        "new line, then both values
+WRITE: / 'Sum:', lv_a + lv_b.
+</code></pre>
+<pre><code class="language-text line-numbers">10         20
+Sum:       30
 </code></pre>
     </ul>
     <br/><br/>
 
 
-    <li>Numeric Types</li>
+    <li>Type System Overview</li>
     <br/>
     <ul>
-        <li>Integer types:</li>
-<pre><code class="language-abap line-numbers">DATA lv_i    TYPE i.      "32-bit signed integer (-2^31 to 2^31-1)
-DATA lv_i8   TYPE int8.   "64-bit signed integer (ABAP 7.40+)
-DATA lv_b    TYPE b.      "1-byte unsigned (internal use, avoid)
-DATA lv_s    TYPE s.      "2-byte signed (internal use, avoid)
+        <li>Three categories:</li>
+<pre><code class="language-text line-numbers">Elementary types   - single values (integer, string, date)
+Complex types      - structures (records) and internal tables (arrays)
+Reference types    - pointers to data or objects
 </code></pre>
         <br/>
-        <li>Packed decimal (BCD):</li>
-<pre><code class="language-abap line-numbers">* For money, quantities - no floating point errors
-DATA lv_amount TYPE p LENGTH 8 DECIMALS 2.
+        <li>Two sources of types:</li>
+<pre><code class="language-abap line-numbers">* Built-in types (i, c, n, string, d, t, etc.)
+DATA lv_num TYPE i.
 
-lv_amount = '12345.67'.
-lv_amount = lv_amount + '0.01'.  "exact, no rounding issues
+* DDIC types (defined in Data Dictionary, shared across system)
+DATA lv_matnr TYPE matnr.   "material number - defined in SE11
+DATA ls_material TYPE mara. "structure of table MARA
+</code></pre>
+    </ul>
+    <br/><br/>
 
-* LENGTH = total bytes (1-16), DECIMALS = decimal places (0-14)
-* Default: LENGTH 8, DECIMALS 0
+
+    <li>Integer Types</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE i.      "32-bit signed
+DATA &lt;name&gt; TYPE int8.   "64-bit signed (ABAP 7.40+)
 </code></pre>
         <br/>
-        <li>Floating point:</li>
-<pre><code class="language-abap line-numbers">DATA lv_f TYPE f.         "64-bit IEEE 754 (like C double)
+        <li>Type i (32-bit):</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i.
 
-* Use for scientific calculations
-* Avoid for money - same precision issues as any language
+lv_num = 2147483647.       "max value
+WRITE: / lv_num.
+
+lv_num = lv_num + 1.       "overflow
+WRITE: / lv_num.
+</code></pre>
+<pre><code class="language-text line-numbers">2147483647
+-2147483648
+</code></pre>
+<p>Range: -2,147,483,648 to 2,147,483,647. Overflow wraps around.</p>
+        <br/>
+        <li>Type int8 (64-bit):</li>
+<pre><code class="language-abap line-numbers">DATA lv_big TYPE int8.
+
+lv_big = 9223372036854775807.  "max value
+WRITE: / lv_big.
+</code></pre>
+<pre><code class="language-text line-numbers">9223372036854775807
+</code></pre>
+<p>Range: -9.2×10¹⁸ to 9.2×10¹⁸. Use for very large integers.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Packed Decimal (BCD)</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE p [LENGTH &lt;bytes&gt;] [DECIMALS &lt;places&gt;].
+
+LENGTH  = storage size in bytes (1-16, default 8)
+DECIMALS = digits after decimal point (0-14, default 0)
+</code></pre>
+<p>Each byte holds 2 digits (BCD encoding). Max digits ≈ LENGTH × 2 - 1.</p>
+        <br/>
+        <li>How LENGTH and DECIMALS work:</li>
+<pre><code class="language-abap line-numbers">DATA lv_p1 TYPE p LENGTH 4 DECIMALS 2.  "max ~7 digits, 2 after decimal
+DATA lv_p2 TYPE p LENGTH 8 DECIMALS 2.  "max ~15 digits, 2 after decimal
+
+lv_p1 = '12345.67'.
+lv_p2 = '1234567890123.45'.
+
+WRITE: / lv_p1.
+WRITE: / lv_p2.
+</code></pre>
+<pre><code class="language-text line-numbers">12345.67
+1234567890123.45
+</code></pre>
+        <br/>
+        <li>Rounding behavior:</li>
+<pre><code class="language-abap line-numbers">DATA lv_money TYPE p LENGTH 8 DECIMALS 2.
+
+lv_money = '100.456'.
+WRITE: / lv_money.
+
+lv_money = '100.454'.
+WRITE: / lv_money.
+</code></pre>
+<pre><code class="language-text line-numbers">100.46
+100.45
+</code></pre>
+<p>Rounds to specified decimal places. Banker's rounding (round half to even).</p>
+        <br/>
+        <li>Why use packed decimal:</li>
+<pre><code class="language-abap line-numbers">DATA lv_float TYPE f.
+DATA lv_packed TYPE p DECIMALS 2.
+
+lv_float = '0.1'.
+lv_packed = '0.1'.
+
+DO 10 TIMES.
+  lv_float = lv_float + '0.1'.
+  lv_packed = lv_packed + '0.1'.
+ENDDO.
+
+WRITE: / 'Float:', lv_float.
+WRITE: / 'Packed:', lv_packed.
+</code></pre>
+<pre><code class="language-text line-numbers">Float: 1.0999999999999999E+00
+Packed: 1.10
+</code></pre>
+<p>Floating point has precision errors. Packed decimal is exact. Use packed for money.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Floating Point</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE f.           "64-bit IEEE 754 binary
+DATA &lt;name&gt; TYPE decfloat16.  "IEEE 754 decimal, 16 significant digits
+DATA &lt;name&gt; TYPE decfloat34.  "IEEE 754 decimal, 34 significant digits
+</code></pre>
+        <br/>
+        <li>Type f (binary float):</li>
+<pre><code class="language-abap line-numbers">DATA lv_f TYPE f.
+
 lv_f = '3.14159265358979'.
-</code></pre>
-        <br/>
-        <li>Decimal floating point (ABAP 7.02+):</li>
-<pre><code class="language-abap line-numbers">DATA lv_dec16 TYPE decfloat16.  "16 digits precision
-DATA lv_dec34 TYPE decfloat34.  "34 digits precision
+WRITE: / lv_f.
 
-* Combines range of float with exactness of packed
-* Good for financial calculations with large range
+lv_f = '1.23E+10'.   "scientific notation
+WRITE: / lv_f.
+</code></pre>
+<pre><code class="language-text line-numbers">3.1415926535897900E+00
+1.2300000000000000E+10
+</code></pre>
+<p>~15-17 significant digits. Has precision errors like C/Java double. Use for scientific calculations only.</p>
+        <br/>
+        <li>Decimal floating point:</li>
+<pre><code class="language-abap line-numbers">DATA lv_d16 TYPE decfloat16.
+DATA lv_d34 TYPE decfloat34.
+
+lv_d16 = '1234567890123456'.       "16 significant digits
+lv_d34 = '1234567890123456789012345678901234'.  "34 significant digits
+
+WRITE: / lv_d16.
+WRITE: / lv_d34.
+</code></pre>
+<pre><code class="language-text line-numbers">1234567890123456
+1234567890123456789012345678901234
+</code></pre>
+<p>"Significant digits" means total digits that matter, regardless of decimal position:</p>
+<pre><code class="language-abap line-numbers">DATA lv_d16 TYPE decfloat16.
+
+lv_d16 = '0.0000000000000001'.    "16th digit after zeros - OK
+WRITE: / lv_d16.
+
+lv_d16 = '1234567890.123456'.     "10 before + 6 after = 16 - OK
+WRITE: / lv_d16.
+</code></pre>
+<pre><code class="language-text line-numbers">0.0000000000000001
+1234567890.123456
 </code></pre>
     </ul>
     <br/><br/>
@@ -1800,63 +1963,107 @@ DATA lv_dec34 TYPE decfloat34.  "34 digits precision
     <li>Character Types</li>
     <br/>
     <ul>
-        <li>Fixed-length character (c):</li>
-<pre><code class="language-abap line-numbers">DATA lv_c TYPE c LENGTH 10.   "exactly 10 characters
+        <li>Type c - fixed length character:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE c [LENGTH &lt;n&gt;].
 
-lv_c = 'Hello'.       "stored as 'Hello     ' (padded with spaces)
-lv_c = 'Hello World'. "truncated to 'Hello Worl'
-
-* Default length is 1
-DATA lv_flag TYPE c.  "single character
+LENGTH = exact number of characters (1-262143, default 1)
 </code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_c TYPE c LENGTH 10.
+
+lv_c = 'Hello'.
+WRITE: / '&gt;', lv_c, '&lt;'.
+
+lv_c = 'Hello World!!!'.
+WRITE: / '&gt;', lv_c, '&lt;'.
+</code></pre>
+<pre><code class="language-text line-numbers">&gt;Hello
+&gt;Hello Worl
+</code></pre>
+<p>Short values are right-padded with spaces. Long values are truncated.</p>
         <br/>
-        <li>Variable-length string:</li>
+        <li>Type string - variable length:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE string.
+</code></pre>
 <pre><code class="language-abap line-numbers">DATA lv_str TYPE string.
 
-lv_str = 'Any length, no padding, no truncation'.
+lv_str = 'Hello'.
+WRITE: / '&gt;', lv_str, '&lt;'.
 
-* Stored on heap, only reference in stack
-* Preferred for text processing
+lv_str = 'This can be any length without truncation or padding'.
+WRITE: / lv_str.
 </code></pre>
+<pre><code class="language-text line-numbers">&gt;Hello
+This can be any length without truncation or padding
+</code></pre>
+<p>No padding, no truncation. Preferred for text processing.</p>
         <br/>
-        <li>Numeric text (n):</li>
+        <li>Type n - numeric text:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE n [LENGTH &lt;n&gt;].
+
+LENGTH = exact number of digits (1-262143, default 1)
+</code></pre>
 <pre><code class="language-abap line-numbers">DATA lv_n TYPE n LENGTH 10.
 
-lv_n = '123'.         "stored as '0000000123' (left-padded with zeros)
-lv_n = 'ABC'.         "invalid characters become zeros
+lv_n = '123'.
+WRITE: / lv_n.
 
-* Used for document numbers, codes that look numeric but aren't math
-* Example: invoice number '0001234567'
+lv_n = 456.          "numeric also works
+WRITE: / lv_n.
+
+lv_n = 'ABC123'.     "non-digits become 0
+WRITE: / lv_n.
 </code></pre>
+<pre><code class="language-text line-numbers">0000000123
+0000000456
+0000000123
+</code></pre>
+<p>Left-padded with zeros. Only stores digits 0-9. Used for document numbers, IDs.</p>
         <br/>
-        <li>Comparison:</li>
+        <li>Literals - single quote vs backtick vs pipe:</li>
+<pre><code class="language-abap line-numbers">DATA lv_c TYPE c LENGTH 10.
+DATA lv_str TYPE string.
+
+lv_c = 'Hello'.      "type c, trailing spaces trimmed
+lv_str = 'Hello'.    "converted to string
+
+lv_str = `Hello  `.  "type string, spaces preserved
+WRITE: / '&gt;', lv_str, '&lt;'.
+
+lv_str = |Hello|.    "string template, allows expressions
+DATA(lv_name) = 'World'.
+lv_str = |Hello { lv_name }|.
+WRITE: / lv_str.
+</code></pre>
+<pre><code class="language-text line-numbers">&gt;Hello
+Hello World
+</code></pre>
 <table>
     <thead>
         <tr>
+            <th>Literal</th>
             <th>Type</th>
-            <th>Length</th>
-            <th>Padding</th>
-            <th>Use case</th>
+            <th>Spaces</th>
+            <th>Expressions</th>
         </tr>
     </thead>
     <tbody>
         <tr>
-            <td><code>c</code></td>
-            <td>Fixed</td>
-            <td>Spaces (right)</td>
-            <td>Fixed-format fields</td>
+            <td><code>'...'</code></td>
+            <td>c</td>
+            <td>Trailing trimmed</td>
+            <td>No</td>
         </tr>
         <tr>
-            <td><code>string</code></td>
-            <td>Variable</td>
-            <td>None</td>
-            <td>General text</td>
+            <td><code>`...`</code></td>
+            <td>string</td>
+            <td>Preserved</td>
+            <td>No</td>
         </tr>
         <tr>
-            <td><code>n</code></td>
-            <td>Fixed</td>
-            <td>Zeros (left)</td>
-            <td>Numeric IDs, codes</td>
+            <td><code>|...|</code></td>
+            <td>string</td>
+            <td>Preserved</td>
+            <td>Yes <code>{ }</code></td>
         </tr>
     </tbody>
 </table>
@@ -1867,42 +2074,80 @@ lv_n = 'ABC'.         "invalid characters become zeros
     <li>Date and Time</li>
     <br/>
     <ul>
-        <li>Date (d):</li>
-<pre><code class="language-abap line-numbers">DATA lv_date TYPE d.  "always 8 characters: YYYYMMDD
+        <li>Type d - date:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE d.
 
-lv_date = sy-datum.   "current date
-lv_date = '20241215'. "December 15, 2024
+Always 8 characters: YYYYMMDD
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d.
 
-* Date arithmetic
-lv_date = lv_date + 7.   "add 7 days
-lv_date = lv_date - 30.  "subtract 30 days
+lv_date = sy-datum.      "current date
+WRITE: / 'Today:', lv_date.
 
-* Extract parts
-DATA(lv_year)  = lv_date+0(4).  "substring: offset 0, length 4
-DATA(lv_month) = lv_date+4(2).
-DATA(lv_day)   = lv_date+6(2).
+lv_date = '20241225'.    "Christmas 2024
+WRITE: / 'Christmas:', lv_date.
+</code></pre>
+<pre><code class="language-text line-numbers">Today: 20241215
+Christmas: 20241225
 </code></pre>
         <br/>
-        <li>Time (t):</li>
-<pre><code class="language-abap line-numbers">DATA lv_time TYPE t.  "always 6 characters: HHMMSS
+        <li>Date arithmetic:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
 
-lv_time = sy-uzeit.   "current time
-lv_time = '143052'.   "14:30:52
+lv_date = lv_date + 7.    "add 7 days
+WRITE: / '+7 days:', lv_date.
 
-* Time arithmetic (in seconds)
-lv_time = lv_time + 3600.  "add 1 hour
+lv_date = lv_date - 30.   "subtract 30 days
+WRITE: / '-30 days:', lv_date.
+</code></pre>
+<pre><code class="language-text line-numbers">+7 days: 20241222
+-30 days: 20241122
 </code></pre>
         <br/>
-        <li>Timestamps:</li>
-<pre><code class="language-abap line-numbers">* Packed timestamp (recommended)
-DATA lv_ts TYPE timestamp.      "YYYYMMDDhhmmss as decimal
+        <li>Extracting parts (substring):</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20241215'.
+
+DATA(lv_year)  = lv_date+0(4).   "offset 0, length 4
+DATA(lv_month) = lv_date+4(2).   "offset 4, length 2
+DATA(lv_day)   = lv_date+6(2).   "offset 6, length 2
+
+WRITE: / 'Year:', lv_year, 'Month:', lv_month, 'Day:', lv_day.
+</code></pre>
+<pre><code class="language-text line-numbers">Year: 2024 Month: 12 Day: 15
+</code></pre>
+<p>Syntax: <code>variable+offset(length)</code> extracts substring.</p>
+        <br/>
+        <li>Type t - time:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE t.
+
+Always 6 characters: HHMMSS
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_time TYPE t.
+
+lv_time = sy-uzeit.      "current time
+WRITE: / 'Now:', lv_time.
+
+lv_time = '143052'.      "14:30:52
+WRITE: / 'Set:', lv_time.
+
+lv_time = lv_time + 3600.  "add 1 hour (3600 seconds)
+WRITE: / '+1 hour:', lv_time.
+</code></pre>
+<pre><code class="language-text line-numbers">Now: 102345
+Set: 143052
++1 hour: 153052
+</code></pre>
+        <br/>
+        <li>Timestamp:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE timestamp.    "YYYYMMDDhhmmss as packed decimal
+DATA &lt;name&gt; TYPE timestampl.   "with microseconds
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_ts TYPE timestamp.
+
 GET TIME STAMP FIELD lv_ts.
-
-* Long timestamp with fractions
-DATA lv_tsl TYPE timestampl.    "includes microseconds
-
-* Conversion
-CONVERT DATE lv_date TIME lv_time INTO TIME STAMP lv_ts TIME ZONE 'UTC'.
+WRITE: / lv_ts.
+</code></pre>
+<pre><code class="language-text line-numbers">20241215102345
 </code></pre>
     </ul>
     <br/><br/>
@@ -1911,13 +2156,25 @@ CONVERT DATE lv_date TIME lv_time INTO TIME STAMP lv_ts TIME ZONE 'UTC'.
     <li>Byte Types</li>
     <br/>
     <ul>
-        <li>Raw bytes:</li>
-<pre><code class="language-abap line-numbers">DATA lv_x   TYPE x LENGTH 16.  "fixed-length byte sequence
-DATA lv_raw TYPE xstring.      "variable-length byte sequence
-
-* For binary data: files, hashes, encoded content
-lv_raw = 'DEADBEEF'.  "hex literal
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE x [LENGTH &lt;n&gt;].   "fixed length bytes
+DATA &lt;name&gt; TYPE xstring.           "variable length bytes
 </code></pre>
+        <br/>
+        <li>Usage:</li>
+<pre><code class="language-abap line-numbers">DATA lv_x TYPE x LENGTH 4.
+DATA lv_xs TYPE xstring.
+
+lv_x = 'DEADBEEF'.       "hex literal
+lv_xs = '48454C4C4F'.    "hex for 'HELLO'
+
+WRITE: / lv_x.
+WRITE: / lv_xs.
+</code></pre>
+<pre><code class="language-text line-numbers">DEADBEEF
+48454C4C4F
+</code></pre>
+<p>For binary data: files, hashes, encoded content. Each byte shown as 2 hex digits.</p>
     </ul>
     <br/><br/>
 
@@ -1925,21 +2182,61 @@ lv_raw = 'DEADBEEF'.  "hex literal
     <li>Structures</li>
     <br/>
     <ul>
-        <li>Defining and using:</li>
-<pre><code class="language-abap line-numbers">* Define a structure type
-TYPES: BEGIN OF ty_person,
-         id   TYPE i,
+        <li>Syntax - define type then use:</li>
+<pre><code class="language-text line-numbers">TYPES: BEGIN OF &lt;type_name&gt;,
+         &lt;field1&gt; TYPE &lt;type&gt;,
+         &lt;field2&gt; TYPE &lt;type&gt;,
+         ...
+       END OF &lt;type_name&gt;.
+
+DATA &lt;variable&gt; TYPE &lt;type_name&gt;.
+</code></pre>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_person,
          name TYPE string,
-         dob  TYPE d,
+         age  TYPE i,
+         city TYPE string,
        END OF ty_person.
 
-* Declare a variable
 DATA ls_person TYPE ty_person.
 
-* Access fields
-ls_person-id = 1.
 ls_person-name = 'Alice'.
-ls_person-dob = '19900315'.
+ls_person-age = 30.
+ls_person-city = 'Berlin'.
+
+WRITE: / ls_person-name, ls_person-age, ls_person-city.
+</code></pre>
+<pre><code class="language-text line-numbers">Alice         30 Berlin
+</code></pre>
+        <br/>
+        <li>Syntax - inline (no separate TYPES):</li>
+<pre><code class="language-text line-numbers">DATA: BEGIN OF &lt;name&gt;,
+        &lt;field1&gt; TYPE &lt;type&gt;,
+        ...
+      END OF &lt;name&gt;.
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA: BEGIN OF ls_point,
+        x TYPE i,
+        y TYPE i,
+      END OF ls_point.
+
+ls_point-x = 10.
+ls_point-y = 20.
+
+WRITE: / ls_point-x, ls_point-y.
+</code></pre>
+<pre><code class="language-text line-numbers">        10         20
+</code></pre>
+<p>Inline is quick but type not reusable. Prefer TYPES for shared definitions.</p>
+        <br/>
+        <li>Using DDIC structures:</li>
+<pre><code class="language-abap line-numbers">DATA ls_material TYPE mara.   "structure from table MARA
+
+ls_material-matnr = 'MAT001'.
+ls_material-mtart = 'FERT'.
+
+WRITE: / ls_material-matnr, ls_material-mtart.
+</code></pre>
+<pre><code class="language-text line-numbers">MAT001     FERT
 </code></pre>
         <br/>
         <li>Nested structures:</li>
@@ -1948,34 +2245,22 @@ ls_person-dob = '19900315'.
          city   TYPE string,
        END OF ty_address.
 
-TYPES: BEGIN OF ty_employee,
+TYPES: BEGIN OF ty_person,
          name    TYPE string,
          address TYPE ty_address,
-       END OF ty_employee.
+       END OF ty_person.
 
-DATA ls_emp TYPE ty_employee.
-ls_emp-address-city = 'Berlin'.
+DATA ls_person TYPE ty_person.
+
+ls_person-name = 'Bob'.
+ls_person-address-street = '123 Main St'.
+ls_person-address-city = 'Munich'.
+
+WRITE: / ls_person-name.
+WRITE: / ls_person-address-city.
 </code></pre>
-        <br/>
-        <li>Inline structure definition:</li>
-<pre><code class="language-abap line-numbers">* Without separate TYPES
-DATA: BEGIN OF ls_point,
-        x TYPE i,
-        y TYPE i,
-      END OF ls_point.
-
-ls_point-x = 10.
-ls_point-y = 20.
-</code></pre>
-        <br/>
-        <li>Using DDIC structures:</li>
-<pre><code class="language-abap line-numbers">* Database table structures are available as types
-DATA ls_customer TYPE kna1.   "customer master
-DATA ls_material TYPE mara.   "material master
-
-* You get all fields from that table
-ls_material-matnr = 'MAT001'.
-ls_material-mtart = 'FERT'.
+<pre><code class="language-text line-numbers">Bob
+Munich
 </code></pre>
     </ul>
     <br/><br/>
@@ -1985,85 +2270,100 @@ ls_material-mtart = 'FERT'.
     <br/>
     <ul>
         <li>What they are:</li>
-<pre><code class="language-text line-numbers">Internal tables = dynamic arrays in memory.
-Most important ABAP data structure.
-Every real program uses them extensively.
+<p>Dynamic arrays in memory. Can grow/shrink. Most important ABAP data structure.</p>
+        <br/>
+        <li>Syntax - table type:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE [STANDARD|SORTED|HASHED] TABLE OF &lt;row_type&gt;
+            [WITH &lt;key_spec&gt;].
 </code></pre>
         <br/>
-        <li>Declaration:</li>
-<pre><code class="language-abap line-numbers">* Table of structures
-TYPES tt_persons TYPE TABLE OF ty_person WITH DEFAULT KEY.
-DATA lt_persons TYPE tt_persons.
+        <li>STANDARD TABLE (default):</li>
+<pre><code class="language-abap line-numbers">DATA lt_names TYPE TABLE OF string.
 
-* Or inline
-DATA lt_materials TYPE TABLE OF mara.
+APPEND 'Alice' TO lt_names.
+APPEND 'Bob' TO lt_names.
+APPEND 'Carol' TO lt_names.
 
-* Three table kinds
-DATA lt_std  TYPE STANDARD TABLE OF ty_person.  "unsorted, duplicates ok
-DATA lt_sort TYPE SORTED TABLE OF ty_person     "sorted, fast binary search
-               WITH UNIQUE KEY id.
-DATA lt_hash TYPE HASHED TABLE OF ty_person     "hash lookup, fastest read
-               WITH UNIQUE KEY id.
+LOOP AT lt_names INTO DATA(lv_name).
+  WRITE: / sy-tabix, lv_name.
+ENDLOOP.
 </code></pre>
+<pre><code class="language-text line-numbers">         1 Alice
+         2 Bob
+         3 Carol
+</code></pre>
+<p>Access by index: O(1). Access by key: O(n) linear scan. Duplicates allowed.</p>
         <br/>
-        <li>Quick comparison:</li>
+        <li>SORTED TABLE:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_emp,
+         id   TYPE i,
+         name TYPE string,
+       END OF ty_emp.
+
+DATA lt_emp TYPE SORTED TABLE OF ty_emp WITH UNIQUE KEY id.
+
+INSERT VALUE #( id = 3 name = 'Carol' ) INTO TABLE lt_emp.
+INSERT VALUE #( id = 1 name = 'Alice' ) INTO TABLE lt_emp.
+INSERT VALUE #( id = 2 name = 'Bob' ) INTO TABLE lt_emp.
+
+LOOP AT lt_emp INTO DATA(ls_emp).
+  WRITE: / ls_emp-id, ls_emp-name.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">         1 Alice
+         2 Bob
+         3 Carol
+</code></pre>
+<p>Automatically sorted by key. Access by key: O(log n) binary search. UNIQUE KEY prevents duplicates.</p>
+        <br/>
+        <li>HASHED TABLE:</li>
+<pre><code class="language-abap line-numbers">DATA lt_emp_hash TYPE HASHED TABLE OF ty_emp WITH UNIQUE KEY id.
+
+INSERT VALUE #( id = 100 name = 'Alice' ) INTO TABLE lt_emp_hash.
+INSERT VALUE #( id = 200 name = 'Bob' ) INTO TABLE lt_emp_hash.
+
+READ TABLE lt_emp_hash INTO DATA(ls_found) WITH KEY id = 200.
+WRITE: / ls_found-name.
+</code></pre>
+<pre><code class="language-text line-numbers">Bob
+</code></pre>
+<p>Access by key: O(1) hash lookup. No index access. Must have UNIQUE KEY.</p>
+        <br/>
+        <li>Comparison:</li>
 <table>
     <thead>
         <tr>
-            <th>Kind</th>
-            <th>Key</th>
-            <th>Read by key</th>
-            <th>When to use</th>
+            <th>Type</th>
+            <th>Key access</th>
+            <th>Index access</th>
+            <th>Duplicates</th>
+            <th>Best for</th>
         </tr>
     </thead>
     <tbody>
         <tr>
             <td>STANDARD</td>
-            <td>Optional</td>
             <td>O(n)</td>
-            <td>Small tables, sequential access</td>
+            <td>O(1)</td>
+            <td>Yes</td>
+            <td>Small tables, sequential</td>
         </tr>
         <tr>
             <td>SORTED</td>
-            <td>Required</td>
             <td>O(log n)</td>
-            <td>Need index + fast key access</td>
+            <td>O(1)</td>
+            <td>Optional</td>
+            <td>Medium, need both</td>
         </tr>
         <tr>
             <td>HASHED</td>
-            <td>Unique required</td>
             <td>O(1)</td>
-            <td>Large tables, key-only access</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Large, key-only</td>
         </tr>
     </tbody>
 </table>
-        <br/>
-        <li>Basic operations:</li>
-<pre><code class="language-abap line-numbers">* Append
-APPEND VALUE #( id = 1 name = 'Alice' ) TO lt_persons.
-
-* Read
-READ TABLE lt_persons INTO DATA(ls_found) WITH KEY id = 1.
-IF sy-subrc = 0.
-  " found
-ENDIF.
-
-* Modern read (7.40+)
-DATA(ls_person) = lt_persons[ id = 1 ].  "dumps if not found
-
-* Safe modern read
-IF line_exists( lt_persons[ id = 1 ] ).
-  DATA(ls_safe) = lt_persons[ id = 1 ].
-ENDIF.
-
-* Loop
-LOOP AT lt_persons INTO DATA(ls_p).
-  WRITE: / ls_p-name.
-ENDLOOP.
-
-* Delete
-DELETE lt_persons WHERE id = 1.
-</code></pre>
     </ul>
     <br/><br/>
 
@@ -2071,37 +2371,36 @@ DELETE lt_persons WHERE id = 1.
     <li>References</li>
     <br/>
     <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">DATA &lt;name&gt; TYPE REF TO &lt;type&gt;.   "reference to specific type
+DATA &lt;name&gt; TYPE REF TO data.     "reference to any data
+DATA &lt;name&gt; TYPE REF TO object.   "reference to any object
+</code></pre>
+        <br/>
         <li>Data references (pointers):</li>
-<pre><code class="language-abap line-numbers">DATA lv_value TYPE i VALUE 42.
+<pre><code class="language-abap line-numbers">DATA lv_value TYPE i VALUE 10.
 DATA lr_ref TYPE REF TO i.
 
-* Get reference
-lr_ref = REF #( lv_value ).
+lr_ref = REF #( lv_value ).   "get reference
 
-* Dereference
-lr_ref-&gt;* = 100.  "changes lv_value to 100
+WRITE: / 'Original:', lv_value.
+WRITE: / 'Via ref:', lr_ref-&gt;*.
 
-* Dynamic creation
-CREATE DATA lr_ref.
-lr_ref-&gt;* = 50.
+lr_ref-&gt;* = 99.               "modify through reference
+
+WRITE: / 'After:', lv_value.
 </code></pre>
+<pre><code class="language-text line-numbers">Original:         10
+Via ref:         10
+After:         99
+</code></pre>
+<p><code>REF #( )</code> gets address. <code>-&gt;*</code> dereferences.</p>
         <br/>
         <li>Object references:</li>
 <pre><code class="language-abap line-numbers">DATA lo_obj TYPE REF TO zcl_myclass.
 
-* Create instance
-lo_obj = NEW zcl_myclass( ).
-
-* Or classic
-CREATE OBJECT lo_obj.
-</code></pre>
-        <br/>
-        <li>Generic references:</li>
-<pre><code class="language-abap line-numbers">DATA lr_any TYPE REF TO data.  "can point to any data type
-
-lr_any = REF #( lv_value ).
-lr_any = REF #( lt_table ).
-lr_any = REF #( ls_structure ).
+lo_obj = NEW zcl_myclass( ).      "create instance
+lo_obj-&gt;some_method( ).           "call method
 </code></pre>
     </ul>
     <br/><br/>
@@ -2110,130 +2409,73 @@ lr_any = REF #( ls_structure ).
     <li>Field Symbols</li>
     <br/>
     <ul>
-        <li>What they are:</li>
-<pre><code class="language-text line-numbers">Field symbols are like dereferenced pointers.
-They don't hold data - they point to existing data.
-Changes through field symbol change the original.
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">FIELD-SYMBOLS &lt;&lt;name&gt;&gt; TYPE &lt;type&gt;.
+ASSIGN &lt;variable&gt; TO &lt;&lt;name&gt;&gt;.
+</code></pre>
+<p>Like a pointer that's always dereferenced. Changes affect original variable.</p>
+        <br/>
+        <li>Basic usage:</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i VALUE 10.
+FIELD-SYMBOLS <fs_num> TYPE i.
+
+ASSIGN lv_num TO <fs_num>.
+
+WRITE: / 'Original:', lv_num.
+WRITE: / 'Field symbol:', <fs_num>.
+
+<fs_num> = 99.
+
+WRITE: / 'After:', lv_num.
+</code></pre>
+<pre><code class="language-text line-numbers">Original:         10
+Field symbol:         10
+After:         99
 </code></pre>
         <br/>
-        <li>Usage:</li>
-<pre><code class="language-abap line-numbers">FIELD-SYMBOLS <fs_value> TYPE i.
-DATA lv_num TYPE i VALUE 10.
+        <li>Main use - efficient table loops:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_data,
+         id   TYPE i,
+         name TYPE string,
+       END OF ty_data.
 
-* Assign
-ASSIGN lv_num TO <fs_value>.
-<fs_value> = 20.  "lv_num is now 20
+DATA lt_data TYPE TABLE OF ty_data.
+APPEND VALUE #( id = 1 name = 'alice' ) TO lt_data.
+APPEND VALUE #( id = 2 name = 'bob' ) TO lt_data.
 
-* Common use: efficient table loop
-LOOP AT lt_persons ASSIGNING FIELD-SYMBOL(<fs_person>).
-  <fs_person>-name = to_upper( <fs_person>-name ).  "modifies table directly
+* With INTO - copies each row (slow, changes don't affect table)
+LOOP AT lt_data INTO DATA(ls_row).
+  ls_row-name = to_upper( ls_row-name ).  "only changes the copy!
 ENDLOOP.
 
-* vs INTO which copies
-LOOP AT lt_persons INTO ls_person.
-  ls_person-name = to_upper( ls_person-name ).  "only modifies the copy!
+LOOP AT lt_data INTO ls_row.
+  WRITE: / ls_row-name.   "still lowercase
 ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">alice
+bob
+</code></pre>
+<pre><code class="language-abap line-numbers">* With ASSIGNING - direct access (fast, changes affect table)
+LOOP AT lt_data ASSIGNING FIELD-SYMBOL(<fs_row>).
+  <fs_row>-name = to_upper( <fs_row>-name ).  "modifies table directly
+ENDLOOP.
+
+LOOP AT lt_data INTO ls_row.
+  WRITE: / ls_row-name.   "now uppercase
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">ALICE
+BOB
 </code></pre>
         <br/>
         <li>Check if assigned:</li>
-<pre><code class="language-abap line-numbers">IF <fs_value> IS ASSIGNED.
+<pre><code class="language-abap line-numbers">FIELD-SYMBOLS <fs_any> TYPE any.
+
+IF <fs_any> IS ASSIGNED.
   " safe to use
+ELSE.
+  " not pointing to anything
 ENDIF.
-</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Type Definitions (TYPES)</li>
-    <br/>
-    <ul>
-        <li>Creating reusable types:</li>
-<pre><code class="language-abap line-numbers">* Elementary type alias
-TYPES ty_name TYPE c LENGTH 40.
-TYPES ty_amount TYPE p LENGTH 8 DECIMALS 2.
-
-* Structure type
-TYPES: BEGIN OF ty_order,
-         order_id TYPE n LENGTH 10,
-         customer TYPE ty_name,
-         amount   TYPE ty_amount,
-       END OF ty_order.
-
-* Table type
-TYPES tt_orders TYPE STANDARD TABLE OF ty_order WITH DEFAULT KEY.
-
-* Now use them
-DATA lv_customer TYPE ty_name.
-DATA ls_order TYPE ty_order.
-DATA lt_orders TYPE tt_orders.
-</code></pre>
-    </ul>
-    <br/><br/>
-
-
-    <li>Initial Values</li>
-    <br/>
-    <ul>
-        <li>Every type has a default initial value:</li>
-<table>
-    <thead>
-        <tr>
-            <th>Type</th>
-            <th>Initial value</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>i</code>, <code>int8</code>, <code>p</code>, <code>f</code></td>
-            <td>0</td>
-        </tr>
-        <tr>
-            <td><code>c</code></td>
-            <td>Spaces</td>
-        </tr>
-        <tr>
-            <td><code>n</code></td>
-            <td>Zeros ('000...')</td>
-        </tr>
-        <tr>
-            <td><code>string</code></td>
-            <td>Empty string</td>
-        </tr>
-        <tr>
-            <td><code>d</code></td>
-            <td>'00000000'</td>
-        </tr>
-        <tr>
-            <td><code>t</code></td>
-            <td>'000000'</td>
-        </tr>
-        <tr>
-            <td><code>x</code>, <code>xstring</code></td>
-            <td>Empty</td>
-        </tr>
-        <tr>
-            <td>References</td>
-            <td>null (initial)</td>
-        </tr>
-    </tbody>
-</table>
-        <br/>
-        <li>Checking and resetting:</li>
-<pre><code class="language-abap line-numbers">* Check if initial
-IF lv_value IS INITIAL.
-  " has default value
-ENDIF.
-
-IF lv_value IS NOT INITIAL.
-  " has been set
-ENDIF.
-
-* Reset to initial value
-CLEAR lv_value.
-
-* For tables: clear vs free
-CLEAR lt_table.  "empties table, keeps memory allocated
-FREE lt_table.   "empties table, releases memory
 </code></pre>
     </ul>
     <br/><br/>
@@ -2242,36 +2484,65 @@ FREE lt_table.   "empties table, releases memory
     <li>Type Conversions</li>
     <br/>
     <ul>
-        <li>Implicit conversion:</li>
-<pre><code class="language-abap line-numbers">* ABAP converts automatically between compatible types
-DATA lv_int TYPE i.
+        <li>Implicit - automatic:</li>
+<pre><code class="language-abap line-numbers">DATA lv_int TYPE i.
 DATA lv_str TYPE string.
 
-lv_int = '123'.     "string to int
-lv_str = 456.       "int to string
+lv_int = '123'.      "string to int
+lv_str = 456.        "int to string
 
-* Can cause unexpected results
-DATA lv_c TYPE c LENGTH 3.
-lv_c = 'ABCDEF'.    "silently truncated to 'ABC'
-lv_int = 'XYZ'.     "becomes 0
+WRITE: / lv_int, lv_str.
+</code></pre>
+<pre><code class="language-text line-numbers">       123 456
+</code></pre>
+<p>ABAP converts between compatible types automatically. Can cause silent truncation or unexpected results.</p>
+        <br/>
+        <li>CONV - explicit conversion:</li>
+<pre><code class="language-text line-numbers">CONV &lt;type&gt;( &lt;value&gt; )
+</code></pre>
+<pre><code class="language-abap line-numbers">DATA lv_int TYPE i VALUE 42.
+
+DATA(lv_str) = CONV string( lv_int ).
+WRITE: / lv_str.
+
+DATA(lv_back) = CONV i( '999' ).
+WRITE: / lv_back.
+</code></pre>
+<pre><code class="language-text line-numbers">42
+       999
 </code></pre>
         <br/>
-        <li>Explicit conversion (CONV):</li>
-<pre><code class="language-abap line-numbers">DATA(lv_str) = CONV string( 123 ).
-DATA(lv_int) = CONV i( '456' ).
-
-* Useful when type can't be inferred
-some_method( CONV string( lv_number ) ).
+        <li>CORRESPONDING - copy matching fields:</li>
+<pre><code class="language-text line-numbers">CORRESPONDING &lt;type&gt;( &lt;source&gt; )
 </code></pre>
-        <br/>
-        <li>CORRESPONDING for structures:</li>
-<pre><code class="language-abap line-numbers">* Copy matching field names between different structures
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_source,
+         a TYPE i,
+         b TYPE i,
+         c TYPE i,
+       END OF ty_source.
+
+TYPES: BEGIN OF ty_target,
+         a TYPE i,
+         b TYPE i,
+         x TYPE i,
+       END OF ty_target.
+
+DATA ls_source TYPE ty_source.
+ls_source-a = 1.
+ls_source-b = 2.
+ls_source-c = 3.
+
 DATA(ls_target) = CORRESPONDING ty_target( ls_source ).
 
-* With additions
-DATA(ls_t2) = CORRESPONDING ty_target( ls_source EXCEPT field1 ).
-DATA(ls_t3) = CORRESPONDING ty_target( ls_source MAPPING new = old ).
+WRITE: / 'a:', ls_target-a.
+WRITE: / 'b:', ls_target-b.
+WRITE: / 'x:', ls_target-x.
 </code></pre>
+<pre><code class="language-text line-numbers">a:          1
+b:          2
+x:          0
+</code></pre>
+<p>Fields <code>a</code> and <code>b</code> copied (same name). Field <code>c</code> ignored (not in target). Field <code>x</code> initial (not in source).</p>
     </ul>
     <br/>
 
