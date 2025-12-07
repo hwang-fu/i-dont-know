@@ -163,6 +163,7 @@
         <li><a href="#abap-domains">Domains</a></li>
         <li><a href="#abap-data-elements">Data Elements</a></li>
         <li><a href="#abap-tables">Tables</a></li>
+        <li><a href="#abap-structures">Structures</a></li>
     </ol>
 </nav>
 <hr/>
@@ -13380,7 +13381,1326 @@ Append structures:
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-structures">Structures</h3>
+<ol>
 
+    <li>What is a Structure</li>
+    <br/>
+    <ul>
+        <li>Definition:</li>
+<pre><code class="language-text line-numbers">Structure = composite data type containing multiple fields.
+Groups related fields into a single unit.
+Like a record, row, or object without methods.
+
+No database storage (unlike tables).
+Used for: work areas, parameters, temporary data.
+</code></pre>
+        <br/>
+        <li>Structure vs Table:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>Structure</th>
+            <th>Database Table</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Storage</td>
+            <td>Memory only</td>
+            <td>Database (persistent)</td>
+        </tr>
+        <tr>
+            <td>Rows</td>
+            <td>Single row definition</td>
+            <td>Multiple rows</td>
+        </tr>
+        <tr>
+            <td>Primary key</td>
+            <td>None</td>
+            <td>Required</td>
+        </tr>
+        <tr>
+            <td>Technical settings</td>
+            <td>None</td>
+            <td>Required</td>
+        </tr>
+        <tr>
+            <td>Use</td>
+            <td>Work areas, parameters</td>
+            <td>Data persistence</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Two ways to define:</li>
+<pre><code class="language-text line-numbers">1. DDIC Structure (SE11)
+   - Reusable across programs
+   - Visible system-wide
+   - Has documentation, search helps
+
+2. Local Structure (ABAP code)
+   - Defined in program
+   - Only visible in that program
+   - Quick and flexible
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>DDIC Structures (SE11)</li>
+    <br/>
+    <ul>
+        <li>Creating in SE11:</li>
+<pre><code class="language-text line-numbers">1. Transaction SE11
+2. Select "Data type"
+3. Enter name (e.g., ZADDRESS_STR)
+4. Click Create
+5. Choose "Structure"
+6. Add components (fields)
+7. Save → Assign package/transport
+8. Activate
+</code></pre>
+        <br/>
+        <li>Naming convention:</li>
+<pre><code class="language-text line-numbers">Z*_STR or Z*_S
+
+Examples:
+  ZADDRESS_STR      address structure
+  ZCUSTOMER_STR     customer data structure
+  ZORDER_HEADER_S   order header structure
+</code></pre>
+        <br/>
+        <li>Component definition:</li>
+<pre><code class="language-text line-numbers">
+┌────────────────────────────────────────────────────┐
+│ Components                                         │
+├─────────────┬──────────────┬───────────────────────┤
+│ Component   │ Type         │ Description           │
+├─────────────┼──────────────┼───────────────────────┤
+│ CUSTOMER_ID │ KUNNR        │ Customer Number       │
+│ NAME        │ NAME1        │ Name                  │
+│ STREET      │ STRAS        │ Street                │
+│ CITY        │ ORT01        │ City                  │
+│ COUNTRY     │ LAND1        │ Country               │
+│ POSTAL_CODE │ PSTLZ        │ Postal Code           │
+└─────────────┴──────────────┴───────────────────────┘
+
+Component = field name
+Type = data element (or direct type)
+</code></pre>
+        <br/>
+        <li>Using DDIC structure in ABAP:</li>
+<pre><code class="language-abap line-numbers">* Declare variable with DDIC structure type
+DATA ls_address TYPE zaddress_str.
+
+ls_address-customer_id = '0000001234'.
+ls_address-name = 'Acme Corporation'.
+ls_address-street = '123 Main Street'.
+ls_address-city = 'Berlin'.
+ls_address-country = 'DE'.
+ls_address-postal_code = '10115'.
+
+WRITE: / ls_address-name, ls_address-city.
+</code></pre>
+<pre><code class="language-text line-numbers">Acme Corporation Berlin
+</code></pre>
+        <br/>
+        <li>Database table as structure type:</li>
+<pre><code class="language-abap line-numbers">* Any database table can be used as structure type
+DATA ls_customer TYPE kna1.      "customer master
+DATA ls_material TYPE mara.      "material master
+DATA ls_order TYPE vbak.         "sales order header
+
+* Structure has all fields from the table
+SELECT SINGLE * FROM kna1 INTO @ls_customer
+  WHERE kunnr = '0000001234'.
+
+WRITE: / ls_customer-name1.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Local Structures (TYPES)</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">TYPES: BEGIN OF &lt;name&gt;,
+         &lt;field1&gt; TYPE &lt;type1&gt;,
+         &lt;field2&gt; TYPE &lt;type2&gt;,
+         ...
+       END OF &lt;name&gt;.
+
+Defines a type. No memory allocated.
+Use with DATA to create variables.
+</code></pre>
+        <br/>
+        <li>Basic example:</li>
+<pre><code class="language-abap line-numbers">* Define structure type
+TYPES: BEGIN OF ty_person,
+         id        TYPE i,
+         name      TYPE string,
+         birthdate TYPE d,
+         salary    TYPE p DECIMALS 2,
+       END OF ty_person.
+
+* Create variable of that type
+DATA ls_person TYPE ty_person.
+
+ls_person-id = 1.
+ls_person-name = 'Alice'.
+ls_person-birthdate = '19900315'.
+ls_person-salary = '75000.00'.
+
+WRITE: / ls_person-name, ls_person-salary.
+</code></pre>
+<pre><code class="language-text line-numbers">Alice      75,000.00
+</code></pre>
+        <br/>
+        <li>Using data elements:</li>
+<pre><code class="language-abap line-numbers">* Mix data elements and built-in types
+TYPES: BEGIN OF ty_order,
+         order_id   TYPE vbeln,        "data element
+         customer   TYPE kunnr,        "data element
+         order_date TYPE d,            "built-in
+         status     TYPE c LENGTH 2,   "built-in
+         amount     TYPE netwr,        "data element
+       END OF ty_order.
+
+DATA ls_order TYPE ty_order.
+</code></pre>
+        <br/>
+        <li>Naming convention:</li>
+<pre><code class="language-text line-numbers">ty_* = type definition (structure, table type)
+
+Examples:
+  ty_customer    customer structure type
+  ty_order       order structure type
+  ty_address     address structure type
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Inline Structure Definition (DATA)</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">DATA: BEGIN OF &lt;name&gt;,
+        &lt;field1&gt; TYPE &lt;type1&gt;,
+        &lt;field2&gt; TYPE &lt;type2&gt;,
+        ...
+      END OF &lt;name&gt;.
+
+Creates variable directly. No separate type.
+Type cannot be reused.
+</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-abap line-numbers">* Define and create in one step
+DATA: BEGIN OF ls_config,
+        setting_name  TYPE c LENGTH 30,
+        setting_value TYPE c LENGTH 100,
+        is_active     TYPE abap_bool,
+      END OF ls_config.
+
+ls_config-setting_name = 'MAX_RETRIES'.
+ls_config-setting_value = '3'.
+ls_config-is_active = abap_true.
+
+WRITE: / ls_config-setting_name, ls_config-setting_value.
+</code></pre>
+<pre><code class="language-text line-numbers">MAX_RETRIES 3
+</code></pre>
+        <br/>
+        <li>TYPES vs DATA:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>TYPES BEGIN OF</th>
+            <th>DATA BEGIN OF</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Creates</td>
+            <td>Type definition</td>
+            <td>Variable</td>
+        </tr>
+        <tr>
+            <td>Memory</td>
+            <td>None</td>
+            <td>Allocated</td>
+        </tr>
+        <tr>
+            <td>Reusable</td>
+            <td>Yes (multiple variables)</td>
+            <td>No (single variable)</td>
+        </tr>
+        <tr>
+            <td>For tables</td>
+            <td>Yes (TABLE OF ty_x)</td>
+            <td>Limited</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Recommendation:</li>
+<pre><code class="language-text line-numbers">Use TYPES when:
+- Need multiple variables of same structure
+- Need internal table of structure
+- Structure is complex
+
+Use DATA BEGIN OF when:
+- One-off structure
+- Quick temporary variable
+- Simple configuration
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Accessing Structure Fields</li>
+    <br/>
+    <ul>
+        <li>Component selector (-):</li>
+<pre><code class="language-abap line-numbers">DATA: BEGIN OF ls_person,
+        name TYPE string,
+        age  TYPE i,
+      END OF ls_person.
+
+* Access with hyphen
+ls_person-name = 'Bob'.
+ls_person-age = 30.
+
+WRITE: / ls_person-name, 'is', ls_person-age, 'years old'.
+</code></pre>
+<pre><code class="language-text line-numbers">Bob is         30 years old
+</code></pre>
+        <br/>
+        <li>Nested access:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_address,
+         street TYPE string,
+         city   TYPE string,
+       END OF ty_address.
+
+TYPES: BEGIN OF ty_person,
+         name    TYPE string,
+         address TYPE ty_address,
+       END OF ty_person.
+
+DATA ls_person TYPE ty_person.
+
+* Access nested fields
+ls_person-name = 'Alice'.
+ls_person-address-street = '123 Main St'.
+ls_person-address-city = 'Berlin'.
+
+WRITE: / ls_person-name, 'lives in', ls_person-address-city.
+</code></pre>
+<pre><code class="language-text line-numbers">Alice lives in Berlin
+</code></pre>
+        <br/>
+        <li>Dynamic access (field symbols):</li>
+<pre><code class="language-abap line-numbers">DATA: BEGIN OF ls_data,
+        field1 TYPE string VALUE 'Value1',
+        field2 TYPE string VALUE 'Value2',
+        field3 TYPE string VALUE 'Value3',
+      END OF ls_data.
+
+FIELD-SYMBOLS <fs_field> TYPE any.
+DATA lv_fieldname TYPE string VALUE 'FIELD2'.
+
+ASSIGN COMPONENT lv_fieldname OF STRUCTURE ls_data TO <fs_field>.
+IF sy-subrc = 0.
+  WRITE: / 'Dynamic access:', <fs_field>.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Dynamic access: Value2
+</code></pre>
+        <br/>
+        <li>Dynamic access by index:</li>
+<pre><code class="language-abap line-numbers">FIELD-SYMBOLS <fs_field> TYPE any.
+
+* Access by position (1-based)
+ASSIGN COMPONENT 2 OF STRUCTURE ls_data TO <fs_field>.
+IF sy-subrc = 0.
+  WRITE: / 'Component 2:', <fs_field>.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Component 2: Value2
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Structure Assignment</li>
+    <br/>
+    <ul>
+        <li>Direct assignment (compatible types):</li>
+<pre><code class="language-abap line-numbers">DATA ls_source TYPE zaddress_str.
+DATA ls_target TYPE zaddress_str.
+
+ls_source-city = 'Berlin'.
+ls_source-country = 'DE'.
+
+* Copy entire structure
+ls_target = ls_source.
+
+WRITE: / ls_target-city, ls_target-country.
+</code></pre>
+<pre><code class="language-text line-numbers">Berlin DE
+</code></pre>
+        <br/>
+        <li>VALUE constructor:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_person,
+         name TYPE string,
+         age  TYPE i,
+         city TYPE string,
+       END OF ty_person.
+
+* Initialize with values
+DATA(ls_person) = VALUE ty_person(
+  name = 'Alice'
+  age  = 30
+  city = 'Munich'
+).
+
+WRITE: / ls_person-name, ls_person-age.
+</code></pre>
+<pre><code class="language-text line-numbers">Alice         30
+</code></pre>
+        <br/>
+        <li>VALUE with BASE:</li>
+<pre><code class="language-abap line-numbers">DATA ls_person TYPE ty_person.
+ls_person-name = 'Bob'.
+ls_person-age = 25.
+ls_person-city = 'Berlin'.
+
+* Copy and modify
+DATA(ls_updated) = VALUE ty_person(
+  BASE ls_person
+  age = 26         "only change age
+).
+
+WRITE: / ls_updated-name, ls_updated-age, ls_updated-city.
+</code></pre>
+<pre><code class="language-text line-numbers">Bob         26 Berlin
+</code></pre>
+        <br/>
+        <li>CLEAR - reset to initial:</li>
+<pre><code class="language-abap line-numbers">DATA ls_person TYPE ty_person.
+ls_person-name = 'Alice'.
+ls_person-age = 30.
+
+CLEAR ls_person.
+
+WRITE: / 'Name:', ls_person-name.
+WRITE: / 'Age:', ls_person-age.
+</code></pre>
+<pre><code class="language-text line-numbers">Name:
+Age:          0
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>CORRESPONDING - Field Mapping</li>
+    <br/>
+    <ul>
+        <li>What it does:</li>
+<pre><code class="language-text line-numbers">CORRESPONDING copies fields with matching names.
+Different structures, same field names → copied.
+Non-matching fields → initial or unchanged.
+</code></pre>
+        <br/>
+        <li>Basic syntax:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_source,
+         id    TYPE i,
+         name  TYPE string,
+         extra TYPE string,
+       END OF ty_source.
+
+TYPES: BEGIN OF ty_target,
+         id    TYPE i,
+         name  TYPE string,
+         other TYPE string,
+       END OF ty_target.
+
+DATA ls_source TYPE ty_source.
+ls_source-id = 1.
+ls_source-name = 'Test'.
+ls_source-extra = 'Source only'.
+
+* Copy matching fields
+DATA(ls_target) = CORRESPONDING ty_target( ls_source ).
+
+WRITE: / 'ID:', ls_target-id.
+WRITE: / 'Name:', ls_target-name.
+WRITE: / 'Other:', ls_target-other.    "initial - no match
+</code></pre>
+<pre><code class="language-text line-numbers">ID:          1
+Name: Test
+Other:
+</code></pre>
+        <br/>
+        <li>CORRESPONDING with BASE:</li>
+<pre><code class="language-abap line-numbers">DATA ls_target TYPE ty_target.
+ls_target-id = 999.
+ls_target-other = 'Keep this'.
+
+* Copy matching, keep non-matching
+ls_target = CORRESPONDING #( BASE ( ls_target ) ls_source ).
+
+WRITE: / 'ID:', ls_target-id.          "from source
+WRITE: / 'Name:', ls_target-name.      "from source
+WRITE: / 'Other:', ls_target-other.    "kept from target
+</code></pre>
+<pre><code class="language-text line-numbers">ID:          1
+Name: Test
+Other: Keep this
+</code></pre>
+        <br/>
+        <li>MAPPING - rename fields:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_old,
+         customer_number TYPE kunnr,
+         customer_name   TYPE string,
+       END OF ty_old.
+
+TYPES: BEGIN OF ty_new,
+         id   TYPE kunnr,
+         name TYPE string,
+       END OF ty_new.
+
+DATA ls_old TYPE ty_old.
+ls_old-customer_number = '0000001234'.
+ls_old-customer_name = 'Acme Corp'.
+
+* Map different field names
+DATA(ls_new) = CORRESPONDING ty_new(
+  ls_old MAPPING id   = customer_number
+                 name = customer_name
+).
+
+WRITE: / 'ID:', ls_new-id.
+WRITE: / 'Name:', ls_new-name.
+</code></pre>
+<pre><code class="language-text line-numbers">ID: 0000001234
+Name: Acme Corp
+</code></pre>
+        <br/>
+        <li>EXCEPT - exclude fields:</li>
+<pre><code class="language-abap line-numbers">DATA(ls_partial) = CORRESPONDING ty_target(
+  ls_source EXCEPT extra
+).
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>MOVE-CORRESPONDING (Classic)</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">MOVE-CORRESPONDING &lt;source&gt; TO &lt;target&gt;.
+
+Classic statement. Same as CORRESPONDING but:
+- Modifies existing variable
+- No inline declaration
+</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-abap line-numbers">DATA ls_source TYPE ty_source.
+DATA ls_target TYPE ty_target.
+
+ls_source-id = 1.
+ls_source-name = 'Test'.
+
+ls_target-other = 'Preserved'.
+
+MOVE-CORRESPONDING ls_source TO ls_target.
+
+WRITE: / 'ID:', ls_target-id.
+WRITE: / 'Name:', ls_target-name.
+WRITE: / 'Other:', ls_target-other.    "preserved
+</code></pre>
+<pre><code class="language-text line-numbers">ID:          1
+Name: Test
+Other: Preserved
+</code></pre>
+        <br/>
+        <li>CORRESPONDING vs MOVE-CORRESPONDING:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>CORRESPONDING</th>
+            <th>MOVE-CORRESPONDING</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Style</td>
+            <td>Modern (7.40+)</td>
+            <td>Classic</td>
+        </tr>
+        <tr>
+            <td>Inline declaration</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Existing data</td>
+            <td>BASE option</td>
+            <td>Always preserved</td>
+        </tr>
+        <tr>
+            <td>MAPPING</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>EXCEPT</td>
+            <td>Yes</td>
+            <td>No</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Nested Structures</li>
+    <br/>
+    <ul>
+        <li>Definition:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_address,
+         street  TYPE string,
+         city    TYPE string,
+         country TYPE land1,
+       END OF ty_address.
+
+TYPES: BEGIN OF ty_contact,
+         phone TYPE string,
+         email TYPE string,
+       END OF ty_contact.
+
+TYPES: BEGIN OF ty_customer,
+         id      TYPE kunnr,
+         name    TYPE string,
+         address TYPE ty_address,      "nested structure
+         contact TYPE ty_contact,      "nested structure
+       END OF ty_customer.
+</code></pre>
+        <br/>
+        <li>Using nested structure:</li>
+<pre><code class="language-abap line-numbers">DATA ls_customer TYPE ty_customer.
+
+ls_customer-id = '0000001234'.
+ls_customer-name = 'Acme Corp'.
+ls_customer-address-street = '123 Main St'.
+ls_customer-address-city = 'Berlin'.
+ls_customer-address-country = 'DE'.
+ls_customer-contact-phone = '+49 30 12345'.
+ls_customer-contact-email = 'info@acme.de'.
+
+WRITE: / ls_customer-name.
+WRITE: / ls_customer-address-city, ls_customer-address-country.
+WRITE: / ls_customer-contact-email.
+</code></pre>
+<pre><code class="language-text line-numbers">Acme Corp
+Berlin DE
+info@acme.de
+</code></pre>
+        <br/>
+        <li>VALUE with nested:</li>
+<pre><code class="language-abap line-numbers">DATA(ls_cust) = VALUE ty_customer(
+  id   = '0000005678'
+  name = 'Beta Inc'
+  address = VALUE #(
+    street  = '456 Oak Ave'
+    city    = 'Munich'
+    country = 'DE'
+  )
+  contact = VALUE #(
+    phone = '+49 89 99999'
+    email = 'hello@beta.de'
+  )
+).
+
+WRITE: / ls_cust-name, ls_cust-address-city.
+</code></pre>
+<pre><code class="language-text line-numbers">Beta Inc Munich
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Include Structures</li>
+    <br/>
+    <ul>
+        <li>In DDIC (SE11):</li>
+<pre><code class="language-text line-numbers">Structure ZCUSTOMER_STR:
+  CUSTOMER_ID  TYPE KUNNR
+  NAME         TYPE NAME1
+  .INCLUDE     ZADDRESS_STR    ← embeds all fields
+
+Result:
+  CUSTOMER_ID
+  NAME
+  STREET       (from ZADDRESS_STR)
+  CITY         (from ZADDRESS_STR)
+  COUNTRY      (from ZADDRESS_STR)
+</code></pre>
+        <br/>
+        <li>In ABAP (INCLUDE TYPE):</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_address,
+         street  TYPE string,
+         city    TYPE string,
+         country TYPE land1,
+       END OF ty_address.
+
+TYPES: BEGIN OF ty_customer,
+         id   TYPE kunnr,
+         name TYPE string,
+       END OF ty_customer.
+
+* Include adds fields inline
+TYPES: BEGIN OF ty_full_customer.
+         INCLUDE TYPE ty_customer.
+         INCLUDE TYPE ty_address.
+TYPES: END OF ty_full_customer.
+
+DATA ls_full TYPE ty_full_customer.
+
+* All fields at top level
+ls_full-id = '0000001234'.
+ls_full-name = 'Test'.
+ls_full-street = '123 Main St'.    "from ty_address
+ls_full-city = 'Berlin'.           "from ty_address
+</code></pre>
+        <br/>
+        <li>Include with renaming:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_transfer.
+         INCLUDE TYPE ty_address AS ship_addr RENAMING WITH SUFFIX _ship.
+         INCLUDE TYPE ty_address AS bill_addr RENAMING WITH SUFFIX _bill.
+TYPES: END OF ty_transfer.
+
+DATA ls_transfer TYPE ty_transfer.
+
+* Fields renamed with suffix
+ls_transfer-street_ship = 'Shipping Street'.
+ls_transfer-city_ship = 'Ship City'.
+ls_transfer-street_bill = 'Billing Street'.
+ls_transfer-city_bill = 'Bill City'.
+</code></pre>
+        <br/>
+        <li>Include vs Nested:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>Include</th>
+            <th>Nested</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Field access</td>
+            <td><code>ls-field</code></td>
+            <td><code>ls-sub-field</code></td>
+        </tr>
+        <tr>
+            <td>Hierarchy</td>
+            <td>Flat</td>
+            <td>Hierarchical</td>
+        </tr>
+        <tr>
+            <td>Name conflicts</td>
+            <td>Possible (use RENAMING)</td>
+            <td>No (separate namespace)</td>
+        </tr>
+        <tr>
+            <td>Database mapping</td>
+            <td>Direct</td>
+            <td>Deep structure</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Deep Structures</li>
+    <br/>
+    <ul>
+        <li>What makes a structure deep:</li>
+<pre><code class="language-text line-numbers">Deep structure = contains variable-length or reference types.
+
+Deep types:
+- STRING
+- XSTRING
+- Internal tables
+- References (REF TO)
+- Nested structures with deep types
+
+Flat structure = only fixed-length elementary types.
+</code></pre>
+        <br/>
+        <li>Example deep structure:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_item,
+         item_no TYPE i,
+         description TYPE string,
+       END OF ty_item.
+
+TYPES ty_items TYPE TABLE OF ty_item WITH EMPTY KEY.
+
+TYPES: BEGIN OF ty_order,
+         order_id TYPE vbeln,
+         notes    TYPE string,           "deep (string)
+         items    TYPE ty_items,         "deep (table)
+       END OF ty_order.
+
+DATA ls_order TYPE ty_order.
+
+ls_order-order_id = '0000000001'.
+ls_order-notes = 'Rush delivery requested'.
+
+APPEND VALUE ty_item( item_no = 10 description = 'Widget A' ) TO ls_order-items.
+APPEND VALUE ty_item( item_no = 20 description = 'Widget B' ) TO ls_order-items.
+
+WRITE: / 'Order:', ls_order-order_id.
+WRITE: / 'Items:', lines( ls_order-items ).
+</code></pre>
+<pre><code class="language-text line-numbers">Order: 0000000001
+Items:          2
+</code></pre>
+        <br/>
+        <li>Deep structure with VALUE:</li>
+<pre><code class="language-abap line-numbers">DATA(ls_order2) = VALUE ty_order(
+  order_id = '0000000002'
+  notes    = 'Standard delivery'
+  items    = VALUE #(
+    ( item_no = 10 description = 'Part X' )
+    ( item_no = 20 description = 'Part Y' )
+    ( item_no = 30 description = 'Part Z' )
+  )
+).
+
+LOOP AT ls_order2-items INTO DATA(ls_item).
+  WRITE: / ls_item-item_no, ls_item-description.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">        10 Part X
+        20 Part Y
+        30 Part Z
+</code></pre>
+        <br/>
+        <li>Flat vs Deep implications:</li>
+<pre><code class="language-text line-numbers">Flat structures:
+- Can be used in database operations directly
+- Fixed memory size
+- Byte-level operations allowed
+
+Deep structures:
+- Cannot be used directly in some DB operations
+- Variable memory size
+- Must handle components separately for some operations
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Structure Comparison</li>
+    <br/>
+    <ul>
+        <li>Equality comparison:</li>
+<pre><code class="language-abap line-numbers">DATA ls_a TYPE ty_person.
+DATA ls_b TYPE ty_person.
+
+ls_a-name = 'Alice'.
+ls_a-age = 30.
+
+ls_b-name = 'Alice'.
+ls_b-age = 30.
+
+IF ls_a = ls_b.
+  WRITE: / 'Structures are equal'.
+ENDIF.
+
+ls_b-age = 31.
+
+IF ls_a <> ls_b.
+  WRITE: / 'Structures are different'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Structures are equal
+Structures are different
+</code></pre>
+        <br/>
+        <li>IS INITIAL check:</li>
+<pre><code class="language-abap line-numbers">DATA ls_person TYPE ty_person.
+
+IF ls_person IS INITIAL.
+  WRITE: / 'Structure is initial (all fields initial)'.
+ENDIF.
+
+ls_person-name = 'Test'.
+
+IF ls_person IS NOT INITIAL.
+  WRITE: / 'Structure has data'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Structure is initial (all fields initial)
+Structure has data
+</code></pre>
+        <br/>
+        <li>Comparing specific fields:</li>
+<pre><code class="language-abap line-numbers">IF ls_a-name = ls_b-name AND ls_a-age = ls_b-age.
+  WRITE: / 'Name and age match'.
+ENDIF.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Structures and Internal Tables</li>
+    <br/>
+    <ul>
+        <li>Structure as table line type:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_employee,
+         id     TYPE i,
+         name   TYPE string,
+         dept   TYPE string,
+         salary TYPE p DECIMALS 2,
+       END OF ty_employee.
+
+* Table of structures
+DATA lt_employees TYPE TABLE OF ty_employee.
+
+APPEND VALUE #( id = 1 name = 'Alice' dept = 'IT' salary = 75000 ) TO lt_employees.
+APPEND VALUE #( id = 2 name = 'Bob' dept = 'HR' salary = 65000 ) TO lt_employees.
+APPEND VALUE #( id = 3 name = 'Carol' dept = 'IT' salary = 80000 ) TO lt_employees.
+
+LOOP AT lt_employees INTO DATA(ls_emp).
+  WRITE: / ls_emp-id, ls_emp-name, ls_emp-dept.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">         1 Alice IT
+         2 Bob HR
+         3 Carol IT
+</code></pre>
+        <br/>
+        <li>Work area (structure for single row):</li>
+<pre><code class="language-abap line-numbers">DATA ls_employee TYPE ty_employee.    "work area
+
+* Read into work area
+READ TABLE lt_employees INTO ls_employee INDEX 2.
+WRITE: / 'Row 2:', ls_employee-name.
+
+* Loop with work area
+LOOP AT lt_employees INTO ls_employee WHERE dept = 'IT'.
+  WRITE: / 'IT employee:', ls_employee-name.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">Row 2: Bob
+IT employee: Alice
+IT employee: Carol
+</code></pre>
+        <br/>
+        <li>Field symbol vs work area:</li>
+<pre><code class="language-abap line-numbers">* Work area (copy)
+LOOP AT lt_employees INTO ls_employee.
+  ls_employee-salary = ls_employee-salary * '1.10'.    "doesn't update table
+ENDLOOP.
+
+* Field symbol (direct reference)
+LOOP AT lt_employees ASSIGNING FIELD-SYMBOL(<ls_emp>).
+  <ls_emp>-salary = <ls_emp>-salary * '1.10'.         "updates table directly
+ENDLOOP.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Common DDIC Structures</li>
+    <br/>
+    <ul>
+        <li>System structures:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Structure</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>SYST</code></td>
+            <td>System fields (sy-*)</td>
+        </tr>
+        <tr>
+            <td><code>BAPIRET2</code></td>
+            <td>BAPI return message</td>
+        </tr>
+        <tr>
+            <td><code>BDCDATA</code></td>
+            <td>Batch input data</td>
+        </tr>
+        <tr>
+            <td><code>BDCMSGCOLL</code></td>
+            <td>Batch input messages</td>
+        </tr>
+        <tr>
+            <td><code>RSPARAMS</code></td>
+            <td>Selection parameters</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>BAPIRET2 example:</li>
+<pre><code class="language-abap line-numbers">DATA ls_return TYPE bapiret2.
+DATA lt_return TYPE TABLE OF bapiret2.
+
+ls_return-type = 'E'.           "E=Error, S=Success, W=Warning, I=Info
+ls_return-id = 'ZMYMSGS'.
+ls_return-number = '001'.
+ls_return-message = 'Customer not found'.
+
+APPEND ls_return TO lt_return.
+
+* Standard structure for BAPI error handling
+LOOP AT lt_return INTO ls_return WHERE type = 'E'.
+  WRITE: / 'Error:', ls_return-message.
+ENDLOOP.
+</code></pre>
+<pre><code class="language-text line-numbers">Error: Customer not found
+</code></pre>
+        <br/>
+        <li>Range structure:</li>
+<pre><code class="language-abap line-numbers">* Range table for selection criteria
+DATA lr_matnr TYPE RANGE OF matnr.
+
+lr_matnr = VALUE #(
+  ( sign = 'I' option = 'EQ' low = '000000000000000001' )
+  ( sign = 'I' option = 'BT' low = '000000000000000010' high = '000000000000000020' )
+).
+
+* Range structure has: SIGN, OPTION, LOW, HIGH
+SELECT * FROM mara INTO TABLE @DATA(lt_mara)
+  WHERE matnr IN @lr_matnr.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Type Compatibility</li>
+    <br/>
+    <ul>
+        <li>Compatible structures:</li>
+<pre><code class="language-text line-numbers">Two structures are compatible if:
+- Same sequence of components
+- Each component has compatible type
+
+Compatible = can assign directly (ls_a = ls_b)
+</code></pre>
+        <br/>
+        <li>Example - compatible:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_a,
+         field1 TYPE i,
+         field2 TYPE string,
+       END OF ty_a.
+
+TYPES: BEGIN OF ty_b,
+         field1 TYPE i,
+         field2 TYPE string,
+       END OF ty_b.
+
+DATA ls_a TYPE ty_a.
+DATA ls_b TYPE ty_b.
+
+ls_a-field1 = 1.
+ls_a-field2 = 'Test'.
+
+ls_b = ls_a.    "OK - compatible structures
+
+WRITE: / ls_b-field1, ls_b-field2.
+</code></pre>
+<pre><code class="language-text line-numbers">         1 Test
+</code></pre>
+        <br/>
+        <li>Example - incompatible:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_c,
+         field1 TYPE i,
+         field3 TYPE string,    "different name - still compatible
+       END OF ty_c.
+
+TYPES: BEGIN OF ty_d,
+         field1 TYPE i,
+         field2 TYPE c LENGTH 10,    "different type
+       END OF ty_d.
+
+DATA ls_c TYPE ty_c.
+DATA ls_d TYPE ty_d.
+
+ls_a-field1 = 1.
+ls_a-field2 = 'Test'.
+
+ls_c = ls_a.    "OK - same types, different names
+* ls_d = ls_a.  "Error - string vs c LENGTH 10
+
+* Use CORRESPONDING for incompatible
+ls_d = CORRESPONDING #( ls_a ).
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Structure Enhancement Category</li>
+    <br/>
+    <ul>
+        <li>Setting in SE11:</li>
+<pre><code class="language-text line-numbers">Menu: Extras → Enhancement Category
+
+Options:
+- Cannot be enhanced
+- Can be enhanced (character-type)
+- Can be enhanced (character-type or numeric)
+- Can be enhanced (deep)
+
+Determines if append structures can be added.
+</code></pre>
+        <br/>
+        <li>For nested structures:</li>
+<pre><code class="language-text line-numbers">If structure contains other structures:
+  Each nested structure needs enhancement category.
+
+Activation warning if not set.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Practical Examples</li>
+    <br/>
+    <ul>
+        <li>API response structure:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_api_response,
+         success  TYPE abap_bool,
+         message  TYPE string,
+         code     TYPE i,
+         data     TYPE string,
+       END OF ty_api_response.
+
+DATA(ls_response) = VALUE ty_api_response(
+  success = abap_true
+  message = 'Operation completed'
+  code    = 200
+  data    = '{"result": "ok"}'
+).
+
+IF ls_response-success = abap_true.
+  WRITE: / 'Success:', ls_response-message.
+ELSE.
+  WRITE: / 'Error:', ls_response-code, ls_response-message.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Success: Operation completed
+</code></pre>
+        <br/>
+        <li>Configuration structure:</li>
+<pre><code class="language-abap line-numbers">TYPES: BEGIN OF ty_config,
+         max_retries    TYPE i,
+         timeout_sec    TYPE i,
+         debug_mode     TYPE abap_bool,
+         log_level      TYPE c LENGTH 1,
+         endpoint_url   TYPE string,
+       END OF ty_config.
+
+DATA(gs_config) = VALUE ty_config(
+  max_retries  = 3
+  timeout_sec  = 30
+  debug_mode   = abap_false
+  log_level    = 'E'        "E=Error, W=Warning, I=Info, D=Debug
+  endpoint_url = 'https://api.example.com/v1'
+).
+</code></pre>
+        <br/>
+        <li>Data transfer structure:</li>
+<pre><code class="language-abap line-numbers">* Structure for moving data between layers
+TYPES: BEGIN OF ty_customer_dto,
+         customer_id   TYPE kunnr,
+         customer_name TYPE name1,
+         city          TYPE ort01,
+         country       TYPE land1,
+         is_active     TYPE abap_bool,
+       END OF ty_customer_dto.
+
+* Load from database
+DATA ls_kna1 TYPE kna1.
+SELECT SINGLE * FROM kna1 INTO @ls_kna1
+  WHERE kunnr = '0000001234'.
+
+* Map to DTO
+DATA(ls_dto) = VALUE ty_customer_dto(
+  customer_id   = ls_kna1-kunnr
+  customer_name = ls_kna1-name1
+  city          = ls_kna1-ort01
+  country       = ls_kna1-land1
+  is_active     = COND #( WHEN ls_kna1-sperr IS INITIAL THEN abap_true ELSE abap_false )
+).
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices</li>
+    <br/>
+    <ul>
+        <li>Guidelines:</li>
+<pre><code class="language-text line-numbers">1. Use DDIC structures for:
+   - Shared across multiple programs
+   - Public APIs (function modules, BAPIs)
+   - Database table work areas
+
+2. Use local TYPES for:
+   - Program-specific structures
+   - Internal processing
+   - Quick prototyping
+
+3. Use data elements in DDIC structures
+   - Better documentation
+   - Search helps, labels
+
+4. Keep structures focused
+   - Single responsibility
+   - Don't mix unrelated data
+
+5. Use meaningful names
+   - ty_* for local types
+   - Z*_STR for DDIC structures
+   - Describe content, not usage
+
+6. Consider flat vs deep
+   - Flat for database operations
+   - Deep when needed (strings, tables)
+
+7. Set enhancement category
+   - Avoid activation warnings
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Quick Reference</li>
+    <br/>
+    <ul>
+        <li>Defining structures:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Syntax</th>
+            <th>Scope</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>DDIC</td>
+            <td>SE11 → Data type → Structure</td>
+            <td>Global</td>
+        </tr>
+        <tr>
+            <td>TYPES</td>
+            <td><code>TYPES: BEGIN OF ty_x...</code></td>
+            <td>Program</td>
+        </tr>
+        <tr>
+            <td>DATA</td>
+            <td><code>DATA: BEGIN OF ls_x...</code></td>
+            <td>Program (one variable)</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Working with structures:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operation</th>
+            <th>Syntax</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Declare</td>
+            <td><code>DATA ls_x TYPE ty_x.</code></td>
+        </tr>
+        <tr>
+            <td>Access field</td>
+            <td><code>ls_x-field</code></td>
+        </tr>
+        <tr>
+            <td>Initialize</td>
+            <td><code>VALUE ty_x( field = value )</code></td>
+        </tr>
+        <tr>
+            <td>Clear</td>
+            <td><code>CLEAR ls_x.</code></td>
+        </tr>
+        <tr>
+            <td>Copy</td>
+            <td><code>ls_target = ls_source.</code></td>
+        </tr>
+        <tr>
+            <td>Map fields</td>
+            <td><code>CORRESPONDING #( ls_source )</code></td>
+        </tr>
+        <tr>
+            <td>Compare</td>
+            <td><code>IF ls_a = ls_b.</code></td>
+        </tr>
+        <tr>
+            <td>Check initial</td>
+            <td><code>IF ls_x IS INITIAL.</code></td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Key statements:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Statement</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>CORRESPONDING</code></td>
+            <td>Copy matching fields (modern)</td>
+        </tr>
+        <tr>
+            <td><code>MOVE-CORRESPONDING</code></td>
+            <td>Copy matching fields (classic)</td>
+        </tr>
+        <tr>
+            <td><code>INCLUDE TYPE</code></td>
+            <td>Embed structure fields</td>
+        </tr>
+        <tr>
+            <td><code>ASSIGN COMPONENT</code></td>
+            <td>Dynamic field access</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
