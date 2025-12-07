@@ -158,6 +158,7 @@
         <li><a href="#abap-control-flow">Contrl Flow</a></li>
         <li><a href="#abap-strings">Strings</a></li>
         <li><a href="#abap-date-time">Date &amp; Time</a></li>
+        <li><a href="#abap-exception-handling">Eception Handling</a></li>
     </ol>
 </nav>
 <hr/>
@@ -7566,7 +7567,1052 @@ ENDIF.
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="abap-exception-handling">Exception Handling in ABAP</h3>
+<ol>
 
+    <li>Two Exception Systems</li>
+    <br/>
+    <ul>
+        <li>Overview:</li>
+<pre><code class="language-text line-numbers">ABAP has two exception systems:
+
+1. Classic exceptions (pre-OOP)
+   - Uses sy-subrc return codes
+   - Used in function modules and older code
+   - Still common in standard SAP code
+
+2. Class-based exceptions (modern)
+   - Uses TRY-CATCH blocks
+   - Exception objects with details
+   - Recommended for new development
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Classic Exceptions (sy-subrc)</li>
+    <br/>
+    <ul>
+        <li>How it works:</li>
+<pre><code class="language-text line-numbers">1. Call a function/perform an operation
+2. Check sy-subrc immediately after
+3. sy-subrc = 0 means success
+4. sy-subrc &lt;&gt; 0 means error (value indicates type)
+</code></pre>
+        <br/>
+        <li>Basic pattern:</li>
+<pre><code class="language-abap line-numbers">DATA lt_data TYPE TABLE OF mara.
+
+SELECT * FROM mara INTO TABLE @lt_data WHERE mtart = 'XXXX'.
+
+IF sy-subrc = 0.
+  WRITE: / 'Found', lines( lt_data ), 'rows'.
+ELSE.
+  WRITE: / 'No data found'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">No data found
+</code></pre>
+        <br/>
+        <li>READ TABLE example:</li>
+<pre><code class="language-abap line-numbers">DATA lt_nums TYPE TABLE OF i.
+APPEND 10 TO lt_nums.
+APPEND 20 TO lt_nums.
+
+READ TABLE lt_nums INTO DATA(lv_num) INDEX 5.
+
+CASE sy-subrc.
+  WHEN 0.
+    WRITE: / 'Found:', lv_num.
+  WHEN 4.
+    WRITE: / 'Index not found'.
+  WHEN 8.
+    WRITE: / 'Table is empty'.
+ENDCASE.
+</code></pre>
+<pre><code class="language-text line-numbers">Index not found
+</code></pre>
+        <br/>
+        <li>Function module with exceptions:</li>
+<pre><code class="language-abap line-numbers">DATA lv_date TYPE d VALUE '20240230'.   "Feb 30 - invalid
+
+CALL FUNCTION 'DATE_CHECK_PLAUSIBILITY'
+  EXPORTING
+    date                      = lv_date
+  EXCEPTIONS
+    plausibility_check_failed = 1
+    OTHERS                    = 2.
+
+CASE sy-subrc.
+  WHEN 0.
+    WRITE: / 'Date is valid'.
+  WHEN 1.
+    WRITE: / 'Date is invalid'.
+  WHEN 2.
+    WRITE: / 'Other error'.
+ENDCASE.
+</code></pre>
+<pre><code class="language-text line-numbers">Date is invalid
+</code></pre>
+<p>EXCEPTIONS maps exception names to sy-subrc values.</p>
+        <br/>
+        <li>Common sy-subrc values:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Operation</th>
+            <th>sy-subrc = 0</th>
+            <th>sy-subrc &lt;&gt; 0</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>SELECT</td>
+            <td>Data found</td>
+            <td>4 = no data</td>
+        </tr>
+        <tr>
+            <td>READ TABLE</td>
+            <td>Entry found</td>
+            <td>4 = not found, 8 = empty</td>
+        </tr>
+        <tr>
+            <td>FIND</td>
+            <td>Found</td>
+            <td>4 = not found</td>
+        </tr>
+        <tr>
+            <td>OPEN DATASET</td>
+            <td>Opened</td>
+            <td>8 = failed</td>
+        </tr>
+        <tr>
+            <td>Function module</td>
+            <td>Success</td>
+            <td>As defined in EXCEPTIONS</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>TRY-CATCH (Class-Based Exceptions)</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">TRY.
+    &lt;statements that might raise exception&gt;
+  CATCH &lt;exception_class&gt; [INTO &lt;variable&gt;].
+    &lt;handle exception&gt;
+ENDTRY.
+</code></pre>
+        <br/>
+        <li>Basic example:</li>
+<pre><code class="language-abap line-numbers">DATA lv_result TYPE i.
+
+TRY.
+    lv_result = 10 / 0.    "division by zero
+    WRITE: / 'Result:', lv_result.
+  CATCH cx_sy_zerodivide.
+    WRITE: / 'Error: Division by zero'.
+ENDTRY.
+
+WRITE: / 'Program continues'.
+</code></pre>
+<pre><code class="language-text line-numbers">Error: Division by zero
+Program continues
+</code></pre>
+        <br/>
+        <li>Catching exception object:</li>
+<pre><code class="language-abap line-numbers">TRY.
+    DATA(lv_result) = 10 / 0.
+  CATCH cx_sy_zerodivide INTO DATA(lx_error).
+    WRITE: / 'Error:', lx_error-&gt;get_text( ).
+ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Error: Division by zero.
+</code></pre>
+<p><code>INTO</code> captures the exception object. <code>get_text( )</code> returns error message.</p>
+        <br/>
+        <li>Multiple CATCH blocks:</li>
+<pre><code class="language-abap line-numbers">DATA lv_num TYPE i.
+DATA lv_str TYPE string VALUE 'ABC'.
+
+TRY.
+    lv_num = lv_str.    "conversion error
+  CATCH cx_sy_zerodivide.
+    WRITE: / 'Division by zero'.
+  CATCH cx_sy_conversion_no_number.
+    WRITE: / 'Cannot convert to number'.
+  CATCH cx_root INTO DATA(lx_error).
+    WRITE: / 'Other error:', lx_error-&gt;get_text( ).
+ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Cannot convert to number
+</code></pre>
+<p>CATCH blocks checked top to bottom. First match handles exception.</p>
+        <br/>
+        <li>Catching multiple exceptions in one block:</li>
+<pre><code class="language-abap line-numbers">TRY.
+    DATA(lv_result) = 10 / 0.
+  CATCH cx_sy_zerodivide cx_sy_conversion_no_number INTO DATA(lx_error).
+    WRITE: / 'Math or conversion error:', lx_error-&gt;get_text( ).
+ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Math or conversion error: Division by zero.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Exception Class Hierarchy</li>
+    <br/>
+    <ul>
+        <li>Root classes:</li>
+<pre><code class="language-text line-numbers">CX_ROOT (abstract base)
+├── CX_STATIC_CHECK   - must be declared or caught
+├── CX_DYNAMIC_CHECK  - should be caught, not enforced by compiler
+└── CX_NO_CHECK       - runtime errors, cannot declare
+</code></pre>
+        <br/>
+        <li>Catching by hierarchy:</li>
+<pre><code class="language-abap line-numbers">TRY.
+    DATA(lv_result) = 10 / 0.
+  CATCH cx_sy_arithmetic_error INTO DATA(lx_error).
+    "catches cx_sy_zerodivide and other arithmetic errors
+    WRITE: / 'Arithmetic error:', lx_error-&gt;get_text( ).
+ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Arithmetic error: Division by zero.
+</code></pre>
+<p>Catching parent class catches all child exceptions.</p>
+        <br/>
+        <li>Catch-all with cx_root:</li>
+<pre><code class="language-abap line-numbers">TRY.
+    "any risky operation
+    DATA(lv_result) = some_method( ).
+  CATCH cx_root INTO DATA(lx_error).
+    WRITE: / 'Error:', lx_error-&gt;get_text( ).
+ENDTRY.
+</code></pre>
+<p><code>cx_root</code> catches any exception. Use as last resort.</p>
+        <br/>
+        <li>Common exception classes:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Class</th>
+            <th>Cause</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>cx_sy_zerodivide</code></td>
+            <td>Division by zero</td>
+        </tr>
+        <tr>
+            <td><code>cx_sy_conversion_no_number</code></td>
+            <td>String to number conversion failed</td>
+        </tr>
+        <tr>
+            <td><code>cx_sy_itab_line_not_found</code></td>
+            <td>Table line not found (table expressions)</td>
+        </tr>
+        <tr>
+            <td><code>cx_sy_range_out_of_bounds</code></td>
+            <td>Index out of bounds</td>
+        </tr>
+        <tr>
+            <td><code>cx_sy_ref_is_initial</code></td>
+            <td>Dereferencing null reference</td>
+        </tr>
+        <tr>
+            <td><code>cx_sy_move_cast_error</code></td>
+            <td>Invalid type cast</td>
+        </tr>
+        <tr>
+            <td><code>cx_sy_open_sql_db</code></td>
+            <td>Database error in Open SQL</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/><br/>
+
+
+    <li>Table Expression Exceptions</li>
+    <br/>
+    <ul>
+        <li>Problem:</li>
+<pre><code class="language-abap line-numbers">DATA lt_nums TYPE TABLE OF i.
+APPEND 10 TO lt_nums.
+
+* This dumps if not found!
+DATA(lv_val) = lt_nums[ 5 ].
+</code></pre>
+<pre><code class="language-text line-numbers">Runtime error: CX_SY_ITAB_LINE_NOT_FOUND
+</code></pre>
+        <br/>
+        <li>Solution 1 - TRY-CATCH:</li>
+<pre><code class="language-abap line-numbers">DATA lt_nums TYPE TABLE OF i.
+APPEND 10 TO lt_nums.
+
+TRY.
+    DATA(lv_val) = lt_nums[ 5 ].
+    WRITE: / 'Found:', lv_val.
+  CATCH cx_sy_itab_line_not_found.
+    WRITE: / 'Index not found'.
+ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Index not found
+</code></pre>
+        <br/>
+        <li>Solution 2 - OPTIONAL:</li>
+<pre><code class="language-abap line-numbers">DATA lt_nums TYPE TABLE OF i.
+APPEND 10 TO lt_nums.
+
+DATA(lv_val) = VALUE #( lt_nums[ 5 ] OPTIONAL ).
+
+IF lv_val IS INITIAL.
+  WRITE: / 'Not found (or value was 0)'.
+ELSE.
+  WRITE: / 'Found:', lv_val.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Not found (or value was 0)
+</code></pre>
+<p><code>OPTIONAL</code> returns initial value if not found. No exception.</p>
+        <br/>
+        <li>Solution 3 - DEFAULT:</li>
+<pre><code class="language-abap line-numbers">DATA lt_nums TYPE TABLE OF i.
+APPEND 10 TO lt_nums.
+
+DATA(lv_val) = VALUE #( lt_nums[ 5 ] DEFAULT -1 ).
+
+WRITE: / 'Value:', lv_val.
+</code></pre>
+<pre><code class="language-text line-numbers">Value:         -1
+</code></pre>
+<p><code>DEFAULT</code> returns specified value if not found.</p>
+        <br/>
+        <li>Solution 4 - line_exists:</li>
+<pre><code class="language-abap line-numbers">DATA lt_nums TYPE TABLE OF i.
+APPEND 10 TO lt_nums.
+
+IF line_exists( lt_nums[ 5 ] ).
+  DATA(lv_val) = lt_nums[ 5 ].
+  WRITE: / 'Found:', lv_val.
+ELSE.
+  WRITE: / 'Not found'.
+ENDIF.
+</code></pre>
+<pre><code class="language-text line-numbers">Not found
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>RAISE EXCEPTION</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">RAISE EXCEPTION TYPE &lt;exception_class&gt;
+  [EXPORTING &lt;parameter&gt; = &lt;value&gt; ...].
+
+RAISE EXCEPTION &lt;exception_object&gt;.
+</code></pre>
+        <br/>
+        <li>Raising standard exception:</li>
+<pre><code class="language-abap line-numbers">DATA lv_divisor TYPE i VALUE 0.
+
+TRY.
+    IF lv_divisor = 0.
+      RAISE EXCEPTION TYPE cx_sy_zerodivide.
+    ENDIF.
+    DATA(lv_result) = 10 / lv_divisor.
+  CATCH cx_sy_zerodivide.
+    WRITE: / 'Cannot divide by zero'.
+ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Cannot divide by zero
+</code></pre>
+        <br/>
+        <li>Raising with message:</li>
+<pre><code class="language-abap line-numbers">TRY.
+    RAISE EXCEPTION TYPE cx_sy_zerodivide
+      EXPORTING
+        textid = cx_sy_zerodivide=&gt;cx_sy_zerodivide.
+  CATCH cx_sy_zerodivide INTO DATA(lx_error).
+    WRITE: / lx_error-&gt;get_text( ).
+ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Division by zero.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Creating Custom Exception Classes</li>
+    <br/>
+    <ul>
+        <li>In SE24 or ADT:</li>
+<pre><code class="language-text line-numbers">1. Create class inheriting from:
+   - CX_STATIC_CHECK  (must catch or declare)
+   - CX_DYNAMIC_CHECK (should catch)
+   - CX_NO_CHECK      (cannot declare)
+
+2. Add attributes for additional information
+
+3. Define exception texts (messages)
+</code></pre>
+        <br/>
+        <li>Minimal custom exception (local):</li>
+<pre><code class="language-abap line-numbers">CLASS lcx_invalid_input DEFINITION INHERITING FROM cx_static_check.
+ENDCLASS.
+
+CLASS lcx_invalid_input IMPLEMENTATION.
+ENDCLASS.
+
+START-OF-SELECTION.
+  TRY.
+      RAISE EXCEPTION TYPE lcx_invalid_input.
+    CATCH lcx_invalid_input.
+      WRITE: / 'Invalid input error'.
+  ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Invalid input error
+</code></pre>
+        <br/>
+        <li>Custom exception with message:</li>
+<pre><code class="language-abap line-numbers">CLASS lcx_validation_error DEFINITION INHERITING FROM cx_static_check.
+  PUBLIC SECTION.
+    INTERFACES if_t100_message.
+
+    CONSTANTS:
+      BEGIN OF invalid_amount,
+        msgid TYPE symsgid VALUE 'ZMYMSGS',
+        msgno TYPE symsgno VALUE '001',
+        attr1 TYPE scx_attrname VALUE 'MV_AMOUNT',
+        attr2 TYPE scx_attrname VALUE '',
+        attr3 TYPE scx_attrname VALUE '',
+        attr4 TYPE scx_attrname VALUE '',
+      END OF invalid_amount.
+
+    DATA mv_amount TYPE p DECIMALS 2.
+
+    METHODS constructor
+      IMPORTING
+        textid   LIKE if_t100_message=&gt;t100key OPTIONAL
+        previous LIKE previous OPTIONAL
+        amount   TYPE p OPTIONAL.
+ENDCLASS.
+
+CLASS lcx_validation_error IMPLEMENTATION.
+  METHOD constructor.
+    super-&gt;constructor( previous = previous ).
+    mv_amount = amount.
+    if_t100_message~t100key = textid.
+  ENDMETHOD.
+ENDCLASS.
+</code></pre>
+        <br/>
+        <li>Simple custom exception with text:</li>
+<pre><code class="language-abap line-numbers">CLASS lcx_app_error DEFINITION INHERITING FROM cx_dynamic_check.
+  PUBLIC SECTION.
+    DATA mv_message TYPE string.
+
+    METHODS constructor
+      IMPORTING
+        message  TYPE string OPTIONAL
+        previous LIKE previous OPTIONAL.
+
+    METHODS get_text REDEFINITION.
+ENDCLASS.
+
+CLASS lcx_app_error IMPLEMENTATION.
+  METHOD constructor.
+    super-&gt;constructor( previous = previous ).
+    mv_message = message.
+  ENDMETHOD.
+
+  METHOD get_text.
+    result = mv_message.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  TRY.
+      RAISE EXCEPTION TYPE lcx_app_error
+        EXPORTING
+          message = 'Customer not found'.
+    CATCH lcx_app_error INTO DATA(lx_error).
+      WRITE: / lx_error-&gt;get_text( ).
+  ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Customer not found
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>CLEANUP Block</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">TRY.
+    &lt;statements&gt;
+  CLEANUP.
+    &lt;cleanup code - runs if exception not caught here&gt;
+  CATCH ...
+ENDTRY.
+</code></pre>
+<p>CLEANUP runs when exception propagates out (not caught locally).</p>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-abap line-numbers">CLASS lcx_outer DEFINITION INHERITING FROM cx_dynamic_check.
+ENDCLASS.
+CLASS lcx_outer IMPLEMENTATION.
+ENDCLASS.
+
+CLASS lcx_inner DEFINITION INHERITING FROM cx_dynamic_check.
+ENDCLASS.
+CLASS lcx_inner IMPLEMENTATION.
+ENDCLASS.
+
+START-OF-SELECTION.
+  TRY.
+      TRY.
+          WRITE: / 'Inside inner TRY'.
+          RAISE EXCEPTION TYPE lcx_outer.
+        CLEANUP.
+          WRITE: / 'Cleanup runs - exception propagating'.
+        CATCH lcx_inner.
+          WRITE: / 'Inner catch - not reached'.
+      ENDTRY.
+    CATCH lcx_outer.
+      WRITE: / 'Outer catch handles it'.
+  ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Inside inner TRY
+Cleanup runs - exception propagating
+Outer catch handles it
+</code></pre>
+<p>CLEANUP runs because <code>lcx_outer</code> was not caught in inner TRY.</p>
+        <br/>
+        <li>Use case - release resources:</li>
+<pre><code class="language-abap line-numbers">TRY.
+    OPEN DATASET lv_filename FOR INPUT IN TEXT MODE ENCODING UTF-8.
+    "process file...
+    RAISE EXCEPTION TYPE cx_sy_file_io.
+  CLEANUP.
+    "always close file if exception propagates
+    CLOSE DATASET lv_filename.
+  CATCH cx_sy_file_open.
+    WRITE: / 'Could not open file'.
+ENDTRY.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>RETRY Statement</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">TRY.
+    &lt;statements&gt;
+  CATCH &lt;exception&gt;.
+    &lt;fix problem&gt;
+    RETRY.    "restart TRY block
+ENDTRY.
+</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-abap line-numbers">DATA lv_divisor TYPE i VALUE 0.
+DATA lv_attempts TYPE i VALUE 0.
+
+TRY.
+    lv_attempts = lv_attempts + 1.
+    WRITE: / 'Attempt:', lv_attempts.
+    DATA(lv_result) = 10 / lv_divisor.
+    WRITE: / 'Result:', lv_result.
+  CATCH cx_sy_zerodivide.
+    IF lv_attempts &lt; 3.
+      lv_divisor = 2.    "fix the problem
+      RETRY.             "try again
+    ELSE.
+      WRITE: / 'Giving up after', lv_attempts, 'attempts'.
+    ENDIF.
+ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Attempt:          1
+Attempt:          2
+Result:          5
+</code></pre>
+<p>RETRY restarts the TRY block from beginning.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>RESUME Statement</li>
+    <br/>
+    <ul>
+        <li>What it does:</li>
+<pre><code class="language-text line-numbers">RESUME continues execution after the RAISE EXCEPTION statement.
+Only works with RESUMABLE exceptions.
+</code></pre>
+        <br/>
+        <li>Syntax:</li>
+<pre><code class="language-abap line-numbers">* Raising resumable exception
+RAISE RESUMABLE EXCEPTION TYPE &lt;class&gt;.
+
+* Catching and resuming
+TRY.
+    ...
+  CATCH BEFORE UNWIND &lt;class&gt;.
+    RESUME.
+ENDTRY.
+</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-abap line-numbers">CLASS lcx_warning DEFINITION INHERITING FROM cx_dynamic_check.
+ENDCLASS.
+CLASS lcx_warning IMPLEMENTATION.
+ENDCLASS.
+
+FORM process_with_warning.
+  WRITE: / 'Before warning'.
+  RAISE RESUMABLE EXCEPTION TYPE lcx_warning.
+  WRITE: / 'After warning - only reached if RESUME called'.
+ENDFORM.
+
+START-OF-SELECTION.
+  TRY.
+      PERFORM process_with_warning.
+    CATCH BEFORE UNWIND lcx_warning.
+      WRITE: / 'Warning caught - resuming'.
+      RESUME.
+  ENDTRY.
+  WRITE: / 'Done'.
+</code></pre>
+<pre><code class="language-text line-numbers">Before warning
+Warning caught - resuming
+After warning - only reached if RESUME called
+Done
+</code></pre>
+<p><code>BEFORE UNWIND</code> keeps stack intact for RESUME.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Propagating Exceptions (RAISING)</li>
+    <br/>
+    <ul>
+        <li>In method signature:</li>
+<pre><code class="language-text line-numbers">METHODS &lt;name&gt;
+  RAISING &lt;exception_class1&gt; &lt;exception_class2&gt; ...
+</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-abap line-numbers">CLASS lcl_calculator DEFINITION.
+  PUBLIC SECTION.
+    METHODS divide
+      IMPORTING
+        iv_a TYPE i
+        iv_b TYPE i
+      RETURNING
+        VALUE(rv_result) TYPE i
+      RAISING
+        cx_sy_zerodivide.
+ENDCLASS.
+
+CLASS lcl_calculator IMPLEMENTATION.
+  METHOD divide.
+    IF iv_b = 0.
+      RAISE EXCEPTION TYPE cx_sy_zerodivide.
+    ENDIF.
+    rv_result = iv_a / iv_b.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA(lo_calc) = NEW lcl_calculator( ).
+
+  TRY.
+      DATA(lv_result) = lo_calc-&gt;divide( iv_a = 10 iv_b = 0 ).
+      WRITE: / 'Result:', lv_result.
+    CATCH cx_sy_zerodivide.
+      WRITE: / 'Division by zero'.
+  ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Division by zero
+</code></pre>
+        <br/>
+        <li>CX_STATIC_CHECK must be declared:</li>
+<pre><code class="language-abap line-numbers">CLASS lcx_my_error DEFINITION INHERITING FROM cx_static_check.
+ENDCLASS.
+CLASS lcx_my_error IMPLEMENTATION.
+ENDCLASS.
+
+CLASS lcl_test DEFINITION.
+  PUBLIC SECTION.
+    "must declare RAISING or catch internally
+    METHODS do_something RAISING lcx_my_error.
+ENDCLASS.
+
+CLASS lcl_test IMPLEMENTATION.
+  METHOD do_something.
+    RAISE EXCEPTION TYPE lcx_my_error.
+  ENDMETHOD.
+ENDCLASS.
+</code></pre>
+<p>Compiler enforces: either catch CX_STATIC_CHECK or declare in RAISING.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Exception Object Details</li>
+    <br/>
+    <ul>
+        <li>Common methods:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Returns</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>get_text( )</code></td>
+            <td>Error message as string</td>
+        </tr>
+        <tr>
+            <td><code>get_longtext( )</code></td>
+            <td>Detailed error description</td>
+        </tr>
+        <tr>
+            <td><code>get_source_position( )</code></td>
+            <td>Program/include/line where raised</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Getting source position:</li>
+<pre><code class="language-abap line-numbers">TRY.
+    DATA(lv_result) = 10 / 0.
+  CATCH cx_sy_zerodivide INTO DATA(lx_error).
+    lx_error-&gt;get_source_position(
+      IMPORTING
+        program_name = DATA(lv_program)
+        include_name = DATA(lv_include)
+        source_line  = DATA(lv_line) ).
+
+    WRITE: / 'Error:', lx_error-&gt;get_text( ).
+    WRITE: / 'Program:', lv_program.
+    WRITE: / 'Line:', lv_line.
+ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">Error: Division by zero.
+Program: ZTEST_PROGRAM
+Line:          5
+</code></pre>
+        <br/>
+        <li>Previous exception (chaining):</li>
+<pre><code class="language-abap line-numbers">CLASS lcx_app_error DEFINITION INHERITING FROM cx_dynamic_check.
+  PUBLIC SECTION.
+    METHODS constructor
+      IMPORTING previous LIKE previous OPTIONAL.
+ENDCLASS.
+
+CLASS lcx_app_error IMPLEMENTATION.
+  METHOD constructor.
+    super-&gt;constructor( previous = previous ).
+  ENDMETHOD.
+ENDCLASS.
+
+TRY.
+    TRY.
+        DATA(lv_result) = 10 / 0.
+      CATCH cx_sy_zerodivide INTO DATA(lx_inner).
+        "wrap original exception
+        RAISE EXCEPTION TYPE lcx_app_error
+          EXPORTING
+            previous = lx_inner.
+    ENDTRY.
+  CATCH lcx_app_error INTO DATA(lx_outer).
+    WRITE: / 'App error'.
+    IF lx_outer-&gt;previous IS BOUND.
+      WRITE: / 'Caused by:', lx_outer-&gt;previous-&gt;get_text( ).
+    ENDIF.
+ENDTRY.
+</code></pre>
+<pre><code class="language-text line-numbers">App error
+Caused by: Division by zero.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>MESSAGE Statement</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">MESSAGE &lt;type&gt;&lt;number&gt;(&lt;message_class&gt;) [WITH &lt;v1&gt; &lt;v2&gt; ...].
+
+Types:
+  A = Abend (terminates)
+  E = Error
+  W = Warning
+  I = Information
+  S = Success (status bar)
+  X = Exit (short dump)
+</code></pre>
+        <br/>
+        <li>Basic usage:</li>
+<pre><code class="language-abap line-numbers">MESSAGE s001(zmymsgs) WITH 'Operation completed'.
+
+MESSAGE i002(zmymsgs) WITH 'Info message'.
+
+MESSAGE e003(zmymsgs) WITH 'Error occurred'.
+</code></pre>
+        <br/>
+        <li>MESSAGE with DISPLAY LIKE:</li>
+<pre><code class="language-abap line-numbers">"Show as error but behave as success message
+MESSAGE e001(zmymsgs) WITH 'Error text' DISPLAY LIKE 'S'.
+</code></pre>
+        <br/>
+        <li>MESSAGE INTO variable:</li>
+<pre><code class="language-abap line-numbers">DATA lv_msg TYPE string.
+
+MESSAGE e001(00) WITH 'Test' INTO lv_msg.
+WRITE: / 'Message:', lv_msg.
+WRITE: / 'ID:', sy-msgid.
+WRITE: / 'Number:', sy-msgno.
+WRITE: / 'Type:', sy-msgty.
+</code></pre>
+<pre><code class="language-text line-numbers">Message: Test
+ID: 00
+Number: 001
+Type: E
+</code></pre>
+<p><code>INTO</code> captures message without displaying. Sets sy-msg* fields.</p>
+        <br/>
+        <li>MESSAGE RAISING exception:</li>
+<pre><code class="language-abap line-numbers">FORM validate USING iv_value TYPE i
+              RAISING cx_static_check.
+  IF iv_value < 0.
+    MESSAGE e001(zmymsgs) WITH 'Negative value' RAISING cx_static_check.
+  ENDIF.
+ENDFORM.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>ASSERT Statement</li>
+    <br/>
+    <ul>
+        <li>Syntax:</li>
+<pre><code class="language-text line-numbers">ASSERT &lt;condition&gt;.
+
+If condition is false, program terminates with dump.
+For debugging and catching "impossible" states.
+</code></pre>
+        <br/>
+        <li>Example:</li>
+<pre><code class="language-abap line-numbers">DATA lv_ptr TYPE REF TO i.
+
+lv_ptr = NEW #( 10 ).
+
+ASSERT lv_ptr IS BOUND.    "OK, continues
+
+lv_ptr = VALUE #( ).       "set to null
+
+ASSERT lv_ptr IS BOUND.    "fails - dumps
+</code></pre>
+<pre><code class="language-text line-numbers">Runtime error: ASSERTION_FAILED
+</code></pre>
+        <br/>
+        <li>ASSERT with subkey (for analysis):</li>
+<pre><code class="language-abap line-numbers">ASSERT ID zmycheck SUBKEY 'VALIDATION' CONDITION lv_valid = abap_true.
+</code></pre>
+<p>Can be activated/deactivated via transaction SAAB.</p>
+    </ul>
+    <br/><br/>
+
+
+    <li>Classic vs Class-Based Comparison</li>
+    <br/>
+    <ul>
+        <li>When to use which:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>Classic (sy-subrc)</th>
+            <th>Class-based (TRY-CATCH)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Use for</td>
+            <td>Function modules, old APIs</td>
+            <td>Methods, new development</td>
+        </tr>
+        <tr>
+            <td>Error details</td>
+            <td>Limited (just a number)</td>
+            <td>Rich (object with text, stack)</td>
+        </tr>
+        <tr>
+            <td>Propagation</td>
+            <td>Manual (pass sy-subrc up)</td>
+            <td>Automatic (RAISING)</td>
+        </tr>
+        <tr>
+            <td>Multiple errors</td>
+            <td>Only one at a time</td>
+            <td>Can chain (previous)</td>
+        </tr>
+        <tr>
+            <td>Compiler check</td>
+            <td>No</td>
+            <td>Yes (CX_STATIC_CHECK)</td>
+        </tr>
+    </tbody>
+</table>
+        <br/>
+        <li>Converting between systems:</li>
+<pre><code class="language-abap line-numbers">"Call function module, convert to exception
+CALL FUNCTION 'DATE_CHECK_PLAUSIBILITY'
+  EXPORTING
+    date                      = lv_date
+  EXCEPTIONS
+    plausibility_check_failed = 1
+    OTHERS                    = 2.
+
+IF sy-subrc <> 0.
+  RAISE EXCEPTION TYPE lcx_invalid_date
+    EXPORTING
+      message = |Invalid date: { lv_date }|.
+ENDIF.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Best Practices</li>
+    <br/>
+    <ul>
+        <li>Guidelines:</li>
+<pre><code class="language-text line-numbers">1. Use class-based exceptions for new code
+
+2. Catch specific exceptions, not cx_root (usually)
+
+3. Always check sy-subrc after:
+   - SELECT
+   - READ TABLE
+   - Function module calls
+   - File operations
+
+4. Don't use exceptions for normal control flow
+
+5. Include meaningful information in custom exceptions
+
+6. Use CX_STATIC_CHECK for recoverable errors
+   Use CX_DYNAMIC_CHECK for programming errors
+   Use CX_NO_CHECK for system errors
+
+7. Clean up resources in CLEANUP block
+</code></pre>
+        <br/>
+        <li>Exception handling pattern:</li>
+<pre><code class="language-abap line-numbers">METHOD process_order.
+  TRY.
+      validate_order( is_order ).
+      save_order( is_order ).
+      COMMIT WORK.
+    CATCH lcx_validation_error INTO DATA(lx_val).
+      "handle validation error
+      log_error( lx_val-&gt;get_text( ) ).
+      RAISE EXCEPTION lx_val.   "re-throw
+    CATCH lcx_database_error INTO DATA(lx_db).
+      "handle database error
+      ROLLBACK WORK.
+      log_error( lx_db-&gt;get_text( ) ).
+      RAISE EXCEPTION TYPE lcx_order_failed
+        EXPORTING
+          previous = lx_db.
+    CATCH cx_root INTO DATA(lx_other).
+      "unexpected error
+      ROLLBACK WORK.
+      log_error( |Unexpected: { lx_other-&gt;get_text( ) }| ).
+      RAISE EXCEPTION TYPE lcx_order_failed
+        EXPORTING
+          previous = lx_other.
+  ENDTRY.
+ENDMETHOD.
+</code></pre>
+    </ul>
+    <br/><br/>
+
+
+    <li>Quick Reference</li>
+    <br/>
+    <ul>
+        <li>Statement summary:</li>
+<table>
+    <thead>
+        <tr>
+            <th>Statement</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>TRY...ENDTRY</code></td>
+            <td>Define exception handling block</td>
+        </tr>
+        <tr>
+            <td><code>CATCH</code></td>
+            <td>Handle specific exception(s)</td>
+        </tr>
+        <tr>
+            <td><code>CLEANUP</code></td>
+            <td>Run when exception propagates out</td>
+        </tr>
+        <tr>
+            <td><code>RAISE EXCEPTION</code></td>
+            <td>Throw exception</td>
+        </tr>
+        <tr>
+            <td><code>RETRY</code></td>
+            <td>Restart TRY block</td>
+        </tr>
+        <tr>
+            <td><code>RESUME</code></td>
+            <td>Continue after RAISE RESUMABLE</td>
+        </tr>
+        <tr>
+            <td><code>RAISING</code></td>
+            <td>Declare exceptions method can throw</td>
+        </tr>
+        <tr>
+            <td><code>ASSERT</code></td>
+            <td>Verify condition, dump if false</td>
+        </tr>
+        <tr>
+            <td><code>MESSAGE</code></td>
+            <td>Display/capture message</td>
+        </tr>
+    </tbody>
+</table>
+    </ul>
+    <br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
