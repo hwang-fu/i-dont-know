@@ -156,7 +156,8 @@
         <li><a href="#svelte-events">Events</a></li>
         <li><a href="#svelte-bindings">Bindings</a></li>
         <li><a href="#svelte-classes">Classes</a></li>
-        <li><a href="#svelte-actions"></a>Actions</li>
+        <li><a href="#svelte-actions">Actions</a></li>
+        <li><a href="#svelte-transitions">Transitions</a></li>
     </ol>
 </nav>
 <hr/>
@@ -4936,7 +4937,1003 @@ const focusTrap: Action&lt;HTMLElement, FocusTrapParams&gt; = (node, params) =&g
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-transitions">Svelte Transitions</h3>
+<ol>
+    <li>What Are Transitions?</li>
+    <br/>
+    <ul>
+        <li><b>Transitions</b> are animations that play when elements are added to or removed from the DOM.</li>
+        <br/>
+        <li>Svelte provides built-in transitions and the ability to create custom ones.</li>
+        <br/>
+        <li>Transitions make UI changes feel smooth and polished.</li>
+        <br/>
+        <li>Key concepts:
+            <ul>
+                <li><code>transition:</code> — Plays on both enter and exit</li>
+                <li><code>in:</code> — Plays only on enter</li>
+                <li><code>out:</code> — Plays only on exit</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li>Built-in Transitions</li>
+    <br/>
+    <ul>
+        <li>Svelte provides several built-in transitions in <code>svelte/transition</code>:</li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Transition</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>fade</code></td>
+            <td>Fades opacity in/out</td>
+        </tr>
+        <tr>
+            <td><code>blur</code></td>
+            <td>Fades with blur effect</td>
+        </tr>
+        <tr>
+            <td><code>fly</code></td>
+            <td>Flies in from a direction</td>
+        </tr>
+        <tr>
+            <td><code>slide</code></td>
+            <td>Slides vertically</td>
+        </tr>
+        <tr>
+            <td><code>scale</code></td>
+            <td>Scales size in/out</td>
+        </tr>
+        <tr>
+            <td><code>draw</code></td>
+            <td>Draws SVG paths</td>
+        </tr>
+        <tr>
+            <td><code>crossfade</code></td>
+            <td>Morphs between elements</td>
+        </tr>
+    </table>
+    <br/><br/>
+
+
+
+    <li>Fade Transition</li>
+    <br/>
+    <ul>
+        <li>The simplest transition — fades opacity:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fade } from "svelte/transition";
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle
+&lt;/button&gt;
+
+{#if visible}
+    &lt;p transition:fade&gt;
+        This fades in and out
+    &lt;/p&gt;
+{/if}
+</code></pre>
+
+    <ul>
+        <li>With parameters:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fade } from "svelte/transition";
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+{#if visible}
+    &lt;p transition:fade={{ duration: 500, delay: 100 }}&gt;
+        Slower fade with delay
+    &lt;/p&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Fly Transition</li>
+    <br/>
+    <ul>
+        <li>Animates position and opacity:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fly } from "svelte/transition";
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle
+&lt;/button&gt;
+
+{#if visible}
+    &lt;!-- Fly from top --&gt;
+    &lt;p transition:fly={{ y: -50, duration: 300 }}&gt;
+        Flies from top
+    &lt;/p&gt;
+
+    &lt;!-- Fly from left --&gt;
+    &lt;p transition:fly={{ x: -200, duration: 300 }}&gt;
+        Flies from left
+    &lt;/p&gt;
+
+    &lt;!-- Fly with opacity control --&gt;
+    &lt;p transition:fly={{ y: 100, opacity: 0.5, duration: 400 }}&gt;
+        Partial opacity fly
+    &lt;/p&gt;
+{/if}
+</code></pre>
+
+    <ul>
+        <li>Parameters: <code>x</code>, <code>y</code>, <code>opacity</code>, <code>duration</code>, <code>delay</code>, <code>easing</code></li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Slide Transition</li>
+    <br/>
+    <ul>
+        <li>Slides element vertically (collapses height):</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { slide } from "svelte/transition";
+
+    let expanded: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; expanded = !expanded}&gt;
+    {expanded ? "Collapse" : "Expand"}
+&lt;/button&gt;
+
+{#if expanded}
+    &lt;div transition:slide={{ duration: 300 }}&gt;
+        &lt;p&gt;This content slides in and out.&lt;/p&gt;
+        &lt;p&gt;It animates the height property.&lt;/p&gt;
+        &lt;p&gt;Great for accordions and dropdowns.&lt;/p&gt;
+    &lt;/div&gt;
+{/if}
+</code></pre>
+
+    <ul>
+        <li>With axis parameter (Svelte 4+):</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { slide } from "svelte/transition";
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+{#if visible}
+    &lt;!-- Horizontal slide --&gt;
+    &lt;div transition:slide={{ axis: "x", duration: 300 }}&gt;
+        Slides horizontally
+    &lt;/div&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Scale Transition</li>
+    <br/>
+    <ul>
+        <li>Scales element size:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { scale } from "svelte/transition";
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle
+&lt;/button&gt;
+
+{#if visible}
+    &lt;div transition:scale={{ duration: 300 }}&gt;
+        Scales in and out
+    &lt;/div&gt;
+
+    &lt;div transition:scale={{ start: 0.5, opacity: 0.5 }}&gt;
+        Starts at 50% size
+    &lt;/div&gt;
+{/if}
+</code></pre>
+
+    <ul>
+        <li>Parameters: <code>start</code> (initial scale), <code>opacity</code>, <code>duration</code>, <code>delay</code>, <code>easing</code></li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Blur Transition</li>
+    <br/>
+    <ul>
+        <li>Fades with a blur effect:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { blur } from "svelte/transition";
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle
+&lt;/button&gt;
+
+{#if visible}
+    &lt;p transition:blur={{ amount: 10, duration: 400 }}&gt;
+        Blurs in and out
+    &lt;/p&gt;
+{/if}
+</code></pre>
+
+    <ul>
+        <li>Parameters: <code>amount</code> (blur pixels), <code>opacity</code>, <code>duration</code>, <code>delay</code>, <code>easing</code></li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Draw Transition (SVG)</li>
+    <br/>
+    <ul>
+        <li>Animates SVG path stroke:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { draw } from "svelte/transition";
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle
+&lt;/button&gt;
+
+{#if visible}
+    &lt;svg viewBox="0 0 100 100" width="200" height="200"&gt;
+        &lt;path
+            transition:draw={{ duration: 1000 }}
+            d="M10,50 Q50,10 90,50 Q50,90 10,50"
+            fill="none"
+            stroke="blue"
+            stroke-width="2"
+        /&gt;
+    &lt;/svg&gt;
+{/if}
+</code></pre>
+
+    <ul>
+        <li>Parameters: <code>speed</code> (pixels per second) or <code>duration</code>, <code>delay</code>, <code>easing</code></li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Separate In and Out Transitions</li>
+    <br/>
+    <ul>
+        <li>Use different transitions for entering and exiting:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fly, fade, scale } from "svelte/transition";
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle
+&lt;/button&gt;
+
+{#if visible}
+    &lt;!-- Different transitions for in/out --&gt;
+    &lt;p in:fly={{ y: -50 }} out:fade&gt;
+        Flies in, fades out
+    &lt;/p&gt;
+
+    &lt;p in:scale out:fly={{ x: 200 }}&gt;
+        Scales in, flies out to the right
+    &lt;/p&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Transition Parameters</li>
+    <br/>
+    <ul>
+        <li>Common parameters available to all transitions:</li>
+    </ul>
+
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>delay</code></td>
+            <td><code>number</code></td>
+            <td>Milliseconds before starting</td>
+        </tr>
+        <tr>
+            <td><code>duration</code></td>
+            <td><code>number</code></td>
+            <td>Length in milliseconds</td>
+        </tr>
+        <tr>
+            <td><code>easing</code></td>
+            <td><code>function</code></td>
+            <td>Easing function</td>
+        </tr>
+    </table>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fade } from "svelte/transition";
+    import { cubicOut, elasticOut, bounceOut } from "svelte/easing";
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+{#if visible}
+    &lt;p transition:fade={{ duration: 300, delay: 100, easing: cubicOut }}&gt;
+        Custom easing
+    &lt;/p&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Easing Functions</li>
+    <br/>
+    <ul>
+        <li>Svelte provides many easing functions in <code>svelte/easing</code>:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import {
+    // Linear
+    linear,
+
+    // Sine
+    sineIn, sineOut, sineInOut,
+
+    // Quad (power of 2)
+    quadIn, quadOut, quadInOut,
+
+    // Cubic (power of 3)
+    cubicIn, cubicOut, cubicInOut,
+
+    // Quart (power of 4)
+    quartIn, quartOut, quartInOut,
+
+    // Quint (power of 5)
+    quintIn, quintOut, quintInOut,
+
+    // Expo (exponential)
+    expoIn, expoOut, expoInOut,
+
+    // Circ (circular)
+    circIn, circOut, circInOut,
+
+    // Back (overshoots)
+    backIn, backOut, backInOut,
+
+    // Elastic (springy)
+    elasticIn, elasticOut, elasticInOut,
+
+    // Bounce
+    bounceIn, bounceOut, bounceInOut
+} from "svelte/easing";
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fly } from "svelte/transition";
+    import { elasticOut, bounceOut } from "svelte/easing";
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+{#if visible}
+    &lt;div transition:fly={{ y: -100, easing: elasticOut, duration: 800 }}&gt;
+        Elastic entrance!
+    &lt;/div&gt;
+
+    &lt;div transition:fly={{ y: 100, easing: bounceOut, duration: 600 }}&gt;
+        Bouncy entrance!
+    &lt;/div&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Transition Events</li>
+    <br/>
+    <ul>
+        <li>Listen to transition lifecycle events:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fade } from "svelte/transition";
+
+    let visible: boolean = $state(true);
+    let status: string = $state("");
+
+    function handleIntroStart(): void {
+        status = "Intro started";
+    }
+
+    function handleIntroEnd(): void {
+        status = "Intro ended";
+    }
+
+    function handleOutroStart(): void {
+        status = "Outro started";
+    }
+
+    function handleOutroEnd(): void {
+        status = "Outro ended";
+    }
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle
+&lt;/button&gt;
+
+&lt;p&gt;Status: {status}&lt;/p&gt;
+
+{#if visible}
+    &lt;div
+        transition:fade={{ duration: 500 }}
+        onintrostart={handleIntroStart}
+        onintroend={handleIntroEnd}
+        onoutrostart={handleOutroStart}
+        onoutroend={handleOutroEnd}
+    &gt;
+        Watch the status!
+    &lt;/div&gt;
+{/if}
+</code></pre>
+
+    <ul>
+        <li>Events: <code>introstart</code>, <code>introend</code>, <code>outrostart</code>, <code>outroend</code></li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Local Transitions</li>
+    <br/>
+    <ul>
+        <li>By default, transitions play when any parent block is added/removed.</li>
+        <br/>
+        <li>Use <code>local</code> modifier to only play when the element's direct block changes:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { slide, fade } from "svelte/transition";
+
+    let showList: boolean = $state(true);
+    let items: string[] = $state(["Item 1", "Item 2", "Item 3"]);
+
+    function addItem(): void {
+        items = [...items, `Item ${items.length + 1}`];
+    }
+
+    function removeItem(index: number): void {
+        items = items.filter((_, i) =&gt; i !== index);
+    }
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; showList = !showList}&gt;
+    Toggle List
+&lt;/button&gt;
+&lt;button onclick={addItem}&gt;Add Item&lt;/button&gt;
+
+{#if showList}
+    &lt;ul transition:fade&gt;
+        {#each items as item, i (item)}
+            &lt;!-- |local prevents animation when parent toggles --&gt;
+            &lt;li transition:slide|local&gt;
+                {item}
+                &lt;button onclick={() =&gt; removeItem(i)}&gt;×&lt;/button&gt;
+            &lt;/li&gt;
+        {/each}
+    &lt;/ul&gt;
+{/if}
+</code></pre>
+
+    <ul>
+        <li>Without <code>|local</code>, items would animate when toggling the entire list.</li>
+        <li>With <code>|local</code>, items only animate when individually added/removed.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Global Modifier</li>
+    <br/>
+    <ul>
+        <li>The <code>|global</code> modifier ensures transitions play even during initial page load:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fade } from "svelte/transition";
+&lt;/script&gt;
+
+&lt;!-- Plays transition on initial render --&gt;
+&lt;div transition:fade|global={{ duration: 1000 }}&gt;
+    Fades in on page load
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Crossfade Transition</li>
+    <br/>
+    <ul>
+        <li>Creates a morphing effect between two elements:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { crossfade } from "svelte/transition";
+    import { quintOut } from "svelte/easing";
+
+    const [send, receive] = crossfade({
+        duration: 400,
+        easing: quintOut,
+        fallback(node) {
+            // Fallback when no matching element exists
+            return {
+                duration: 300,
+                css: (t: number) =&gt; `opacity: ${t}`
+            };
+        }
+    });
+
+    interface Todo {
+        id: number;
+        text: string;
+        done: boolean;
+    }
+
+    let todos: Todo[] = $state([
+        { id: 1, text: "Learn Svelte", done: false },
+        { id: 2, text: "Build an app", done: false },
+        { id: 3, text: "Deploy", done: true }
+    ]);
+
+    function toggle(id: number): void {
+        todos = todos.map(t =&gt;
+            t.id === id ? { ...t, done: !t.done } : t
+        );
+    }
+
+    let pending = $derived(todos.filter(t =&gt; !t.done));
+    let completed = $derived(todos.filter(t =&gt; t.done));
+&lt;/script&gt;
+
+&lt;div class="columns"&gt;
+    &lt;div class="column"&gt;
+        &lt;h3&gt;Pending&lt;/h3&gt;
+        {#each pending as todo (todo.id)}
+            &lt;div
+                class="todo"
+                in:receive={{ key: todo.id }}
+                out:send={{ key: todo.id }}
+                onclick={() =&gt; toggle(todo.id)}
+            &gt;
+                {todo.text}
+            &lt;/div&gt;
+        {/each}
+    &lt;/div&gt;
+
+    &lt;div class="column"&gt;
+        &lt;h3&gt;Completed&lt;/h3&gt;
+        {#each completed as todo (todo.id)}
+            &lt;div
+                class="todo done"
+                in:receive={{ key: todo.id }}
+                out:send={{ key: todo.id }}
+                onclick={() =&gt; toggle(todo.id)}
+            &gt;
+                {todo.text}
+            &lt;/div&gt;
+        {/each}
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+    .columns { display: flex; gap: 20px; }
+    .column { flex: 1; }
+    .todo { padding: 10px; margin: 5px 0; background: #eee; cursor: pointer; }
+    .todo.done { background: #c8e6c9; }
+&lt;/style&gt;
+</code></pre>
+
+    <ul>
+        <li><code>crossfade</code> returns <code>[send, receive]</code> pair.</li>
+        <li>Elements with matching <code>key</code> morph into each other.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Custom Transitions</li>
+    <br/>
+    <ul>
+        <li>Create custom transitions by returning a configuration object:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { TransitionConfig } from "svelte/transition";
+
+    interface SpinParams {
+        duration?: number;
+        rotations?: number;
+    }
+
+    function spin(node: HTMLElement, params: SpinParams = {}): TransitionConfig {
+        const { duration = 500, rotations = 1 } = params;
+
+        return {
+            duration,
+            css: (t: number) =&gt; {
+                const rotation = t * rotations * 360;
+                const scale = t;
+                return `
+                    transform: rotate(${rotation}deg) scale(${scale});
+                    opacity: ${t};
+                `;
+            }
+        };
+    }
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle
+&lt;/button&gt;
+
+{#if visible}
+    &lt;div transition:spin={{ duration: 800, rotations: 2 }}&gt;
+        Spinning!
+    &lt;/div&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Custom Transition with <code>tick</code></li>
+    <br/>
+    <ul>
+        <li>Use <code>tick</code> for JavaScript-based animations (when CSS isn't enough):</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { TransitionConfig } from "svelte/transition";
+
+    interface TypewriterParams {
+        speed?: number;
+    }
+
+    function typewriter(node: HTMLElement, params: TypewriterParams = {}): TransitionConfig {
+        const { speed = 50 } = params;
+        const text = node.textContent ?? "";
+        const duration = text.length * speed;
+
+        return {
+            duration,
+            tick: (t: number) =&gt; {
+                const length = Math.floor(text.length * t);
+                node.textContent = text.slice(0, length);
+            }
+        };
+    }
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle
+&lt;/button&gt;
+
+{#if visible}
+    &lt;p transition:typewriter={{ speed: 30 }}&gt;
+        This text appears character by character...
+    &lt;/p&gt;
+{/if}
+</code></pre>
+
+    <ul>
+        <li><code>css</code> is preferred for performance (runs on GPU).</li>
+        <li><code>tick</code> is for animations that can't be done with CSS.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Transition Return Object</li>
+    <br/>
+    <ul>
+        <li>Custom transitions return a <code>TransitionConfig</code> object:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">interface TransitionConfig {
+    delay?: number;           // Delay before starting
+    duration?: number;        // Animation length in ms
+    easing?: (t: number) =&gt; number;  // Easing function
+    css?: (t: number, u: number) =&gt; string;  // CSS generator
+    tick?: (t: number, u: number) =&gt; void;   // JS callback
+}
+
+// t: 0 to 1 (intro) or 1 to 0 (outro) - the progress
+// u: 1 - t (the inverse)
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { TransitionConfig } from "svelte/transition";
+    import { cubicOut } from "svelte/easing";
+
+    function customFade(node: HTMLElement): TransitionConfig {
+        return {
+            delay: 100,
+            duration: 400,
+            easing: cubicOut,
+            css: (t: number, u: number) =&gt; `
+                opacity: ${t};
+                transform: translateY(${u * 20}px);
+            `
+        };
+    }
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+{#if visible}
+    &lt;div transition:customFade&gt;
+        Custom fade transition
+    &lt;/div&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Deferred Transitions</li>
+    <br/>
+    <ul>
+        <li>Return a function to defer transition creation:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { TransitionConfig } from "svelte/transition";
+
+    function deferredSlide(node: HTMLElement): () =&gt; TransitionConfig {
+        // Measure height when transition starts, not when component mounts
+        return () =&gt; {
+            const height = node.offsetHeight;
+            return {
+                duration: 300,
+                css: (t: number) =&gt; `
+                    height: ${t * height}px;
+                    overflow: hidden;
+                `
+            };
+        };
+    }
+
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+{#if visible}
+    &lt;div transition:deferredSlide&gt;
+        Content with dynamic height
+    &lt;/div&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Staggered List Transitions</li>
+    <br/>
+    <ul>
+        <li>Create staggered animations using index-based delays:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fly } from "svelte/transition";
+
+    let visible: boolean = $state(true);
+
+    const items: string[] = [
+        "First item",
+        "Second item",
+        "Third item",
+        "Fourth item",
+        "Fifth item"
+    ];
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle List
+&lt;/button&gt;
+
+{#if visible}
+    &lt;ul&gt;
+        {#each items as item, i}
+            &lt;li
+                in:fly={{ y: 20, delay: i * 100, duration: 300 }}
+                out:fly={{ y: -20, delay: (items.length - i - 1) * 50, duration: 200 }}
+            &gt;
+                {item}
+            &lt;/li&gt;
+        {/each}
+    &lt;/ul&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Combining Transitions with CSS</li>
+    <br/>
+    <ul>
+        <li>Transitions work alongside CSS transitions:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fade } from "svelte/transition";
+
+    let visible: boolean = $state(true);
+    let hovered: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle
+&lt;/button&gt;
+
+{#if visible}
+    &lt;div
+        class="box"
+        class:hovered
+        transition:fade={{ duration: 300 }}
+        onmouseenter={() =&gt; hovered = true}
+        onmouseleave={() =&gt; hovered = false}
+    &gt;
+        Hover me!
+    &lt;/div&gt;
+{/if}
+
+&lt;style&gt;
+    .box {
+        padding: 20px;
+        background: #3498db;
+        color: white;
+        transition: transform 0.2s, background 0.2s;
+    }
+    .box.hovered {
+        transform: scale(1.05);
+        background: #2980b9;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Transition with <code>{#key}</code></li>
+    <br/>
+    <ul>
+        <li>Use <code>{#key}</code> to trigger transitions when a value changes:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fade, fly } from "svelte/transition";
+
+    let count: number = $state(0);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; count++}&gt;
+    Increment
+&lt;/button&gt;
+
+{#key count}
+    &lt;p transition:fade={{ duration: 200 }}&gt;
+        Count: {count}
+    &lt;/p&gt;
+{/key}
+
+{#key count}
+    &lt;div in:fly={{ y: -20 }} out:fly={{ y: 20 }}&gt;
+        Value changed!
+    &lt;/div&gt;
+{/key}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Transitions Summary</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Directive</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+        <tr>
+            <td><code>transition:</code></td>
+            <td>In and out</td>
+            <td><code>transition:fade</code></td>
+        </tr>
+        <tr>
+            <td><code>in:</code></td>
+            <td>Enter only</td>
+            <td><code>in:fly={{ y: -50 }}</code></td>
+        </tr>
+        <tr>
+            <td><code>out:</code></td>
+            <td>Exit only</td>
+            <td><code>out:fade</code></td>
+        </tr>
+        <tr>
+            <td><code>|local</code></td>
+            <td>Only direct block changes</td>
+            <td><code>transition:slide|local</code></td>
+        </tr>
+        <tr>
+            <td><code>|global</code></td>
+            <td>Play on initial render</td>
+            <td><code>transition:fade|global</code></td>
+        </tr>
+        <tr>
+            <td>Events</td>
+            <td>Lifecycle hooks</td>
+            <td><code>onintroend={handler}</code></td>
+        </tr>
+        <tr>
+            <td>Custom</td>
+            <td>Return <code>TransitionConfig</code></td>
+            <td><code>css: (t) =&gt; ...</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
