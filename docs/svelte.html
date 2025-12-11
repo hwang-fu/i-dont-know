@@ -104,11 +104,11 @@
         color: #24292e;
         background-color: #f6f8fa;
         border: 1px solid #d0d7de;
-        border-radius: .375rem;
-        padding: .05rem .35rem;
+        border-radius: .325rem;
+        padding: .05rem .25rem;
         font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-        font-size: 0.775rem;
-        line-height: 1.1;
+        font-size: 0.725rem;
+        line-height: 1.7;
     }
 
 
@@ -130,8 +130,8 @@
         border: 0;
         color: #24292e;
         font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-        font-size: 0.875rem;
-        line-height: 1.5;
+        font-size: 0.825rem;
+        line-height: 1.2;
         white-space: pre;
     }
 </style>
@@ -149,7 +149,7 @@
 <nav id="toc" style="margin-bottom: 2rem;">
     <h2> <img src="resources/svelte.png" alt="Logo" class="nav-icon"/> </h2>
     <ol style="line-height: 1.8;">
-        <li><a href="#"></a></li>
+        <li><a href="#svelte-introduction">Introduction</a></li>
     </ol>
 </nav>
 <hr/>
@@ -157,18 +157,302 @@
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3></h3>
+<h3 id="svelte-introduction">Introduction to Svelte</h3>
 <ol>
-    <li></li>
+    <li>What Is Svelte?</li>
     <br/>
+    <ul>
+        <li><b>Svelte</b> is a modern, <u>compiler-based</u> JavaScript framework for building user interfaces.</li>
+        <br/>
+        <li>Unlike Vue or React, Svelte shifts work from the <u>browser</u> to a <u>compile step</u> at build time, producing highly optimized vanilla JavaScript.</li>
+        <br/>
+        <li>Svelte's ecosystem includes:
+            <ul>
+                <li><code>SvelteKit</code> which is a full-stack application framework (routing, SSR, etc.)</li>
+                <li><code>Svelte Stores</code> for built-in state management</li>
+                <li><code>Vite</code> is the recommended build tool</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>How Svelte Works</li>
     <br/>
-    <li></li>
+    <ul>
+        <li>Svelte compiles your components into <u>efficient imperative code</u> that surgically updates the DOM.</li>
+        <br/>
+        <li>There is <u>no virtual DOM</u> — Svelte generates code that directly manipulates the DOM when state changes.</li>
+        <br/>
+        <li>A Svelte component contains:
+            <ul>
+                <li>a <code>&lt;script&gt;</code> block for JavaScript logic</li>
+                <li>HTML markup (the template)</li>
+                <li>an optional <code>&lt;style&gt;</code> block for scoped CSS</li>
+            </ul>
+        </li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let message = "Hello Svelte!";
+&lt;/script&gt;
+
+&lt;h1&gt;{message}&lt;/h1&gt;
+
+&lt;style&gt;
+    h1 {
+        color: #ff3e00;
+    }
+&lt;/style&gt;
+</code></pre>
+    <ul>
+        <li>The text inside <code>{ }</code> automatically updates when <code>message</code> changes.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Getting Started (Project Setup)</li>
     <br/>
+    <ul>
+        <li>The recommended way to start a Svelte project is using <code>SvelteKit</code>:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">npx sv create my-app
+cd my-app/
+npm install
+npm run dev
+</code></pre>
+    <ul>
+        <li>For a simpler standalone Svelte project without it:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">npm create vite@latest my-app -- --template svelte
+cd my-app/
+npm install
+npm run dev
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Core Concepts of Svelte</li>
+
     <br/>
-    <li></li>
+    <ol>
+    <li>Reactivity</li>
     <br/>
+    <ul>
+        <li>Svelte's reactivity is built into the language — just assign a new value to trigger updates.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let count = 0;
+
+    function increment() {
+        count += 1;  // This automatically updates the DOM
+    }
+&lt;/script&gt;
+
+&lt;button on:click={increment}&gt;
+    Clicked {count} times
+&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Reactive Declarations (<code>$:</code>)</li>
+    <br/>
+    <ul>
+        <li>Use <code>$:</code> to create reactive statements that re-run when dependencies change.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let count = 0;
+    $: doubled = count * 2;
+    $: console.log("Count is now", count);
+&lt;/script&gt;
+
+&lt;p&gt;{count} doubled is {doubled}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Event Handling</li>
+
+<pre><code class="language-html line-numbers">&lt;button on:click={handleClick}&gt;Click me&lt;/button&gt;
+
+&lt;!-- With inline handler --&gt;
+&lt;button on:click={() =&gt; count++}&gt;Increase&lt;/button&gt;
+
+&lt;!-- With modifiers --&gt;
+&lt;button on:click|once|preventDefault={handleClick}&gt;Submit&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li><code>on:click</code> is Svelte's event directive syntax.</li>
+        <li>Modifiers like <code>|once</code>, <code>|preventDefault</code>, <code>|stopPropagation</code> can be chained.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Two-Way Binding with <code>bind:</code></li>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let name = "";
+&lt;/script&gt;
+
+&lt;input bind:value={name} /&gt;
+&lt;p&gt;Hello {name}!&lt;/p&gt;
+</code></pre>
+    <ul>
+        <li>Typing into the input updates <code>name</code> immediately.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Conditionals and Loops</li>
+<pre><code class="language-html line-numbers">&lt;!-- Conditionals --&gt;
+{#if loggedIn}
+    &lt;p&gt;Welcome back!&lt;/p&gt;
+{:else}
+    &lt;p&gt;Please log in.&lt;/p&gt;
+{/if}
+
+&lt;!-- Loops --&gt;
+{#each items as item, index (item.id)}
+    &lt;li&gt;{index}: {item.name}&lt;/li&gt;
+{/each}
+</code></pre>
+    <ul>
+        <li><code>{#if}</code>, <code>{:else}</code>, <code>{/if}</code> are Svelte's conditional blocks.</li>
+        <li><code>{#each}</code> iterates over arrays; the <code>(item.id)</code> part is a keyed each block for efficient updates.</li>
+    </ul>
+    </ol>
+    <br/><br/>
+
+
+
+    <li>Component Structure</li>
+    <br/>
+    <ul>
+        <li>Svelte components are stored in <code>.svelte</code> files.</li>
+        <li>Each file is a single component with script, markup, and styles together.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Greeting.svelte --&gt;
+&lt;script&gt;
+    export let name = "World";
+&lt;/script&gt;
+
+&lt;h1&gt;Hello {name}!&lt;/h1&gt;
+
+&lt;style&gt;
+    h1 {
+        font-family: Georgia, serif;
+        color: #333;
+    }
+&lt;/style&gt;
+</code></pre>
+
+    <ul>
+        <li><code>export let</code> declares a <u>prop</u> that can be passed from parent components.</li>
+        <li>Styles are <u>scoped by default</u>, they only affect this component.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Using Components</li>
+    <br/>
+    <ul>
+        <li>Import and use components like regular ES modules:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    import Greeting from "./Greeting.svelte";
+&lt;/script&gt;
+
+&lt;Greeting name="Svelte" /&gt;
+&lt;Greeting /&gt;  &lt;!-- Uses default "World" --&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Key Differences from Other Frameworks</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Svelte</th>
+            <th>Vue / React</th>
+        </tr>
+        <tr>
+            <td>Compilation</td>
+            <td>Compiles to vanilla JS at build time</td>
+            <td>Ships a runtime library to the browser</td>
+        </tr>
+        <tr>
+            <td>Virtual DOM</td>
+            <td>No virtual DOM</td>
+            <td>Uses virtual DOM for diffing</td>
+        </tr>
+        <tr>
+            <td>Reactivity</td>
+            <td>Built into the language (<code>$:</code>)</td>
+            <td>Requires hooks or reactive APIs</td>
+        </tr>
+        <tr>
+            <td>Bundle Size</td>
+            <td>Typically smaller</td>
+            <td>Includes framework runtime</td>
+        </tr>
+        <tr>
+            <td>Learning Curve</td>
+            <td>Closer to vanilla HTML/CSS/JS</td>
+            <td>Framework-specific patterns</td>
+        </tr>
+    </table>
+    <br/><br/>
+
+
+
+    <li>Svelte 5 Runes (New Reactivity)</li>
+    <br/>
+    <ul>
+        <li>Svelte 5 introduced <u>Runes</u>, a new reactivity system using special functions:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let count = $state(0);
+    let doubled = $derived(count * 2);
+
+    function increment() {
+        count++;
+    }
+&lt;/script&gt;
+
+&lt;button onclick={increment}&gt;
+    {count} × 2 = {doubled}
+&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li><code>$state()</code> creates reactive state.</li>
+        <li><code>$derived()</code> creates computed values.</li>
+        <li><code>$effect()</code> runs side effects when dependencies change.</li>
+        <li>Note: In Svelte 5, event handlers use <code>onclick</code> instead of <code>on:click</code>.</li>
+    </ul>
+    <br/><br/>
+
 </ol>
-<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
