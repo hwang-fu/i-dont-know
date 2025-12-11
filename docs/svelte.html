@@ -155,6 +155,7 @@
         <li><a href="#svelte-logic">Logic</a></li>
         <li><a href="#svelte-events">Events</a></li>
         <li><a href="#svelte-bindings">Bindings</a></li>
+        <li><a href="#svelte-classes">Classes</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2735,8 +2736,8 @@ user.age = 26;  // This IS reactive in Svelte 5!
     }
 
     const plans: Plan[] = [
-        { id: "basic", name: "Basic", price: 9.99 },
-        { id: "pro", name: "Pro", price: 19.99 },
+        { id: "basic",      name: "Basic",      price: 9.99  },
+        { id: "pro",        name: "Pro",        price: 19.99 },
         { id: "enterprise", name: "Enterprise", price: 49.99 }
     ];
 
@@ -2763,7 +2764,7 @@ user.age = 26;  // This IS reactive in Svelte 5!
     </ul>
 
 <pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
-    let selectedCountry: string = $state("");
+    const selectedCountry: string = $state("");
 
     const countries: string[] = ["USA", "Canada", "UK", "Germany", "Japan"];
 &lt;/script&gt;
@@ -2796,11 +2797,11 @@ user.age = 26;  // This IS reactive in Svelte 5!
 
     const countries: Country[] = [
         { code: "US", name: "United States", population: 331000000 },
-        { code: "JP", name: "Japan", population: 125800000 },
-        { code: "DE", name: "Germany", population: 83200000 }
+        { code: "JP", name: "Japan",         population: 125800000 },
+        { code: "DE", name: "Germany",       population: 83200000 }
     ];
 
-    let selectedCountry: Country | undefined = $state(undefined);
+    const selectedCountry: Country | undefined = $state(undefined);
 &lt;/script&gt;
 
 &lt;select bind:value={selectedCountry}&gt;
@@ -2825,7 +2826,7 @@ user.age = 26;  // This IS reactive in Svelte 5!
     </ul>
 
 <pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
-    let selectedSkills: string[] = $state([]);
+    const selectedSkills: string[] = $state([]);
 
     const skills: string[] = ["JavaScript", "TypeScript", "Python", "Rust", "Go"];
 &lt;/script&gt;
@@ -2853,7 +2854,7 @@ user.age = 26;  // This IS reactive in Svelte 5!
     </ul>
 
 <pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
-    let bio: string = $state("");
+    const bio: string = $state("");
 &lt;/script&gt;
 
 &lt;textarea bind:value={bio} rows="4" cols="50"&gt;&lt;/textarea&gt;
@@ -3337,7 +3338,642 @@ user.age = 26;  // This IS reactive in Svelte 5!
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-classes">Svelte Classes</h3>
+<ol>
+    <li>What Are Class Directives?</li>
+    <br/>
+    <ul>
+        <li>Svelte provides special syntax for dynamically adding and removing CSS classes.</li>
+        <br/>
+        <li>The <code>class:</code> directive conditionally applies a class based on a boolean expression.</li>
+        <br/>
+        <li>This is cleaner than manually building class strings.</li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li>Basic Class Attribute</li>
+    <br/>
+    <ul>
+        <li>You can use the standard <code>class</code> attribute:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let className: string = "button primary";
+&lt;/script&gt;
+
+&lt;button class="button"&gt;Static class&lt;/button&gt;
+&lt;button class={className}&gt;Dynamic class&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Conditional Classes with Ternary</li>
+    <br/>
+    <ul>
+        <li>Use template expressions to conditionally apply classes:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let isActive: boolean = $state(false);
+    let isDisabled: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;button class={isActive ? "active" : ""}&gt;
+    Toggle
+&lt;/button&gt;
+
+&lt;button class={isActive ? "btn active" : "btn"}&gt;
+    With base class
+&lt;/button&gt;
+
+&lt;button class="btn {isActive ? 'active' : ''} {isDisabled ? 'disabled' : ''}"&gt;
+    Multiple conditions
+&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>This works but can become verbose with multiple conditions.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>The <code>class:</code> Directive</li>
+    <br/>
+    <ul>
+        <li>The <code>class:</code> directive provides a cleaner syntax:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let isActive: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;button class:active={isActive}&gt;
+    Toggle
+&lt;/button&gt;
+
+&lt;!-- The class "active" is added when isActive is true --&gt;
+
+&lt;style&gt;
+    .active {
+        background-color: #4CAF50;
+        color: white;
+    }
+&lt;/style&gt;
+</code></pre>
+
+    <ul>
+        <li>Syntax: <code>class:classname={condition}</code></li>
+        <li>When <code>condition</code> is truthy, <code>classname</code> is added.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Shorthand <code>class:</code> Directive</li>
+    <br/>
+    <ul>
+        <li>When the class name matches the variable name, use the shorthand:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let active: boolean = $state(false);
+    let disabled: boolean = $state(false);
+    let hidden: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;!-- These are equivalent: --&gt;
+&lt;button class:active={active}&gt;Long form&lt;/button&gt;
+&lt;button class:active&gt;Shorthand&lt;/button&gt;
+
+&lt;!-- Multiple shorthand classes --&gt;
+&lt;button class:active class:disabled class:hidden&gt;
+    Multiple
+&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Multiple Class Directives</li>
+    <br/>
+    <ul>
+        <li>Apply multiple conditional classes to one element:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let isActive: boolean = $state(true);
+    let isLarge: boolean = $state(false);
+    let isPrimary: boolean = $state(true);
+    let isDisabled: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;button
+    class="btn"
+    class:active={isActive}
+    class:large={isLarge}
+    class:primary={isPrimary}
+    class:disabled={isDisabled}
+&gt;
+    Styled Button
+&lt;/button&gt;
+
+&lt;style&gt;
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+    }
+    .active { border: 2px solid blue; }
+    .large { font-size: 1.5rem; padding: 15px 30px; }
+    .primary { background-color: #007bff; color: white; }
+    .disabled { opacity: 0.5; cursor: not-allowed; }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Combining <code>class</code> and <code>class:</code></li>
+    <br/>
+    <ul>
+        <li>Use both static classes and conditional class directives together:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let variant: string = $state("primary");
+    let isLoading: boolean = $state(false);
+    let isFullWidth: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;button
+    class="btn btn-{variant}"
+    class:loading={isLoading}
+    class:full-width={isFullWidth}
+&gt;
+    {isLoading ? "Loading..." : "Submit"}
+&lt;/button&gt;
+
+&lt;style&gt;
+    .btn { padding: 10px 20px; }
+    .btn-primary { background: blue; color: white; }
+    .btn-secondary { background: gray; color: white; }
+    .btn-danger { background: red; color: white; }
+    .loading { opacity: 0.7; pointer-events: none; }
+    .full-width { width: 100%; }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Class Directive with Expressions</li>
+    <br/>
+    <ul>
+        <li>The condition can be any JavaScript expression:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let count: number = $state(0);
+    let status: string = $state("pending");
+    let items: string[] = $state(["a", "b"]);
+&lt;/script&gt;
+
+&lt;!-- Comparison expressions --&gt;
+&lt;div class:warning={count &gt; 5}&gt;Count warning&lt;/div&gt;
+&lt;div class:danger={count &gt; 10}&gt;Count danger&lt;/div&gt;
+
+&lt;!-- Equality checks --&gt;
+&lt;div class:success={status === "completed"}&gt;Status&lt;/div&gt;
+&lt;div class:pending={status === "pending"}&gt;Status&lt;/div&gt;
+
+&lt;!-- Array/Object checks --&gt;
+&lt;div class:empty={items.length === 0}&gt;Items&lt;/div&gt;
+&lt;div class:has-items={items.length &gt; 0}&gt;Items&lt;/div&gt;
+
+&lt;!-- Logical expressions --&gt;
+&lt;div class:special={count &gt; 5 && status === "completed"}&gt;
+    Special
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Dynamic Class Names</li>
+    <br/>
+    <ul>
+        <li>Build class names dynamically using template literals:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let size: "sm" | "md" | "lg" = $state("md");
+    let color: "red" | "green" | "blue" = $state("blue");
+    let theme: "light" | "dark" = $state("light");
+&lt;/script&gt;
+
+&lt;button class="btn btn-{size} btn-{color}"&gt;
+    Dynamic Size &amp; Color
+&lt;/button&gt;
+
+&lt;div class="container theme-{theme}"&gt;
+    Themed Container
+&lt;/div&gt;
+
+&lt;!-- With conditional fallback --&gt;
+&lt;div class="icon icon-{status || 'default'}"&gt;
+    Icon
+&lt;/div&gt;
+
+&lt;style&gt;
+    .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+    .btn-md { padding: 10px 20px; font-size: 1rem; }
+    .btn-lg { padding: 15px 30px; font-size: 1.2rem; }
+    .btn-red { background: red; }
+    .btn-green { background: green; }
+    .btn-blue { background: blue; }
+    .theme-light { background: white; color: black; }
+    .theme-dark { background: #333; color: white; }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Class Object Pattern</li>
+    <br/>
+    <ul>
+        <li>Create a utility function for complex class logic:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    // Utility function to build class string from object
+    function classNames(classes: Record&lt;string, boolean&gt;): string {
+        return Object.entries(classes)
+            .filter(([, value]) =&gt; value)
+            .map(([key]) =&gt; key)
+            .join(" ");
+    }
+
+    let isActive: boolean = $state(true);
+    let isDisabled: boolean = $state(false);
+    let size: string = $state("large");
+
+    let buttonClasses = $derived(classNames({
+        "btn": true,
+        "btn-active": isActive,
+        "btn-disabled": isDisabled,
+        "btn-large": size === "large",
+        "btn-small": size === "small"
+    }));
+&lt;/script&gt;
+
+&lt;button class={buttonClasses}&gt;
+    Dynamic Classes
+&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Using <code>clsx</code> or <code>classnames</code> Library</li>
+    <br/>
+    <ul>
+        <li>For complex class logic, use a utility library like <code>clsx</code>:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">npm install clsx
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import clsx from "clsx";
+
+    let isActive: boolean = $state(false);
+    let isDisabled: boolean = $state(false);
+    let variant: "primary" | "secondary" = $state("primary");
+
+    let classes = $derived(clsx(
+        "btn",
+        `btn-${variant}`,
+        {
+            "active": isActive,
+            "disabled": isDisabled
+        }
+    ));
+&lt;/script&gt;
+
+&lt;button class={classes}&gt;
+    Using clsx
+&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li><code>clsx</code> handles strings, objects, arrays, and falsy values gracefully.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Classes in Loops</li>
+    <br/>
+    <ul>
+        <li>Apply conditional classes to items in a loop:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Item {
+        id: number;
+        name: string;
+        completed: boolean;
+        priority: "low" | "medium" | "high";
+    }
+
+    let items: Item[] = $state([
+        { id: 1, name: "Task 1", completed: false, priority: "high" },
+        { id: 2, name: "Task 2", completed: true, priority: "low" },
+        { id: 3, name: "Task 3", completed: false, priority: "medium" }
+    ]);
+
+    let selectedId: number | null = $state(null);
+&lt;/script&gt;
+
+&lt;ul&gt;
+    {#each items as item (item.id)}
+        &lt;li
+            class="item priority-{item.priority}"
+            class:completed={item.completed}
+            class:selected={selectedId === item.id}
+            onclick={() =&gt; selectedId = item.id}
+        &gt;
+            {item.name}
+        &lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+
+&lt;style&gt;
+    .item { padding: 10px; cursor: pointer; }
+    .completed { text-decoration: line-through; opacity: 0.6; }
+    .selected { background-color: #e0e0e0; }
+    .priority-low { border-left: 3px solid green; }
+    .priority-medium { border-left: 3px solid orange; }
+    .priority-high { border-left: 3px solid red; }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Global Classes vs Scoped Classes</li>
+    <br/>
+    <ul>
+        <li>Svelte styles are <u>scoped by default</u> — they only apply to the current component.</li>
+        <br/>
+        <li>Use <code>:global()</code> to apply styles globally:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let isDark: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;div class="container" class:dark={isDark}&gt;
+    &lt;p&gt;This is styled locally.&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+    /* Scoped to this component */
+    .container {
+        padding: 20px;
+        background: white;
+    }
+
+    .dark {
+        background: #333;
+        color: white;
+    }
+
+    /* Global style - affects all elements */
+    :global(.global-class) {
+        font-weight: bold;
+    }
+
+    /* Global modifier within scoped context */
+    .container :global(.highlight) {
+        background-color: yellow;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Passing Classes to Child Components</li>
+    <br/>
+    <ul>
+        <li>Accept a <code>class</code> prop to allow parent customization:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Button.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        variant?: "primary" | "secondary";
+        class?: string;
+    }
+
+    let { variant = "primary", class: className = "" }: Props = $props();
+&lt;/script&gt;
+
+&lt;button class="btn btn-{variant} {className}"&gt;
+    &lt;slot /&gt;
+&lt;/button&gt;
+
+&lt;style&gt;
+    .btn { padding: 10px 20px; border: none; cursor: pointer; }
+    .btn-primary { background: blue; color: white; }
+    .btn-secondary { background: gray; color: white; }
+&lt;/style&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Button from "./Button.svelte";
+&lt;/script&gt;
+
+&lt;Button class="my-custom-class"&gt;Click me&lt;/Button&gt;
+&lt;Button variant="secondary" class="full-width"&gt;Submit&lt;/Button&gt;
+
+&lt;style&gt;
+    :global(.my-custom-class) {
+        margin: 10px;
+    }
+    :global(.full-width) {
+        width: 100%;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Using <code>$$restProps</code> for Class Forwarding (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Forward all attributes including <code>class</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Input.svelte (Svelte 4) --&gt;
+&lt;script lang="ts"&gt;
+    export let label: string = "";
+&lt;/script&gt;
+
+&lt;label&gt;
+    {label}
+    &lt;input {...$$restProps} /&gt;
+&lt;/label&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Usage --&gt;
+&lt;Input label="Email" class="form-input" type="email" placeholder="Enter email" /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Using Rest Props for Class Forwarding (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>In Svelte 5, use rest props destructuring:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Input.svelte (Svelte 5) --&gt;
+&lt;script lang="ts"&gt;
+    import type { HTMLInputAttributes } from "svelte/elements";
+
+    interface Props extends HTMLInputAttributes {
+        label?: string;
+    }
+
+    let { label = "", ...rest }: Props = $props();
+&lt;/script&gt;
+
+&lt;label&gt;
+    {label}
+    &lt;input {...rest} /&gt;
+&lt;/label&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Usage --&gt;
+&lt;Input label="Email" class="form-input" type="email" placeholder="Enter email" /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Animated Class Transitions</li>
+    <br/>
+    <ul>
+        <li>Combine class toggling with CSS transitions:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let expanded: boolean = $state(false);
+    let visible: boolean = $state(true);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; expanded = !expanded}&gt;
+    Toggle Expand
+&lt;/button&gt;
+
+&lt;div class="box" class:expanded&gt;
+    &lt;p&gt;Content here&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;button onclick={() =&gt; visible = !visible}&gt;
+    Toggle Visibility
+&lt;/button&gt;
+
+&lt;div class="fade-box" class:visible&gt;
+    &lt;p&gt;Fading content&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+    .box {
+        height: 50px;
+        overflow: hidden;
+        background: #f0f0f0;
+        transition: height 0.3s ease;
+    }
+
+    .box.expanded {
+        height: 200px;
+    }
+
+    .fade-box {
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .fade-box.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Class Directive Summary</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Syntax</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+        <tr>
+            <td><code>class="name"</code></td>
+            <td>Static class</td>
+            <td><code>&lt;div class="container"&gt;</code></td>
+        </tr>
+        <tr>
+            <td><code>class={expr}</code></td>
+            <td>Dynamic class string</td>
+            <td><code>&lt;div class={className}&gt;</code></td>
+        </tr>
+        <tr>
+            <td><code>class="a {b}"</code></td>
+            <td>Mixed static + dynamic</td>
+            <td><code>&lt;div class="btn {variant}"&gt;</code></td>
+        </tr>
+        <tr>
+            <td><code>class:name={cond}</code></td>
+            <td>Conditional class</td>
+            <td><code>&lt;div class:active={isActive}&gt;</code></td>
+        </tr>
+        <tr>
+            <td><code>class:name</code></td>
+            <td>Shorthand (name === var)</td>
+            <td><code>&lt;div class:active&gt;</code></td>
+        </tr>
+        <tr>
+            <td>Multiple <code>class:</code></td>
+            <td>Multiple conditionals</td>
+            <td><code>&lt;div class:a class:b class:c&gt;</code></td>
+        </tr>
+        <tr>
+            <td><code>:global()</code></td>
+            <td>Escape scoping</td>
+            <td><code>:global(.class) { }</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
