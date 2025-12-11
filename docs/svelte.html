@@ -156,6 +156,7 @@
         <li><a href="#svelte-events">Events</a></li>
         <li><a href="#svelte-bindings">Bindings</a></li>
         <li><a href="#svelte-classes">Classes</a></li>
+        <li><a href="#svelte-actions"></a>Actions</li>
     </ol>
 </nav>
 <hr/>
@@ -3974,6 +3975,976 @@ user.age = 26;  // This IS reactive in Svelte 5!
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-actions">Svelte Actions</h3>
+<ol>
+    <li>What Are Actions?</li>
+    <br/>
+    <ul>
+        <li><b>Actions</b> are functions that run when an element is mounted to the DOM.</li>
+        <br/>
+        <li>They provide a way to add <u>reusable behavior</u> to elements without creating wrapper components.</li>
+        <br/>
+        <li>Actions are applied using the <code>use:</code> directive.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Basic Action Syntax</li>
+    <br/>
+    <ul>
+        <li>An action is a function that receives the element as its first argument:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    function greet(node: HTMLElement): void {
+        console.log("Element mounted:", node);
+    }
+&lt;/script&gt;
+
+&lt;div use:greet&gt;
+    Hello, World!
+&lt;/div&gt;
+</code></pre>
+
+    <ul>
+        <li>The function runs once when the element is added to the DOM.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Action with Cleanup</li>
+    <br/>
+    <ul>
+        <li>Return an object with a <code>destroy</code> method to clean up when the element is removed:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    function logger(node: HTMLElement): ActionReturn {
+        console.log("Mounted:", node);
+
+        return {
+            destroy() {
+                console.log("Destroyed:", node);
+            }
+        };
+    }
+&lt;/script&gt;
+
+&lt;div use:logger&gt;
+    Watch the console
+&lt;/div&gt;
+</code></pre>
+
+    <ul>
+        <li>The <code>destroy</code> function is called when the element is removed from the DOM.</li>
+        <li>Use it to remove event listeners, clear timers, or clean up resources.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Action with Parameters</li>
+    <br/>
+    <ul>
+        <li>Actions can accept parameters as the second argument:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    interface TooltipParams {
+        text: string;
+        position?: "top" | "bottom" | "left" | "right";
+    }
+
+    function tooltip(node: HTMLElement, params: TooltipParams): ActionReturn&lt;TooltipParams&gt; {
+        const { text, position = "top" } = params;
+
+        node.setAttribute("title", text);
+        node.setAttribute("data-position", position);
+
+        console.log(`Tooltip: "${text}" at ${position}`);
+
+        return {
+            destroy() {
+                node.removeAttribute("title");
+                node.removeAttribute("data-position");
+            }
+        };
+    }
+&lt;/script&gt;
+
+&lt;button use:tooltip={{ text: "Click to submit", position: "bottom" }}&gt;
+    Submit
+&lt;/button&gt;
+
+&lt;button use:tooltip={{ text: "Cancel operation" }}&gt;
+    Cancel
+&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Action with Update</li>
+    <br/>
+    <ul>
+        <li>Return an <code>update</code> method to react when parameters change:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    interface ColorParams {
+        color: string;
+    }
+
+    function backgroundColor(node: HTMLElement, params: ColorParams): ActionReturn&lt;ColorParams&gt; {
+        node.style.backgroundColor = params.color;
+
+        return {
+            update(newParams: ColorParams) {
+                node.style.backgroundColor = newParams.color;
+            },
+            destroy() {
+                node.style.backgroundColor = "";
+            }
+        };
+    }
+
+    const color: string = $state("#ff0000");
+&lt;/script&gt;
+
+&lt;input type="color" bind:value={color} /&gt;
+
+&lt;div use:backgroundColor={{ color }} style="padding: 20px;"&gt;
+    Dynamic background color
+&lt;/div&gt;
+</code></pre>
+
+    <ul>
+        <li>The <code>update</code> function is called whenever the parameters change.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Typing Actions with <code>ActionReturn</code></li>
+    <br/>
+    <ul>
+        <li>Use the <code>ActionReturn</code> type for proper TypeScript support:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import type { ActionReturn } from "svelte/action";
+
+// Action without parameters
+function simpleAction(node: HTMLElement): ActionReturn {
+    return {
+        destroy() {}
+    };
+}
+
+// Action with required parameters
+function paramAction(node: HTMLElement, params: string): ActionReturn&lt;string&gt; {
+    return {
+        update(newParams: string) {},
+        destroy() {}
+    };
+}
+
+// Action with optional parameters
+function optionalAction(node: HTMLElement, params?: number): ActionReturn&lt;number | undefined&gt; {
+    return {
+        update(newParams?: number) {},
+        destroy() {}
+    };
+}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Using the <code>Action</code> Type</li>
+    <br/>
+    <ul>
+        <li>You can also use the <code>Action</code> type to define action signatures:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import type { Action } from "svelte/action";
+
+interface FocusTrapParams {
+    enabled?: boolean;
+}
+
+const focusTrap: Action&lt;HTMLElement, FocusTrapParams&gt; = (node, params) =&gt; {
+    // Implementation
+    return {
+        update(newParams) {
+            // Handle updates
+        },
+        destroy() {
+            // Cleanup
+        }
+    };
+};
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Click Outside Action</li>
+    <br/>
+    <ul>
+        <li>A common action to detect clicks outside an element:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    interface ClickOutsideParams {
+        onClickOutside: () =&gt; void;
+    }
+
+    function clickOutside(node: HTMLElement, params: ClickOutsideParams): ActionReturn&lt;ClickOutsideParams&gt; {
+        let { onClickOutside } = params;
+
+        function handleClick(event: MouseEvent): void {
+            if (!node.contains(event.target as Node)) {
+                onClickOutside();
+            }
+        }
+
+        document.addEventListener("click", handleClick, true);
+
+        return {
+            update(newParams: ClickOutsideParams) {
+                onClickOutside = newParams.onClickOutside;
+            },
+            destroy() {
+                document.removeEventListener("click", handleClick, true);
+            }
+        };
+    }
+
+    let showDropdown: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;div class="dropdown-container"&gt;
+    &lt;button onclick={() =&gt; showDropdown = !showDropdown}&gt;
+        Toggle Dropdown
+    &lt;/button&gt;
+
+    {#if showDropdown}
+        &lt;div
+            class="dropdown"
+            use:clickOutside={{ onClickOutside: () =&gt; showDropdown = false }}
+        &gt;
+            &lt;p&gt;Dropdown content&lt;/p&gt;
+            &lt;p&gt;Click outside to close&lt;/p&gt;
+        &lt;/div&gt;
+    {/if}
+&lt;/div&gt;
+
+&lt;style&gt;
+    .dropdown-container { position: relative; }
+    .dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border: 1px solid #ccc;
+        padding: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Auto Focus Action</li>
+    <br/>
+    <ul>
+        <li>Automatically focus an element when mounted:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    interface FocusParams {
+        delay?: number;
+        select?: boolean;
+    }
+
+    function autoFocus(node: HTMLElement, params: FocusParams = {}): ActionReturn&lt;FocusParams&gt; {
+        const { delay = 0, select = false } = params;
+
+        const timeoutId = setTimeout(() =&gt; {
+            node.focus();
+            if (select && node instanceof HTMLInputElement) {
+                node.select();
+            }
+        }, delay);
+
+        return {
+            destroy() {
+                clearTimeout(timeoutId);
+            }
+        };
+    }
+
+    let showModal: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; showModal = true}&gt;Open Modal&lt;/button&gt;
+
+{#if showModal}
+    &lt;div class="modal"&gt;
+        &lt;input
+            use:autoFocus={{ select: true }}
+            value="Selected text"
+        /&gt;
+        &lt;button onclick={() =&gt; showModal = false}&gt;Close&lt;/button&gt;
+    &lt;/div&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Longpress Action</li>
+    <br/>
+    <ul>
+        <li>Detect long press gestures:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    interface LongpressParams {
+        duration?: number;
+        onLongpress: () =&gt; void;
+    }
+
+    function longpress(node: HTMLElement, params: LongpressParams): ActionReturn&lt;LongpressParams&gt; {
+        let { duration = 500, onLongpress } = params;
+        let timeoutId: ReturnType&lt;typeof setTimeout&gt;;
+
+        function handleMouseDown(): void {
+            timeoutId = setTimeout(() =&gt; {
+                onLongpress();
+            }, duration);
+        }
+
+        function handleMouseUp(): void {
+            clearTimeout(timeoutId);
+        }
+
+        node.addEventListener("mousedown", handleMouseDown);
+        node.addEventListener("mouseup", handleMouseUp);
+        node.addEventListener("mouseleave", handleMouseUp);
+
+        return {
+            update(newParams: LongpressParams) {
+                duration = newParams.duration ?? 500;
+                onLongpress = newParams.onLongpress;
+            },
+            destroy() {
+                clearTimeout(timeoutId);
+                node.removeEventListener("mousedown", handleMouseDown);
+                node.removeEventListener("mouseup", handleMouseUp);
+                node.removeEventListener("mouseleave", handleMouseUp);
+            }
+        };
+    }
+
+    let message: string = $state("Press and hold the button");
+&lt;/script&gt;
+
+&lt;button use:longpress={{ duration: 1000, onLongpress: () =&gt; message = "Longpress detected!" }}&gt;
+    Hold me
+&lt;/button&gt;
+
+&lt;p&gt;{message}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Lazy Load Image Action</li>
+    <br/>
+    <ul>
+        <li>Lazy load images using Intersection Observer:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    interface LazyLoadParams {
+        src: string;
+        placeholder?: string;
+    }
+
+    function lazyLoad(node: HTMLImageElement, params: LazyLoadParams): ActionReturn&lt;LazyLoadParams&gt; {
+        let { src, placeholder = "" } = params;
+
+        // Set placeholder initially
+        if (placeholder) {
+            node.src = placeholder;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) =&gt; {
+                entries.forEach((entry) =&gt; {
+                    if (entry.isIntersecting) {
+                        node.src = src;
+                        observer.unobserve(node);
+                    }
+                });
+            },
+            { rootMargin: "50px" }
+        );
+
+        observer.observe(node);
+
+        return {
+            update(newParams: LazyLoadParams) {
+                src = newParams.src;
+                if (newParams.placeholder) {
+                    placeholder = newParams.placeholder;
+                }
+            },
+            destroy() {
+                observer.disconnect();
+            }
+        };
+    }
+
+    const images: string[] = [
+        "https://picsum.photos/400/300?1",
+        "https://picsum.photos/400/300?2",
+        "https://picsum.photos/400/300?3"
+    ];
+&lt;/script&gt;
+
+{#each images as src, i}
+    &lt;img
+        use:lazyLoad={{ src, placeholder: "placeholder.jpg" }}
+        alt="Lazy loaded image {i + 1}"
+        width="400"
+        height="300"
+    /&gt;
+{/each}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Portal Action</li>
+    <br/>
+    <ul>
+        <li>Move an element to a different location in the DOM:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    interface PortalParams {
+        target?: string | HTMLElement;
+    }
+
+    function portal(node: HTMLElement, params: PortalParams = {}): ActionReturn&lt;PortalParams&gt; {
+        let targetEl: HTMLElement;
+
+        function update(newParams: PortalParams): void {
+            const { target = "body" } = newParams;
+
+            if (typeof target === "string") {
+                targetEl = document.querySelector(target) ?? document.body;
+            } else {
+                targetEl = target;
+            }
+
+            targetEl.appendChild(node);
+        }
+
+        update(params);
+
+        return {
+            update,
+            destroy() {
+                node.remove();
+            }
+        };
+    }
+
+    let showModal: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; showModal = true}&gt;Open Modal&lt;/button&gt;
+
+{#if showModal}
+    &lt;div class="modal-overlay" use:portal&gt;
+        &lt;div class="modal-content"&gt;
+            &lt;h2&gt;Modal Title&lt;/h2&gt;
+            &lt;p&gt;This is rendered at the end of body.&lt;/p&gt;
+            &lt;button onclick={() =&gt; showModal = false}&gt;Close&lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+{/if}
+
+&lt;style&gt;
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Resize Observer Action</li>
+    <br/>
+    <ul>
+        <li>Track element size changes:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    interface ResizeParams {
+        onResize: (width: number, height: number) =&gt; void;
+    }
+
+    function resize(node: HTMLElement, params: ResizeParams): ActionReturn&lt;ResizeParams&gt; {
+        let { onResize } = params;
+
+        const observer = new ResizeObserver((entries) =&gt; {
+            for (const entry of entries) {
+                const { width, height } = entry.contentRect;
+                onResize(width, height);
+            }
+        });
+
+        observer.observe(node);
+
+        return {
+            update(newParams: ResizeParams) {
+                onResize = newParams.onResize;
+            },
+            destroy() {
+                observer.disconnect();
+            }
+        };
+    }
+
+    let width: number = $state(0);
+    let height: number = $state(0);
+&lt;/script&gt;
+
+&lt;div
+    class="resizable"
+    use:resize={{ onResize: (w, h) =&gt; { width = w; height = h; } }}
+&gt;
+    &lt;p&gt;Resize me!&lt;/p&gt;
+    &lt;p&gt;{width.toFixed(0)} x {height.toFixed(0)}&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+    .resizable {
+        resize: both;
+        overflow: auto;
+        border: 2px solid #333;
+        padding: 20px;
+        min-width: 100px;
+        min-height: 100px;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Intersection Observer Action</li>
+    <br/>
+    <ul>
+        <li>Detect when an element enters or leaves the viewport:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    interface InViewParams {
+        onEnter?: () =&gt; void;
+        onLeave?: () =&gt; void;
+        threshold?: number;
+        once?: boolean;
+    }
+
+    function inView(node: HTMLElement, params: InViewParams = {}): ActionReturn&lt;InViewParams&gt; {
+        let { onEnter, onLeave, threshold = 0, once = false } = params;
+
+        const observer = new IntersectionObserver(
+            (entries) =&gt; {
+                entries.forEach((entry) =&gt; {
+                    if (entry.isIntersecting) {
+                        onEnter?.();
+                        if (once) {
+                            observer.unobserve(node);
+                        }
+                    } else {
+                        onLeave?.();
+                    }
+                });
+            },
+            { threshold }
+        );
+
+        observer.observe(node);
+
+        return {
+            update(newParams: InViewParams) {
+                onEnter = newParams.onEnter;
+                onLeave = newParams.onLeave;
+            },
+            destroy() {
+                observer.disconnect();
+            }
+        };
+    }
+
+    let isVisible: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;div style="height: 150vh;"&gt;
+    &lt;p&gt;Scroll down...&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;div
+    class="observed"
+    class:visible={isVisible}
+    use:inView={{
+        onEnter: () =&gt; isVisible = true,
+        onLeave: () =&gt; isVisible = false,
+        threshold: 0.5
+    }}
+&gt;
+    I'm being observed!
+&lt;/div&gt;
+
+&lt;style&gt;
+    .observed {
+        padding: 40px;
+        background: #eee;
+        transition: background 0.3s;
+    }
+    .observed.visible {
+        background: #4CAF50;
+        color: white;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Third-Party Library Integration</li>
+    <br/>
+    <ul>
+        <li>Actions are ideal for integrating third-party libraries:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+    // Assuming tippy.js is installed
+    // import tippy, { type Instance, type Props } from "tippy.js";
+
+    interface TippyParams {
+        content: string;
+        placement?: "top" | "bottom" | "left" | "right";
+    }
+
+    function tippyAction(node: HTMLElement, params: TippyParams): ActionReturn&lt;TippyParams&gt; {
+        // const instance: Instance = tippy(node, {
+        //     content: params.content,
+        //     placement: params.placement ?? "top"
+        // });
+
+        // Simulated for demonstration
+        node.title = params.content;
+
+        return {
+            update(newParams: TippyParams) {
+                // instance.setContent(newParams.content);
+                // instance.setProps({ placement: newParams.placement });
+                node.title = newParams.content;
+            },
+            destroy() {
+                // instance.destroy();
+                node.removeAttribute("title");
+            }
+        };
+    }
+&lt;/script&gt;
+
+&lt;button use:tippyAction={{ content: "Hello Tooltip!", placement: "bottom" }}&gt;
+    Hover me
+&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Copy to Clipboard Action</li>
+    <br/>
+    <ul>
+        <li>Copy text to clipboard on click:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    interface CopyParams {
+        text: string;
+        onCopy?: () =&gt; void;
+        onError?: (error: Error) =&gt; void;
+    }
+
+    function copy(node: HTMLElement, params: CopyParams): ActionReturn&lt;CopyParams&gt; {
+        let { text, onCopy, onError } = params;
+
+        async function handleClick(): Promise&lt;void&gt; {
+            try {
+                await navigator.clipboard.writeText(text);
+                onCopy?.();
+            } catch (err) {
+                onError?.(err as Error);
+            }
+        }
+
+        node.addEventListener("click", handleClick);
+
+        return {
+            update(newParams: CopyParams) {
+                text = newParams.text;
+                onCopy = newParams.onCopy;
+                onError = newParams.onError;
+            },
+            destroy() {
+                node.removeEventListener("click", handleClick);
+            }
+        };
+    }
+
+    let copied: boolean = $state(false);
+    const textToCopy: string = "Hello, World!";
+
+    function handleCopy(): void {
+        copied = true;
+        setTimeout(() =&gt; copied = false, 2000);
+    }
+&lt;/script&gt;
+
+&lt;code&gt;{textToCopy}&lt;/code&gt;
+
+&lt;button use:copy={{ text: textToCopy, onCopy: handleCopy }}&gt;
+    {copied ? "Copied!" : "Copy"}
+&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Shortcut / Hotkey Action</li>
+    <br/>
+    <ul>
+        <li>Add keyboard shortcuts to elements:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    interface ShortcutParams {
+        key: string;
+        ctrl?: boolean;
+        shift?: boolean;
+        alt?: boolean;
+        onTrigger: () =&gt; void;
+    }
+
+    function shortcut(node: HTMLElement, params: ShortcutParams): ActionReturn&lt;ShortcutParams&gt; {
+        let { key, ctrl = false, shift = false, alt = false, onTrigger } = params;
+
+        function handleKeyDown(event: KeyboardEvent): void {
+            if (
+                event.key.toLowerCase() === key.toLowerCase() &&
+                event.ctrlKey === ctrl &&
+                event.shiftKey === shift &&
+                event.altKey === alt
+            ) {
+                event.preventDefault();
+                onTrigger();
+            }
+        }
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return {
+            update(newParams: ShortcutParams) {
+                key = newParams.key;
+                ctrl = newParams.ctrl ?? false;
+                shift = newParams.shift ?? false;
+                alt = newParams.alt ?? false;
+                onTrigger = newParams.onTrigger;
+            },
+            destroy() {
+                window.removeEventListener("keydown", handleKeyDown);
+            }
+        };
+    }
+
+    let count: number = $state(0);
+&lt;/script&gt;
+
+&lt;div use:shortcut={{ key: "k", ctrl: true, onTrigger: () =&gt; count++ }}&gt;
+    &lt;p&gt;Press Ctrl+K to increment: {count}&lt;/p&gt;
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Multiple Actions on One Element</li>
+    <br/>
+    <ul>
+        <li>Apply multiple actions to a single element:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { ActionReturn } from "svelte/action";
+
+    function logMount(node: HTMLElement): ActionReturn {
+        console.log("Mounted");
+        return { destroy() { console.log("Destroyed"); } };
+    }
+
+    function addBorder(node: HTMLElement, color: string): ActionReturn&lt;string&gt; {
+        node.style.border = `2px solid ${color}`;
+        return {
+            update(newColor: string) {
+                node.style.border = `2px solid ${newColor}`;
+            },
+            destroy() {
+                node.style.border = "";
+            }
+        };
+    }
+
+    function autoFocus(node: HTMLElement): ActionReturn {
+        node.focus();
+        return {};
+    }
+&lt;/script&gt;
+
+&lt;input
+    use:logMount
+    use:addBorder={"blue"}
+    use:autoFocus
+    placeholder="Multiple actions"
+/&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Actions Summary</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Description</th>
+            <th>Syntax</th>
+        </tr>
+        <tr>
+            <td>Basic action</td>
+            <td>Function runs on mount</td>
+            <td><code>use:action</code></td>
+        </tr>
+        <tr>
+            <td>With parameter</td>
+            <td>Pass data to action</td>
+            <td><code>use:action={params}</code></td>
+        </tr>
+        <tr>
+            <td><code>destroy</code></td>
+            <td>Cleanup on unmount</td>
+            <td><code>return { destroy() {} }</code></td>
+        </tr>
+        <tr>
+            <td><code>update</code></td>
+            <td>React to param changes</td>
+            <td><code>return { update(p) {} }</code></td>
+        </tr>
+        <tr>
+            <td>Type (function)</td>
+            <td>Action return type</td>
+            <td><code>ActionReturn&lt;Params&gt;</code></td>
+        </tr>
+        <tr>
+            <td>Type (signature)</td>
+            <td>Full action type</td>
+            <td><code>Action&lt;Element, Params&gt;</code></td>
+        </tr>
+        <tr>
+            <td>Multiple actions</td>
+            <td>Combine on one element</td>
+            <td><code>use:a use:b use:c</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
