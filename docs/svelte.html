@@ -131,7 +131,7 @@
         color: #24292e;
         font-family: "FiraCode Nerd Font", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         font-size: 0.825rem;
-        line-height: 1.2;
+        line-height: 1.4;
         white-space: pre;
     }
 </style>
@@ -150,6 +150,7 @@
     <h2> <img src="resources/svelte.png" alt="Logo" class="nav-icon"/> </h2>
     <ol style="line-height: 1.8;">
         <li><a href="#svelte-introduction">Introduction</a></li>
+        <li><a href="#svelte-reactivity">Reactivity</a></li>
     </ol>
 </nav>
 <hr/>
@@ -460,7 +461,453 @@ npm run dev
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-reactivity">Svelte Reactivity</h3>
+<ol>
+    <li>What Is Reactivity in Svelte?</li>
+    <br/>
+    <ul>
+        <li><b>Reactivity</b> means that when your data changes, the UI automatically updates to reflect those changes.</li>
+        <br/>
+        <li>In Svelte, reactivity is <u>built into the language</u> — you don't need special APIs or hooks.</li>
+        <br/>
+        <li>Svelte's compiler analyzes your code and generates efficient JavaScript that updates the DOM only where necessary.</li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li>Assignment-Based Reactivity</li>
+    <br/>
+    <ul>
+        <li>In Svelte, <u>assignments</u> trigger reactivity. Simply reassigning a variable updates the DOM.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let count = 0;
+
+    function increment() {
+        count = count + 1;  // Assignment triggers update
+    }
+&lt;/script&gt;
+
+&lt;button on:click={increment}&gt;
+    Count: {count}
+&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>This also works with shorthand operators:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">count += 1;   // Reactive
+count++;      // Reactive
+count--;      // Reactive
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Reactivity with Arrays and Objects</li>
+    <br/>
+    <ul>
+        <li>Svelte's reactivity is triggered by <u>assignments</u>, not mutations.</li>
+        <br/>
+        <li>Methods like <code>push()</code>, <code>pop()</code>, <code>splice()</code> do <u>not</u> trigger reactivity by themselves:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">&lt;script&gt;
+    let items = ["Apple", "Banana"];
+
+    function addItem() {
+        items.push("Cherry");  // This does NOT trigger update!
+    }
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>To trigger reactivity, you must <u>reassign</u> the variable:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">&lt;script&gt;
+    let items = ["Apple", "Banana"];
+
+    function addItem() {
+        items.push("Cherry");
+        items = items;  // Reassignment triggers update
+    }
+
+    // Or more idiomatically:
+    function addItemBetter() {
+        items = [...items, "Cherry"];  // Spread creates new array
+    }
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>Same applies to objects:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">let user = { name: "Alice", age: 25 };
+
+user.age = 26;      // Does NOT trigger update
+user = user;        // Triggers update
+
+// Or:
+user = { ...user, age: 26 };  // Triggers update
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Reactive Declarations (<code>$:</code>)</li>
+    <br/>
+    <ul>
+        <li>The <code>$:</code> label creates <u>reactive declarations</u> — values that automatically recalculate when their dependencies change.</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let count = 0;
+    $: doubled = count * 2;
+    $: quadrupled = doubled * 2;
+&lt;/script&gt;
+
+&lt;p&gt;{count} × 2 = {doubled}&lt;/p&gt;
+&lt;p&gt;{count} × 4 = {quadrupled}&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li>Svelte automatically tracks which variables are used and re-runs the declaration when any dependency changes.</li>
+        <br/>
+        <li>Reactive declarations can depend on other reactive declarations (like <code>quadrupled</code> depends on <code>doubled</code>).</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Reactive Statements</li>
+    <br/>
+    <ul>
+        <li>You can also use <code>$:</code> to run <u>arbitrary statements</u> reactively:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let count = 0;
+
+    $: console.log("Count changed to:", count);
+
+    $: if (count &gt;= 10) {
+        alert("Count is getting high!");
+        count = 0;
+    }
+
+    $: {
+        console.log("Running reactive block");
+        console.log("Current count:", count);
+    }
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>These statements re-run whenever any referenced variable changes.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Reactive Stores</li>
+    <br/>
+    <ul>
+        <li>For state that needs to be shared across components, Svelte provides <u>stores</u>.</li>
+        <br/>
+        <li>A store is an object with a <code>subscribe</code> method that allows reactive access to a value.</li>
+        <br/>
+        <li>Svelte provides three built-in store types.</li>
+    </ul>
+
+    <br/>
+    <ol>
+    <li><code>writable</code> — Read and write</li>
+
+<pre><code class="language-js line-numbers">// stores.js
+import { writable } from "svelte/store";
+
+export const count = writable(0);
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    import { count } from "./stores.js";
+
+    function increment() {
+        count.update(n =&gt; n + 1);
+    }
+
+    function reset() {
+        count.set(0);
+    }
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li><code>set(value)</code> — Sets the store to a new value.</li>
+        <li><code>update(fn)</code> — Updates based on current value.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>readable</code> — Read only</li>
+
+<pre><code class="language-js line-numbers">import { readable } from "svelte/store";
+
+export const time = readable(new Date(), function start(set) {
+    const interval = setInterval(() =&gt; {
+        set(new Date());
+    }, 1000);
+
+    return function stop() {
+        clearInterval(interval);
+    };
+});
+</code></pre>
+
+    <ul>
+        <li>The second argument is a function that receives <code>set</code> and returns a cleanup function.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>derived</code> — Derived from other stores</li>
+
+<pre><code class="language-js line-numbers">import { derived } from "svelte/store";
+import { count } from "./stores.js";
+
+export const doubled = derived(count, $count =&gt; $count * 2);
+
+// Derived from multiple stores:
+export const total = derived(
+    [storeA, storeB],
+    ([$a, $b]) =&gt; $a + $b
+);
+</code></pre>
+    </ol>
+    <br/><br/>
+
+
+
+    <li>Auto-Subscription with <code>$</code> Prefix</li>
+    <br/>
+    <ul>
+        <li>Inside Svelte components, you can access store values using the <code>$</code> prefix:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">&lt;script&gt;
+    import { count } from "./stores.js";
+&lt;/script&gt;
+
+&lt;p&gt;The count is {$count}&lt;/p&gt;
+
+&lt;button on:click={() =&gt; $count++}&gt;
+    Increment
+&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li><code>$count</code> automatically subscribes to the store and unsubscribes when the component is destroyed.</li>
+        <br/>
+        <li>You can also assign directly to <code>$count</code> — it's equivalent to calling <code>count.set()</code>.</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">&lt;script&gt;
+    import { name } from "./stores.js";
+&lt;/script&gt;
+
+&lt;input bind:value={$name}&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Custom Stores</li>
+    <br/>
+    <ul>
+        <li>You can create custom stores with domain-specific logic:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">import { writable } from "svelte/store";
+
+function createCounter() {
+    const { subscribe, set, update } = writable(0);
+
+    return {
+        subscribe,
+        increment: () =&gt; update(n =&gt; n + 1),
+        decrement: () =&gt; update(n =&gt; n - 1),
+        reset: () =&gt; set(0)
+    };
+}
+
+export const counter = createCounter();
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    import { counter } from "./stores.js";
+&lt;/script&gt;
+
+&lt;p&gt;{$counter}&lt;/p&gt;
+&lt;button on:click={counter.increment}&gt;+&lt;/button&gt;
+&lt;button on:click={counter.decrement}&gt;-&lt;/button&gt;
+&lt;button on:click={counter.reset}&gt;Reset&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Svelte 5 Runes (New Reactivity System)</li>
+    <br/>
+    <ul>
+        <li>Svelte 5 introduces <u>Runes</u>, a new reactivity system that replaces <code>$:</code> and provides more explicit control.</li>
+    </ul>
+
+    <br/>
+    <ol>
+    <li><code>$state</code> — Reactive State</li>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let count = $state(0);
+
+    function increment() {
+        count++;  // Directly mutate, it's reactive!
+    }
+&lt;/script&gt;
+
+&lt;button onclick={increment}&gt;
+    Count: {count}
+&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>With <code>$state</code>, even mutations on arrays and objects are reactive:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">let items = $state(["Apple", "Banana"]);
+items.push("Cherry");  // This IS reactive in Svelte 5!
+
+let user = $state({ name: "Alice", age: 25 });
+user.age = 26;  // This IS reactive in Svelte 5!
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>$derived</code> — Computed Values</li>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let count = $state(0);
+    let doubled = $derived(count * 2);
+    let quadrupled = $derived(doubled * 2);
+&lt;/script&gt;
+
+&lt;p&gt;{count} × 2 = {doubled}&lt;/p&gt;
+&lt;p&gt;{count} × 4 = {quadrupled}&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li><code>$derived</code> replaces the <code>$:</code> reactive declarations.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>$effect</code> — Side Effects</li>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let count = $state(0);
+
+    $effect(() =&gt; {
+        console.log("Count is now:", count);
+    });
+
+    $effect(() =&gt; {
+        // Runs when component mounts
+        console.log("Mounted!");
+
+        return () =&gt; {
+            // Cleanup when component unmounts
+            console.log("Unmounted!");
+        };
+    });
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li><code>$effect</code> automatically tracks dependencies and re-runs when they change.</li>
+        <li>Return a function for cleanup (like <code>useEffect</code> in React).</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>$props</code> — Component Props</li>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let { name, age = 18 } = $props();
+&lt;/script&gt;
+
+&lt;p&gt;{name} is {age} years old.&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li><code>$props</code> replaces <code>export let</code> for declaring component props in Svelte 5.</li>
+    </ul>
+    </ol>
+    <br/><br/>
+
+
+
+    <li>Comparison: Svelte 4 vs Svelte 5 Reactivity</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Svelte 4</th>
+            <th>Svelte 5 (Runes)</th>
+        </tr>
+        <tr>
+            <td>Reactive variable</td>
+            <td><code>let count = 0;</code></td>
+            <td><code>let count = $state(0);</code></td>
+        </tr>
+        <tr>
+            <td>Computed value</td>
+            <td><code>$: doubled = count * 2;</code></td>
+            <td><code>let doubled = $derived(count * 2);</code></td>
+        </tr>
+        <tr>
+            <td>Side effect</td>
+            <td><code>$: console.log(count);</code></td>
+            <td><code>$effect(() =&gt; console.log(count));</code></td>
+        </tr>
+        <tr>
+            <td>Props</td>
+            <td><code>export let name;</code></td>
+            <td><code>let { name } = $props();</code></td>
+        </tr>
+        <tr>
+            <td>Array/Object mutation</td>
+            <td>Requires reassignment</td>
+            <td>Direct mutation works</td>
+        </tr>
+        <tr>
+            <td>Event handlers</td>
+            <td><code>on:click={fn}</code></td>
+            <td><code>onclick={fn}</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
