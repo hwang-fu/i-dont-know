@@ -151,6 +151,7 @@
     <ol style="line-height: 1.8;">
         <li><a href="#svelte-introduction">Introduction</a></li>
         <li><a href="#svelte-reactivity">Reactivity</a></li>
+        <li><a href="#svelte-props">Props</a></li>
     </ol>
 </nav>
 <hr/>
@@ -908,6 +909,417 @@ user.age = 26;  // This IS reactive in Svelte 5!
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-props">Svelte Props</h3>
+<ol>
+    <li>What Are Props?</li>
+    <br/>
+    <ul>
+        <li><b>Props</b> (short for properties) are how you pass data from a <u>parent component</u> to a <u>child component</u>.</li>
+        <br/>
+        <li>Props allow components to be reusable and configurable.</li>
+        <br/>
+        <li>In Svelte, props flow <u>one direction</u>: from parent to child (unidirectional data flow).</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Declaring Props (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>In Svelte 4, use <code>export let</code> to declare a prop:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Greeting.svelte --&gt;
+&lt;script&gt;
+    export let name;
+&lt;/script&gt;
+
+&lt;h1&gt;Hello {name}!&lt;/h1&gt;
+</code></pre>
+
+    <ul>
+        <li>The parent component passes the prop as an attribute:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- App.svelte --&gt;
+&lt;script&gt;
+    import Greeting from "./Greeting.svelte";
+&lt;/script&gt;
+
+&lt;Greeting name="Alice" /&gt;
+&lt;Greeting name="Bob" /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Default Values</li>
+    <br/>
+    <ul>
+        <li>You can assign a default value to a prop:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">&lt;script&gt;
+    export let name = "World";
+    export let age = 18;
+    export let active = false;
+&lt;/script&gt;
+
+&lt;p&gt;{name} is {age} years old.&lt;/p&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Using defaults --&gt;
+&lt;Greeting /&gt;                    &lt;!-- name="World", age=18 --&gt;
+&lt;Greeting name="Alice" /&gt;       &lt;!-- name="Alice", age=18 --&gt;
+&lt;Greeting name="Bob" age={25} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Passing Different Data Types</li>
+    <br/>
+    <ul>
+        <li>Strings can be passed directly, but other types require curly braces:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- String --&gt;
+&lt;User name="Alice" /&gt;
+
+&lt;!-- Number --&gt;
+&lt;User age={25} /&gt;
+
+&lt;!-- Boolean --&gt;
+&lt;User active={true} /&gt;
+&lt;User active /&gt;              &lt;!-- Shorthand for active={true} --&gt;
+
+&lt;!-- Array --&gt;
+&lt;List items={["Apple", "Banana", "Cherry"]} /&gt;
+
+&lt;!-- Object --&gt;
+&lt;Profile user={{ name: "Alice", age: 25 }} /&gt;
+
+&lt;!-- Variable --&gt;
+&lt;script&gt;
+    let username = "Alice";
+&lt;/script&gt;
+&lt;User name={username} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Shorthand Props</li>
+    <br/>
+    <ul>
+        <li>When the prop name matches the variable name, use the shorthand:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    let name = "Alice";
+    let age = 25;
+&lt;/script&gt;
+
+&lt;!-- Instead of this: --&gt;
+&lt;User name={name} age={age} /&gt;
+
+&lt;!-- Use shorthand: --&gt;
+&lt;User {name} {age} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Spread Props</li>
+    <br/>
+    <ul>
+        <li>You can spread an object to pass multiple props at once:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script&gt;
+    import User from "./User.svelte";
+
+    const userData = {
+        name: "Alice",
+        age: 25,
+        email: "alice@example.com"
+    };
+&lt;/script&gt;
+
+&lt;!-- Instead of: --&gt;
+&lt;User name={userData.name} age={userData.age} email={userData.email} /&gt;
+
+&lt;!-- Use spread: --&gt;
+&lt;User {...userData} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Receiving All Props with <code>$$props</code> and <code>$$restProps</code></li>
+    <br/>
+    <ul>
+        <li><code>$$props</code> contains all props passed to a component:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">&lt;script&gt;
+    export let name;
+    export let age;
+
+    // $$props = { name: "...", age: ..., ...anyOtherProps }
+    console.log($$props);
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li><code>$$restProps</code> contains props that were <u>not</u> explicitly declared:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">&lt;!-- Button.svelte --&gt;
+&lt;script&gt;
+    export let variant = "primary";
+    // Any other props (class, id, disabled, etc.) go to $$restProps
+&lt;/script&gt;
+
+&lt;button class="btn btn-{variant}" {...$$restProps}&gt;
+    &lt;slot /&gt;
+&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Usage --&gt;
+&lt;Button variant="danger" disabled id="submit-btn"&gt;
+    Submit
+&lt;/Button&gt;
+</code></pre>
+
+    <ul>
+        <li>This is useful for wrapper components that forward attributes to native elements.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Reactive Props</li>
+    <br/>
+    <ul>
+        <li>Props are reactive — when the parent updates a prop, the child re-renders:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script&gt;
+    import Counter from "./Counter.svelte";
+    let count = 0;
+&lt;/script&gt;
+
+&lt;button on:click={() =&gt; count++}&gt;Increment in Parent&lt;/button&gt;
+&lt;Counter value={count} /&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Counter.svelte --&gt;
+&lt;script&gt;
+    export let value;
+    $: console.log("Value changed to:", value);
+&lt;/script&gt;
+
+&lt;p&gt;Count: {value}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Readonly Props (One-Way Binding)</li>
+    <br/>
+    <ul>
+        <li>By default, props are <u>one-way</u>: parent → child.</li>
+        <br/>
+        <li>Modifying a prop inside the child does <u>not</u> affect the parent:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Child.svelte --&gt;
+&lt;script&gt;
+    export let count = 0;
+
+    function increment() {
+        count++;  // Only changes local copy, not parent's value
+    }
+&lt;/script&gt;
+
+&lt;button on:click={increment}&gt;{count}&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>To update the parent, use <u>events</u> or <u>two-way binding</u> (covered later).</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Props with TypeScript (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Add types to props using TypeScript:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script lang="ts"&gt;
+    export let name: string;
+    export let age: number = 18;
+    export let active: boolean = false;
+    export let items: string[] = [];
+    export let user: { name: string; email: string } | null = null;
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>For complex types, define interfaces:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script lang="ts"&gt;
+    interface User {
+        id: number;
+        name: string;
+        email: string;
+    }
+
+    export let user: User;
+    export let users: User[] = [];
+&lt;/script&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Svelte 5: Props with <code>$props</code></li>
+    <br/>
+    <ul>
+        <li>In Svelte 5, use the <code>$props</code> rune instead of <code>export let</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Greeting.svelte (Svelte 5) --&gt;
+&lt;script&gt;
+    let { name } = $props();
+&lt;/script&gt;
+
+&lt;h1&gt;Hello {name}!&lt;/h1&gt;
+</code></pre>
+
+    <ul>
+        <li>Multiple props with defaults:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script&gt;
+    let { name = "World", age = 18, active = false } = $props();
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>Rest props (similar to <code>$$restProps</code>):</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script&gt;
+    let { name, age, ...rest } = $props();
+&lt;/script&gt;
+
+&lt;div {...rest}&gt;
+    {name} is {age}
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Svelte 5: Props with TypeScript</li>
+    <br/>
+    <ul>
+        <li>Type your props using TypeScript with <code>$props</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Props {
+        name: string;
+        age?: number;
+        active?: boolean;
+    }
+
+    let { name, age = 18, active = false }: Props = $props();
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li>With rest props:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { HTMLButtonAttributes } from "svelte/elements";
+
+    interface Props extends HTMLButtonAttributes {
+        variant?: "primary" | "secondary" | "danger";
+    }
+
+    let { variant = "primary", ...rest }: Props = $props();
+&lt;/script&gt;
+
+&lt;button class="btn btn-{variant}" {...rest}&gt;
+    &lt;slot /&gt;
+&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Comparison: Svelte 4 vs Svelte 5 Props</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Svelte 4</th>
+            <th>Svelte 5</th>
+        </tr>
+        <tr>
+            <td>Basic prop</td>
+            <td><code>export let name;</code></td>
+            <td><code>let { name } = $props();</code></td>
+        </tr>
+        <tr>
+            <td>Default value</td>
+            <td><code>export let name = "World";</code></td>
+            <td><code>let { name = "World" } = $props();</code></td>
+        </tr>
+        <tr>
+            <td>Multiple props</td>
+            <td>Multiple <code>export let</code> lines</td>
+            <td>Destructure from <code>$props()</code></td>
+        </tr>
+        <tr>
+            <td>Rest props</td>
+            <td><code>$$restProps</code></td>
+            <td><code>let { a, ...rest } = $props();</code></td>
+        </tr>
+        <tr>
+            <td>All props</td>
+            <td><code>$$props</code></td>
+            <td><code>let props = $props();</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
