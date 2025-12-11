@@ -158,6 +158,7 @@
         <li><a href="#svelte-classes">Classes</a></li>
         <li><a href="#svelte-actions">Actions</a></li>
         <li><a href="#svelte-transitions">Transitions</a></li>
+        <li><a href="#svelte-advanced-reactivity">Advanced Reactivity</a></li>
     </ol>
 </nav>
 <hr/>
@@ -5941,7 +5942,1018 @@ const focusTrap: Action&lt;HTMLElement, FocusTrapParams&gt; = (node, params) =&g
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-advanced-reactivity">Svelte Advanced Reactivity</h3>
+<ol>
+    <br/>
+    <li>Deep Reactivity with <code>$state</code></li>
+    <br/>
+    <ul>
+        <li><code>$state</code> creates <u>deeply reactive</u> state — nested objects and arrays are automatically reactive:</li>
+    </ul>
 
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface User {
+        name: string;
+        address: {
+            city: string;
+            country: string;
+        };
+        hobbies: string[];
+    }
+
+    let user: User = $state({
+        name: "Alice",
+        address: {
+            city: "New York",
+            country: "USA"
+        },
+        hobbies: ["reading", "coding"]
+    });
+
+    function updateCity(): void {
+        // Deep mutation is reactive!
+        user.address.city = "Los Angeles";
+    }
+
+    function addHobby(): void {
+        // Array mutations are reactive!
+        user.hobbies.push("gaming");
+    }
+&lt;/script&gt;
+
+&lt;p&gt;{user.name} lives in {user.address.city}&lt;/p&gt;
+&lt;p&gt;Hobbies: {user.hobbies.join(", ")}&lt;/p&gt;
+
+&lt;button onclick={updateCity}&gt;Move to LA&lt;/button&gt;
+&lt;button onclick={addHobby}&gt;Add Hobby&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Unlike Svelte 4, you don't need to reassign to trigger updates.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Shallow Reactivity with <code>$state.raw</code></li>
+    <br/>
+    <ul>
+        <li>Use <code>$state.raw</code> when you don't need deep reactivity:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface LargeDataset {
+        id: number;
+        values: number[];
+    }
+
+    // Only the reference is reactive, not nested properties
+    let data: LargeDataset = $state.raw({
+        id: 1,
+        values: [1, 2, 3, 4, 5]
+    });
+
+    function updateData(): void {
+        // This does NOT trigger reactivity
+        data.values.push(6);
+
+        // This DOES trigger reactivity (replacing the whole object)
+        data = { ...data, values: [...data.values, 7] };
+    }
+
+    function replaceData(): void {
+        // Reassignment triggers update
+        data = {
+            id: 2,
+            values: [10, 20, 30]
+        };
+    }
+&lt;/script&gt;
+
+&lt;p&gt;ID: {data.id}&lt;/p&gt;
+&lt;p&gt;Values: {data.values.join(", ")}&lt;/p&gt;
+
+&lt;button onclick={updateData}&gt;Update&lt;/button&gt;
+&lt;button onclick={replaceData}&gt;Replace&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Use <code>$state.raw</code> for:
+            <ul>
+                <li>Large datasets where deep reactivity is expensive</li>
+                <li>Immutable data patterns</li>
+                <li>Data that rarely changes</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Getting Plain Values with <code>$state.snapshot</code></li>
+    <br/>
+    <ul>
+        <li><code>$state.snapshot</code> returns a non-reactive copy of reactive state:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface FormData {
+        name: string;
+        email: string;
+    }
+
+    let form: FormData = $state({
+        name: "",
+        email: ""
+    });
+
+    function handleSubmit(): void {
+        // Get a plain object snapshot for API calls
+        const snapshot = $state.snapshot(form);
+
+        console.log("Submitting:", snapshot);
+        console.log("Is proxy:", form !== snapshot); // true
+
+        // Send to API
+        fetch("/api/submit", {
+            method: "POST",
+            body: JSON.stringify(snapshot)
+        });
+    }
+
+    function logState(): void {
+        // Reactive proxy - may show Proxy in console
+        console.log("Reactive:", form);
+
+        // Plain object - cleaner for debugging
+        console.log("Snapshot:", $state.snapshot(form));
+    }
+&lt;/script&gt;
+
+&lt;input bind:value={form.name} placeholder="Name" /&gt;
+&lt;input bind:value={form.email} placeholder="Email" /&gt;
+
+&lt;button onclick={handleSubmit}&gt;Submit&lt;/button&gt;
+&lt;button onclick={logState}&gt;Log State&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Useful when passing state to external libraries or APIs.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Computed Values with <code>$derived</code></li>
+    <br/>
+    <ul>
+        <li><code>$derived</code> creates values that automatically update when dependencies change:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let firstName: string = $state("John");
+    let lastName: string = $state("Doe");
+    let age: number = $state(25);
+
+    // Simple derived value
+    let fullName: string = $derived(firstName + " " + lastName);
+
+    // Derived with transformation
+    let upperName: string = $derived(fullName.toUpperCase());
+
+    // Derived boolean
+    let isAdult: boolean = $derived(age &gt;= 18);
+
+    // Chained derivations
+    let greeting: string = $derived(
+        `Hello, ${fullName}! You are ${isAdult ? "an adult" : "a minor"}.`
+    );
+&lt;/script&gt;
+
+&lt;input bind:value={firstName} placeholder="First name" /&gt;
+&lt;input bind:value={lastName} placeholder="Last name" /&gt;
+&lt;input type="number" bind:value={age} /&gt;
+
+&lt;p&gt;Full name: {fullName}&lt;/p&gt;
+&lt;p&gt;Upper: {upperName}&lt;/p&gt;
+&lt;p&gt;{greeting}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Complex Derivations with <code>$derived.by</code></li>
+    <br/>
+    <ul>
+        <li>Use <code>$derived.by</code> for derivations that need multiple statements:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Product {
+        name: string;
+        price: number;
+        quantity: number;
+    }
+
+    let products: Product[] = $state([
+        { name: "Apple", price: 1.5, quantity: 3 },
+        { name: "Banana", price: 0.75, quantity: 5 },
+        { name: "Orange", price: 2.0, quantity: 2 }
+    ]);
+
+    let taxRate: number = $state(0.08);
+
+    // Complex derivation with multiple statements
+    let orderSummary = $derived.by(() =&gt; {
+        const subtotal = products.reduce(
+            (sum, p) =&gt; sum + p.price * p.quantity,
+            0
+        );
+        const tax = subtotal * taxRate;
+        const total = subtotal + tax;
+        const itemCount = products.reduce((sum, p) =&gt; sum + p.quantity, 0);
+
+        return {
+            subtotal: subtotal.toFixed(2),
+            tax: tax.toFixed(2),
+            total: total.toFixed(2),
+            itemCount
+        };
+    });
+
+    // Derived with conditional logic
+    let recommendation = $derived.by(() =&gt; {
+        const total = parseFloat(orderSummary.total);
+
+        if (total &gt; 50) {
+            return "You qualify for free shipping!";
+        } else if (total &gt; 25) {
+            return `Add $${(50 - total).toFixed(2)} more for free shipping.`;
+        } else {
+            return "Keep shopping for great deals!";
+        }
+    });
+&lt;/script&gt;
+
+&lt;ul&gt;
+    {#each products as product}
+        &lt;li&gt;{product.name}: ${product.price} × {product.quantity}&lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+
+&lt;p&gt;Items: {orderSummary.itemCount}&lt;/p&gt;
+&lt;p&gt;Subtotal: ${orderSummary.subtotal}&lt;/p&gt;
+&lt;p&gt;Tax: ${orderSummary.tax}&lt;/p&gt;
+&lt;p&gt;Total: ${orderSummary.total}&lt;/p&gt;
+&lt;p&gt;{recommendation}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Side Effects with <code>$effect</code></li>
+    <br/>
+    <ul>
+        <li><code>$effect</code> runs code when reactive dependencies change:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let count: number = $state(0);
+    let name: string = $state("World");
+
+    // Runs when count changes
+    $effect(() =&gt; {
+        console.log("Count is now:", count);
+    });
+
+    // Runs when name changes
+    $effect(() =&gt; {
+        document.title = `Hello, ${name}!`;
+    });
+
+    // Runs when either changes
+    $effect(() =&gt; {
+        console.log(`${name} has count ${count}`);
+    });
+&lt;/script&gt;
+
+&lt;input bind:value={name} /&gt;
+&lt;button onclick={() =&gt; count++}&gt;Count: {count}&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Effects automatically track which reactive values are read.</li>
+        <li>They re-run whenever those values change.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Effect Cleanup</li>
+    <br/>
+    <ul>
+        <li>Return a function from <code>$effect</code> to clean up before re-running:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let interval: number = $state(1000);
+    let count: number = $state(0);
+
+    $effect(() =&gt; {
+        // Set up interval with current value
+        const id = setInterval(() =&gt; {
+            count++;
+        }, interval);
+
+        console.log(`Started interval: ${interval}ms`);
+
+        // Cleanup: clear interval before re-running or on unmount
+        return () =&gt; {
+            clearInterval(id);
+            console.log("Cleared interval");
+        };
+    });
+
+    // Event listener example
+    let mouseX: number = $state(0);
+    let mouseY: number = $state(0);
+
+    $effect(() =&gt; {
+        function handleMouseMove(e: MouseEvent): void {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        }
+
+        window.addEventListener("mousemove", handleMouseMove);
+
+        return () =&gt; {
+            window.removeEventListener("mousemove", handleMouseMove);
+        };
+    });
+&lt;/script&gt;
+
+&lt;p&gt;Count: {count}&lt;/p&gt;
+&lt;p&gt;Mouse: {mouseX}, {mouseY}&lt;/p&gt;
+
+&lt;label&gt;
+    Interval (ms):
+    &lt;input type="number" bind:value={interval} min="100" step="100" /&gt;
+&lt;/label&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Pre-Effects with <code>$effect.pre</code></li>
+    <br/>
+    <ul>
+        <li><code>$effect.pre</code> runs <u>before</u> the DOM updates:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let messages: string[] = $state(["Hello", "World"]);
+    let container: HTMLDivElement;
+
+    // Runs BEFORE DOM updates - useful for measuring
+    $effect.pre(() =&gt; {
+        if (container) {
+            // Capture scroll position before DOM changes
+            const isAtBottom =
+                container.scrollHeight - container.scrollTop === container.clientHeight;
+
+            console.log("Before update, at bottom:", isAtBottom);
+        }
+    });
+
+    // Runs AFTER DOM updates
+    $effect(() =&gt; {
+        if (container) {
+            // Auto-scroll to bottom after new messages
+            container.scrollTop = container.scrollHeight;
+        }
+    });
+
+    function addMessage(): void {
+        messages.push(`Message ${messages.length + 1}`);
+    }
+&lt;/script&gt;
+
+&lt;div bind:this={container} class="chat" style="height: 200px; overflow-y: auto;"&gt;
+    {#each messages as message}
+        &lt;p&gt;{message}&lt;/p&gt;
+    {/each}
+&lt;/div&gt;
+
+&lt;button onclick={addMessage}&gt;Add Message&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Use <code>$effect.pre</code> when you need to measure or capture state before the DOM changes.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Effect Tracking with <code>$effect.tracking</code></li>
+    <br/>
+    <ul>
+        <li>Check if code is running inside a tracking context:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let count: number = $state(0);
+
+    function logWithContext(message: string): void {
+        if ($effect.tracking()) {
+            console.log("[Tracked]", message);
+        } else {
+            console.log("[Untracked]", message);
+        }
+    }
+
+    // Inside $effect - tracked
+    $effect(() =&gt; {
+        logWithContext(`Count is ${count}`);
+    });
+
+    // Inside $derived - tracked
+    let doubled = $derived.by(() =&gt; {
+        logWithContext("Computing doubled");
+        return count * 2;
+    });
+
+    function handleClick(): void {
+        // Event handler - not tracked
+        logWithContext("Button clicked");
+        count++;
+    }
+&lt;/script&gt;
+
+&lt;p&gt;Count: {count}, Doubled: {doubled}&lt;/p&gt;
+&lt;button onclick={handleClick}&gt;Increment&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Useful for libraries that need to behave differently in reactive vs non-reactive contexts.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Root Effects with <code>$effect.root</code></li>
+    <br/>
+    <ul>
+        <li><code>$effect.root</code> creates effects outside the component lifecycle:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let count: number = $state(0);
+    let cleanupRoot: (() =&gt; void) | null = null;
+
+    function startRootEffect(): void {
+        // Create an effect that persists outside component lifecycle
+        cleanupRoot = $effect.root(() =&gt; {
+            $effect(() =&gt; {
+                console.log("[Root Effect] Count:", count);
+            });
+
+            // Return cleanup for the root
+            return () =&gt; {
+                console.log("[Root Effect] Cleaned up");
+            };
+        });
+    }
+
+    function stopRootEffect(): void {
+        if (cleanupRoot) {
+            cleanupRoot();
+            cleanupRoot = null;
+        }
+    }
+&lt;/script&gt;
+
+&lt;p&gt;Count: {count}&lt;/p&gt;
+&lt;button onclick={() =&gt; count++}&gt;Increment&lt;/button&gt;
+
+&lt;button onclick={startRootEffect}&gt;Start Root Effect&lt;/button&gt;
+&lt;button onclick={stopRootEffect}&gt;Stop Root Effect&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Use <code>$effect.root</code> for:
+            <ul>
+                <li>Effects in shared modules</li>
+                <li>Effects with manual lifecycle control</li>
+                <li>Testing scenarios</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Untracking Dependencies with <code>untrack</code></li>
+    <br/>
+    <ul>
+        <li>Use <code>untrack</code> to read reactive values without creating a dependency:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { untrack } from "svelte";
+
+    let count: number = $state(0);
+    let name: string = $state("Alice");
+    let effectRuns: number = $state(0);
+
+    $effect(() =&gt; {
+        // This creates a dependency on 'count'
+        console.log("Count:", count);
+
+        // This does NOT create a dependency on 'name'
+        const currentName = untrack(() =&gt; name);
+        console.log("Name (untracked):", currentName);
+
+        effectRuns++;
+    });
+
+    // The effect only re-runs when 'count' changes, not 'name'
+&lt;/script&gt;
+
+&lt;p&gt;Count: {count}&lt;/p&gt;
+&lt;p&gt;Name: {name}&lt;/p&gt;
+&lt;p&gt;Effect runs: {effectRuns}&lt;/p&gt;
+
+&lt;button onclick={() =&gt; count++}&gt;Increment Count (triggers effect)&lt;/button&gt;
+&lt;button onclick={() =&gt; name = name + "!"}&gt;Change Name (no effect)&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Useful when you need to read a value without reacting to its changes.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Debugging with <code>$inspect</code></li>
+    <br/>
+    <ul>
+        <li><code>$inspect</code> logs reactive values whenever they change:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface User {
+        name: string;
+        age: number;
+    }
+
+    let count: number = $state(0);
+    let user: User = $state({ name: "Alice", age: 25 });
+
+    // Basic inspection - logs on every change
+    $inspect(count);
+
+    // Inspect multiple values
+    $inspect(count, user);
+
+    // Custom logging with .with()
+    $inspect(user).with((type, value) =&gt; {
+        console.log(`[${type}]`, JSON.stringify(value, null, 2));
+    });
+
+    // Useful for debugging: pause on change
+    $inspect(count).with((type, value) =&gt; {
+        if (value &gt; 5) {
+            debugger; // Opens browser debugger
+        }
+    });
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; count++}&gt;Count: {count}&lt;/button&gt;
+&lt;button onclick={() =&gt; user.age++}&gt;Age: {user.age}&lt;/button&gt;
+&lt;input bind:value={user.name} /&gt;
+</code></pre>
+
+    <ul>
+        <li><code>$inspect</code> only works in development mode.</li>
+        <li>The <code>type</code> parameter is either <code>"init"</code> or <code>"update"</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Fine-Grained Reactivity</li>
+    <br/>
+    <ul>
+        <li>Svelte 5 tracks reactivity at the <u>property level</u>, not just the object level:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Coordinates {
+        x: number;
+        y: number;
+    }
+
+    let coords: Coordinates = $state({ x: 0, y: 0 });
+
+    // This effect only re-runs when coords.x changes
+    $effect(() =&gt; {
+        console.log("X changed:", coords.x);
+    });
+
+    // This effect only re-runs when coords.y changes
+    $effect(() =&gt; {
+        console.log("Y changed:", coords.y);
+    });
+
+    function updateX(): void {
+        coords.x++; // Only triggers first effect
+    }
+
+    function updateY(): void {
+        coords.y++; // Only triggers second effect
+    }
+&lt;/script&gt;
+
+&lt;p&gt;X: {coords.x}, Y: {coords.y}&lt;/p&gt;
+&lt;button onclick={updateX}&gt;Update X&lt;/button&gt;
+&lt;button onclick={updateY}&gt;Update Y&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>This fine-grained tracking improves performance for complex objects.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Reactive Classes</li>
+    <br/>
+    <ul>
+        <li>Use <code>$state</code> in class fields for reactive class instances:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    class Counter {
+        count: number = $state(0);
+
+        increment(): void {
+            this.count++;
+        }
+
+        decrement(): void {
+            this.count--;
+        }
+
+        get doubled(): number {
+            return this.count * 2;
+        }
+    }
+
+    class TodoList {
+        items: string[] = $state([]);
+
+        add(item: string): void {
+            this.items.push(item);
+        }
+
+        remove(index: number): void {
+            this.items.splice(index, 1);
+        }
+
+        get count(): number {
+            return this.items.length;
+        }
+    }
+
+    const counter = new Counter();
+    const todos = new TodoList();
+    let newTodo: string = $state("");
+&lt;/script&gt;
+
+&lt;div&gt;
+    &lt;h3&gt;Counter&lt;/h3&gt;
+    &lt;p&gt;Count: {counter.count} (doubled: {counter.doubled})&lt;/p&gt;
+    &lt;button onclick={() =&gt; counter.decrement()}&gt;-&lt;/button&gt;
+    &lt;button onclick={() =&gt; counter.increment()}&gt;+&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;div&gt;
+    &lt;h3&gt;Todos ({todos.count})&lt;/h3&gt;
+    &lt;input bind:value={newTodo} /&gt;
+    &lt;button onclick={() =&gt; { todos.add(newTodo); newTodo = ""; }}&gt;Add&lt;/button&gt;
+
+    &lt;ul&gt;
+        {#each todos.items as item, i}
+            &lt;li&gt;{item} &lt;button onclick={() =&gt; todos.remove(i)}&gt;×&lt;/button&gt;&lt;/li&gt;
+        {/each}
+    &lt;/ul&gt;
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Reactive State in Modules</li>
+    <br/>
+    <ul>
+        <li>Create shared reactive state in separate modules:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// stores/counter.svelte.ts
+export function createCounter(initial: number = 0) {
+    let count = $state(initial);
+
+    return {
+        get count() {
+            return count;
+        },
+        increment() {
+            count++;
+        },
+        decrement() {
+            count--;
+        },
+        reset() {
+            count = initial;
+        }
+    };
+}
+
+// Singleton instance
+export const counter = createCounter(0);
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Component.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { counter } from "./stores/counter.svelte";
+&lt;/script&gt;
+
+&lt;p&gt;Count: {counter.count}&lt;/p&gt;
+&lt;button onclick={counter.increment}&gt;+&lt;/button&gt;
+&lt;button onclick={counter.decrement}&gt;-&lt;/button&gt;
+&lt;button onclick={counter.reset}&gt;Reset&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Use the <code>.svelte.ts</code> or <code>.svelte.js</code> extension for files containing runes.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Store Interoperability</li>
+    <br/>
+    <ul>
+        <li>Svelte 5 stores work with both old stores and new runes:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { writable, type Writable } from "svelte/store";
+    import { fromStore, toStore } from "svelte/store";
+
+    // Traditional store
+    const countStore: Writable&lt;number&gt; = writable(0);
+
+    // Convert store to rune-based state
+    const countState = fromStore(countStore);
+
+    // Access value (automatically subscribes)
+    $effect(() =&gt; {
+        console.log("Store value:", countState.current);
+    });
+
+    // Or create a store from rune state
+    let runeCount: number = $state(0);
+    const runeStore = toStore(() =&gt; runeCount, (v) =&gt; runeCount = v);
+&lt;/script&gt;
+
+&lt;p&gt;Store: {$countStore}&lt;/p&gt;
+&lt;p&gt;State: {countState.current}&lt;/p&gt;
+
+&lt;button onclick={() =&gt; countStore.update(n =&gt; n + 1)}&gt;
+    Update Store
+&lt;/button&gt;
+
+&lt;button onclick={() =&gt; runeCount++}&gt;
+    Update Rune
+&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Avoiding Infinite Loops</li>
+    <br/>
+    <ul>
+        <li>Be careful not to create infinite loops in effects:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { untrack } from "svelte";
+
+    let count: number = $state(0);
+    let history: number[] = $state([]);
+
+    // BAD: Infinite loop!
+    // $effect(() =&gt; {
+    //     history.push(count); // Reading 'count' AND modifying 'history'
+    //     history = history;   // This creates a loop
+    // });
+
+    // GOOD: Use untrack to prevent loop
+    $effect(() =&gt; {
+        const current = count; // Track count
+        untrack(() =&gt; {
+            history.push(current); // Don't track history modification
+        });
+    });
+
+    // ALTERNATIVE: Use $effect.pre or separate the concerns
+    let lastCount: number | null = null;
+
+    $effect(() =&gt; {
+        if (count !== lastCount) {
+            lastCount = count;
+            // Safe to modify other state here
+        }
+    });
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; count++}&gt;Count: {count}&lt;/button&gt;
+&lt;p&gt;History: {history.join(", ")}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Conditional Effects</li>
+    <br/>
+    <ul>
+        <li>Effects can have conditional logic, but dependencies are still tracked:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let enabled: boolean = $state(true);
+    let count: number = $state(0);
+    let logs: string[] = $state([]);
+
+    $effect(() =&gt; {
+        // 'enabled' is always tracked
+        if (enabled) {
+            // 'count' is only tracked when this branch runs
+            logs.push(`Count is ${count}`);
+        }
+    });
+
+    // Better pattern: guard the entire effect
+    $effect(() =&gt; {
+        if (!enabled) return;
+
+        logs.push(`Enabled count: ${count}`);
+
+        return () =&gt; {
+            logs.push("Effect cleaned up");
+        };
+    });
+&lt;/script&gt;
+
+&lt;label&gt;
+    &lt;input type="checkbox" bind:checked={enabled} /&gt;
+    Enabled
+&lt;/label&gt;
+
+&lt;button onclick={() =&gt; count++}&gt;Count: {count}&lt;/button&gt;
+
+&lt;ul&gt;
+    {#each logs as log}
+        &lt;li&gt;{log}&lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Batching Updates</li>
+    <br/>
+    <ul>
+        <li>Svelte batches synchronous updates automatically:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { flushSync } from "svelte";
+
+    let a: number = $state(0);
+    let b: number = $state(0);
+    let effectRuns: number = $state(0);
+
+    $effect(() =&gt; {
+        console.log(`a: ${a}, b: ${b}`);
+        effectRuns++;
+    });
+
+    function batchedUpdate(): void {
+        // These are batched - effect runs once
+        a++;
+        b++;
+    }
+
+    function forcedUpdate(): void {
+        a++;
+        // Force synchronous flush
+        flushSync();
+        // This triggers a separate effect run
+        b++;
+    }
+&lt;/script&gt;
+
+&lt;p&gt;a: {a}, b: {b}&lt;/p&gt;
+&lt;p&gt;Effect runs: {effectRuns}&lt;/p&gt;
+
+&lt;button onclick={batchedUpdate}&gt;Batched (1 effect run)&lt;/button&gt;
+&lt;button onclick={forcedUpdate}&gt;Forced (2 effect runs)&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Use <code>flushSync</code> sparingly — only when you need immediate DOM updates.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Advanced Reactivity Summary</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>API</th>
+            <th>Purpose</th>
+            <th>Usage</th>
+        </tr>
+        <tr>
+            <td><code>$state</code></td>
+            <td>Deep reactive state</td>
+            <td><code>let x = $state(value)</code></td>
+        </tr>
+        <tr>
+            <td><code>$state.raw</code></td>
+            <td>Shallow reactive state</td>
+            <td><code>let x = $state.raw(value)</code></td>
+        </tr>
+        <tr>
+            <td><code>$state.snapshot</code></td>
+            <td>Get plain object copy</td>
+            <td><code>$state.snapshot(state)</code></td>
+        </tr>
+        <tr>
+            <td><code>$derived</code></td>
+            <td>Computed value (expression)</td>
+            <td><code>let x = $derived(expr)</code></td>
+        </tr>
+        <tr>
+            <td><code>$derived.by</code></td>
+            <td>Computed value (function)</td>
+            <td><code>let x = $derived.by(() =&gt; ...)</code></td>
+        </tr>
+        <tr>
+            <td><code>$effect</code></td>
+            <td>Side effect (after DOM)</td>
+            <td><code>$effect(() =&gt; { ... })</code></td>
+        </tr>
+        <tr>
+            <td><code>$effect.pre</code></td>
+            <td>Side effect (before DOM)</td>
+            <td><code>$effect.pre(() =&gt; { ... })</code></td>
+        </tr>
+        <tr>
+            <td><code>$effect.tracking</code></td>
+            <td>Check if tracking</td>
+            <td><code>if ($effect.tracking()) ...</code></td>
+        </tr>
+        <tr>
+            <td><code>$effect.root</code></td>
+            <td>Manual effect lifecycle</td>
+            <td><code>$effect.root(() =&gt; ...)</code></td>
+        </tr>
+        <tr>
+            <td><code>untrack</code></td>
+            <td>Read without tracking</td>
+            <td><code>untrack(() =&gt; value)</code></td>
+        </tr>
+        <tr>
+            <td><code>$inspect</code></td>
+            <td>Debug reactive values</td>
+            <td><code>$inspect(value)</code></td>
+        </tr>
+        <tr>
+            <td><code>flushSync</code></td>
+            <td>Force synchronous update</td>
+            <td><code>flushSync()</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
