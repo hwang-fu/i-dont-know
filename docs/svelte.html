@@ -152,6 +152,7 @@
         <li><a href="#svelte-introduction">Introduction</a></li>
         <li><a href="#svelte-reactivity">Reactivity</a></li>
         <li><a href="#svelte-props">Props</a></li>
+        <li><a href="#svelte-logic">Logic</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1319,7 +1320,560 @@ user.age = 26;  // This IS reactive in Svelte 5!
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-logic">Svelte Logic</h3>
+<ol>
+    <li>What Is Svelte Logic?</li>
+    <br/>
+    <ul>
+        <li>Svelte provides special <u>logic blocks</u> in templates to handle conditional rendering, loops, and asynchronous data.</li>
+        <br/>
+        <li>These blocks use a syntax with <code>{#...}</code> to open, <code>{:...}</code> for continuation, and <code>{/...}</code> to close.</li>
+        <br/>
+        <li>The main logic blocks are:
+            <ul>
+                <li><code>{#if}</code> — Conditional rendering</li>
+                <li><code>{#each}</code> — Looping over arrays</li>
+                <li><code>{#await}</code> — Handling promises</li>
+                <li><code>{#key}</code> — Forcing re-render on value change</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li>Conditional Rendering with <code>{#if}</code></li>
+    <br/>
+    <ul>
+        <li>Use <code>{#if}</code> to conditionally render content:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script lang="ts"&gt;
+    let loggedIn: boolean = false;
+&lt;/script&gt;
+
+{#if loggedIn}
+    &lt;p&gt;Welcome back!&lt;/p&gt;
+{/if}
+
+&lt;button onclick={() =&gt; loggedIn = !loggedIn}&gt;
+    Toggle Login
+&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>The content inside <code>{#if}</code> only renders when the condition is <code>true</code>.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>{:else}</code> Block</li>
+    <br/>
+    <ul>
+        <li>Use <code>{:else}</code> to render alternative content when the condition is <code>false</code>:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">&lt;script lang="ts"&gt;
+    let loggedIn: boolean = false;
+&lt;/script&gt;
+
+{#if loggedIn}
+    &lt;p&gt;Welcome back, user!&lt;/p&gt;
+    &lt;button onclick={() =&gt; loggedIn = false}&gt;Log Out&lt;/button&gt;
+{:else}
+    &lt;p&gt;Please log in.&lt;/p&gt;
+    &lt;button onclick={() =&gt; loggedIn = true}&gt;Log In&lt;/button&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>{:else if}</code> Block</li>
+    <br/>
+    <ul>
+        <li>Chain multiple conditions with <code>{:else if}</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let score: number = 75;
+&lt;/script&gt;
+
+{#if score &gt;= 90}
+    &lt;p&gt;Grade: A&lt;/p&gt;
+{:else if score &gt;= 80}
+    &lt;p&gt;Grade: B&lt;/p&gt;
+{:else if score &gt;= 70}
+    &lt;p&gt;Grade: C&lt;/p&gt;
+{:else if score &gt;= 60}
+    &lt;p&gt;Grade: D&lt;/p&gt;
+{:else}
+    &lt;p&gt;Grade: F&lt;/p&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Nested Conditionals</li>
+    <br/>
+    <ul>
+        <li>You can nest <code>{#if}</code> blocks inside each other:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let loggedIn: boolean = true;
+    let isAdmin: boolean = true;
+&lt;/script&gt;
+
+{#if loggedIn}
+    &lt;p&gt;Welcome!&lt;/p&gt;
+    {#if isAdmin}
+        &lt;p&gt;You have admin privileges.&lt;/p&gt;
+        &lt;button&gt;Access Admin Panel&lt;/button&gt;
+    {:else}
+        &lt;p&gt;You are a regular user.&lt;/p&gt;
+    {/if}
+{:else}
+    &lt;p&gt;Please log in.&lt;/p&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Looping with <code>{#each}</code></li>
+    <br/>
+    <ul>
+        <li>Use <code>{#each}</code> to iterate over arrays:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let fruits: string[] = ["Apple", "Banana", "Cherry"];
+&lt;/script&gt;
+
+&lt;ul&gt;
+    {#each fruits as fruit}
+        &lt;li&gt;{fruit}&lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>{#each}</code> with Index</li>
+    <br/>
+    <ul>
+        <li>Access the current index as the second parameter:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let fruits: string[] = ["Apple", "Banana", "Cherry"];
+&lt;/script&gt;
+
+&lt;ul&gt;
+    {#each fruits as fruit, index}
+        &lt;li&gt;{index + 1}. {fruit}&lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Keyed <code>{#each}</code> Blocks</li>
+    <br/>
+    <ul>
+        <li>When items can be added, removed, or reordered, use a <u>key</u> to help Svelte track each item:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Todo {
+        id: number;
+        text: string;
+        done: boolean;
+    }
+
+    let todos: Todo[] = [
+        { id: 1, text: "Learn Svelte", done: false },
+        { id: 2, text: "Build an app", done: false },
+        { id: 3, text: "Deploy", done: false }
+    ];
+&lt;/script&gt;
+
+&lt;ul&gt;
+    {#each todos as todo (todo.id)}
+        &lt;li&gt;{todo.text}&lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+</code></pre>
+
+    <ul>
+        <li>The <code>(todo.id)</code> part is the key — it should be a unique identifier.</li>
+        <br/>
+        <li>Keys ensure correct DOM updates when the list changes (especially important for animations and component state).</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>{#each}</code> with Destructuring</li>
+    <br/>
+    <ul>
+        <li>Destructure objects directly in the each block:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface User {
+        id: number;
+        name: string;
+        email: string;
+    }
+
+    let users: User[] = [
+        { id: 1, name: "Alice", email: "alice@example.com" },
+        { id: 2, name: "Bob", email: "bob@example.com" }
+    ];
+&lt;/script&gt;
+
+&lt;ul&gt;
+    {#each users as { id, name, email } (id)}
+        &lt;li&gt;{name} - {email}&lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>{:else}</code> in <code>{#each}</code></li>
+    <br/>
+    <ul>
+        <li>Render fallback content when the array is empty:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let todos: string[] = [];
+&lt;/script&gt;
+
+&lt;ul&gt;
+    {#each todos as todo}
+        &lt;li&gt;{todo}&lt;/li&gt;
+    {:else}
+        &lt;li&gt;No todos yet. Add one!&lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Iterating Over Objects</li>
+    <br/>
+    <ul>
+        <li>Use <code>Object.entries()</code> or <code>Object.keys()</code> to iterate over objects:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    const scores: Record&lt;string, number&gt; = {
+        Alice: 95,
+        Bob: 82,
+        Charlie: 78
+    };
+&lt;/script&gt;
+
+&lt;ul&gt;
+    {#each Object.entries(scores) as [name, score]}
+        &lt;li&gt;{name}: {score}&lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Handling Promises with <code>{#await}</code></li>
+    <br/>
+    <ul>
+        <li>Use <code>{#await}</code> to handle asynchronous data directly in templates:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface User {
+        id: number;
+        name: string;
+    }
+
+    async function fetchUser(): Promise&lt;User&gt; {
+        const response = await fetch("https://api.example.com/user/1");
+        return response.json();
+    }
+
+    let userPromise: Promise&lt;User&gt; = fetchUser();
+&lt;/script&gt;
+
+{#await userPromise}
+    &lt;p&gt;Loading...&lt;/p&gt;
+{:then user}
+    &lt;p&gt;Hello, {user.name}!&lt;/p&gt;
+{:catch error}
+    &lt;p&gt;Error: {error.message}&lt;/p&gt;
+{/await}
+</code></pre>
+
+    <ul>
+        <li><code>{#await promise}</code> — Shows while pending</li>
+        <li><code>{:then value}</code> — Shows when resolved</li>
+        <li><code>{:catch error}</code> — Shows when rejected</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>{#await}</code> Without Loading State</li>
+    <br/>
+    <ul>
+        <li>If you don't need a loading state, skip directly to <code>{:then}</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let dataPromise: Promise&lt;string&gt; = Promise.resolve("Hello!");
+&lt;/script&gt;
+
+{#await dataPromise then data}
+    &lt;p&gt;{data}&lt;/p&gt;
+{/await}
+</code></pre>
+
+    <ul>
+        <li>Nothing renders until the promise resolves.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>{#await}</code> Without Catch</li>
+    <br/>
+    <ul>
+        <li>You can omit <code>{:catch}</code> if you don't need error handling in the template:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Post {
+        title: string;
+        body: string;
+    }
+
+    async function fetchPost(): Promise&lt;Post&gt; {
+        const res = await fetch("https://api.example.com/posts/1");
+        return res.json();
+    }
+
+    let postPromise: Promise&lt;Post&gt; = fetchPost();
+&lt;/script&gt;
+
+{#await postPromise}
+    &lt;p&gt;Loading post...&lt;/p&gt;
+{:then post}
+    &lt;h2&gt;{post.title}&lt;/h2&gt;
+    &lt;p&gt;{post.body}&lt;/p&gt;
+{/await}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Refreshing <code>{#await}</code> Data</li>
+    <br/>
+    <ul>
+        <li>Reassign the promise to trigger a refresh:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface User {
+        id: number;
+        name: string;
+    }
+
+    async function fetchRandomUser(): Promise&lt;User&gt; {
+        const id = Math.floor(Math.random() * 10) + 1;
+        const res = await fetch(`https://api.example.com/users/${id}`);
+        return res.json();
+    }
+
+    let userPromise: Promise&lt;User&gt; = fetchRandomUser();
+
+    function refresh(): void {
+        userPromise = fetchRandomUser();  // Reassign to refetch
+    }
+&lt;/script&gt;
+
+&lt;button onclick={refresh}&gt;Load Random User&lt;/button&gt;
+
+{#await userPromise}
+    &lt;p&gt;Loading...&lt;/p&gt;
+{:then user}
+    &lt;p&gt;{user.name}&lt;/p&gt;
+{:catch error}
+    &lt;p&gt;Failed to load user.&lt;/p&gt;
+{/await}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Forcing Re-render with <code>{#key}</code></li>
+    <br/>
+    <ul>
+        <li>The <code>{#key}</code> block destroys and recreates its content when the key value changes:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let userId: number = 1;
+&lt;/script&gt;
+
+&lt;input type="number" bind:value={userId} min="1" /&gt;
+
+{#key userId}
+    &lt;UserProfile id={userId} /&gt;
+{/key}
+</code></pre>
+
+    <ul>
+        <li>When <code>userId</code> changes, the <code>UserProfile</code> component is destroyed and a new instance is created.</li>
+        <br/>
+        <li>This resets all component state and re-runs lifecycle functions.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>{#key}</code> for Animations</li>
+    <br/>
+    <ul>
+        <li><code>{#key}</code> is useful for triggering intro/outro transitions:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { fade } from "svelte/transition";
+
+    let count: number = 0;
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; count++}&gt;Increment&lt;/button&gt;
+
+{#key count}
+    &lt;p transition:fade&gt;{count}&lt;/p&gt;
+{/key}
+</code></pre>
+
+    <ul>
+        <li>Every time <code>count</code> changes, the paragraph fades out and a new one fades in.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Combining Logic Blocks</li>
+    <br/>
+    <ul>
+        <li>Logic blocks can be combined for complex rendering:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Post {
+        id: number;
+        title: string;
+        published: boolean;
+    }
+
+    async function fetchPosts(): Promise&lt;Post[]&gt; {
+        const res = await fetch("https://api.example.com/posts");
+        return res.json();
+    }
+
+    let postsPromise: Promise&lt;Post[]&gt; = fetchPosts();
+    let showOnlyPublished: boolean = false;
+&lt;/script&gt;
+
+&lt;label&gt;
+    &lt;input type="checkbox" bind:checked={showOnlyPublished} /&gt;
+    Show only published
+&lt;/label&gt;
+
+{#await postsPromise}
+    &lt;p&gt;Loading posts...&lt;/p&gt;
+{:then posts}
+    &lt;ul&gt;
+        {#each posts as post (post.id)}
+            {#if !showOnlyPublished || post.published}
+                &lt;li&gt;
+                    {post.title}
+                    {#if !post.published}
+                        &lt;span&gt;(Draft)&lt;/span&gt;
+                    {/if}
+                &lt;/li&gt;
+            {/if}
+        {/each}
+    &lt;/ul&gt;
+{:catch}
+    &lt;p&gt;Failed to load posts.&lt;/p&gt;
+{/await}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Logic Blocks Summary</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Block</th>
+            <th>Purpose</th>
+            <th>Syntax</th>
+        </tr>
+        <tr>
+            <td><code>{#if}</code></td>
+            <td>Conditional rendering</td>
+            <td><code>{#if condition}...{/if}</code></td>
+        </tr>
+        <tr>
+            <td><code>{:else}</code></td>
+            <td>Else branch</td>
+            <td><code>{#if}...{:else}...{/if}</code></td>
+        </tr>
+        <tr>
+            <td><code>{:else if}</code></td>
+            <td>Else-if branch</td>
+            <td><code>{#if}...{:else if}...{/if}</code></td>
+        </tr>
+        <tr>
+            <td><code>{#each}</code></td>
+            <td>Loop over arrays</td>
+            <td><code>{#each array as item}...{/each}</code></td>
+        </tr>
+        <tr>
+            <td><code>{#each} + key</code></td>
+            <td>Keyed loop</td>
+            <td><code>{#each array as item (key)}...{/each}</code></td>
+        </tr>
+        <tr>
+            <td><code>{#await}</code></td>
+            <td>Handle promises</td>
+            <td><code>{#await promise}...{:then}...{:catch}...{/await}</code></td>
+        </tr>
+        <tr>
+            <td><code>{#key}</code></td>
+            <td>Force re-render</td>
+            <td><code>{#key value}...{/key}</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
