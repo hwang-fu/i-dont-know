@@ -161,6 +161,7 @@
         <li><a href="#svelte-advanced-reactivity">Advanced Reactivity</a></li>
         <li><a href="#svelte-reusing-content">Reusing Content</a></li>
         <li><a href="#svelte-advanced-bindings"></a>Advanced Bindings</li>
+        <li><a href="#svelte-context-api">Context API</a></li>
     </ol>
 </nav>
 <hr/>
@@ -9285,6 +9286,1203 @@ interface Props {
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-context-api">Svelte Context API</h3>
+<ol>
+    <li>What Is Context?</li>
+    <br/>
+    <ul>
+        <li><b>Context</b> allows you to pass data between components without prop drilling.</li>
+        <br/>
+        <li>Data flows from a parent component to <u>any descendant</u>, regardless of depth.</li>
+        <br/>
+        <li>Key characteristics:
+            <ul>
+                <li>Context is <u>not reactive</u> by default (but can hold reactive values)</li>
+                <li>Context is available only during component initialization</li>
+                <li>Each component tree can have its own context values</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Common use cases:
+            <ul>
+                <li>Theme/styling configuration</li>
+                <li>Authentication state</li>
+                <li>Internationalization (i18n)</li>
+                <li>Feature flags</li>
+                <li>Shared services</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Basic Context: <code>setContext</code> and <code>getContext</code></li>
+    <br/>
+    <ul>
+        <li>Use <code>setContext</code> to provide a value and <code>getContext</code> to consume it:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { setContext } from "svelte";
+    import Child from "./Child.svelte";
+
+    // Set a context value with a key
+    setContext("username", "Alice");
+    setContext("theme", "dark");
+&lt;/script&gt;
+
+&lt;div&gt;
+    &lt;h2&gt;Parent Component&lt;/h2&gt;
+    &lt;Child /&gt;
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Child.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { getContext } from "svelte";
+    import GrandChild from "./GrandChild.svelte";
+
+    // Get context values
+    const username = getContext&lt;string&gt;("username");
+    const theme    = getContext&lt;string&gt;("theme");
+&lt;/script&gt;
+
+&lt;div&gt;
+    &lt;p&gt;Child: User is {username}, theme is {theme}&lt;/p&gt;
+    &lt;GrandChild /&gt;
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- GrandChild.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { getContext } from "svelte";
+
+    // Context is available at any depth
+    const username = getContext&lt;string&gt;("username");
+&lt;/script&gt;
+
+&lt;p&gt;GrandChild: Hello, {username}!&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li>Context must be set during component initialization (not in event handlers or effects).</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Type-Safe Context Keys</li>
+    <br/>
+    <ul>
+        <li>Use symbols or typed keys for better type safety:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// context-keys.ts
+import type { Writable } from "svelte/store";
+
+// Define context keys as symbols for uniqueness
+export const THEME_KEY  = Symbol("theme");
+export const USER_KEY   = Symbol("user");
+export const CONFIG_KEY = Symbol("config");
+
+// Define types for context values
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: "admin" | "user" | "guest";
+}
+
+export interface ThemeConfig {
+    mode: "light" | "dark";
+    primaryColor: string;
+    fontSize: number;
+}
+
+export interface AppConfig {
+    apiUrl: string;
+    features: {
+        darkMode: boolean;
+        notifications: boolean;
+    };
+}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- App.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { setContext } from "svelte";
+    import { THEME_KEY, USER_KEY, CONFIG_KEY } from "./context-keys";
+    import type { User, ThemeConfig, AppConfig } from "./context-keys";
+    import Dashboard from "./Dashboard.svelte";
+
+    const user: User = {
+        id: 1,
+        name: "Alice",
+        email: "alice@example.com",
+        role: "admin"
+    };
+
+    const theme: ThemeConfig = {
+        mode: "dark",
+        primaryColor: "#007bff",
+        fontSize: 16
+    };
+
+    const config: AppConfig = {
+        apiUrl: "https://api.example.com",
+        features: {
+            darkMode: true,
+            notifications: true
+        }
+    };
+
+    setContext(THEME_KEY, theme);
+    setContext(USER_KEY, user);
+    setContext(CONFIG_KEY, config);
+&lt;/script&gt;
+
+&lt;Dashboard /&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Dashboard.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { getContext } from "svelte";
+    import { THEME_KEY, USER_KEY } from "./context-keys";
+    import type { User, ThemeConfig } from "./context-keys";
+
+    // Type-safe context retrieval
+    const user = getContext&lt;User&gt;(USER_KEY);
+    const theme = getContext&lt;ThemeConfig&gt;(THEME_KEY);
+&lt;/script&gt;
+
+&lt;div style="background: {theme.mode === 'dark' ? '#333' : '#fff'}"&gt;
+    &lt;h1&gt;Welcome, {user.name}!&lt;/h1&gt;
+    &lt;p&gt;Role: {user.role}&lt;/p&gt;
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Checking for Context with <code>hasContext</code></li>
+    <br/>
+    <ul>
+        <li>Use <code>hasContext</code> to check if a context exists before accessing it:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { getContext, hasContext } from "svelte";
+
+    interface Theme {
+        mode: "light" | "dark";
+    }
+
+    const THEME_KEY = Symbol("theme");
+
+    // Check if context exists
+    const hasTheme = hasContext(THEME_KEY);
+
+    // Provide fallback if context doesn't exist
+    const theme: Theme = hasContext(THEME_KEY)
+        ? getContext&lt;Theme&gt;(THEME_KEY)
+        : { mode: "light" }; // default fallback
+
+    // Or use a helper function
+    function getContextWithDefault&lt;T&gt;(key: symbol, defaultValue: T): T {
+        return hasContext(key) ? getContext&lt;T&gt;(key) : defaultValue;
+    }
+
+    const safeTheme = getContextWithDefault&lt;Theme&gt;(THEME_KEY, { mode: "light" });
+&lt;/script&gt;
+
+&lt;p&gt;Theme context exists: {hasTheme}&lt;/p&gt;
+&lt;p&gt;Current mode: {theme.mode}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Getting All Contexts with <code>getAllContexts</code></li>
+    <br/>
+    <ul>
+        <li>Retrieve all available contexts as a Map:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { setContext } from "svelte";
+    import Child from "./Child.svelte";
+
+    setContext("theme", "dark");
+    setContext("language", "en");
+    setContext("userId", 123);
+&lt;/script&gt;
+
+&lt;Child /&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Child.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { getAllContexts, setContext } from "svelte";
+    import GrandChild from "./GrandChild.svelte";
+
+    // Add more context at this level
+    setContext("role", "admin");
+
+    // Get all contexts (including from ancestors)
+    const allContexts = getAllContexts();
+
+    // Convert to array for display
+    const contextEntries = Array.from(allContexts.entries());
+&lt;/script&gt;
+
+&lt;div&gt;
+    &lt;h3&gt;Available Contexts:&lt;/h3&gt;
+    &lt;ul&gt;
+        {#each contextEntries as [key, value]}
+            &lt;li&gt;{String(key)}: {JSON.stringify(value)}&lt;/li&gt;
+        {/each}
+    &lt;/ul&gt;
+
+    &lt;GrandChild /&gt;
+&lt;/div&gt;
+</code></pre>
+
+    <ul>
+        <li><code>getAllContexts</code> is useful for:
+            <ul>
+                <li>Debugging context availability</li>
+                <li>Forwarding all contexts to dynamically created components</li>
+                <li>Building context-aware wrapper components</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Reactive Context with Svelte 5</li>
+    <br/>
+    <ul>
+        <li>Context values are not reactive by default, but you can pass reactive state:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- ThemeProvider.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { setContext } from "svelte";
+    import type { Snippet } from "svelte";
+
+    interface Props {
+        children: Snippet;
+    }
+
+    let { children }: Props = $props();
+
+    // Create reactive state
+    let mode: "light" | "dark" = $state("light");
+    let primaryColor: string = $state("#007bff");
+
+    // Create a context object with getters and methods
+    const themeContext = {
+        get mode() { return mode; },
+        get primaryColor() { return primaryColor; },
+        toggle() {
+            mode = mode === "light" ? "dark" : "light";
+        },
+        setColor(color: string) {
+            primaryColor = color;
+        }
+    };
+
+    setContext("theme", themeContext);
+&lt;/script&gt;
+
+{@render children()}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- App.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import ThemeProvider from "./ThemeProvider.svelte";
+    import ThemedContent from "./ThemedContent.svelte";
+&lt;/script&gt;
+
+&lt;ThemeProvider&gt;
+    &lt;ThemedContent /&gt;
+&lt;/ThemeProvider&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- ThemedContent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { getContext } from "svelte";
+
+    interface ThemeContext {
+        readonly mode: "light" | "dark";
+        readonly primaryColor: string;
+        toggle: () =&gt; void;
+        setColor: (color: string) =&gt; void;
+    }
+
+    const theme = getContext&lt;ThemeContext&gt;("theme");
+&lt;/script&gt;
+
+&lt;div
+    class="content"
+    style="
+        background: {theme.mode === 'dark' ? '#1a1a1a' : '#ffffff'};
+        color: {theme.mode === 'dark' ? '#ffffff' : '#1a1a1a'};
+    "
+&gt;
+    &lt;p&gt;Current theme: {theme.mode}&lt;/p&gt;
+    &lt;p&gt;Primary color: {theme.primaryColor}&lt;/p&gt;
+
+    &lt;button onclick={theme.toggle}&gt;
+        Toggle Theme
+    &lt;/button&gt;
+
+    &lt;input
+        type="color"
+        value={theme.primaryColor}
+        oninput={(e) =&gt; theme.setColor(e.currentTarget.value)}
+    /&gt;
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Context Factory Pattern</li>
+    <br/>
+    <ul>
+        <li>Create reusable context with factory functions:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// auth-context.svelte.ts
+import { setContext, getContext, hasContext } from "svelte";
+
+const AUTH_KEY = Symbol("auth");
+
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+}
+
+export interface AuthContext {
+    readonly user: User | null;
+    readonly isAuthenticated: boolean;
+    readonly isLoading: boolean;
+    login: (email: string, password: string) =&gt; Promise&lt;void&gt;;
+    logout: () =&gt; void;
+}
+
+export function createAuthContext(): AuthContext {
+    let user: User | null = $state(null);
+    let isLoading: boolean = $state(false);
+
+    const context: AuthContext = {
+        get user() { return user; },
+        get isAuthenticated() { return user !== null; },
+        get isLoading() { return isLoading; },
+
+        async login(email: string, password: string) {
+            isLoading = true;
+            try {
+                // Simulate API call
+                await new Promise(r =&gt; setTimeout(r, 1000));
+                user = { id: 1, name: "Alice", email };
+            } finally {
+                isLoading = false;
+            }
+        },
+
+        logout() {
+            user = null;
+        }
+    };
+
+    setContext(AUTH_KEY, context);
+    return context;
+}
+
+export function getAuthContext(): AuthContext {
+    if (!hasContext(AUTH_KEY)) {
+        throw new Error("Auth context not found. Did you forget to wrap with AuthProvider?");
+    }
+    return getContext&lt;AuthContext&gt;(AUTH_KEY);
+}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- AuthProvider.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+    import { createAuthContext } from "./auth-context.svelte";
+
+    interface Props {
+        children: Snippet;
+    }
+
+    let { children }: Props = $props();
+
+    // Initialize auth context
+    createAuthContext();
+&lt;/script&gt;
+
+{@render children()}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- LoginForm.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { getAuthContext } from "./auth-context.svelte";
+
+    const auth = getAuthContext();
+
+    let email: string = $state("");
+    let password: string = $state("");
+
+    async function handleSubmit(): Promise&lt;void&gt; {
+        await auth.login(email, password);
+    }
+&lt;/script&gt;
+
+{#if auth.isAuthenticated}
+    &lt;div&gt;
+        &lt;p&gt;Welcome, {auth.user?.name}!&lt;/p&gt;
+        &lt;button onclick={auth.logout}&gt;Logout&lt;/button&gt;
+    &lt;/div&gt;
+{:else}
+    &lt;form onsubmit={(e) =&gt; { e.preventDefault(); handleSubmit(); }}&gt;
+        &lt;input bind:value={email} placeholder="Email" disabled={auth.isLoading} /&gt;
+        &lt;input bind:value={password} type="password" placeholder="Password" disabled={auth.isLoading} /&gt;
+        &lt;button type="submit" disabled={auth.isLoading}&gt;
+            {auth.isLoading ? "Loading..." : "Login"}
+        &lt;/button&gt;
+    &lt;/form&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Internationalization (i18n) Context</li>
+    <br/>
+    <ul>
+        <li>Build a complete i18n solution with context:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// i18n-context.svelte.ts
+import { setContext, getContext } from "svelte";
+
+const I18N_KEY = Symbol("i18n");
+
+type Locale = "en" | "es" | "fr" | "de";
+
+interface Translations {
+    [key: string]: string;
+}
+
+const translations: Record&lt;Locale, Translations&gt; = {
+    en: {
+        greeting: "Hello",
+        farewell: "Goodbye",
+        welcome: "Welcome, {name}!",
+        items: "{count} item(s)"
+    },
+    es: {
+        greeting: "Hola",
+        farewell: "Adiós",
+        welcome: "¡Bienvenido, {name}!",
+        items: "{count} artículo(s)"
+    },
+    fr: {
+        greeting: "Bonjour",
+        farewell: "Au revoir",
+        welcome: "Bienvenue, {name}!",
+        items: "{count} article(s)"
+    },
+    de: {
+        greeting: "Hallo",
+        farewell: "Auf Wiedersehen",
+        welcome: "Willkommen, {name}!",
+        items: "{count} Artikel"
+    }
+};
+
+export interface I18nContext {
+    readonly locale: Locale;
+    readonly availableLocales: Locale[];
+    setLocale: (locale: Locale) =&gt; void;
+    t: (key: string, params?: Record&lt;string, string | number&gt;) =&gt; string;
+}
+
+export function createI18nContext(initialLocale: Locale = "en"): I18nContext {
+    let locale: Locale = $state(initialLocale);
+
+    function t(key: string, params?: Record&lt;string, string | number&gt;): string {
+        let text = translations[locale][key] || key;
+
+        if (params) {
+            Object.entries(params).forEach(([k, v]) =&gt; {
+                text = text.replace(`{${k}}`, String(v));
+            });
+        }
+
+        return text;
+    }
+
+    const context: I18nContext = {
+        get locale() { return locale; },
+        get availableLocales() { return ["en", "es", "fr", "de"] as Locale[]; },
+        setLocale(newLocale: Locale) {
+            locale = newLocale;
+        },
+        t
+    };
+
+    setContext(I18N_KEY, context);
+    return context;
+}
+
+export function getI18n(): I18nContext {
+    return getContext&lt;I18nContext&gt;(I18N_KEY);
+}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- I18nProvider.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+    import { createI18nContext, type I18nContext } from "./i18n-context.svelte";
+
+    interface Props {
+        locale?: "en" | "es" | "fr" | "de";
+        children: Snippet;
+    }
+
+    let { locale = "en", children }: Props = $props();
+
+    createI18nContext(locale);
+&lt;/script&gt;
+
+{@render children()}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- TranslatedContent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { getI18n } from "./i18n-context.svelte";
+
+    const i18n = getI18n();
+
+    let itemCount: number = $state(5);
+&lt;/script&gt;
+
+&lt;div&gt;
+    &lt;select
+        value={i18n.locale}
+        onchange={(e) =&gt; i18n.setLocale(e.currentTarget.value as "en" | "es" | "fr" | "de")}
+    &gt;
+        {#each i18n.availableLocales as loc}
+            &lt;option value={loc}&gt;{loc.toUpperCase()}&lt;/option&gt;
+        {/each}
+    &lt;/select&gt;
+
+    &lt;h1&gt;{i18n.t("greeting")}&lt;/h1&gt;
+    &lt;p&gt;{i18n.t("welcome", { name: "Alice" })}&lt;/p&gt;
+
+    &lt;input type="number" bind:value={itemCount} min="0" /&gt;
+    &lt;p&gt;{i18n.t("items", { count: itemCount })}&lt;/p&gt;
+
+    &lt;p&gt;{i18n.t("farewell")}&lt;/p&gt;
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Toast/Notification Context</li>
+    <br/>
+    <ul>
+        <li>Create a global toast notification system:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// toast-context.svelte.ts
+import { setContext, getContext } from "svelte";
+
+const TOAST_KEY = Symbol("toast");
+
+export interface Toast {
+    id: number;
+    message: string;
+    type: "info" | "success" | "warning" | "error";
+    duration: number;
+}
+
+export interface ToastContext {
+    readonly toasts: Toast[];
+    show: (message: string, type?: Toast["type"], duration?: number) =&gt; void;
+    success: (message: string) =&gt; void;
+    error: (message: string) =&gt; void;
+    warning: (message: string) =&gt; void;
+    info: (message: string) =&gt; void;
+    dismiss: (id: number) =&gt; void;
+    clear: () =&gt; void;
+}
+
+export function createToastContext(): ToastContext {
+    let toasts: Toast[] = $state([]);
+    let nextId = 0;
+
+    function show(message: string, type: Toast["type"] = "info", duration = 3000): void {
+        const id = nextId++;
+        const toast: Toast = { id, message, type, duration };
+
+        toasts = [...toasts, toast];
+
+        if (duration &gt; 0) {
+            setTimeout(() =&gt; dismiss(id), duration);
+        }
+    }
+
+    function dismiss(id: number): void {
+        toasts = toasts.filter(t =&gt; t.id !== id);
+    }
+
+    function clear(): void {
+        toasts = [];
+    }
+
+    const context: ToastContext = {
+        get toasts() { return toasts; },
+        show,
+        success: (msg) =&gt; show(msg, "success"),
+        error: (msg) =&gt; show(msg, "error", 5000),
+        warning: (msg) =&gt; show(msg, "warning"),
+        info: (msg) =&gt; show(msg, "info"),
+        dismiss,
+        clear
+    };
+
+    setContext(TOAST_KEY, context);
+    return context;
+}
+
+export function useToast(): ToastContext {
+    return getContext&lt;ToastContext&gt;(TOAST_KEY);
+}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- ToastProvider.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+    import { createToastContext, type Toast } from "./toast-context.svelte";
+    import { fly, fade } from "svelte/transition";
+
+    interface Props {
+        children: Snippet;
+    }
+
+    let { children }: Props = $props();
+
+    const toast = createToastContext();
+
+    const typeStyles: Record&lt;Toast["type"], string&gt; = {
+        info: "background: #3498db; color: white;",
+        success: "background: #27ae60; color: white;",
+        warning: "background: #f39c12; color: white;",
+        error: "background: #e74c3c; color: white;"
+    };
+&lt;/script&gt;
+
+{@render children()}
+
+&lt;div class="toast-container"&gt;
+    {#each toast.toasts as t (t.id)}
+        &lt;div
+            class="toast"
+            style={typeStyles[t.type]}
+            in:fly={{ y: 50, duration: 200 }}
+            out:fade={{ duration: 150 }}
+        &gt;
+            &lt;span&gt;{t.message}&lt;/span&gt;
+            &lt;button onclick={() =&gt; toast.dismiss(t.id)}&gt;×&lt;/button&gt;
+        &lt;/div&gt;
+    {/each}
+&lt;/div&gt;
+
+&lt;style&gt;
+    .toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 1000;
+    }
+    .toast {
+        padding: 12px 16px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 200px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .toast button {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 18px;
+        cursor: pointer;
+        margin-left: auto;
+    }
+&lt;/style&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- SomeComponent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { useToast } from "./toast-context.svelte";
+
+    const toast = useToast();
+
+    function handleSave(): void {
+        toast.success("Saved successfully!");
+    }
+
+    function handleError(): void {
+        toast.error("Something went wrong!");
+    }
+&lt;/script&gt;
+
+&lt;button onclick={handleSave}&gt;Save&lt;/button&gt;
+&lt;button onclick={handleError}&gt;Trigger Error&lt;/button&gt;
+&lt;button onclick={() =&gt; toast.info("Just FYI...")}&gt;Info&lt;/button&gt;
+&lt;button onclick={() =&gt; toast.warning("Be careful!")}&gt;Warning&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Modal/Dialog Context</li>
+    <br/>
+    <ul>
+        <li>Manage modals globally through context:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// modal-context.svelte.ts
+import { setContext, getContext } from "svelte";
+import type { Snippet } from "svelte";
+
+const MODAL_KEY = Symbol("modal");
+
+export interface ModalConfig {
+    title?: string;
+    content: Snippet;
+    onClose?: () =&gt; void;
+    closeOnBackdrop?: boolean;
+}
+
+export interface ModalContext {
+    readonly isOpen: boolean;
+    readonly config: ModalConfig | null;
+    open: (config: ModalConfig) =&gt; void;
+    close: () =&gt; void;
+    confirm: (title: string, message: string) =&gt; Promise&lt;boolean&gt;;
+}
+
+export function createModalContext(): ModalContext {
+    let isOpen: boolean = $state(false);
+    let config: ModalConfig | null = $state(null);
+    let confirmResolver: ((value: boolean) =&gt; void) | null = null;
+
+    const context: ModalContext = {
+        get isOpen() { return isOpen; },
+        get config() { return config; },
+
+        open(newConfig: ModalConfig) {
+            config = newConfig;
+            isOpen = true;
+        },
+
+        close() {
+            config?.onClose?.();
+            isOpen = false;
+            config = null;
+
+            if (confirmResolver) {
+                confirmResolver(false);
+                confirmResolver = null;
+            }
+        },
+
+        confirm(title: string, message: string): Promise&lt;boolean&gt; {
+            return new Promise((resolve) =&gt; {
+                confirmResolver = resolve;
+                // Note: content would be set by the ModalProvider
+                isOpen = true;
+            });
+        }
+    };
+
+    setContext(MODAL_KEY, context);
+    return context;
+}
+
+export function useModal(): ModalContext {
+    return getContext&lt;ModalContext&gt;(MODAL_KEY);
+}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Feature Flags Context</li>
+    <br/>
+    <ul>
+        <li>Control feature visibility across your app:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// feature-flags-context.svelte.ts
+import { setContext, getContext } from "svelte";
+
+const FEATURE_FLAGS_KEY = Symbol("featureFlags");
+
+export interface FeatureFlags {
+    darkMode: boolean;
+    newDashboard: boolean;
+    betaFeatures: boolean;
+    experimentalApi: boolean;
+}
+
+export interface FeatureFlagsContext {
+    readonly flags: FeatureFlags;
+    isEnabled: (flag: keyof FeatureFlags) =&gt; boolean;
+    enable: (flag: keyof FeatureFlags) =&gt; void;
+    disable: (flag: keyof FeatureFlags) =&gt; void;
+    toggle: (flag: keyof FeatureFlags) =&gt; void;
+}
+
+export function createFeatureFlagsContext(initial: Partial&lt;FeatureFlags&gt; = {}): FeatureFlagsContext {
+    let flags: FeatureFlags = $state({
+        darkMode: false,
+        newDashboard: false,
+        betaFeatures: false,
+        experimentalApi: false,
+        ...initial
+    });
+
+    const context: FeatureFlagsContext = {
+        get flags() { return flags; },
+
+        isEnabled(flag: keyof FeatureFlags): boolean {
+            return flags[flag];
+        },
+
+        enable(flag: keyof FeatureFlags): void {
+            flags[flag] = true;
+        },
+
+        disable(flag: keyof FeatureFlags): void {
+            flags[flag] = false;
+        },
+
+        toggle(flag: keyof FeatureFlags): void {
+            flags[flag] = !flags[flag];
+        }
+    };
+
+    setContext(FEATURE_FLAGS_KEY, context);
+    return context;
+}
+
+export function useFeatureFlags(): FeatureFlagsContext {
+    return getContext&lt;FeatureFlagsContext&gt;(FEATURE_FLAGS_KEY);
+}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- FeatureFlaggedComponent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { useFeatureFlags } from "./feature-flags-context.svelte";
+
+    const features = useFeatureFlags();
+&lt;/script&gt;
+
+{#if features.isEnabled("newDashboard")}
+    &lt;div class="new-dashboard"&gt;
+        &lt;h2&gt;New Dashboard (Beta)&lt;/h2&gt;
+        &lt;!-- New dashboard content --&gt;
+    &lt;/div&gt;
+{:else}
+    &lt;div class="old-dashboard"&gt;
+        &lt;h2&gt;Dashboard&lt;/h2&gt;
+        &lt;!-- Old dashboard content --&gt;
+    &lt;/div&gt;
+{/if}
+
+{#if features.isEnabled("betaFeatures")}
+    &lt;aside class="beta-panel"&gt;
+        &lt;h3&gt;Beta Features&lt;/h3&gt;
+        &lt;!-- Beta content --&gt;
+    &lt;/aside&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Nested Context Override</li>
+    <br/>
+    <ul>
+        <li>Child components can override parent context:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- ThemeProvider.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { setContext } from "svelte";
+    import type { Snippet } from "svelte";
+
+    interface Props {
+        theme: "light" | "dark";
+        children: Snippet;
+    }
+
+    let { theme, children }: Props = $props();
+
+    // This will override any parent theme context
+    setContext("theme", theme);
+&lt;/script&gt;
+
+&lt;div class="theme-{theme}"&gt;
+    {@render children()}
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- App.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import ThemeProvider from "./ThemeProvider.svelte";
+    import ThemedBox from "./ThemedBox.svelte";
+&lt;/script&gt;
+
+&lt;ThemeProvider theme="light"&gt;
+    &lt;!-- This section uses light theme --&gt;
+    &lt;ThemedBox&gt;Light themed content&lt;/ThemedBox&gt;
+
+    &lt;ThemeProvider theme="dark"&gt;
+        &lt;!-- This nested section overrides to dark theme --&gt;
+        &lt;ThemedBox&gt;Dark themed content (nested override)&lt;/ThemedBox&gt;
+    &lt;/ThemeProvider&gt;
+
+    &lt;!-- Back to light theme --&gt;
+    &lt;ThemedBox&gt;Light themed again&lt;/ThemedBox&gt;
+&lt;/ThemeProvider&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- ThemedBox.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { getContext } from "svelte";
+    import type { Snippet } from "svelte";
+
+    interface Props {
+        children: Snippet;
+    }
+
+    let { children }: Props = $props();
+
+    const theme = getContext&lt;"light" | "dark"&gt;("theme");
+&lt;/script&gt;
+
+&lt;div
+    class="box"
+    style="
+        background: {theme === 'dark' ? '#333' : '#fff'};
+        color: {theme === 'dark' ? '#fff' : '#333'};
+    "
+&gt;
+    &lt;p&gt;Theme: {theme}&lt;/p&gt;
+    {@render children()}
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Context vs Props vs Stores</li>
+    <br/>
+    <ul>
+        <li>Choosing the right state sharing mechanism:</li>
+    </ul>
+
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Props</th>
+            <th>Context</th>
+            <th>Stores / Runes in Modules</th>
+        </tr>
+        <tr>
+            <td>Direction</td>
+            <td>Parent → Child (direct)</td>
+            <td>Parent → Any Descendant</td>
+            <td>Any → Any</td>
+        </tr>
+        <tr>
+            <td>Reactivity</td>
+            <td>Automatic</td>
+            <td>Manual (via runes)</td>
+            <td>Automatic</td>
+        </tr>
+        <tr>
+            <td>Scope</td>
+            <td>Single component</td>
+            <td>Component subtree</td>
+            <td>Global / Module</td>
+        </tr>
+        <tr>
+            <td>Multiple instances</td>
+            <td>Yes</td>
+            <td>Yes (per tree)</td>
+            <td>No (singleton)</td>
+        </tr>
+        <tr>
+            <td>Best for</td>
+            <td>Direct parent-child data</td>
+            <td>Avoiding prop drilling</td>
+            <td>Global app state</td>
+        </tr>
+        <tr>
+            <td>Debugging</td>
+            <td>Easy</td>
+            <td>Moderate</td>
+            <td>Easy</td>
+        </tr>
+    </table>
+    <br/><br/>
+
+
+
+    <li>Common Pitfalls</li>
+    <br/>
+    <ul>
+        <li><b>Setting context outside initialization:</b></li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { setContext, getContext } from "svelte";
+
+    // ✅ CORRECT: During initialization
+    setContext("key", "value");
+
+    // ❌ WRONG: In event handler
+    function handleClick(): void {
+        // This will throw an error!
+        // setContext("key", "newValue");
+    }
+
+    // ❌ WRONG: In $effect
+    // $effect(() =&gt; {
+    //     setContext("key", someValue);
+    // });
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li><b>Expecting automatic reactivity:</b></li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { setContext } from "svelte";
+
+    let count = $state(0);
+
+    // ❌ WRONG: Primitive won't be reactive in consumers
+    // setContext("count", count);
+
+    // ✅ CORRECT: Pass an object with getter
+    setContext("counter", {
+        get count() { return count; },
+        increment() { count++; }
+    });
+&lt;/script&gt;
+</code></pre>
+
+    <ul>
+        <li><b>Using string keys (collision risk):</b></li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// ❌ WRONG: String keys can collide
+setContext("theme", myTheme);
+
+// ✅ CORRECT: Use symbols for uniqueness
+const THEME_KEY = Symbol("theme");
+setContext(THEME_KEY, myTheme);
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Context API Summary</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Function</th>
+            <th>Purpose</th>
+            <th>Usage</th>
+        </tr>
+        <tr>
+            <td><code>setContext</code></td>
+            <td>Provide a value</td>
+            <td><code>setContext(key, value)</code></td>
+        </tr>
+        <tr>
+            <td><code>getContext</code></td>
+            <td>Consume a value</td>
+            <td><code>getContext&lt;T&gt;(key)</code></td>
+        </tr>
+        <tr>
+            <td><code>hasContext</code></td>
+            <td>Check if exists</td>
+            <td><code>hasContext(key)</code></td>
+        </tr>
+        <tr>
+            <td><code>getAllContexts</code></td>
+            <td>Get all as Map</td>
+            <td><code>getAllContexts()</code></td>
+        </tr>
+        <tr>
+            <td>Symbol keys</td>
+            <td>Prevent collisions</td>
+            <td><code>Symbol("name")</code></td>
+        </tr>
+        <tr>
+            <td>Factory pattern</td>
+            <td>Reusable contexts</td>
+            <td><code>createXContext()</code></td>
+        </tr>
+        <tr>
+            <td>Reactive context</td>
+            <td>Use getters + runes</td>
+            <td><code>get value() { return state }</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
