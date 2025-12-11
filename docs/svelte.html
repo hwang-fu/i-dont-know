@@ -163,6 +163,7 @@
         <li><a href="#svelte-advanced-bindings">Advanced Bindings</a></li>
         <li><a href="#svelte-context-api">Context API</a></li>
         <li><a href="#svelte-special-elements">Special Elements</a></li>
+        <li><a href="#sveltekit-introduction">SvelteKit Introduction</a></li>
     </ol>
 </nav>
 <hr/>
@@ -11839,7 +11840,1182 @@ setContext(THEME_KEY, myTheme);
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="sveltekit-introduction">SvelteKit Introduction</h3>
+<ol>
+    <li>What Is SvelteKit?</li>
+    <br/>
+    <ul>
+        <li><b>SvelteKit</b> is the official application framework for Svelte.</li>
+        <br/>
+        <li>While Svelte is a <u>component framework</u>, SvelteKit is a <u>full-stack framework</u> that provides:
+            <ul>
+                <li>File-based routing</li>
+                <li>Server-side rendering (SSR)</li>
+                <li>Static site generation (SSG)</li>
+                <li>API routes</li>
+                <li>Data loading</li>
+                <li>Form handling</li>
+                <li>Code splitting</li>
+                <li>Hot module replacement (HMR)</li>
+            </ul>
+        </li>
+        <br/>
+        <li>SvelteKit is to Svelte what Next.js is to React or Nuxt is to Vue.</li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li>Creating a SvelteKit Project</li>
+    <br/>
+    <ul>
+        <li>Use the official create command:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers"># Create a new project
+npx sv create my-app
+
+# Navigate to the project
+cd my-app
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+</code></pre>
+
+    <ul>
+        <li>The CLI will prompt you to choose:
+            <ul>
+                <li>Template (Skeleton, Demo, Library)</li>
+                <li>TypeScript support</li>
+                <li>Additional options (ESLint, Prettier, Playwright, Vitest)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Project Structure</li>
+    <br/>
+    <ul>
+        <li>A typical SvelteKit project structure:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">my-app/
+├── src/
+│   ├── lib/                  # Library code (alias: $lib)
+│   │   ├── components/       # Reusable components
+│   │   ├── server/           # Server-only code ($lib/server)
+│   │   └── utils.ts          # Utility functions
+│   ├── routes/               # File-based routing
+│   │   ├── +page.svelte      # Home page (/)
+│   │   ├── +page.ts          # Page load function
+│   │   ├── +layout.svelte    # Root layout
+│   │   ├── +error.svelte     # Error page
+│   │   ├── about/
+│   │   │   └── +page.svelte  # About page (/about)
+│   │   └── api/
+│   │       └── +server.ts    # API endpoint (/api)
+│   ├── app.html              # HTML template
+│   ├── app.css               # Global styles
+│   └── app.d.ts              # Type declarations
+├── static/                   # Static assets (favicon, images)
+├── svelte.config.js          # Svelte/SvelteKit config
+├── vite.config.ts            # Vite config
+├── tsconfig.json             # TypeScript config
+└── package.json
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>The <code>src/routes</code> Directory</li>
+    <br/>
+    <ul>
+        <li>Routes are defined by the directory structure inside <code>src/routes</code>:</li>
+    </ul>
+
+    <table>
+        <tr>
+            <th>File Path</th>
+            <th>URL</th>
+        </tr>
+        <tr>
+            <td><code>src/routes/+page.svelte</code></td>
+            <td><code>/</code></td>
+        </tr>
+        <tr>
+            <td><code>src/routes/about/+page.svelte</code></td>
+            <td><code>/about</code></td>
+        </tr>
+        <tr>
+            <td><code>src/routes/blog/+page.svelte</code></td>
+            <td><code>/blog</code></td>
+        </tr>
+        <tr>
+            <td><code>src/routes/blog/[slug]/+page.svelte</code></td>
+            <td><code>/blog/:slug</code></td>
+        </tr>
+        <tr>
+            <td><code>src/routes/api/users/+server.ts</code></td>
+            <td><code>/api/users</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+
+
+    <li>Route Files Overview</li>
+    <br/>
+    <ul>
+        <li>Special files in each route directory:</li>
+    </ul>
+    <br/>
+
+    <table>
+        <tr>
+            <th>File</th>
+            <th>Purpose</th>
+        </tr>
+        <tr>
+            <td><code>+page.svelte</code></td>
+            <td>The page component (UI)</td>
+        </tr>
+        <tr>
+            <td><code>+page.ts</code></td>
+            <td>Load data for the page (runs on server & client)</td>
+        </tr>
+        <tr>
+            <td><code>+page.server.ts</code></td>
+            <td>Load data (server-only), form actions</td>
+        </tr>
+        <tr>
+            <td><code>+layout.svelte</code></td>
+            <td>Shared layout wrapper</td>
+        </tr>
+        <tr>
+            <td><code>+layout.ts</code></td>
+            <td>Load data for layout</td>
+        </tr>
+        <tr>
+            <td><code>+layout.server.ts</code></td>
+            <td>Load data for layout (server-only)</td>
+        </tr>
+        <tr>
+            <td><code>+error.svelte</code></td>
+            <td>Error page for this route</td>
+        </tr>
+        <tr>
+            <td><code>+server.ts</code></td>
+            <td>API endpoint (GET, POST, etc.)</td>
+        </tr>
+    </table>
+    <br/><br/>
+
+
+
+    <li>Basic Page Component</li>
+    <br/>
+    <ul>
+        <li>Create a simple page:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- src/routes/+page.svelte --&gt;
+&lt;script lang="ts"&gt;
+    let count: number = $state(0);
+&lt;/script&gt;
+
+&lt;svelte:head&gt;
+    &lt;title&gt;Home | My App&lt;/title&gt;
+    &lt;meta name="description" content="Welcome to my SvelteKit app" /&gt;
+&lt;/svelte:head&gt;
+
+&lt;main&gt;
+    &lt;h1&gt;Welcome to SvelteKit&lt;/h1&gt;
+    &lt;p&gt;This is the home page.&lt;/p&gt;
+
+    &lt;button onclick={() =&gt; count++}&gt;
+        Clicks: {count}
+    &lt;/button&gt;
+&lt;/main&gt;
+
+&lt;style&gt;
+    main {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Layouts</li>
+    <br/>
+    <ul>
+        <li>Layouts wrap pages and provide shared UI:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- src/routes/+layout.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+
+    interface Props {
+        children: Snippet;
+    }
+
+    let { children }: Props = $props();
+&lt;/script&gt;
+
+&lt;div class="app"&gt;
+    &lt;header&gt;
+        &lt;nav&gt;
+            &lt;a href="/"&gt;Home&lt;/a&gt;
+            &lt;a href="/about"&gt;About&lt;/a&gt;
+            &lt;a href="/blog"&gt;Blog&lt;/a&gt;
+            &lt;a href="/contact"&gt;Contact&lt;/a&gt;
+        &lt;/nav&gt;
+    &lt;/header&gt;
+
+    &lt;main&gt;
+        {@render children()}
+    &lt;/main&gt;
+
+    &lt;footer&gt;
+        &lt;p&gt;&copy; 2024 My App&lt;/p&gt;
+    &lt;/footer&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+    .app {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+    header {
+        background: #333;
+        color: white;
+        padding: 1rem;
+    }
+    nav {
+        display: flex;
+        gap: 1rem;
+    }
+    nav a {
+        color: white;
+        text-decoration: none;
+    }
+    main {
+        flex: 1;
+        padding: 1rem;
+    }
+    footer {
+        background: #333;
+        color: white;
+        padding: 1rem;
+        text-align: center;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Nested Layouts</li>
+    <br/>
+    <ul>
+        <li>Layouts can be nested for different sections:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">src/routes/
+├── +layout.svelte          # Root layout (applies to all pages)
+├── +page.svelte            # Home page
+├── blog/
+│   ├── +layout.svelte      # Blog layout (nested inside root)
+│   ├── +page.svelte        # Blog index (/blog)
+│   └── [slug]/
+│       └── +page.svelte    # Blog post (/blog/my-post)
+└── dashboard/
+    ├── +layout.svelte      # Dashboard layout
+    ├── +page.svelte        # Dashboard home (/dashboard)
+    └── settings/
+        └── +page.svelte    # Settings (/dashboard/settings)
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- src/routes/blog/+layout.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+
+    interface Props {
+        children: Snippet;
+    }
+
+    let { children }: Props = $props();
+&lt;/script&gt;
+
+&lt;div class="blog-layout"&gt;
+    &lt;aside&gt;
+        &lt;h3&gt;Blog Categories&lt;/h3&gt;
+        &lt;ul&gt;
+            &lt;li&gt;&lt;a href="/blog?category=tech"&gt;Technology&lt;/a&gt;&lt;/li&gt;
+            &lt;li&gt;&lt;a href="/blog?category=life"&gt;Lifestyle&lt;/a&gt;&lt;/li&gt;
+            &lt;li&gt;&lt;a href="/blog?category=news"&gt;News&lt;/a&gt;&lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/aside&gt;
+
+    &lt;article&gt;
+        {@render children()}
+    &lt;/article&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+    .blog-layout {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 2rem;
+    }
+    aside {
+        background: #f5f5f5;
+        padding: 1rem;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Loading Data with <code>+page.ts</code></li>
+    <br/>
+    <ul>
+        <li>Load data before the page renders:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// src/routes/+page.ts
+import type { PageLoad } from "./$types";
+
+export const load: PageLoad = async ({ fetch }) =&gt; {
+    const response = await fetch("/api/posts");
+    const posts = await response.json();
+
+    return {
+        posts,
+        title: "Latest Posts"
+    };
+};
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- src/routes/+page.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { PageData } from "./$types";
+
+    interface Props {
+        data: PageData;
+    }
+
+    let { data }: Props = $props();
+&lt;/script&gt;
+
+&lt;h1&gt;{data.title}&lt;/h1&gt;
+
+&lt;ul&gt;
+    {#each data.posts as post}
+        &lt;li&gt;
+            &lt;a href="/blog/{post.slug}"&gt;{post.title}&lt;/a&gt;
+        &lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Server-Only Loading with <code>+page.server.ts</code></li>
+    <br/>
+    <ul>
+        <li>For sensitive data or database access:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// src/routes/dashboard/+page.server.ts
+import type { PageServerLoad } from "./$types";
+import { redirect } from "@sveltejs/kit";
+import { db } from "$lib/server/database";
+
+export const load: PageServerLoad = async ({ locals, cookies }) =&gt; {
+    // Check authentication
+    const sessionId = cookies.get("session");
+
+    if (!sessionId) {
+        throw redirect(303, "/login");
+    }
+
+    // Access database (server-only)
+    const user = await db.user.findUnique({
+        where: { sessionId }
+    });
+
+    if (!user) {
+        throw redirect(303, "/login");
+    }
+
+    const stats = await db.stats.findMany({
+        where: { userId: user.id }
+    });
+
+    return {
+        user: {
+            name: user.name,
+            email: user.email
+        },
+        stats
+    };
+};
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- src/routes/dashboard/+page.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { PageData } from "./$types";
+
+    interface Props {
+        data: PageData;
+    }
+
+    let { data }: Props = $props();
+&lt;/script&gt;
+
+&lt;h1&gt;Welcome back, {data.user.name}!&lt;/h1&gt;
+
+&lt;div class="stats"&gt;
+    {#each data.stats as stat}
+        &lt;div class="stat-card"&gt;
+            &lt;h3&gt;{stat.label}&lt;/h3&gt;
+            &lt;p&gt;{stat.value}&lt;/p&gt;
+        &lt;/div&gt;
+    {/each}
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Dynamic Routes</li>
+    <br/>
+    <ul>
+        <li>Use square brackets for dynamic parameters:</li>
+    </ul>
+
+<pre><code class="language-text line-numbers">src/routes/
+├── blog/
+│   └── [slug]/              # Dynamic: /blog/my-post
+│       └── +page.svelte
+├── users/
+│   └── [id]/                # Dynamic: /users/123
+│       ├── +page.svelte
+│       └── +page.ts
+└── products/
+    └── [category]/
+        └── [id]/            # Multiple params: /products/electronics/456
+            └── +page.svelte
+</code></pre>
+
+<pre><code class="language-ts line-numbers">// src/routes/blog/[slug]/+page.ts
+import type { PageLoad } from "./$types";
+import { error } from "@sveltejs/kit";
+
+export const load: PageLoad = async ({ params, fetch }) =&gt; {
+    // params.slug contains the dynamic value
+    const response = await fetch(`/api/posts/${params.slug}`);
+
+    if (!response.ok) {
+        throw error(404, {
+            message: "Post not found"
+        });
+    }
+
+    const post = await response.json();
+
+    return { post };
+};
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- src/routes/blog/[slug]/+page.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { PageData } from "./$types";
+
+    interface Props {
+        data: PageData;
+    }
+
+    let { data }: Props = $props();
+&lt;/script&gt;
+
+&lt;svelte:head&gt;
+    &lt;title&gt;{data.post.title} | Blog&lt;/title&gt;
+&lt;/svelte:head&gt;
+
+&lt;article&gt;
+    &lt;h1&gt;{data.post.title}&lt;/h1&gt;
+    &lt;time&gt;{data.post.date}&lt;/time&gt;
+    &lt;div class="content"&gt;
+        {@html data.post.content}
+    &lt;/div&gt;
+&lt;/article&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Rest Parameters</li>
+    <br/>
+    <ul>
+        <li>Catch multiple path segments with <code>[...rest]</code>:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/routes/
+└── docs/
+    └── [...path]/           # Matches /docs/a, /docs/a/b, /docs/a/b/c
+        └── +page.svelte
+</code></pre>
+
+<pre><code class="language-ts line-numbers">// src/routes/docs/[...path]/+page.ts
+import type { PageLoad } from "./$types";
+
+export const load: PageLoad = async ({ params }) =&gt; {
+    // params.path = "a/b/c" for /docs/a/b/c
+    const pathParts = params.path?.split("/") ?? [];
+
+    return {
+        path: params.path,
+        parts: pathParts,
+        depth: pathParts.length
+    };
+};
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Optional Parameters</li>
+    <br/>
+    <ul>
+        <li>Make parameters optional with double brackets:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers">src/routes/
+└── lang/
+    └── [[locale]]/          # Matches /lang and /lang/en
+        └── +page.svelte
+</code></pre>
+
+<pre><code class="language-ts line-numbers">// src/routes/lang/[[locale]]/+page.ts
+import type { PageLoad } from "./$types";
+
+export const load: PageLoad = async ({ params }) =&gt; {
+    // params.locale is undefined for /lang
+    // params.locale is "en" for /lang/en
+    const locale = params.locale ?? "en"; // Default to English
+
+    return {
+        locale,
+        translations: await loadTranslations(locale)
+    };
+};
+
+async function loadTranslations(locale: string) {
+    // Load translations...
+    return {};
+}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>API Routes with <code>+server.ts</code></li>
+    <br/>
+    <ul>
+        <li>Create API endpoints:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// src/routes/api/posts/+server.ts
+import type { RequestHandler } from "./$types";
+import { json, error } from "@sveltejs/kit";
+
+// GET /api/posts
+export const GET: RequestHandler = async ({ url }) =&gt; {
+    const limit = Number(url.searchParams.get("limit")) || 10;
+    const page = Number(url.searchParams.get("page")) || 1;
+
+    // Fetch posts from database
+    const posts = await fetchPosts({ limit, page });
+
+    return json({
+        posts,
+        page,
+        limit
+    });
+};
+
+// POST /api/posts
+export const POST: RequestHandler = async ({ request, cookies }) =&gt; {
+    // Check authentication
+    const session = cookies.get("session");
+    if (!session) {
+        throw error(401, "Unauthorized");
+    }
+
+    const body = await request.json();
+
+    // Validate
+    if (!body.title || !body.content) {
+        throw error(400, "Title and content required");
+    }
+
+    // Create post
+    const post = await createPost(body);
+
+    return json(post, { status: 201 });
+};
+
+async function fetchPosts(options: { limit: number; page: number }) {
+    // Database query...
+    return [];
+}
+
+async function createPost(data: { title: string; content: string }) {
+    // Database insert...
+    return { id: 1, ...data };
+}
+</code></pre>
+
+<pre><code class="language-ts line-numbers">// src/routes/api/posts/[id]/+server.ts
+import type { RequestHandler } from "./$types";
+import { json, error } from "@sveltejs/kit";
+
+// GET /api/posts/123
+export const GET: RequestHandler = async ({ params }) =&gt; {
+    const post = await findPost(params.id);
+
+    if (!post) {
+        throw error(404, "Post not found");
+    }
+
+    return json(post);
+};
+
+// PUT /api/posts/123
+export const PUT: RequestHandler = async ({ params, request }) =&gt; {
+    const body = await request.json();
+    const post = await updatePost(params.id, body);
+
+    return json(post);
+};
+
+// DELETE /api/posts/123
+export const DELETE: RequestHandler = async ({ params }) =&gt; {
+    await deletePost(params.id);
+
+    return new Response(null, { status: 204 });
+};
+
+async function findPost(id: string) { return null; }
+async function updatePost(id: string, data: unknown) { return {}; }
+async function deletePost(id: string) {}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Navigation with Links</li>
+    <br/>
+    <ul>
+        <li>Use standard anchor tags for client-side navigation:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { page } from "$app/stores";
+
+    // Check if link is active
+    let isActive = $derived($page.url.pathname === "/about");
+&lt;/script&gt;
+
+&lt;nav&gt;
+    &lt;!-- Standard links get client-side navigation --&gt;
+    &lt;a href="/"&gt;Home&lt;/a&gt;
+    &lt;a href="/about" class:active={isActive}&gt;About&lt;/a&gt;
+    &lt;a href="/blog"&gt;Blog&lt;/a&gt;
+
+    &lt;!-- External links open normally --&gt;
+    &lt;a href="https://svelte.dev" target="_blank" rel="noopener"&gt;
+        Svelte Docs
+    &lt;/a&gt;
+
+    &lt;!-- Disable client-side navigation --&gt;
+    &lt;a href="/api/download" data-sveltekit-reload&gt;
+        Download (full page reload)
+    &lt;/a&gt;
+
+    &lt;!-- Preload on hover --&gt;
+    &lt;a href="/blog" data-sveltekit-preload-data="hover"&gt;
+        Blog (preloads on hover)
+    &lt;/a&gt;
+&lt;/nav&gt;
+
+&lt;style&gt;
+    .active { font-weight: bold; color: #007bff; }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Programmatic Navigation</li>
+    <br/>
+    <ul>
+        <li>Navigate using the <code>goto</code> function:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { goto, invalidate, invalidateAll } from "$app/navigation";
+    import { page } from "$app/stores";
+
+    async function navigateToHome(): Promise&lt;void&gt; {
+        await goto("/");
+    }
+
+    async function navigateWithState(): Promise&lt;void&gt; {
+        await goto("/dashboard", {
+            replaceState: true,  // Don't add to history
+            keepFocus: true,     // Keep focus on current element
+            noScroll: true       // Don't scroll to top
+        });
+    }
+
+    async function navigateBack(): Promise&lt;void&gt; {
+        history.back();
+    }
+
+    async function refreshData(): Promise&lt;void&gt; {
+        // Re-run load functions for current page
+        await invalidateAll();
+    }
+
+    async function refreshSpecificData(): Promise&lt;void&gt; {
+        // Re-run load functions that depend on this URL
+        await invalidate("/api/posts");
+    }
+&lt;/script&gt;
+
+&lt;button onclick={navigateToHome}&gt;Go Home&lt;/button&gt;
+&lt;button onclick={navigateBack}&gt;Go Back&lt;/button&gt;
+&lt;button onclick={refreshData}&gt;Refresh Data&lt;/button&gt;
+
+&lt;p&gt;Current path: {$page.url.pathname}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>The <code>$lib</code> Alias</li>
+    <br/>
+    <ul>
+        <li>Import from <code>src/lib</code> using the <code>$lib</code> alias:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// src/lib/utils.ts
+export function formatDate(date: Date): string {
+    return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+    });
+}
+
+export function slugify(text: string): string {
+    return text
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w-]+/g, "");
+}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- src/routes/+page.svelte --&gt;
+&lt;script lang="ts"&gt;
+    // Import from $lib
+    import { formatDate, slugify } from "$lib/utils";
+    import Button from "$lib/components/Button.svelte";
+    import Header from "$lib/components/Header.svelte";
+
+    const date = formatDate(new Date());
+&lt;/script&gt;
+
+&lt;Header /&gt;
+&lt;p&gt;Today: {date}&lt;/p&gt;
+&lt;Button&gt;Click me&lt;/Button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Server-Only Code with <code>$lib/server</code></li>
+    <br/>
+    <ul>
+        <li>Code in <code>$lib/server</code> can only be imported in server files:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// src/lib/server/database.ts
+import { PrismaClient } from "@prisma/client";
+
+export const db = new PrismaClient();
+
+export async function getUserById(id: string) {
+    return db.user.findUnique({ where: { id } });
+}
+</code></pre>
+
+<pre><code class="language-ts line-numbers">// src/lib/server/auth.ts
+import { db } from "./database";
+import bcrypt from "bcrypt";
+
+export async function verifyPassword(email: string, password: string) {
+    const user = await db.user.findUnique({ where: { email } });
+
+    if (!user) return null;
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+
+    return valid ? user : null;
+}
+</code></pre>
+
+<pre><code class="language-ts line-numbers">// src/routes/login/+page.server.ts
+import { verifyPassword } from "$lib/server/auth"; // ✅ Allowed
+import type { Actions } from "./$types";
+
+export const actions: Actions = {
+    default: async ({ request, cookies }) =&gt; {
+        const data = await request.formData();
+        const email = data.get("email") as string;
+        const password = data.get("password") as string;
+
+        const user = await verifyPassword(email, password);
+
+        if (user) {
+            cookies.set("session", user.id, { path: "/" });
+            return { success: true };
+        }
+
+        return { success: false, error: "Invalid credentials" };
+    }
+};
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- src/routes/login/+page.svelte --&gt;
+&lt;script lang="ts"&gt;
+    // ❌ This would cause an error at build time:
+    // import { verifyPassword } from "$lib/server/auth";
+
+    // ✅ Use form actions instead
+&lt;/script&gt;
+
+&lt;form method="POST"&gt;
+    &lt;input name="email" type="email" required /&gt;
+    &lt;input name="password" type="password" required /&gt;
+    &lt;button type="submit"&gt;Login&lt;/button&gt;
+&lt;/form&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Error Handling</li>
+    <br/>
+    <ul>
+        <li>Create custom error pages:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- src/routes/+error.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { page } from "$app/stores";
+&lt;/script&gt;
+
+&lt;svelte:head&gt;
+    &lt;title&gt;Error {$page.status}&lt;/title&gt;
+&lt;/svelte:head&gt;
+
+&lt;div class="error"&gt;
+    &lt;h1&gt;{$page.status}&lt;/h1&gt;
+    &lt;p&gt;{$page.error?.message ?? "Something went wrong"}&lt;/p&gt;
+
+    {#if $page.status === 404}
+        &lt;p&gt;The page you're looking for doesn't exist.&lt;/p&gt;
+        &lt;a href="/"&gt;Go home&lt;/a&gt;
+    {:else}
+        &lt;button onclick={() =&gt; location.reload()}&gt;
+            Try again
+        &lt;/button&gt;
+    {/if}
+&lt;/div&gt;
+
+&lt;style&gt;
+    .error {
+        text-align: center;
+        padding: 4rem;
+    }
+    h1 {
+        font-size: 4rem;
+        color: #e74c3c;
+    }
+&lt;/style&gt;
+</code></pre>
+
+<pre><code class="language-ts line-numbers">// Throwing errors in load functions
+import type { PageLoad } from "./$types";
+import { error } from "@sveltejs/kit";
+
+export const load: PageLoad = async ({ params }) =&gt; {
+    const post = await getPost(params.id);
+
+    if (!post) {
+        throw error(404, {
+            message: "Post not found",
+            code: "POST_NOT_FOUND"
+        });
+    }
+
+    return { post };
+};
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Environment Variables</li>
+    <br/>
+    <ul>
+        <li>Access environment variables safely:</li>
+    </ul>
+
+<pre><code class="language-bash line-numbers"># .env
+PUBLIC_API_URL=https://api.example.com
+DATABASE_URL=postgresql://localhost/mydb
+SECRET_KEY=super-secret-key
+</code></pre>
+
+<pre><code class="language-ts line-numbers">// Server-side: Access all env vars
+// src/routes/api/data/+server.ts
+import { DATABASE_URL, SECRET_KEY } from "$env/static/private";
+import { PUBLIC_API_URL } from "$env/static/public";
+
+console.log(DATABASE_URL);      // ✅ Server only
+console.log(SECRET_KEY);        // ✅ Server only
+console.log(PUBLIC_API_URL);    // ✅ Available everywhere
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Client-side: Only PUBLIC_ vars --&gt;
+&lt;!-- src/routes/+page.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { PUBLIC_API_URL } from "$env/static/public";
+
+    // ❌ These would fail:
+    // import { DATABASE_URL } from "$env/static/private";
+    // import { SECRET_KEY } from "$env/static/private";
+&lt;/script&gt;
+
+&lt;p&gt;API URL: {PUBLIC_API_URL}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Page Options</li>
+    <br/>
+    <ul>
+        <li>Configure page behavior with exports:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">// src/routes/blog/+page.ts
+import type { PageLoad } from "./$types";
+
+// Prerender this page at build time
+export const prerender = true;
+
+// Enable/disable SSR
+export const ssr = true;
+
+// Enable/disable client-side rendering
+export const csr = true;
+
+// Trailing slash behavior: 'never', 'always', 'ignore'
+export const trailingSlash = "never";
+
+export const load: PageLoad = async () =&gt; {
+    return { /* ... */ };
+};
+</code></pre>
+
+<pre><code class="language-ts line-numbers">// src/routes/app/+layout.ts
+
+// Disable SSR for entire app section (SPA mode)
+export const ssr = false;
+
+// All child routes will inherit this setting
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>SvelteKit Stores</li>
+    <br/>
+    <ul>
+        <li>Built-in stores for app state:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { page, navigating, updated } from "$app/stores";
+
+    // $page - current page info
+    // $page.url - current URL
+    // $page.params - route parameters
+    // $page.data - data from load functions
+    // $page.status - HTTP status code
+    // $page.error - error object (if any)
+
+    // $navigating - navigation state (null when not navigating)
+    // $navigating.from - source URL
+    // $navigating.to - destination URL
+
+    // $updated - true when new version is available
+&lt;/script&gt;
+
+&lt;!-- Show loading indicator during navigation --&gt;
+{#if $navigating}
+    &lt;div class="loading-bar"&gt;&lt;/div&gt;
+{/if}
+
+&lt;p&gt;Current path: {$page.url.pathname}&lt;/p&gt;
+&lt;p&gt;Search params: {$page.url.searchParams.toString()}&lt;/p&gt;
+
+{#if $page.params.slug}
+    &lt;p&gt;Slug: {$page.params.slug}&lt;/p&gt;
+{/if}
+
+{#if $updated}
+    &lt;div class="update-banner"&gt;
+        &lt;p&gt;New version available!&lt;/p&gt;
+        &lt;button onclick={() =&gt; location.reload()}&gt;
+            Refresh
+        &lt;/button&gt;
+    &lt;/div&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Configuration (<code>svelte.config.js</code>)</li>
+    <br/>
+    <ul>
+        <li>Configure SvelteKit behavior:</li>
+    </ul>
+
+<pre><code class="language-js line-numbers">// svelte.config.js
+import adapter from "@sveltejs/adapter-auto";
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+
+/** @type {import('@sveltejs/kit').Config} */
+const config = {
+    // Preprocessors (TypeScript, SCSS, etc.)
+    preprocess: vitePreprocess(),
+
+    kit: {
+        // Adapter for deployment target
+        adapter: adapter(),
+
+        // Path aliases
+        alias: {
+            $components: "src/lib/components",
+            $stores: "src/lib/stores",
+            $utils: "src/lib/utils"
+        },
+
+        // Content Security Policy
+        csp: {
+            mode: "auto",
+            directives: {
+                "script-src": ["self"]
+            }
+        },
+
+        // Prerender options
+        prerender: {
+            entries: ["*"],
+            handleMissingId: "warn"
+        }
+    }
+};
+
+export default config;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>SvelteKit vs Svelte Summary</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Svelte</th>
+            <th>SvelteKit</th>
+        </tr>
+        <tr>
+            <td>Type</td>
+            <td>Component framework</td>
+            <td>Application framework</td>
+        </tr>
+        <tr>
+            <td>Routing</td>
+            <td>Manual / third-party</td>
+            <td>File-based (built-in)</td>
+        </tr>
+        <tr>
+            <td>SSR</td>
+            <td>Not included</td>
+            <td>Built-in</td>
+        </tr>
+        <tr>
+            <td>API Routes</td>
+            <td>Not included</td>
+            <td>Built-in</td>
+        </tr>
+        <tr>
+            <td>Data Loading</td>
+            <td>Manual</td>
+            <td>Load functions</td>
+        </tr>
+        <tr>
+            <td>Build Tool</td>
+            <td>Any (Vite, Rollup)</td>
+            <td>Vite (integrated)</td>
+        </tr>
+        <tr>
+            <td>Deployment</td>
+            <td>Static files</td>
+            <td>Adapters (Node, Vercel, etc.)</td>
+        </tr>
+        <tr>
+            <td>Use Case</td>
+            <td>Widgets, components</td>
+            <td>Full applications</td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
