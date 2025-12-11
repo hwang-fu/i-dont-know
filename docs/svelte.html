@@ -159,6 +159,7 @@
         <li><a href="#svelte-actions">Actions</a></li>
         <li><a href="#svelte-transitions">Transitions</a></li>
         <li><a href="#svelte-advanced-reactivity">Advanced Reactivity</a></li>
+        <li><a href="#svelte-reusing-content">Reusing Content</a></li>
     </ol>
 </nav>
 <hr/>
@@ -6954,6 +6955,1034 @@ export const counter = createCounter(0);
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-reusing-content">Svelte Reusing Content</h3>
+<ol>
+    <li>Overview</li>
+    <br/>
+    <ul>
+        <li>Svelte provides several ways to create <u>reusable content</u> within and across components.</li>
+        <br/>
+        <li>Key concepts:
+            <ul>
+                <li><b>Slots</b> — Allow parent to inject content into child components (Svelte 4)</li>
+                <li><b>Snippets</b> — Reusable template chunks with parameters (Svelte 5)</li>
+                <li><b>@render</b> — Render snippets and children (Svelte 5)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Basic Slots (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Slots allow a parent component to pass content into a child:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Card.svelte --&gt;
+&lt;script lang="ts"&gt;
+    export let title: string;
+&lt;/script&gt;
+
+&lt;div class="card"&gt;
+    &lt;h2&gt;{title}&lt;/h2&gt;
+    &lt;div class="content"&gt;
+        &lt;slot /&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+    .card { border: 1px solid #ccc; padding: 16px; border-radius: 8px; }
+    .content { margin-top: 12px; }
+&lt;/style&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Card from "./Card.svelte";
+&lt;/script&gt;
+
+&lt;Card title="Welcome"&gt;
+    &lt;p&gt;This content goes into the slot.&lt;/p&gt;
+    &lt;p&gt;Multiple elements are allowed.&lt;/p&gt;
+&lt;/Card&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Default Slot Content (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Provide fallback content when no slot content is provided:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Button.svelte --&gt;
+&lt;script lang="ts"&gt;
+    export let variant: "primary" | "secondary" = "primary";
+&lt;/script&gt;
+
+&lt;button class="btn btn-{variant}"&gt;
+    &lt;slot&gt;
+        &lt;!-- Default content if nothing is passed --&gt;
+        Click me
+    &lt;/slot&gt;
+&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Button from "./Button.svelte";
+&lt;/script&gt;
+
+&lt;Button /&gt;                    &lt;!-- Shows "Click me" --&gt;
+&lt;Button&gt;Submit&lt;/Button&gt;       &lt;!-- Shows "Submit" --&gt;
+&lt;Button&gt;Cancel&lt;/Button&gt;       &lt;!-- Shows "Cancel" --&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Named Slots (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Use named slots for multiple content areas:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Modal.svelte --&gt;
+&lt;script lang="ts"&gt;
+    export let open: boolean = false;
+&lt;/script&gt;
+
+{#if open}
+    &lt;div class="modal-overlay"&gt;
+        &lt;div class="modal"&gt;
+            &lt;header&gt;
+                &lt;slot name="header"&gt;
+                    &lt;h2&gt;Modal Title&lt;/h2&gt;
+                &lt;/slot&gt;
+            &lt;/header&gt;
+
+            &lt;main&gt;
+                &lt;slot&gt;
+                    &lt;p&gt;Modal content goes here.&lt;/p&gt;
+                &lt;/slot&gt;
+            &lt;/main&gt;
+
+            &lt;footer&gt;
+                &lt;slot name="footer"&gt;
+                    &lt;button on:click={() =&gt; open = false}&gt;Close&lt;/button&gt;
+                &lt;/slot&gt;
+            &lt;/footer&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+{/if}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Modal from "./Modal.svelte";
+
+    let showModal: boolean = false;
+&lt;/script&gt;
+
+&lt;button on:click={() =&gt; showModal = true}&gt;Open Modal&lt;/button&gt;
+
+&lt;Modal bind:open={showModal}&gt;
+    &lt;h2 slot="header"&gt;Confirm Action&lt;/h2&gt;
+
+    &lt;p&gt;Are you sure you want to proceed?&lt;/p&gt;
+
+    &lt;div slot="footer"&gt;
+        &lt;button on:click={() =&gt; showModal = false}&gt;Cancel&lt;/button&gt;
+        &lt;button on:click={() =&gt; { /* confirm */ showModal = false }}&gt;Confirm&lt;/button&gt;
+    &lt;/div&gt;
+&lt;/Modal&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Slot Props (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Pass data from child to parent through slot props:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- List.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Item {
+        id: number;
+        name: string;
+    }
+
+    export let items: Item[];
+&lt;/script&gt;
+
+&lt;ul&gt;
+    {#each items as item, index}
+        &lt;li&gt;
+            &lt;slot {item} {index} isFirst={index === 0} isLast={index === items.length - 1}&gt;
+                {item.name}
+            &lt;/slot&gt;
+        &lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import List from "./List.svelte";
+
+    const users = [
+        { id: 1, name: "Alice" },
+        { id: 2, name: "Bob" },
+        { id: 3, name: "Charlie" }
+    ];
+&lt;/script&gt;
+
+&lt;List items={users} let:item let:index let:isFirst let:isLast&gt;
+    &lt;span class:highlight={isFirst || isLast}&gt;
+        {index + 1}. {item.name}
+        {#if isFirst}(First){/if}
+        {#if isLast}(Last){/if}
+    &lt;/span&gt;
+&lt;/List&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Checking for Slot Content with <code>$$slots</code> (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Check if slot content was provided:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Card.svelte --&gt;
+&lt;script lang="ts"&gt;
+    export let title: string;
+&lt;/script&gt;
+
+&lt;div class="card"&gt;
+    &lt;h2&gt;{title}&lt;/h2&gt;
+
+    &lt;slot /&gt;
+
+    {#if $$slots.footer}
+        &lt;hr /&gt;
+        &lt;footer&gt;
+            &lt;slot name="footer" /&gt;
+        &lt;/footer&gt;
+    {/if}
+
+    {#if $$slots.actions}
+        &lt;div class="actions"&gt;
+            &lt;slot name="actions" /&gt;
+        &lt;/div&gt;
+    {/if}
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Card from "./Card.svelte";
+&lt;/script&gt;
+
+&lt;!-- No footer - footer section won't render --&gt;
+&lt;Card title="Simple Card"&gt;
+    &lt;p&gt;Just some content.&lt;/p&gt;
+&lt;/Card&gt;
+
+&lt;!-- With footer --&gt;
+&lt;Card title="Card with Footer"&gt;
+    &lt;p&gt;Content here.&lt;/p&gt;
+    &lt;span slot="footer"&gt;Footer text&lt;/span&gt;
+&lt;/Card&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Introduction to Snippets (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>Snippets are Svelte 5's way to create reusable template chunks:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let items: string[] = $state(["Apple", "Banana", "Cherry"]);
+&lt;/script&gt;
+
+{#snippet listItem(item: string, index: number)}
+    &lt;li class="item"&gt;
+        &lt;span class="index"&gt;{index + 1}.&lt;/span&gt;
+        &lt;span class="name"&gt;{item}&lt;/span&gt;
+    &lt;/li&gt;
+{/snippet}
+
+&lt;ul&gt;
+    {#each items as item, i}
+        {@render listItem(item, i)}
+    {/each}
+&lt;/ul&gt;
+
+&lt;style&gt;
+    .item { display: flex; gap: 8px; }
+    .index { color: #666; }
+&lt;/style&gt;
+</code></pre>
+
+    <ul>
+        <li><code>{#snippet name(params)}</code> defines a snippet.</li>
+        <li><code>{@render name(args)}</code> renders the snippet.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Snippets with Complex Parameters</li>
+    <br/>
+    <ul>
+        <li>Snippets can accept any TypeScript types as parameters:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface User {
+        id: number;
+        name: string;
+        email: string;
+        avatar: string;
+        isOnline: boolean;
+    }
+
+    let users: User[] = $state([
+        { id: 1, name: "Alice", email: "alice@example.com", avatar: "👩", isOnline: true },
+        { id: 2, name: "Bob", email: "bob@example.com", avatar: "👨", isOnline: false },
+        { id: 3, name: "Charlie", email: "charlie@example.com", avatar: "🧑", isOnline: true }
+    ]);
+&lt;/script&gt;
+
+{#snippet userCard(user: User, showEmail: boolean = false)}
+    &lt;div class="user-card"&gt;
+        &lt;span class="avatar"&gt;{user.avatar}&lt;/span&gt;
+        &lt;div class="info"&gt;
+            &lt;strong&gt;{user.name}&lt;/strong&gt;
+            {#if showEmail}
+                &lt;small&gt;{user.email}&lt;/small&gt;
+            {/if}
+        &lt;/div&gt;
+        &lt;span class="status" class:online={user.isOnline}&gt;
+            {user.isOnline ? "●" : "○"}
+        &lt;/span&gt;
+    &lt;/div&gt;
+{/snippet}
+
+&lt;h3&gt;Users (compact)&lt;/h3&gt;
+{#each users as user}
+    {@render userCard(user)}
+{/each}
+
+&lt;h3&gt;Users (with email)&lt;/h3&gt;
+{#each users as user}
+    {@render userCard(user, true)}
+{/each}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Snippets for Conditional Rendering</li>
+    <br/>
+    <ul>
+        <li>Use snippets to avoid repeating conditional templates:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    type Status = "loading" | "success" | "error";
+
+    let status: Status = $state("loading");
+    let data: string | null = $state(null);
+    let error: string | null = $state(null);
+
+    function fetchData(): void {
+        status = "loading";
+        setTimeout(() =&gt; {
+            if (Math.random() &gt; 0.3) {
+                data = "Here is your data!";
+                status = "success";
+            } else {
+                error = "Failed to fetch data";
+                status = "error";
+            }
+        }, 1000);
+    }
+&lt;/script&gt;
+
+{#snippet loadingState()}
+    &lt;div class="loading"&gt;
+        &lt;span class="spinner"&gt;⏳&lt;/span&gt;
+        &lt;p&gt;Loading...&lt;/p&gt;
+    &lt;/div&gt;
+{/snippet}
+
+{#snippet errorState(message: string)}
+    &lt;div class="error"&gt;
+        &lt;span class="icon"&gt;❌&lt;/span&gt;
+        &lt;p&gt;{message}&lt;/p&gt;
+        &lt;button onclick={fetchData}&gt;Retry&lt;/button&gt;
+    &lt;/div&gt;
+{/snippet}
+
+{#snippet successState(content: string)}
+    &lt;div class="success"&gt;
+        &lt;span class="icon"&gt;✅&lt;/span&gt;
+        &lt;p&gt;{content}&lt;/p&gt;
+    &lt;/div&gt;
+{/snippet}
+
+&lt;button onclick={fetchData}&gt;Fetch Data&lt;/button&gt;
+
+{#if status === "loading"}
+    {@render loadingState()}
+{:else if status === "error" && error}
+    {@render errorState(error)}
+{:else if status === "success" && data}
+    {@render successState(data)}
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Passing Snippets to Components (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>Snippets can be passed as props to child components:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- List.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+
+    interface Props&lt;T&gt; {
+        items: T[];
+        renderItem: Snippet&lt;[T, number]&gt;;
+        emptyState?: Snippet;
+    }
+
+    let { items, renderItem, emptyState }: Props&lt;unknown&gt; = $props();
+&lt;/script&gt;
+
+{#if items.length === 0}
+    {#if emptyState}
+        {@render emptyState()}
+    {:else}
+        &lt;p&gt;No items to display.&lt;/p&gt;
+    {/if}
+{:else}
+    &lt;ul&gt;
+        {#each items as item, index}
+            &lt;li&gt;
+                {@render renderItem(item, index)}
+            &lt;/li&gt;
+        {/each}
+    &lt;/ul&gt;
+{/if}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import List from "./List.svelte";
+
+    interface Product {
+        id: number;
+        name: string;
+        price: number;
+    }
+
+    let products: Product[] = $state([
+        { id: 1, name: "Widget", price: 9.99 },
+        { id: 2, name: "Gadget", price: 19.99 }
+    ]);
+&lt;/script&gt;
+
+{#snippet productItem(product: Product, index: number)}
+    &lt;div class="product"&gt;
+        &lt;strong&gt;{product.name}&lt;/strong&gt;
+        &lt;span&gt;${product.price.toFixed(2)}&lt;/span&gt;
+    &lt;/div&gt;
+{/snippet}
+
+{#snippet emptyProducts()}
+    &lt;div class="empty"&gt;
+        &lt;p&gt;No products available.&lt;/p&gt;
+        &lt;button&gt;Add Product&lt;/button&gt;
+    &lt;/div&gt;
+{/snippet}
+
+&lt;List items={products} renderItem={productItem} emptyState={emptyProducts} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>The <code>children</code> Snippet (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>Content passed between component tags becomes the <code>children</code> snippet:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Card.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+
+    interface Props {
+        title: string;
+        children: Snippet;
+        footer?: Snippet;
+    }
+
+    let { title, children, footer }: Props = $props();
+&lt;/script&gt;
+
+&lt;div class="card"&gt;
+    &lt;h2&gt;{title}&lt;/h2&gt;
+
+    &lt;div class="content"&gt;
+        {@render children()}
+    &lt;/div&gt;
+
+    {#if footer}
+        &lt;div class="footer"&gt;
+            {@render footer()}
+        &lt;/div&gt;
+    {/if}
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Card from "./Card.svelte";
+&lt;/script&gt;
+
+{#snippet cardFooter()}
+    &lt;button&gt;Learn More&lt;/button&gt;
+{/snippet}
+
+&lt;Card title="Welcome" footer={cardFooter}&gt;
+    &lt;p&gt;This becomes the children snippet.&lt;/p&gt;
+    &lt;p&gt;All content here is passed automatically.&lt;/p&gt;
+&lt;/Card&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Optional Children</li>
+    <br/>
+    <ul>
+        <li>Make children optional with a default fallback:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Button.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+
+    interface Props {
+        onclick?: () =&gt; void;
+        children?: Snippet;
+    }
+
+    let { onclick, children }: Props = $props();
+&lt;/script&gt;
+
+&lt;button onclick={onclick}&gt;
+    {#if children}
+        {@render children()}
+    {:else}
+        Click me
+    {/if}
+&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Button from "./Button.svelte";
+&lt;/script&gt;
+
+&lt;Button /&gt;                     &lt;!-- Shows "Click me" --&gt;
+&lt;Button&gt;Submit&lt;/Button&gt;        &lt;!-- Shows "Submit" --&gt;
+&lt;Button&gt;🚀 Launch&lt;/Button&gt;     &lt;!-- Shows "🚀 Launch" --&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Snippets with Data from Parent (Render Props Pattern)</li>
+    <br/>
+    <ul>
+        <li>Pass data back to the snippet when rendering:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- DataFetcher.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+
+    interface FetchState&lt;T&gt; {
+        data: T | null;
+        loading: boolean;
+        error: string | null;
+    }
+
+    interface Props&lt;T&gt; {
+        url: string;
+        children: Snippet&lt;[FetchState&lt;T&gt;]&gt;;
+    }
+
+    let { url, children }: Props&lt;unknown&gt; = $props();
+
+    let state: FetchState&lt;unknown&gt; = $state({
+        data: null,
+        loading: true,
+        error: null
+    });
+
+    $effect(() =&gt; {
+        state.loading = true;
+        state.error = null;
+
+        fetch(url)
+            .then(res =&gt; res.json())
+            .then(data =&gt; {
+                state.data = data;
+                state.loading = false;
+            })
+            .catch(err =&gt; {
+                state.error = err.message;
+                state.loading = false;
+            });
+    });
+&lt;/script&gt;
+
+{@render children(state)}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import DataFetcher from "./DataFetcher.svelte";
+
+    interface User {
+        id: number;
+        name: string;
+    }
+&lt;/script&gt;
+
+&lt;DataFetcher url="/api/users"&gt;
+    {#snippet children(state: { data: User[] | null; loading: boolean; error: string | null })}
+        {#if state.loading}
+            &lt;p&gt;Loading...&lt;/p&gt;
+        {:else if state.error}
+            &lt;p class="error"&gt;Error: {state.error}&lt;/p&gt;
+        {:else if state.data}
+            &lt;ul&gt;
+                {#each state.data as user}
+                    &lt;li&gt;{user.name}&lt;/li&gt;
+                {/each}
+            &lt;/ul&gt;
+        {/if}
+    {/snippet}
+&lt;/DataFetcher&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Typing Snippets</li>
+    <br/>
+    <ul>
+        <li>Use the <code>Snippet</code> type from Svelte for proper typing:</li>
+    </ul>
+
+<pre><code class="language-ts line-numbers">import type { Snippet } from "svelte";
+
+// Snippet with no parameters
+type NoParams = Snippet;
+
+// Snippet with one parameter
+type SingleParam = Snippet&lt;[string]&gt;;
+
+// Snippet with multiple parameters
+type MultiParams = Snippet&lt;[string, number, boolean]&gt;;
+
+// Snippet with object parameter
+interface ItemData {
+    id: number;
+    name: string;
+}
+type ObjectParam = Snippet&lt;[ItemData]&gt;;
+
+// Optional snippet
+interface Props {
+    required: Snippet;
+    optional?: Snippet;
+}
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+
+    interface TableColumn&lt;T&gt; {
+        key: keyof T;
+        header: string;
+        render?: Snippet&lt;[T[keyof T], T]&gt;;
+    }
+
+    interface Props&lt;T&gt; {
+        data: T[];
+        columns: TableColumn&lt;T&gt;[];
+    }
+
+    let { data, columns }: Props&lt;Record&lt;string, unknown&gt;&gt; = $props();
+&lt;/script&gt;
+
+&lt;table&gt;
+    &lt;thead&gt;
+        &lt;tr&gt;
+            {#each columns as column}
+                &lt;th&gt;{column.header}&lt;/th&gt;
+            {/each}
+        &lt;/tr&gt;
+    &lt;/thead&gt;
+    &lt;tbody&gt;
+        {#each data as row}
+            &lt;tr&gt;
+                {#each columns as column}
+                    &lt;td&gt;
+                        {#if column.render}
+                            {@render column.render(row[column.key], row)}
+                        {:else}
+                            {row[column.key]}
+                        {/if}
+                    &lt;/td&gt;
+                {/each}
+            &lt;/tr&gt;
+        {/each}
+    &lt;/tbody&gt;
+&lt;/table&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Recursive Snippets</li>
+    <br/>
+    <ul>
+        <li>Snippets can call themselves for recursive structures:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface TreeNode {
+        id: number;
+        name: string;
+        children?: TreeNode[];
+    }
+
+    let tree: TreeNode = $state({
+        id: 1,
+        name: "Root",
+        children: [
+            {
+                id: 2,
+                name: "Folder A",
+                children: [
+                    { id: 4, name: "File 1" },
+                    { id: 5, name: "File 2" }
+                ]
+            },
+            {
+                id: 3,
+                name: "Folder B",
+                children: [
+                    { id: 6, name: "File 3" }
+                ]
+            }
+        ]
+    });
+&lt;/script&gt;
+
+{#snippet treeNode(node: TreeNode, depth: number = 0)}
+    &lt;div class="node" style="padding-left: {depth * 20}px"&gt;
+        &lt;span&gt;{node.children ? "📁" : "📄"} {node.name}&lt;/span&gt;
+    &lt;/div&gt;
+
+    {#if node.children}
+        {#each node.children as child}
+            {@render treeNode(child, depth + 1)}
+        {/each}
+    {/if}
+{/snippet}
+
+&lt;div class="tree"&gt;
+    {@render treeNode(tree)}
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Snippets vs Components</li>
+    <br/>
+    <ul>
+        <li>When to use snippets vs separate components:</li>
+    </ul>
+
+    <table>
+        <tr>
+            <th>Use Snippets When</th>
+            <th>Use Components When</th>
+        </tr>
+        <tr>
+            <td>Template is only used in one component</td>
+            <td>Template is reused across multiple files</td>
+        </tr>
+        <tr>
+            <td>No need for separate state/lifecycle</td>
+            <td>Needs its own state management</td>
+        </tr>
+        <tr>
+            <td>Simple, presentational markup</td>
+            <td>Complex logic or side effects</td>
+        </tr>
+        <tr>
+            <td>Avoiding component overhead</td>
+            <td>Need component features (actions, bindings)</td>
+        </tr>
+        <tr>
+            <td>Render props / slot replacement</td>
+            <td>Standalone, testable unit</td>
+        </tr>
+    </table>
+    <br/><br/>
+
+
+
+    <li>Migrating from Slots to Snippets</li>
+    <br/>
+    <ul>
+        <li>Comparison of Svelte 4 slots vs Svelte 5 snippets:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Svelte 4: Default slot --&gt;
+&lt;div&gt;
+    &lt;slot /&gt;
+&lt;/div&gt;
+
+&lt;!-- Svelte 5: children snippet --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+    let { children }: { children: Snippet } = $props();
+&lt;/script&gt;
+&lt;div&gt;
+    {@render children()}
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Svelte 4: Named slot --&gt;
+&lt;header&gt;
+    &lt;slot name="header" /&gt;
+&lt;/header&gt;
+
+&lt;!-- Svelte 5: Named snippet prop --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+    let { header }: { header?: Snippet } = $props();
+&lt;/script&gt;
+&lt;header&gt;
+    {#if header}
+        {@render header()}
+    {/if}
+&lt;/header&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Svelte 4: Slot props --&gt;
+&lt;slot item={item} index={i} /&gt;
+
+&lt;!-- Parent usage --&gt;
+&lt;Component let:item let:index&gt;
+    {item.name} at {index}
+&lt;/Component&gt;
+
+&lt;!-- Svelte 5: Snippet with parameters --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+    let { renderItem }: { renderItem: Snippet&lt;[Item, number]&gt; } = $props();
+&lt;/script&gt;
+{@render renderItem(item, i)}
+
+&lt;!-- Parent usage --&gt;
+{#snippet itemRenderer(item: Item, index: number)}
+    {item.name} at {index}
+{/snippet}
+&lt;Component renderItem={itemRenderer} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Advanced: Snippet Composition</li>
+    <br/>
+    <ul>
+        <li>Compose snippets for flexible layouts:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+
+    interface Props {
+        layout?: "horizontal" | "vertical" | "grid";
+        items: unknown[];
+        renderItem: Snippet&lt;[unknown, number]&gt;;
+        header?: Snippet;
+        footer?: Snippet;
+        empty?: Snippet;
+    }
+
+    let {
+        layout = "vertical",
+        items,
+        renderItem,
+        header,
+        footer,
+        empty
+    }: Props = $props();
+&lt;/script&gt;
+
+{#snippet wrapper(content: Snippet)}
+    &lt;div class="container layout-{layout}"&gt;
+        {#if header}
+            &lt;div class="header"&gt;
+                {@render header()}
+            &lt;/div&gt;
+        {/if}
+
+        &lt;div class="content"&gt;
+            {@render content()}
+        &lt;/div&gt;
+
+        {#if footer}
+            &lt;div class="footer"&gt;
+                {@render footer()}
+            &lt;/div&gt;
+        {/if}
+    &lt;/div&gt;
+{/snippet}
+
+{#snippet itemList()}
+    {#if items.length === 0}
+        {#if empty}
+            {@render empty()}
+        {:else}
+            &lt;p&gt;No items&lt;/p&gt;
+        {/if}
+    {:else}
+        {#each items as item, i}
+            &lt;div class="item"&gt;
+                {@render renderItem(item, i)}
+            &lt;/div&gt;
+        {/each}
+    {/if}
+{/snippet}
+
+{@render wrapper(itemList)}
+
+&lt;style&gt;
+    .layout-horizontal .content { display: flex; flex-direction: row; gap: 8px; }
+    .layout-vertical .content { display: flex; flex-direction: column; gap: 8px; }
+    .layout-grid .content { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Reusing Content Summary</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Svelte 4</th>
+            <th>Svelte 5</th>
+        </tr>
+        <tr>
+            <td>Default content</td>
+            <td><code>&lt;slot /&gt;</code></td>
+            <td><code>{@render children()}</code></td>
+        </tr>
+        <tr>
+            <td>Named content</td>
+            <td><code>&lt;slot name="x" /&gt;</code></td>
+            <td><code>{@render x()}</code> prop</td>
+        </tr>
+        <tr>
+            <td>Pass to named</td>
+            <td><code>slot="x"</code></td>
+            <td><code>x={snippet}</code></td>
+        </tr>
+        <tr>
+            <td>Data to parent</td>
+            <td><code>&lt;slot {data} /&gt;</code> + <code>let:data</code></td>
+            <td><code>Snippet&lt;[Data]&gt;</code></td>
+        </tr>
+        <tr>
+            <td>Check existence</td>
+            <td><code>$$slots.name</code></td>
+            <td><code>{#if snippetProp}</code></td>
+        </tr>
+        <tr>
+            <td>Default fallback</td>
+            <td>Content inside <code>&lt;slot&gt;</code></td>
+            <td><code>{:else}</code> block</td>
+        </tr>
+        <tr>
+            <td>Local reuse</td>
+            <td>N/A</td>
+            <td><code>{#snippet}</code></td>
+        </tr>
+        <tr>
+            <td>Type safety</td>
+            <td>Limited</td>
+            <td>Full with <code>Snippet&lt;T&gt;</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
