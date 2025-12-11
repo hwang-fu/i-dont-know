@@ -160,8 +160,9 @@
         <li><a href="#svelte-transitions">Transitions</a></li>
         <li><a href="#svelte-advanced-reactivity">Advanced Reactivity</a></li>
         <li><a href="#svelte-reusing-content">Reusing Content</a></li>
-        <li><a href="#svelte-advanced-bindings"></a>Advanced Bindings</li>
+        <li><a href="#svelte-advanced-bindings">Advanced Bindings</a></li>
         <li><a href="#svelte-context-api">Context API</a></li>
+        <li><a href="#svelte-special-elements">Special Elements</a></li>
     </ol>
 </nav>
 <hr/>
@@ -10482,7 +10483,1355 @@ setContext(THEME_KEY, myTheme);
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-special-elements">Svelte Special Elements</h3>
+<ol>
+    <li>Overview</li>
+    <br/>
+    <ul>
+        <li>Svelte provides <u>special elements</u> that offer functionality beyond regular HTML.</li>
+        <br/>
+        <li>These elements are prefixed with <code>svelte:</code> and handle specific use cases:
+            <ul>
+                <li><code>&lt;svelte:self&gt;</code> — Recursive component rendering</li>
+                <li><code>&lt;svelte:component&gt;</code> — Dynamic component rendering</li>
+                <li><code>&lt;svelte:element&gt;</code> — Dynamic HTML element rendering</li>
+                <li><code>&lt;svelte:window&gt;</code> — Window event listeners and bindings</li>
+                <li><code>&lt;svelte:document&gt;</code> — Document event listeners and bindings</li>
+                <li><code>&lt;svelte:body&gt;</code> — Body event listeners</li>
+                <li><code>&lt;svelte:head&gt;</code> — Insert content into <code>&lt;head&gt;</code></li>
+                <li><code>&lt;svelte:options&gt;</code> — Compiler options</li>
+                <li><code>&lt;svelte:fragment&gt;</code> — Group elements without wrapper (Svelte 4)</li>
+                <li><code>&lt;svelte:boundary&gt;</code> — Error boundaries (Svelte 5)</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li><code>&lt;svelte:self&gt;</code> — Recursive Components</li>
+    <br/>
+    <ul>
+        <li>Allows a component to include itself recursively:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- TreeView.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface TreeNode {
+        name: string;
+        children?: TreeNode[];
+        expanded?: boolean;
+    }
+
+    interface Props {
+        node: TreeNode;
+        depth?: number;
+    }
+
+    let { node, depth = 0 }: Props = $props();
+
+    let expanded: boolean = $state(node.expanded ?? false);
+
+    function toggle(): void {
+        expanded = !expanded;
+    }
+&lt;/script&gt;
+
+&lt;div class="tree-node" style="padding-left: {depth * 20}px"&gt;
+    {#if node.children && node.children.length &gt; 0}
+        &lt;button class="toggle" onclick={toggle}&gt;
+            {expanded ? "▼" : "▶"}
+        &lt;/button&gt;
+    {:else}
+        &lt;span class="leaf"&gt;•&lt;/span&gt;
+    {/if}
+
+    &lt;span class="name"&gt;{node.name}&lt;/span&gt;
+
+    {#if expanded && node.children}
+        {#each node.children as child}
+            &lt;!-- Recursive call to self --&gt;
+            &lt;svelte:self node={child} depth={depth + 1} /&gt;
+        {/each}
+    {/if}
+&lt;/div&gt;
+
+&lt;style&gt;
+    .tree-node { font-family: monospace; }
+    .toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+        width: 20px;
+    }
+    .leaf { width: 20px; display: inline-block; text-align: center; }
+&lt;/style&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- App.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import TreeView from "./TreeView.svelte";
+
+    const fileSystem = {
+        name: "root",
+        expanded: true,
+        children: [
+            {
+                name: "src",
+                children: [
+                    { name: "App.svelte" },
+                    { name: "main.ts" },
+                    {
+                        name: "components",
+                        children: [
+                            { name: "Header.svelte" },
+                            { name: "Footer.svelte" }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "public",
+                children: [
+                    { name: "index.html" },
+                    { name: "favicon.ico" }
+                ]
+            },
+            { name: "package.json" }
+        ]
+    };
+&lt;/script&gt;
+
+&lt;TreeView node={fileSystem} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:self&gt;</code> — Comment Thread Example</li>
+    <br/>
+    <ul>
+        <li>Nested comment threads are a perfect use case:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Comment.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface CommentData {
+        id: number;
+        author: string;
+        text: string;
+        timestamp: string;
+        replies?: CommentData[];
+    }
+
+    interface Props {
+        comment: CommentData;
+        depth?: number;
+    }
+
+    let { comment, depth = 0 }: Props = $props();
+
+    let showReplies: boolean = $state(true);
+    let maxDepth = 5;
+&lt;/script&gt;
+
+&lt;div class="comment" style="margin-left: {depth * 24}px"&gt;
+    &lt;div class="comment-header"&gt;
+        &lt;strong&gt;{comment.author}&lt;/strong&gt;
+        &lt;span class="timestamp"&gt;{comment.timestamp}&lt;/span&gt;
+    &lt;/div&gt;
+
+    &lt;p class="comment-text"&gt;{comment.text}&lt;/p&gt;
+
+    {#if comment.replies && comment.replies.length &gt; 0}
+        &lt;button onclick={() =&gt; showReplies = !showReplies}&gt;
+            {showReplies ? "Hide" : "Show"} {comment.replies.length} replies
+        &lt;/button&gt;
+
+        {#if showReplies && depth &lt; maxDepth}
+            {#each comment.replies as reply}
+                &lt;svelte:self comment={reply} depth={depth + 1} /&gt;
+            {/each}
+        {:else if depth &gt;= maxDepth}
+            &lt;p class="max-depth"&gt;Continue thread →&lt;/p&gt;
+        {/if}
+    {/if}
+&lt;/div&gt;
+
+&lt;style&gt;
+    .comment {
+        border-left: 2px solid #ddd;
+        padding: 8px 12px;
+        margin: 8px 0;
+    }
+    .timestamp { color: #666; font-size: 0.8em; margin-left: 8px; }
+    .max-depth { color: #007bff; cursor: pointer; }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:component&gt;</code> — Dynamic Components</li>
+    <br/>
+    <ul>
+        <li>Render different components dynamically based on a variable:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Alert.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        message: string;
+    }
+    let { message }: Props = $props();
+&lt;/script&gt;
+
+&lt;div class="alert"&gt;⚠️ {message}&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Success.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        message: string;
+    }
+    let { message }: Props = $props();
+&lt;/script&gt;
+
+&lt;div class="success"&gt;✅ {message}&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Error.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        message: string;
+    }
+    let { message }: Props = $props();
+&lt;/script&gt;
+
+&lt;div class="error"&gt;❌ {message}&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- App.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Alert from "./Alert.svelte";
+    import Success from "./Success.svelte";
+    import Error from "./Error.svelte";
+    import type { Component } from "svelte";
+
+    type NotificationType = "alert" | "success" | "error";
+
+    const components: Record&lt;NotificationType, Component&lt;{ message: string }&gt;&gt; = {
+        alert: Alert,
+        success: Success,
+        error: Error
+    };
+
+    let currentType: NotificationType = $state("alert");
+    let message: string = $state("This is a notification");
+
+    let CurrentComponent = $derived(components[currentType]);
+&lt;/script&gt;
+
+&lt;select bind:value={currentType}&gt;
+    &lt;option value="alert"&gt;Alert&lt;/option&gt;
+    &lt;option value="success"&gt;Success&lt;/option&gt;
+    &lt;option value="error"&gt;Error&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;input bind:value={message} /&gt;
+
+&lt;!-- Dynamic component rendering --&gt;
+&lt;svelte:component this={CurrentComponent} {message} /&gt;
+</code></pre>
+
+    <ul>
+        <li>If <code>this</code> is falsy, nothing is rendered.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:component&gt;</code> — Tab System</li>
+    <br/>
+    <ul>
+        <li>Build a dynamic tab system:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import type { Component } from "svelte";
+    import HomeTab from "./tabs/HomeTab.svelte";
+    import ProfileTab from "./tabs/ProfileTab.svelte";
+    import SettingsTab from "./tabs/SettingsTab.svelte";
+
+    interface Tab {
+        id: string;
+        label: string;
+        component: Component;
+        icon: string;
+    }
+
+    const tabs: Tab[] = [
+        { id: "home", label: "Home", component: HomeTab, icon: "🏠" },
+        { id: "profile", label: "Profile", component: ProfileTab, icon: "👤" },
+        { id: "settings", label: "Settings", component: SettingsTab, icon: "⚙️" }
+    ];
+
+    let activeTabId: string = $state("home");
+
+    let activeTab = $derived(tabs.find(t =&gt; t.id === activeTabId));
+&lt;/script&gt;
+
+&lt;div class="tabs"&gt;
+    &lt;nav class="tab-list"&gt;
+        {#each tabs as tab}
+            &lt;button
+                class="tab-button"
+                class:active={activeTabId === tab.id}
+                onclick={() =&gt; activeTabId = tab.id}
+            &gt;
+                {tab.icon} {tab.label}
+            &lt;/button&gt;
+        {/each}
+    &lt;/nav&gt;
+
+    &lt;div class="tab-content"&gt;
+        {#if activeTab}
+            &lt;svelte:component this={activeTab.component} /&gt;
+        {/if}
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+    .tab-list { display: flex; gap: 4px; border-bottom: 1px solid #ddd; }
+    .tab-button {
+        padding: 8px 16px;
+        border: none;
+        background: none;
+        cursor: pointer;
+    }
+    .tab-button.active {
+        border-bottom: 2px solid #007bff;
+        color: #007bff;
+    }
+    .tab-content { padding: 16px; }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:element&gt;</code> — Dynamic HTML Elements</li>
+    <br/>
+    <ul>
+        <li>Render different HTML elements based on a variable:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Props {
+        level?: 1 | 2 | 3 | 4 | 5 | 6;
+        children: import("svelte").Snippet;
+    }
+
+    let { level = 1, children }: Props = $props();
+
+    // Dynamically determine the heading tag
+    let tag = $derived(`h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6");
+&lt;/script&gt;
+
+&lt;svelte:element this={tag}&gt;
+    {@render children()}
+&lt;/svelte:element&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Usage --&gt;
+&lt;script lang="ts"&gt;
+    import Heading from "./Heading.svelte";
+&lt;/script&gt;
+
+&lt;Heading level={1}&gt;Main Title&lt;/Heading&gt;
+&lt;Heading level={2}&gt;Subtitle&lt;/Heading&gt;
+&lt;Heading level={3}&gt;Section&lt;/Heading&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:element&gt;</code> — Polymorphic Components</li>
+    <br/>
+    <ul>
+        <li>Create components that can render as different elements:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Button.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { Snippet } from "svelte";
+
+    interface Props {
+        as?: "button" | "a" | "div";
+        href?: string;
+        disabled?: boolean;
+        variant?: "primary" | "secondary" | "ghost";
+        onclick?: () =&gt; void;
+        children: Snippet;
+    }
+
+    let {
+        as = "button",
+        href,
+        disabled = false,
+        variant = "primary",
+        onclick,
+        children
+    }: Props = $props();
+
+    // If href is provided, render as anchor
+    let tag = $derived(href ? "a" : as);
+&lt;/script&gt;
+
+&lt;svelte:element
+    this={tag}
+    class="btn btn-{variant}"
+    class:disabled
+    {href}
+    {disabled}
+    {onclick}
+&gt;
+    {@render children()}
+&lt;/svelte:element&gt;
+
+&lt;style&gt;
+    .btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-primary { background: #007bff; color: white; border: none; }
+    .btn-secondary { background: #6c757d; color: white; border: none; }
+    .btn-ghost { background: transparent; border: 1px solid #007bff; color: #007bff; }
+    .disabled { opacity: 0.5; pointer-events: none; }
+&lt;/style&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Usage --&gt;
+&lt;script lang="ts"&gt;
+    import Button from "./Button.svelte";
+&lt;/script&gt;
+
+&lt;!-- Renders as &lt;button&gt; --&gt;
+&lt;Button onclick={() =&gt; console.log("clicked")}&gt;Click Me&lt;/Button&gt;
+
+&lt;!-- Renders as &lt;a&gt; --&gt;
+&lt;Button href="/about"&gt;Go to About&lt;/Button&gt;
+
+&lt;!-- Renders as &lt;div&gt; --&gt;
+&lt;Button as="div" variant="ghost"&gt;Div Button&lt;/Button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:window&gt;</code> — Window Events</li>
+    <br/>
+    <ul>
+        <li>Add event listeners to the window object:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let innerWidth: number = $state(0);
+    let innerHeight: number = $state(0);
+    let scrollY: number = $state(0);
+    let online: boolean = $state(true);
+
+    function handleKeydown(event: KeyboardEvent): void {
+        if (event.key === "Escape") {
+            console.log("Escape pressed!");
+        }
+        if (event.ctrlKey && event.key === "s") {
+            event.preventDefault();
+            console.log("Save shortcut!");
+        }
+    }
+
+    function handleResize(): void {
+        console.log(`Window resized: ${innerWidth}x${innerHeight}`);
+    }
+
+    function handleOnline(): void {
+        online = true;
+        console.log("Back online!");
+    }
+
+    function handleOffline(): void {
+        online = false;
+        console.log("Gone offline!");
+    }
+&lt;/script&gt;
+
+&lt;!-- Window event listeners and bindings --&gt;
+&lt;svelte:window
+    onkeydown={handleKeydown}
+    onresize={handleResize}
+    ononline={handleOnline}
+    onoffline={handleOffline}
+    bind:innerWidth
+    bind:innerHeight
+    bind:scrollY
+/&gt;
+
+&lt;div class="status-bar" class:offline={!online}&gt;
+    &lt;p&gt;Window: {innerWidth} × {innerHeight}&lt;/p&gt;
+    &lt;p&gt;Scroll Y: {scrollY}px&lt;/p&gt;
+    &lt;p&gt;Status: {online ? "🟢 Online" : "🔴 Offline"}&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;div style="height: 200vh; padding: 20px;"&gt;
+    &lt;p&gt;Scroll down to see scrollY update&lt;/p&gt;
+    &lt;p&gt;Press Escape or Ctrl+S to test keyboard events&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+    .status-bar {
+        position: fixed;
+        top: 0;
+        right: 0;
+        background: white;
+        padding: 10px;
+        border: 1px solid #ddd;
+        font-size: 12px;
+    }
+    .offline { background: #ffebee; }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:window&gt;</code> — Available Bindings</li>
+    <br/>
+    <ul>
+        <li>All bindable window properties:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    // Readonly bindings
+    let innerWidth: number = $state(0);
+    let innerHeight: number = $state(0);
+    let outerWidth: number = $state(0);
+    let outerHeight: number = $state(0);
+    let online: boolean = $state(true);
+    let devicePixelRatio: number = $state(1);
+
+    // Two-way bindings (can be set)
+    let scrollX: number = $state(0);
+    let scrollY: number = $state(0);
+
+    function scrollToTop(): void {
+        scrollY = 0; // This will scroll the window
+    }
+
+    function scrollToPosition(x: number, y: number): void {
+        scrollX = x;
+        scrollY = y;
+    }
+&lt;/script&gt;
+
+&lt;svelte:window
+    bind:innerWidth
+    bind:innerHeight
+    bind:outerWidth
+    bind:outerHeight
+    bind:scrollX
+    bind:scrollY
+    bind:online
+    bind:devicePixelRatio
+/&gt;
+
+&lt;div class="info"&gt;
+    &lt;h3&gt;Window Properties&lt;/h3&gt;
+    &lt;table&gt;
+        &lt;tr&gt;&lt;td&gt;Inner Size&lt;/td&gt;&lt;td&gt;{innerWidth} × {innerHeight}&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td&gt;Outer Size&lt;/td&gt;&lt;td&gt;{outerWidth} × {outerHeight}&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td&gt;Scroll Position&lt;/td&gt;&lt;td&gt;{scrollX}, {scrollY}&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td&gt;Online&lt;/td&gt;&lt;td&gt;{online}&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td&gt;Pixel Ratio&lt;/td&gt;&lt;td&gt;{devicePixelRatio}&lt;/td&gt;&lt;/tr&gt;
+    &lt;/table&gt;
+
+    &lt;button onclick={scrollToTop}&gt;Scroll to Top&lt;/button&gt;
+&lt;/div&gt;
+</code></pre>
+
+    <table>
+        <tr>
+            <th>Binding</th>
+            <th>Type</th>
+            <th>Writable</th>
+        </tr>
+        <tr>
+            <td><code>innerWidth</code></td>
+            <td><code>number</code></td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>innerHeight</code></td>
+            <td><code>number</code></td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>outerWidth</code></td>
+            <td><code>number</code></td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>outerHeight</code></td>
+            <td><code>number</code></td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>scrollX</code></td>
+            <td><code>number</code></td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td><code>scrollY</code></td>
+            <td><code>number</code></td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td><code>online</code></td>
+            <td><code>boolean</code></td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td><code>devicePixelRatio</code></td>
+            <td><code>number</code></td>
+            <td>No</td>
+        </tr>
+    </table>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:document&gt;</code> — Document Events</li>
+    <br/>
+    <ul>
+        <li>Add event listeners to the document object:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let activeElement: Element | null = $state(null);
+    let visibilityState: DocumentVisibilityState = $state("visible");
+    let fullscreenElement: Element | null = $state(null);
+
+    function handleVisibilityChange(): void {
+        visibilityState = document.visibilityState;
+        console.log("Visibility:", visibilityState);
+    }
+
+    function handleSelectionChange(): void {
+        const selection = document.getSelection();
+        if (selection && selection.toString()) {
+            console.log("Selected:", selection.toString());
+        }
+    }
+
+    function handleFullscreenChange(): void {
+        fullscreenElement = document.fullscreenElement;
+    }
+&lt;/script&gt;
+
+&lt;svelte:document
+    onvisibilitychange={handleVisibilityChange}
+    onselectionchange={handleSelectionChange}
+    onfullscreenchange={handleFullscreenChange}
+    bind:activeElement
+    bind:fullscreenElement
+/&gt;
+
+&lt;div&gt;
+    &lt;p&gt;Active Element: {activeElement?.tagName ?? "None"}&lt;/p&gt;
+    &lt;p&gt;Visibility: {visibilityState}&lt;/p&gt;
+    &lt;p&gt;Fullscreen: {fullscreenElement ? "Yes" : "No"}&lt;/p&gt;
+
+    &lt;input placeholder="Focus me to see activeElement change" /&gt;
+    &lt;textarea&gt;Select this text to trigger selectionchange&lt;/textarea&gt;
+&lt;/div&gt;
+</code></pre>
+
+    <ul>
+        <li>Available document bindings:
+            <ul>
+                <li><code>activeElement</code> — Currently focused element</li>
+                <li><code>fullscreenElement</code> — Element in fullscreen mode</li>
+                <li><code>pointerLockElement</code> — Element with pointer lock</li>
+                <li><code>visibilityState</code> — Document visibility state</li>
+            </ul>
+        </li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:body&gt;</code> — Body Events</li>
+    <br/>
+    <ul>
+        <li>Add event listeners to the document body:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let mouseX: number = $state(0);
+    let mouseY: number = $state(0);
+    let isDragging: boolean = $state(false);
+
+    function handleMouseMove(event: MouseEvent): void {
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+    }
+
+    function handleDragStart(): void {
+        isDragging = true;
+    }
+
+    function handleDragEnd(): void {
+        isDragging = false;
+    }
+
+    // Useful for modals - prevent body scroll
+    let preventScroll: boolean = $state(false);
+
+    $effect(() =&gt; {
+        if (preventScroll) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+    });
+&lt;/script&gt;
+
+&lt;svelte:body
+    onmousemove={handleMouseMove}
+    ondragstart={handleDragStart}
+    ondragend={handleDragEnd}
+/&gt;
+
+&lt;div&gt;
+    &lt;p&gt;Mouse Position: {mouseX}, {mouseY}&lt;/p&gt;
+    &lt;p&gt;Dragging: {isDragging}&lt;/p&gt;
+
+    &lt;label&gt;
+        &lt;input type="checkbox" bind:checked={preventScroll} /&gt;
+        Prevent body scroll (for modals)
+    &lt;/label&gt;
+&lt;/div&gt;
+
+&lt;!-- Custom cursor that follows mouse --&gt;
+&lt;div
+    class="cursor-follower"
+    style="left: {mouseX}px; top: {mouseY}px"
+&gt;&lt;/div&gt;
+
+&lt;style&gt;
+    .cursor-follower {
+        position: fixed;
+        width: 20px;
+        height: 20px;
+        background: rgba(0, 123, 255, 0.3);
+        border-radius: 50%;
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:head&gt;</code> — Document Head</li>
+    <br/>
+    <ul>
+        <li>Insert elements into the document's <code>&lt;head&gt;</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Props {
+        title?: string;
+        description?: string;
+    }
+
+    let {
+        title = "My App",
+        description = "A Svelte application"
+    }: Props = $props();
+&lt;/script&gt;
+
+&lt;svelte:head&gt;
+    &lt;title&gt;{title}&lt;/title&gt;
+    &lt;meta name="description" content={description} /&gt;
+&lt;/svelte:head&gt;
+
+&lt;h1&gt;{title}&lt;/h1&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:head&gt;</code> — SEO Component</li>
+    <br/>
+    <ul>
+        <li>Create a reusable SEO component:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- SEO.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        title: string;
+        description?: string;
+        keywords?: string[];
+        image?: string;
+        url?: string;
+        type?: "website" | "article" | "profile";
+        author?: string;
+        publishedTime?: string;
+        noindex?: boolean;
+    }
+
+    let {
+        title,
+        description = "",
+        keywords = [],
+        image = "",
+        url = "",
+        type = "website",
+        author = "",
+        publishedTime = "",
+        noindex = false
+    }: Props = $props();
+
+    let fullTitle = $derived(`${title} | My Site`);
+&lt;/script&gt;
+
+&lt;svelte:head&gt;
+    &lt;!-- Basic Meta --&gt;
+    &lt;title&gt;{fullTitle}&lt;/title&gt;
+    &lt;meta name="description" content={description} /&gt;
+
+    {#if keywords.length &gt; 0}
+        &lt;meta name="keywords" content={keywords.join(", ")} /&gt;
+    {/if}
+
+    {#if noindex}
+        &lt;meta name="robots" content="noindex, nofollow" /&gt;
+    {/if}
+
+    &lt;!-- Open Graph --&gt;
+    &lt;meta property="og:title" content={title} /&gt;
+    &lt;meta property="og:description" content={description} /&gt;
+    &lt;meta property="og:type" content={type} /&gt;
+
+    {#if url}
+        &lt;meta property="og:url" content={url} /&gt;
+    {/if}
+
+    {#if image}
+        &lt;meta property="og:image" content={image} /&gt;
+    {/if}
+
+    &lt;!-- Twitter Card --&gt;
+    &lt;meta name="twitter:card" content="summary_large_image" /&gt;
+    &lt;meta name="twitter:title" content={title} /&gt;
+    &lt;meta name="twitter:description" content={description} /&gt;
+
+    {#if image}
+        &lt;meta name="twitter:image" content={image} /&gt;
+    {/if}
+
+    &lt;!-- Article specific --&gt;
+    {#if type === "article"}
+        {#if author}
+            &lt;meta property="article:author" content={author} /&gt;
+        {/if}
+        {#if publishedTime}
+            &lt;meta property="article:published_time" content={publishedTime} /&gt;
+        {/if}
+    {/if}
+
+    &lt;!-- Canonical URL --&gt;
+    {#if url}
+        &lt;link rel="canonical" href={url} /&gt;
+    {/if}
+&lt;/svelte:head&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- BlogPost.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import SEO from "./SEO.svelte";
+
+    interface Props {
+        post: {
+            title: string;
+            excerpt: string;
+            image: string;
+            author: string;
+            date: string;
+            content: string;
+        };
+    }
+
+    let { post }: Props = $props();
+&lt;/script&gt;
+
+&lt;SEO
+    title={post.title}
+    description={post.excerpt}
+    image={post.image}
+    type="article"
+    author={post.author}
+    publishedTime={post.date}
+/&gt;
+
+&lt;article&gt;
+    &lt;h1&gt;{post.title}&lt;/h1&gt;
+    &lt;p&gt;{post.content}&lt;/p&gt;
+&lt;/article&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:head&gt;</code> — Dynamic Styles and Scripts</li>
+    <br/>
+    <ul>
+        <li>Load external resources dynamically:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let theme: "light" | "dark" = $state("light");
+    let loadHighlighting: boolean = $state(false);
+&lt;/script&gt;
+
+&lt;svelte:head&gt;
+    &lt;!-- Dynamic theme stylesheet --&gt;
+    &lt;link
+        rel="stylesheet"
+        href="/themes/{theme}.css"
+    /&gt;
+
+    &lt;!-- Conditionally load external library --&gt;
+    {#if loadHighlighting}
+        &lt;link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css"
+        /&gt;
+        &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"&gt;&lt;/script&gt;
+    {/if}
+
+    &lt;!-- Custom fonts --&gt;
+    &lt;link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+        rel="stylesheet"
+    /&gt;
+&lt;/svelte:head&gt;
+
+&lt;select bind:value={theme}&gt;
+    &lt;option value="light"&gt;Light Theme&lt;/option&gt;
+    &lt;option value="dark"&gt;Dark Theme&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;label&gt;
+    &lt;input type="checkbox" bind:checked={loadHighlighting} /&gt;
+    Load syntax highlighting
+&lt;/label&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:options&gt;</code> — Compiler Options</li>
+    <br/>
+    <ul>
+        <li>Configure compiler behavior for a component:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Must be at the top of the component --&gt;
+&lt;svelte:options
+    immutable={true}
+    accessors={true}
+    namespace="svg"
+    customElement="my-component"
+/&gt;
+
+&lt;script lang="ts"&gt;
+    // Component code...
+&lt;/script&gt;
+</code></pre>
+
+    <table>
+        <tr>
+            <th>Option</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>immutable</code></td>
+            <td><code>boolean</code></td>
+            <td>Assume data never mutates (optimize comparisons)</td>
+        </tr>
+        <tr>
+            <td><code>accessors</code></td>
+            <td><code>boolean</code></td>
+            <td>Generate getters/setters for props</td>
+        </tr>
+        <tr>
+            <td><code>namespace</code></td>
+            <td><code>string</code></td>
+            <td>Namespace for the component (e.g., "svg", "mathml")</td>
+        </tr>
+        <tr>
+            <td><code>customElement</code></td>
+            <td><code>string</code></td>
+            <td>Compile as custom element with given tag name</td>
+        </tr>
+        <tr>
+            <td><code>runes</code></td>
+            <td><code>boolean</code></td>
+            <td>Force runes mode (Svelte 5)</td>
+        </tr>
+    </table>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:options&gt;</code> — Custom Elements</li>
+    <br/>
+    <ul>
+        <li>Compile a Svelte component as a Web Component:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;svelte:options customElement="my-counter" /&gt;
+
+&lt;script lang="ts"&gt;
+    interface Props {
+        count?: number;
+        step?: number;
+    }
+
+    let { count = $bindable(0), step = 1 }: Props = $props();
+
+    function increment(): void {
+        count += step;
+    }
+
+    function decrement(): void {
+        count -= step;
+    }
+&lt;/script&gt;
+
+&lt;div class="counter"&gt;
+    &lt;button onclick={decrement}&gt;-&lt;/button&gt;
+    &lt;span&gt;{count}&lt;/span&gt;
+    &lt;button onclick={increment}&gt;+&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+    /* Styles are encapsulated in Shadow DOM */
+    .counter {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    button {
+        width: 32px;
+        height: 32px;
+    }
+&lt;/style&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Use in any HTML page --&gt;
+&lt;my-counter count="10" step="5"&gt;&lt;/my-counter&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:fragment&gt;</code> — Slot Grouping (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Group content for named slots without a wrapper element:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Layout.svelte (Svelte 4) --&gt;
+&lt;script lang="ts"&gt;
+    export let title: string;
+&lt;/script&gt;
+
+&lt;div class="layout"&gt;
+    &lt;header&gt;
+        &lt;slot name="header"&gt;
+            &lt;h1&gt;{title}&lt;/h1&gt;
+        &lt;/slot&gt;
+    &lt;/header&gt;
+
+    &lt;main&gt;
+        &lt;slot /&gt;
+    &lt;/main&gt;
+
+    &lt;footer&gt;
+        &lt;slot name="footer" /&gt;
+    &lt;/footer&gt;
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte (Svelte 4) --&gt;
+&lt;script lang="ts"&gt;
+    import Layout from "./Layout.svelte";
+&lt;/script&gt;
+
+&lt;Layout title="My Page"&gt;
+    &lt;!-- Use svelte:fragment to pass multiple elements to a named slot --&gt;
+    &lt;svelte:fragment slot="header"&gt;
+        &lt;h1&gt;Custom Header&lt;/h1&gt;
+        &lt;nav&gt;
+            &lt;a href="/"&gt;Home&lt;/a&gt;
+            &lt;a href="/about"&gt;About&lt;/a&gt;
+        &lt;/nav&gt;
+    &lt;/svelte:fragment&gt;
+
+    &lt;!-- Default slot content --&gt;
+    &lt;p&gt;Main content goes here.&lt;/p&gt;
+
+    &lt;svelte:fragment slot="footer"&gt;
+        &lt;p&gt;Copyright 2024&lt;/p&gt;
+        &lt;p&gt;All rights reserved&lt;/p&gt;
+    &lt;/svelte:fragment&gt;
+&lt;/Layout&gt;
+</code></pre>
+
+    <ul>
+        <li>In Svelte 5 with snippets, <code>&lt;svelte:fragment&gt;</code> is less commonly needed.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:boundary&gt;</code> — Error Boundaries (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>Catch and handle errors in child components:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import BuggyComponent from "./BuggyComponent.svelte";
+
+    let errorMessage: string = $state("");
+    let hasError: boolean = $state(false);
+
+    function handleError(error: Error): void {
+        hasError = true;
+        errorMessage = error.message;
+        console.error("Caught error:", error);
+    }
+
+    function reset(): void {
+        hasError = false;
+        errorMessage = "";
+    }
+&lt;/script&gt;
+
+&lt;svelte:boundary onerror={handleError}&gt;
+    {#if hasError}
+        &lt;div class="error-fallback"&gt;
+            &lt;h2&gt;Something went wrong&lt;/h2&gt;
+            &lt;p&gt;{errorMessage}&lt;/p&gt;
+            &lt;button onclick={reset}&gt;Try Again&lt;/button&gt;
+        &lt;/div&gt;
+    {:else}
+        &lt;BuggyComponent /&gt;
+    {/if}
+&lt;/svelte:boundary&gt;
+
+&lt;style&gt;
+    .error-fallback {
+        padding: 20px;
+        background: #ffebee;
+        border: 1px solid #f44336;
+        border-radius: 4px;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:boundary&gt;</code> — With Failed Snippet</li>
+    <br/>
+    <ul>
+        <li>Use the <code>failed</code> snippet for error UI:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import DataDisplay from "./DataDisplay.svelte";
+&lt;/script&gt;
+
+&lt;svelte:boundary&gt;
+    &lt;DataDisplay /&gt;
+
+    {#snippet failed(error, reset)}
+        &lt;div class="error-boundary"&gt;
+            &lt;h3&gt;⚠️ Error Loading Data&lt;/h3&gt;
+            &lt;p&gt;{error.message}&lt;/p&gt;
+            &lt;details&gt;
+                &lt;summary&gt;Stack trace&lt;/summary&gt;
+                &lt;pre&gt;{error.stack}&lt;/pre&gt;
+            &lt;/details&gt;
+            &lt;button onclick={reset}&gt;Retry&lt;/button&gt;
+        &lt;/div&gt;
+    {/snippet}
+&lt;/svelte:boundary&gt;
+
+&lt;style&gt;
+    .error-boundary {
+        padding: 16px;
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+    }
+    details { margin: 10px 0; }
+    pre {
+        background: #f5f5f5;
+        padding: 10px;
+        overflow-x: auto;
+        font-size: 12px;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li><code>&lt;svelte:boundary&gt;</code> — Nested Boundaries</li>
+    <br/>
+    <ul>
+        <li>Create granular error handling with nested boundaries:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import Header from "./Header.svelte";
+    import Sidebar from "./Sidebar.svelte";
+    import MainContent from "./MainContent.svelte";
+&lt;/script&gt;
+
+&lt;div class="app"&gt;
+    &lt;!-- Header errors won't crash the whole app --&gt;
+    &lt;svelte:boundary&gt;
+        &lt;Header /&gt;
+        {#snippet failed(error, reset)}
+            &lt;header class="fallback"&gt;
+                &lt;span&gt;Header unavailable&lt;/span&gt;
+                &lt;button onclick={reset}&gt;↻&lt;/button&gt;
+            &lt;/header&gt;
+        {/snippet}
+    &lt;/svelte:boundary&gt;
+
+    &lt;div class="content"&gt;
+        &lt;!-- Sidebar errors are isolated --&gt;
+        &lt;svelte:boundary&gt;
+            &lt;Sidebar /&gt;
+            {#snippet failed()}
+                &lt;aside class="fallback"&gt;Menu unavailable&lt;/aside&gt;
+            {/snippet}
+        &lt;/svelte:boundary&gt;
+
+        &lt;!-- Main content has its own boundary --&gt;
+        &lt;svelte:boundary&gt;
+            &lt;MainContent /&gt;
+            {#snippet failed(error, reset)}
+                &lt;main class="fallback"&gt;
+                    &lt;p&gt;Content failed to load&lt;/p&gt;
+                    &lt;button onclick={reset}&gt;Reload&lt;/button&gt;
+                &lt;/main&gt;
+            {/snippet}
+        &lt;/svelte:boundary&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+    .content { display: flex; flex: 1; }
+    .fallback {
+        background: #f5f5f5;
+        padding: 10px;
+        color: #666;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Special Elements Summary</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Element</th>
+            <th>Purpose</th>
+            <th>Key Usage</th>
+        </tr>
+        <tr>
+            <td><code>&lt;svelte:self&gt;</code></td>
+            <td>Recursive rendering</td>
+            <td>Trees, nested comments</td>
+        </tr>
+        <tr>
+            <td><code>&lt;svelte:component&gt;</code></td>
+            <td>Dynamic components</td>
+            <td><code>this={Component}</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;svelte:element&gt;</code></td>
+            <td>Dynamic HTML elements</td>
+            <td><code>this={"div"}</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;svelte:window&gt;</code></td>
+            <td>Window events/bindings</td>
+            <td><code>bind:scrollY</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;svelte:document&gt;</code></td>
+            <td>Document events/bindings</td>
+            <td><code>bind:activeElement</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;svelte:body&gt;</code></td>
+            <td>Body events</td>
+            <td><code>onmousemove</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;svelte:head&gt;</code></td>
+            <td>Document head content</td>
+            <td><code>&lt;title&gt;</code>, <code>&lt;meta&gt;</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;svelte:options&gt;</code></td>
+            <td>Compiler options</td>
+            <td><code>customElement</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;svelte:fragment&gt;</code></td>
+            <td>Slot grouping (Svelte 4)</td>
+            <td><code>slot="name"</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;svelte:boundary&gt;</code></td>
+            <td>Error boundaries (Svelte 5)</td>
+            <td><code>onerror</code>, <code>failed</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
