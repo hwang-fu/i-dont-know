@@ -154,6 +154,7 @@
         <li><a href="#svelte-props">Props</a></li>
         <li><a href="#svelte-logic">Logic</a></li>
         <li><a href="#svelte-events">Events</a></li>
+        <li><a href="#svelte-bindings">Bindings</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2546,7 +2547,789 @@ user.age = 26;  // This IS reactive in Svelte 5!
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-bindings">Svelte Bindings</h3>
+<ol>
+    <li>What Are Bindings?</li>
+    <br/>
+    <ul>
+        <li><b>Bindings</b> create a <u>two-way connection</u> between a variable and an element property or component prop.</li>
+        <br/>
+        <li>When the variable changes, the element updates. When the element changes (e.g., user input), the variable updates.</li>
+        <br/>
+        <li>Svelte uses the <code>bind:</code> directive for bindings.</li>
+    </ul>
+    <br/><br/>
 
+
+
+    <li>Basic Input Binding</li>
+    <br/>
+    <ul>
+        <li>Bind an input's value to a variable:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let name: string = $state("");
+&lt;/script&gt;
+
+&lt;input type="text" bind:value={name} /&gt;
+&lt;p&gt;Hello, {name || "stranger"}!&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li>Typing in the input automatically updates <code>name</code>.</li>
+        <li>Changing <code>name</code> programmatically updates the input.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Text Input Types</li>
+    <br/>
+    <ul>
+        <li>Works with various text input types:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let text: string = $state("");
+    let email: string = $state("");
+    let password: string = $state("");
+    let search: string = $state("");
+    let url: string = $state("");
+    let tel: string = $state("");
+&lt;/script&gt;
+
+&lt;input type="text" bind:value={text} /&gt;
+&lt;input type="email" bind:value={email} /&gt;
+&lt;input type="password" bind:value={password} /&gt;
+&lt;input type="search" bind:value={search} /&gt;
+&lt;input type="url" bind:value={url} /&gt;
+&lt;input type="tel" bind:value={tel} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Numeric Input Binding</li>
+    <br/>
+    <ul>
+        <li>For <code>type="number"</code> and <code>type="range"</code>, the value is automatically coerced to a number:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let quantity: number = $state(1);
+    let volume: number = $state(50);
+&lt;/script&gt;
+
+&lt;input type="number" bind:value={quantity} min="0" max="100" /&gt;
+&lt;p&gt;Quantity: {quantity} (type: {typeof quantity})&lt;/p&gt;
+
+&lt;input type="range" bind:value={volume} min="0" max="100" /&gt;
+&lt;p&gt;Volume: {volume}%&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li>The bound variable will be a <code>number</code>, not a string.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Checkbox Binding</li>
+    <br/>
+    <ul>
+        <li>For checkboxes, bind to <code>checked</code> instead of <code>value</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let agreed: boolean = $state(false);
+    let subscribed: boolean = $state(true);
+&lt;/script&gt;
+
+&lt;label&gt;
+    &lt;input type="checkbox" bind:checked={agreed} /&gt;
+    I agree to the terms
+&lt;/label&gt;
+
+&lt;label&gt;
+    &lt;input type="checkbox" bind:checked={subscribed} /&gt;
+    Subscribe to newsletter
+&lt;/label&gt;
+
+&lt;p&gt;Agreed: {agreed}, Subscribed: {subscribed}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Checkbox Group Binding</li>
+    <br/>
+    <ul>
+        <li>Bind multiple checkboxes to an array using <code>bind:group</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let selectedFruits: string[] = $state([]);
+
+    const fruits: string[] = ["Apple", "Banana", "Cherry", "Mango"];
+&lt;/script&gt;
+
+{#each fruits as fruit}
+    &lt;label&gt;
+        &lt;input type="checkbox" value={fruit} bind:group={selectedFruits} /&gt;
+        {fruit}
+    &lt;/label&gt;
+{/each}
+
+&lt;p&gt;Selected: {selectedFruits.join(", ") || "None"}&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li>Checking a box adds its <code>value</code> to the array.</li>
+        <li>Unchecking removes it from the array.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Radio Button Binding</li>
+    <br/>
+    <ul>
+        <li>Bind radio buttons to a single value using <code>bind:group</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let selectedColor: string = $state("red");
+
+    const colors: string[] = ["red", "green", "blue"];
+&lt;/script&gt;
+
+{#each colors as color}
+    &lt;label&gt;
+        &lt;input type="radio" value={color} bind:group={selectedColor} /&gt;
+        {color}
+    &lt;/label&gt;
+{/each}
+
+&lt;p&gt;Selected color: {selectedColor}&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li>Only one radio button in a group can be selected at a time.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Radio Button with Objects</li>
+    <br/>
+    <ul>
+        <li>Radio buttons can bind to object references:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Plan {
+        id: string;
+        name: string;
+        price: number;
+    }
+
+    const plans: Plan[] = [
+        { id: "basic", name: "Basic", price: 9.99 },
+        { id: "pro", name: "Pro", price: 19.99 },
+        { id: "enterprise", name: "Enterprise", price: 49.99 }
+    ];
+
+    let selectedPlan: Plan = $state(plans[0]);
+&lt;/script&gt;
+
+{#each plans as plan}
+    &lt;label&gt;
+        &lt;input type="radio" value={plan} bind:group={selectedPlan} /&gt;
+        {plan.name} - ${plan.price}/month
+    &lt;/label&gt;
+{/each}
+
+&lt;p&gt;Selected: {selectedPlan.name} at ${selectedPlan.price}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Select Dropdown Binding</li>
+    <br/>
+    <ul>
+        <li>Bind a <code>&lt;select&gt;</code> element to a variable:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let selectedCountry: string = $state("");
+
+    const countries: string[] = ["USA", "Canada", "UK", "Germany", "Japan"];
+&lt;/script&gt;
+
+&lt;select bind:value={selectedCountry}&gt;
+    &lt;option value=""&gt;Select a country&lt;/option&gt;
+    {#each countries as country}
+        &lt;option value={country}&gt;{country}&lt;/option&gt;
+    {/each}
+&lt;/select&gt;
+
+&lt;p&gt;Selected: {selectedCountry || "None"}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Select with Objects</li>
+    <br/>
+    <ul>
+        <li>Select elements can bind to object values:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Country {
+        code: string;
+        name: string;
+        population: number;
+    }
+
+    const countries: Country[] = [
+        { code: "US", name: "United States", population: 331000000 },
+        { code: "JP", name: "Japan", population: 125800000 },
+        { code: "DE", name: "Germany", population: 83200000 }
+    ];
+
+    let selectedCountry: Country | undefined = $state(undefined);
+&lt;/script&gt;
+
+&lt;select bind:value={selectedCountry}&gt;
+    &lt;option value={undefined}&gt;Select a country&lt;/option&gt;
+    {#each countries as country}
+        &lt;option value={country}&gt;{country.name}&lt;/option&gt;
+    {/each}
+&lt;/select&gt;
+
+{#if selectedCountry}
+    &lt;p&gt;{selectedCountry.name}: {selectedCountry.population.toLocaleString()} people&lt;/p&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Multiple Select Binding</li>
+    <br/>
+    <ul>
+        <li>Bind a multi-select to an array:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let selectedSkills: string[] = $state([]);
+
+    const skills: string[] = ["JavaScript", "TypeScript", "Python", "Rust", "Go"];
+&lt;/script&gt;
+
+&lt;select multiple bind:value={selectedSkills}&gt;
+    {#each skills as skill}
+        &lt;option value={skill}&gt;{skill}&lt;/option&gt;
+    {/each}
+&lt;/select&gt;
+
+&lt;p&gt;Selected: {selectedSkills.join(", ") || "None"}&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li>Hold Ctrl/Cmd to select multiple options.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Textarea Binding</li>
+    <br/>
+    <ul>
+        <li>Bind a textarea's content:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let bio: string = $state("");
+&lt;/script&gt;
+
+&lt;textarea bind:value={bio} rows="4" cols="50"&gt;&lt;/textarea&gt;
+
+&lt;p&gt;Character count: {bio.length}&lt;/p&gt;
+&lt;p&gt;Preview:&lt;/p&gt;
+&lt;pre&gt;{bio}&lt;/pre&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Contenteditable Binding</li>
+    <br/>
+    <ul>
+        <li>Bind to <code>contenteditable</code> elements using <code>textContent</code> or <code>innerHTML</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let plainText: string = $state("Edit this text");
+    let richText: string = $state("&lt;b&gt;Bold&lt;/b&gt; and &lt;i&gt;italic&lt;/i&gt;");
+&lt;/script&gt;
+
+&lt;!-- Plain text binding --&gt;
+&lt;div contenteditable="true" bind:textContent={plainText}&gt;&lt;/div&gt;
+&lt;p&gt;Plain: {plainText}&lt;/p&gt;
+
+&lt;!-- HTML binding --&gt;
+&lt;div contenteditable="true" bind:innerHTML={richText}&gt;&lt;/div&gt;
+&lt;p&gt;HTML: {richText}&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li><code>bind:textContent</code> — Gets/sets plain text only.</li>
+        <li><code>bind:innerHTML</code> — Gets/sets HTML content.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Element Reference Binding (<code>bind:this</code>)</li>
+    <br/>
+    <ul>
+        <li>Get a reference to a DOM element:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    import { onMount } from "svelte";
+
+    let inputElement: HTMLInputElement;
+    let canvasElement: HTMLCanvasElement;
+
+    onMount(() =&gt; {
+        // Focus the input on mount
+        inputElement.focus();
+
+        // Draw on canvas
+        const ctx = canvasElement.getContext("2d");
+        if (ctx) {
+            ctx.fillStyle = "blue";
+            ctx.fillRect(10, 10, 100, 100);
+        }
+    });
+&lt;/script&gt;
+
+&lt;input bind:this={inputElement} placeholder="Auto-focused" /&gt;
+&lt;canvas bind:this={canvasElement} width="200" height="150"&gt;&lt;/canvas&gt;
+</code></pre>
+
+    <ul>
+        <li>The element is <code>undefined</code> until the component mounts.</li>
+        <li>Use <code>onMount</code> or <code>$effect</code> to safely access the element.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Element Reference with Svelte 5</li>
+    <br/>
+    <ul>
+        <li>In Svelte 5, use <code>$effect</code> to work with element references:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let inputElement: HTMLInputElement | undefined = $state(undefined);
+
+    $effect(() =&gt; {
+        if (inputElement) {
+            inputElement.focus();
+        }
+    });
+&lt;/script&gt;
+
+&lt;input bind:this={inputElement} placeholder="Auto-focused" /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Dimension Bindings</li>
+    <br/>
+    <ul>
+        <li>Bind to an element's dimensions (read-only):</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let clientWidth: number = $state(0);
+    let clientHeight: number = $state(0);
+    let offsetWidth: number = $state(0);
+    let offsetHeight: number = $state(0);
+&lt;/script&gt;
+
+&lt;div
+    bind:clientWidth
+    bind:clientHeight
+    bind:offsetWidth
+    bind:offsetHeight
+    style="padding: 20px; border: 5px solid black;"
+&gt;
+    &lt;p&gt;Resize the window to see changes&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Client: {clientWidth} x {clientHeight}&lt;/p&gt;
+&lt;p&gt;Offset: {offsetWidth} x {offsetHeight}&lt;/p&gt;
+</code></pre>
+
+    <ul>
+        <li><code>clientWidth/Height</code> — Content + padding (excluding border and scrollbar).</li>
+        <li><code>offsetWidth/Height</code> — Content + padding + border.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Media Element Bindings</li>
+    <br/>
+    <ul>
+        <li>Bind to audio and video element properties:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let videoElement: HTMLVideoElement;
+
+    // Readonly bindings
+    let duration: number = $state(0);
+    let buffered: TimeRanges;
+    let seekable: TimeRanges;
+    let played: TimeRanges;
+    let seeking: boolean = $state(false);
+    let ended: boolean = $state(false);
+    let readyState: number = $state(0);
+    let videoWidth: number = $state(0);
+    let videoHeight: number = $state(0);
+
+    // Two-way bindings
+    let currentTime: number = $state(0);
+    let playbackRate: number = $state(1);
+    let paused: boolean = $state(true);
+    let volume: number = $state(1);
+    let muted: boolean = $state(false);
+
+    function formatTime(seconds: number): string {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
+    }
+&lt;/script&gt;
+
+&lt;video
+    bind:this={videoElement}
+    bind:duration
+    bind:currentTime
+    bind:paused
+    bind:volume
+    bind:muted
+    bind:playbackRate
+    bind:seeking
+    bind:ended
+    src="video.mp4"
+    width="400"
+&gt;
+    &lt;track kind="captions" /&gt;
+&lt;/video&gt;
+
+&lt;div&gt;
+    &lt;button onclick={() =&gt; paused = !paused}&gt;
+        {paused ? "Play" : "Pause"}
+    &lt;/button&gt;
+    &lt;span&gt;{formatTime(currentTime)} / {formatTime(duration)}&lt;/span&gt;
+&lt;/div&gt;
+
+&lt;div&gt;
+    &lt;label&gt;
+        Volume:
+        &lt;input type="range" bind:value={volume} min="0" max="1" step="0.1" /&gt;
+    &lt;/label&gt;
+    &lt;label&gt;
+        &lt;input type="checkbox" bind:checked={muted} /&gt;
+        Muted
+    &lt;/label&gt;
+&lt;/div&gt;
+
+&lt;div&gt;
+    &lt;label&gt;
+        Speed:
+        &lt;select bind:value={playbackRate}&gt;
+            &lt;option value={0.5}&gt;0.5x&lt;/option&gt;
+            &lt;option value={1}&gt;1x&lt;/option&gt;
+            &lt;option value={1.5}&gt;1.5x&lt;/option&gt;
+            &lt;option value={2}&gt;2x&lt;/option&gt;
+        &lt;/select&gt;
+    &lt;/label&gt;
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Window Bindings</li>
+    <br/>
+    <ul>
+        <li>Bind to window properties using <code>&lt;svelte:window&gt;</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    // Readonly
+    let innerWidth: number = $state(0);
+    let innerHeight: number = $state(0);
+    let outerWidth: number = $state(0);
+    let outerHeight: number = $state(0);
+    let online: boolean = $state(true);
+
+    // Two-way
+    let scrollX: number = $state(0);
+    let scrollY: number = $state(0);
+&lt;/script&gt;
+
+&lt;svelte:window
+    bind:innerWidth
+    bind:innerHeight
+    bind:outerWidth
+    bind:outerHeight
+    bind:scrollX
+    bind:scrollY
+    bind:online
+/&gt;
+
+&lt;div style="position: fixed; top: 10px; right: 10px; background: white; padding: 10px;"&gt;
+    &lt;p&gt;Window: {innerWidth} x {innerHeight}&lt;/p&gt;
+    &lt;p&gt;Scroll: {scrollX}, {scrollY}&lt;/p&gt;
+    &lt;p&gt;Online: {online ? "Yes" : "No"}&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;button onclick={() =&gt; scrollY = 0}&gt;Scroll to top&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Document Bindings</li>
+    <br/>
+    <ul>
+        <li>Bind to document properties using <code>&lt;svelte:document&gt;</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let activeElement: Element | null = $state(null);
+    let fullscreenElement: Element | null = $state(null);
+    let pointerLockElement: Element | null = $state(null);
+    let visibilityState: DocumentVisibilityState = $state("visible");
+&lt;/script&gt;
+
+&lt;svelte:document
+    bind:activeElement
+    bind:fullscreenElement
+    bind:pointerLockElement
+    bind:visibilityState
+/&gt;
+
+&lt;p&gt;Active element: {activeElement?.tagName || "None"}&lt;/p&gt;
+&lt;p&gt;Visibility: {visibilityState}&lt;/p&gt;
+
+&lt;input placeholder="Focus me" /&gt;
+&lt;button&gt;Or focus me&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Component Bindings</li>
+    <br/>
+    <ul>
+        <li>Bind to a child component's exported values (Svelte 4):</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Counter.svelte (Svelte 4) --&gt;
+&lt;script lang="ts"&gt;
+    export let count: number = 0;
+
+    export function reset(): void {
+        count = 0;
+    }
+&lt;/script&gt;
+
+&lt;button on:click={() =&gt; count++}&gt;{count}&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte (Svelte 4) --&gt;
+&lt;script lang="ts"&gt;
+    import Counter from "./Counter.svelte";
+
+    let counterValue: number;
+    let counterComponent: Counter;
+&lt;/script&gt;
+
+&lt;Counter bind:count={counterValue} bind:this={counterComponent} /&gt;
+
+&lt;p&gt;Counter value: {counterValue}&lt;/p&gt;
+&lt;button on:click={() =&gt; counterComponent.reset()}&gt;Reset&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Component Bindings (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>In Svelte 5, use <code>$bindable</code> for props that can be bound:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Counter.svelte (Svelte 5) --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        count?: number;
+    }
+
+    let { count = $bindable(0) }: Props = $props();
+&lt;/script&gt;
+
+&lt;button onclick={() =&gt; count++}&gt;{count}&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte (Svelte 5) --&gt;
+&lt;script lang="ts"&gt;
+    import Counter from "./Counter.svelte";
+
+    let counterValue: number = $state(0);
+&lt;/script&gt;
+
+&lt;Counter bind:count={counterValue} /&gt;
+
+&lt;p&gt;Counter value: {counterValue}&lt;/p&gt;
+&lt;button onclick={() =&gt; counterValue = 0}&gt;Reset&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li><code>$bindable()</code> marks a prop as bindable with an optional default value.</li>
+        <li>Changes in either parent or child sync both ways.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Binding Shorthand</li>
+    <br/>
+    <ul>
+        <li>When the variable name matches the property name, use the shorthand:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let value: string = $state("");
+    let checked: boolean = $state(false);
+    let clientWidth: number = $state(0);
+    let innerWidth: number = $state(0);
+&lt;/script&gt;
+
+&lt;!-- These are equivalent: --&gt;
+&lt;input bind:value={value} /&gt;
+&lt;input bind:value /&gt;
+
+&lt;input type="checkbox" bind:checked={checked} /&gt;
+&lt;input type="checkbox" bind:checked /&gt;
+
+&lt;div bind:clientWidth={clientWidth}&gt;...&lt;/div&gt;
+&lt;div bind:clientWidth&gt;...&lt;/div&gt;
+
+&lt;svelte:window bind:innerWidth={innerWidth} /&gt;
+&lt;svelte:window bind:innerWidth /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Binding Summary</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Element</th>
+            <th>Binding</th>
+            <th>Type</th>
+        </tr>
+        <tr>
+            <td>Text input</td>
+            <td><code>bind:value</code></td>
+            <td><code>string</code></td>
+        </tr>
+        <tr>
+            <td>Number/Range input</td>
+            <td><code>bind:value</code></td>
+            <td><code>number</code></td>
+        </tr>
+        <tr>
+            <td>Checkbox</td>
+            <td><code>bind:checked</code></td>
+            <td><code>boolean</code></td>
+        </tr>
+        <tr>
+            <td>Checkbox group</td>
+            <td><code>bind:group</code></td>
+            <td><code>Array</code></td>
+        </tr>
+        <tr>
+            <td>Radio group</td>
+            <td><code>bind:group</code></td>
+            <td>Single value</td>
+        </tr>
+        <tr>
+            <td>Select</td>
+            <td><code>bind:value</code></td>
+            <td>Any</td>
+        </tr>
+        <tr>
+            <td>Multi-select</td>
+            <td><code>bind:value</code></td>
+            <td><code>Array</code></td>
+        </tr>
+        <tr>
+            <td>Textarea</td>
+            <td><code>bind:value</code></td>
+            <td><code>string</code></td>
+        </tr>
+        <tr>
+            <td>Contenteditable</td>
+            <td><code>bind:textContent</code>, <code>bind:innerHTML</code></td>
+            <td><code>string</code></td>
+        </tr>
+        <tr>
+            <td>Any element</td>
+            <td><code>bind:this</code></td>
+            <td><code>HTMLElement</code></td>
+        </tr>
+        <tr>
+            <td>Any element</td>
+            <td><code>bind:clientWidth</code>, etc.</td>
+            <td><code>number</code> (readonly)</td>
+        </tr>
+        <tr>
+            <td>Audio/Video</td>
+            <td><code>bind:currentTime</code>, <code>bind:paused</code>, etc.</td>
+            <td>Various</td>
+        </tr>
+        <tr>
+            <td><code>&lt;svelte:window&gt;</code></td>
+            <td><code>bind:innerWidth</code>, <code>bind:scrollY</code>, etc.</td>
+            <td><code>number</code></td>
+        </tr>
+        <tr>
+            <td>Component (Svelte 5)</td>
+            <td><code>bind:prop</code> with <code>$bindable</code></td>
+            <td>Any</td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
