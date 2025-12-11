@@ -160,6 +160,7 @@
         <li><a href="#svelte-transitions">Transitions</a></li>
         <li><a href="#svelte-advanced-reactivity">Advanced Reactivity</a></li>
         <li><a href="#svelte-reusing-content">Reusing Content</a></li>
+        <li><a href="#svelte-advanced-bindings"></a>Advanced Bindings</li>
     </ol>
 </nav>
 <hr/>
@@ -7265,8 +7266,8 @@ export const counter = createCounter(0);
     }
 
     let users: User[] = $state([
-        { id: 1, name: "Alice", email: "alice@example.com", avatar: "👩", isOnline: true },
-        { id: 2, name: "Bob", email: "bob@example.com", avatar: "👨", isOnline: false },
+        { id: 1, name: "Alice",   email: "alice@example.com",   avatar: "👩", isOnline: true },
+        { id: 2, name: "Bob",     email: "bob@example.com",     avatar: "👨", isOnline: false },
         { id: 3, name: "Charlie", email: "charlie@example.com", avatar: "🧑", isOnline: true }
     ]);
 &lt;/script&gt;
@@ -7741,10 +7742,6 @@ interface Props {
 
     <li>Snippets vs Components</li>
     <br/>
-    <ul>
-        <li>When to use snippets vs separate components:</li>
-    </ul>
-
     <table>
         <tr>
             <th>Use Snippets When</th>
@@ -7974,7 +7971,1320 @@ interface Props {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-advanced-bindings">Svelte Advanced Bindings</h3>
+<ol>
+    <br/>
+    <li>Bindable Props with <code>$bindable</code> (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>Use <code>$bindable</code> to make component props support two-way binding:</li>
+    </ul>
 
+<pre><code class="language-html line-numbers">&lt;!-- Counter.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        count?: number;
+    }
+
+    let { count = $bindable(0) }: Props = $props();
+
+    function increment(): void {
+        count++;
+    }
+
+    function decrement(): void {
+        count--;
+    }
+&lt;/script&gt;
+
+&lt;div class="counter"&gt;
+    &lt;button onclick={decrement}&gt;-&lt;/button&gt;
+    &lt;span&gt;{count}&lt;/span&gt;
+    &lt;button onclick={increment}&gt;+&lt;/button&gt;
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Counter from "./Counter.svelte";
+
+    let value: number = $state(10);
+&lt;/script&gt;
+
+&lt;Counter bind:count={value} /&gt;
+
+&lt;p&gt;Parent value: {value}&lt;/p&gt;
+&lt;button onclick={() =&gt; value = 0}&gt;Reset from parent&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Changes in either parent or child sync both ways.</li>
+        <li>The default value in <code>$bindable(0)</code> is used when no binding is provided.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>Multiple Bindable Props</li>
+    <br/>
+    <ul>
+        <li>Components can have multiple bindable props:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- DateTimePicker.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        date?: string;
+        time?: string;
+        timezone?: string;
+    }
+
+    let {
+        date = $bindable(""),
+        time = $bindable(""),
+        timezone = $bindable("UTC")
+    }: Props = $props();
+
+    const timezones: string[] = ["UTC", "EST", "PST", "CET", "JST"];
+&lt;/script&gt;
+
+&lt;div class="datetime-picker"&gt;
+    &lt;input type="date" bind:value={date} /&gt;
+    &lt;input type="time" bind:value={time} /&gt;
+    &lt;select bind:value={timezone}&gt;
+        {#each timezones as tz}
+            &lt;option value={tz}&gt;{tz}&lt;/option&gt;
+        {/each}
+    &lt;/select&gt;
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import DateTimePicker from "./DateTimePicker.svelte";
+
+    let selectedDate: string = $state("2024-01-15");
+    let selectedTime: string = $state("14:30");
+    let selectedTimezone: string = $state("EST");
+
+    let combined = $derived(
+        `${selectedDate} ${selectedTime} ${selectedTimezone}`
+    );
+&lt;/script&gt;
+
+&lt;DateTimePicker
+    bind:date={selectedDate}
+    bind:time={selectedTime}
+    bind:timezone={selectedTimezone}
+/&gt;
+
+&lt;p&gt;Selected: {combined}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Bindable with Validation</li>
+    <br/>
+    <ul>
+        <li>Add validation logic while maintaining two-way binding:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- ValidatedInput.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        value?: string;
+        min?: number;
+        max?: number;
+        pattern?: RegExp;
+    }
+
+    let {
+        value = $bindable(""),
+        min = 0,
+        max = Infinity,
+        pattern
+    }: Props = $props();
+
+    let error: string = $state("");
+
+    function validate(newValue: string): void {
+        error = "";
+
+        if (newValue.length &lt; min) {
+            error = `Minimum ${min} characters required`;
+        } else if (newValue.length &gt; max) {
+            error = `Maximum ${max} characters allowed`;
+        } else if (pattern && !pattern.test(newValue)) {
+            error = "Invalid format";
+        }
+    }
+
+    // Validate on change
+    $effect(() =&gt; {
+        validate(value);
+    });
+
+    let isValid = $derived(error === "");
+&lt;/script&gt;
+
+&lt;div class="validated-input"&gt;
+    &lt;input
+        type="text"
+        bind:value
+        class:invalid={!isValid}
+    /&gt;
+    {#if error}
+        &lt;span class="error"&gt;{error}&lt;/span&gt;
+    {/if}
+&lt;/div&gt;
+
+&lt;style&gt;
+    .invalid { border-color: red; }
+    .error { color: red; font-size: 0.8em; }
+&lt;/style&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import ValidatedInput from "./ValidatedInput.svelte";
+
+    let email: string = $state("");
+    let username: string = $state("");
+&lt;/script&gt;
+
+&lt;ValidatedInput
+    bind:value={email}
+    pattern={/^[^\s@]+@[^\s@]+\.[^\s@]+$/}
+/&gt;
+
+&lt;ValidatedInput
+    bind:value={username}
+    min={3}
+    max={20}
+/&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>File Input Binding</li>
+    <br/>
+    <ul>
+        <li>Bind to file inputs to access selected files:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let files: FileList | null = $state(null);
+    let previews: string[] = $state([]);
+
+    $effect(() =&gt; {
+        if (!files) {
+            previews = [];
+            return;
+        }
+
+        const newPreviews: string[] = [];
+
+        for (const file of files) {
+            if (file.type.startsWith("image/")) {
+                const url = URL.createObjectURL(file);
+                newPreviews.push(url);
+            }
+        }
+
+        previews = newPreviews;
+
+        // Cleanup URLs on change
+        return () =&gt; {
+            previews.forEach(url =&gt; URL.revokeObjectURL(url));
+        };
+    });
+
+    function formatSize(bytes: number): string {
+        if (bytes &lt; 1024) return bytes + " B";
+        if (bytes &lt; 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+        return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+&lt;/script&gt;
+
+&lt;input type="file" bind:files multiple accept="image/*" /&gt;
+
+{#if files && files.length &gt; 0}
+    &lt;h4&gt;Selected Files:&lt;/h4&gt;
+    &lt;ul&gt;
+        {#each Array.from(files) as file, i}
+            &lt;li&gt;
+                {file.name} ({formatSize(file.size)})
+            &lt;/li&gt;
+        {/each}
+    &lt;/ul&gt;
+
+    &lt;div class="previews"&gt;
+        {#each previews as src}
+            &lt;img {src} alt="Preview" width="100" /&gt;
+        {/each}
+    &lt;/div&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>File Input Component with Bindable</li>
+    <br/>
+    <ul>
+        <li>Create a reusable file input component:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- FileUploader.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        files?: FileList | null;
+        accept?: string;
+        multiple?: boolean;
+        maxSize?: number; // bytes
+    }
+
+    let {
+        files = $bindable(null),
+        accept = "*/*",
+        multiple = false,
+        maxSize = 10 * 1024 * 1024 // 10MB default
+    }: Props = $props();
+
+    let inputElement: HTMLInputElement;
+    let dragOver: boolean = $state(false);
+    let error: string = $state("");
+
+    function validateFiles(fileList: FileList): boolean {
+        error = "";
+
+        for (const file of fileList) {
+            if (file.size &gt; maxSize) {
+                error = `File "${file.name}" exceeds maximum size`;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function handleDrop(event: DragEvent): void {
+        event.preventDefault();
+        dragOver = false;
+
+        const droppedFiles = event.dataTransfer?.files;
+        if (droppedFiles && validateFiles(droppedFiles)) {
+            files = droppedFiles;
+        }
+    }
+
+    function handleChange(event: Event): void {
+        const target = event.target as HTMLInputElement;
+        if (target.files && validateFiles(target.files)) {
+            files = target.files;
+        }
+    }
+&lt;/script&gt;
+
+&lt;div
+    class="dropzone"
+    class:drag-over={dragOver}
+    ondragover={(e) =&gt; { e.preventDefault(); dragOver = true; }}
+    ondragleave={() =&gt; dragOver = false}
+    ondrop={handleDrop}
+    onclick={() =&gt; inputElement.click()}
+&gt;
+    &lt;input
+        bind:this={inputElement}
+        type="file"
+        {accept}
+        {multiple}
+        onchange={handleChange}
+        hidden
+    /&gt;
+
+    &lt;p&gt;Drop files here or click to browse&lt;/p&gt;
+
+    {#if error}
+        &lt;p class="error"&gt;{error}&lt;/p&gt;
+    {/if}
+&lt;/div&gt;
+
+&lt;style&gt;
+    .dropzone {
+        border: 2px dashed #ccc;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.2s;
+    }
+    .drag-over { border-color: #007bff; background: #f0f8ff; }
+    .error { color: red; }
+&lt;/style&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import FileUploader from "./FileUploader.svelte";
+
+    let uploadedFiles: FileList | null = $state(null);
+&lt;/script&gt;
+
+&lt;FileUploader
+    bind:files={uploadedFiles}
+    accept="image/*,application/pdf"
+    multiple
+    maxSize={5 * 1024 * 1024}
+/&gt;
+
+{#if uploadedFiles}
+    &lt;p&gt;{uploadedFiles.length} file(s) selected&lt;/p&gt;
+{/if}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Details Element Binding</li>
+    <br/>
+    <ul>
+        <li>Bind to the <code>open</code> state of <code>&lt;details&gt;</code> elements:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let detailsOpen: boolean = $state(false);
+
+    interface FAQ {
+        question: string;
+        answer: string;
+        open: boolean;
+    }
+
+    let faqs: FAQ[] = $state([
+        { question: "What is Svelte?", answer: "A compiler-based framework.", open: false },
+        { question: "Is it fast?", answer: "Yes, very fast!", open: false },
+        { question: "Should I learn it?", answer: "Absolutely!", open: false }
+    ]);
+
+    function closeAll(): void {
+        faqs = faqs.map(faq =&gt; ({ ...faq, open: false }));
+    }
+
+    function openAll(): void {
+        faqs = faqs.map(faq =&gt; ({ ...faq, open: true }));
+    }
+&lt;/script&gt;
+
+&lt;h3&gt;Single Details&lt;/h3&gt;
+&lt;details bind:open={detailsOpen}&gt;
+    &lt;summary&gt;Click to {detailsOpen ? "close" : "open"}&lt;/summary&gt;
+    &lt;p&gt;Hidden content revealed!&lt;/p&gt;
+&lt;/details&gt;
+
+&lt;p&gt;Details is {detailsOpen ? "open" : "closed"}&lt;/p&gt;
+&lt;button onclick={() =&gt; detailsOpen = !detailsOpen}&gt;
+    Toggle programmatically
+&lt;/button&gt;
+
+&lt;h3&gt;FAQ Accordion&lt;/h3&gt;
+&lt;button onclick={openAll}&gt;Open All&lt;/button&gt;
+&lt;button onclick={closeAll}&gt;Close All&lt;/button&gt;
+
+{#each faqs as faq, i}
+    &lt;details bind:open={faq.open}&gt;
+        &lt;summary&gt;{faq.question}&lt;/summary&gt;
+        &lt;p&gt;{faq.answer}&lt;/p&gt;
+    &lt;/details&gt;
+{/each}
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Dialog Element Binding</li>
+    <br/>
+    <ul>
+        <li>Bind to the <code>open</code> attribute of <code>&lt;dialog&gt;</code> elements:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let dialogElement: HTMLDialogElement;
+    let isOpen: boolean = $state(false);
+    let returnValue: string = $state("");
+
+    function openModal(): void {
+        dialogElement.showModal();
+        isOpen = true;
+    }
+
+    function closeModal(value: string): void {
+        dialogElement.close(value);
+        isOpen = false;
+        returnValue = value;
+    }
+
+    function handleClose(): void {
+        isOpen = false;
+        returnValue = dialogElement.returnValue;
+    }
+&lt;/script&gt;
+
+&lt;button onclick={openModal}&gt;Open Dialog&lt;/button&gt;
+&lt;p&gt;Last result: {returnValue || "None"}&lt;/p&gt;
+
+&lt;dialog bind:this={dialogElement} onclose={handleClose}&gt;
+    &lt;h2&gt;Confirm Action&lt;/h2&gt;
+    &lt;p&gt;Are you sure you want to proceed?&lt;/p&gt;
+
+    &lt;div class="actions"&gt;
+        &lt;button onclick={() =&gt; closeModal("cancel")}&gt;Cancel&lt;/button&gt;
+        &lt;button onclick={() =&gt; closeModal("confirm")}&gt;Confirm&lt;/button&gt;
+    &lt;/div&gt;
+&lt;/dialog&gt;
+
+&lt;style&gt;
+    dialog::backdrop {
+        background: rgba(0, 0, 0, 0.5);
+    }
+    .actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Binding to Component Instances</li>
+    <br/>
+    <ul>
+        <li>Get a reference to a component instance to call its methods:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- VideoPlayer.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        src: string;
+    }
+
+    let { src }: Props = $props();
+
+    let videoElement: HTMLVideoElement;
+    let currentTime: number = $state(0);
+    let duration: number = $state(0);
+    let paused: boolean = $state(true);
+
+    // Expose methods for parent to call
+    export function play(): void {
+        videoElement.play();
+    }
+
+    export function pause(): void {
+        videoElement.pause();
+    }
+
+    export function seek(time: number): void {
+        videoElement.currentTime = time;
+    }
+
+    export function togglePlay(): void {
+        if (paused) {
+            play();
+        } else {
+            pause();
+        }
+    }
+&lt;/script&gt;
+
+&lt;div class="video-player"&gt;
+    &lt;video
+        bind:this={videoElement}
+        bind:currentTime
+        bind:duration
+        bind:paused
+        {src}
+    &gt;
+        &lt;track kind="captions" /&gt;
+    &lt;/video&gt;
+
+    &lt;div class="controls"&gt;
+        &lt;button onclick={togglePlay}&gt;
+            {paused ? "▶️" : "⏸️"}
+        &lt;/button&gt;
+        &lt;span&gt;{currentTime.toFixed(1)} / {duration.toFixed(1)}&lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import VideoPlayer from "./VideoPlayer.svelte";
+
+    let player: VideoPlayer;
+&lt;/script&gt;
+
+&lt;VideoPlayer bind:this={player} src="video.mp4" /&gt;
+
+&lt;div class="external-controls"&gt;
+    &lt;button onclick={() =&gt; player.play()}&gt;Play&lt;/button&gt;
+    &lt;button onclick={() =&gt; player.pause()}&gt;Pause&lt;/button&gt;
+    &lt;button onclick={() =&gt; player.seek(0)}&gt;Restart&lt;/button&gt;
+    &lt;button onclick={() =&gt; player.seek(30)}&gt;Skip to 30s&lt;/button&gt;
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Binding to Inline Styles</li>
+    <br/>
+    <ul>
+        <li>Bind CSS custom properties (CSS variables) directly:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let color: string = $state("#007bff");
+    let size: number = $state(16);
+    let opacity: number = $state(1);
+    let rotation: number = $state(0);
+&lt;/script&gt;
+
+&lt;div class="controls"&gt;
+    &lt;label&gt;
+        Color: &lt;input type="color" bind:value={color} /&gt;
+    &lt;/label&gt;
+    &lt;label&gt;
+        Size: &lt;input type="range" bind:value={size} min="8" max="48" /&gt;
+    &lt;/label&gt;
+    &lt;label&gt;
+        Opacity: &lt;input type="range" bind:value={opacity} min="0" max="1" step="0.1" /&gt;
+    &lt;/label&gt;
+    &lt;label&gt;
+        Rotation: &lt;input type="range" bind:value={rotation} min="0" max="360" /&gt;
+    &lt;/label&gt;
+&lt;/div&gt;
+
+&lt;div
+    class="styled-box"
+    style:--color={color}
+    style:--size="{size}px"
+    style:--opacity={opacity}
+    style:--rotation="{rotation}deg"
+&gt;
+    Styled Box
+&lt;/div&gt;
+
+&lt;style&gt;
+    .styled-box {
+        color: var(--color);
+        font-size: var(--size);
+        opacity: var(--opacity);
+        transform: rotate(var(--rotation));
+        padding: 20px;
+        border: 2px solid var(--color);
+        display: inline-block;
+        transition: all 0.2s;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Indeterminate Checkbox Binding</li>
+    <br/>
+    <ul>
+        <li>Bind to the <code>indeterminate</code> state of checkboxes:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Task {
+        id: number;
+        name: string;
+        completed: boolean;
+    }
+
+    let tasks: Task[] = $state([
+        { id: 1, name: "Task 1", completed: true },
+        { id: 2, name: "Task 2", completed: false },
+        { id: 3, name: "Task 3", completed: true }
+    ]);
+
+    let allChecked = $derived(tasks.every(t =&gt; t.completed));
+    let noneChecked = $derived(tasks.every(t =&gt; !t.completed));
+    let indeterminate = $derived(!allChecked && !noneChecked);
+
+    function toggleAll(): void {
+        const newState = !allChecked;
+        tasks = tasks.map(t =&gt; ({ ...t, completed: newState }));
+    }
+&lt;/script&gt;
+
+&lt;label&gt;
+    &lt;input
+        type="checkbox"
+        checked={allChecked}
+        {indeterminate}
+        onchange={toggleAll}
+    /&gt;
+    Select All
+&lt;/label&gt;
+
+&lt;ul&gt;
+    {#each tasks as task}
+        &lt;li&gt;
+            &lt;label&gt;
+                &lt;input type="checkbox" bind:checked={task.completed} /&gt;
+                {task.name}
+            &lt;/label&gt;
+        &lt;/li&gt;
+    {/each}
+&lt;/ul&gt;
+
+&lt;p&gt;
+    Status:
+    {#if allChecked}
+        All selected
+    {:else if noneChecked}
+        None selected
+    {:else}
+        Partial selection
+    {/if}
+&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Binding to Canvas</li>
+    <br/>
+    <ul>
+        <li>Bind to canvas and create interactive drawings:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let canvas: HTMLCanvasElement;
+    let ctx: CanvasRenderingContext2D | null = null;
+    let isDrawing: boolean = $state(false);
+    let color: string = $state("#000000");
+    let lineWidth: number = $state(2);
+
+    $effect(() =&gt; {
+        if (canvas) {
+            ctx = canvas.getContext("2d");
+            if (ctx) {
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+            }
+        }
+    });
+
+    function startDrawing(e: MouseEvent): void {
+        if (!ctx) return;
+        isDrawing = true;
+        ctx.beginPath();
+        ctx.moveTo(e.offsetX, e.offsetY);
+    }
+
+    function draw(e: MouseEvent): void {
+        if (!isDrawing || !ctx) return;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+    }
+
+    function stopDrawing(): void {
+        isDrawing = false;
+    }
+
+    function clearCanvas(): void {
+        if (ctx && canvas) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+&lt;/script&gt;
+
+&lt;div class="controls"&gt;
+    &lt;input type="color" bind:value={color} /&gt;
+    &lt;input type="range" bind:value={lineWidth} min="1" max="20" /&gt;
+    &lt;button onclick={clearCanvas}&gt;Clear&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;canvas
+    bind:this={canvas}
+    width="400"
+    height="300"
+    onmousedown={startDrawing}
+    onmousemove={draw}
+    onmouseup={stopDrawing}
+    onmouseleave={stopDrawing}
+    style="border: 1px solid #ccc; cursor: crosshair;"
+&gt;&lt;/canvas&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Binding to Audio Element</li>
+    <br/>
+    <ul>
+        <li>Create a full audio player with comprehensive bindings:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    interface Track {
+        title: string;
+        artist: string;
+        src: string;
+    }
+
+    let tracks: Track[] = [
+        { title: "Song 1", artist: "Artist A", src: "song1.mp3" },
+        { title: "Song 2", artist: "Artist B", src: "song2.mp3" }
+    ];
+
+    let currentTrackIndex: number = $state(0);
+    let audioElement: HTMLAudioElement;
+
+    // Bindable audio properties
+    let currentTime: number = $state(0);
+    let duration: number = $state(0);
+    let paused: boolean = $state(true);
+    let volume: number = $state(1);
+    let muted: boolean = $state(false);
+    let playbackRate: number = $state(1);
+    let ended: boolean = $state(false);
+    let seeking: boolean = $state(false);
+
+    let currentTrack = $derived(tracks[currentTrackIndex]);
+    let progress = $derived(duration ? (currentTime / duration) * 100 : 0);
+
+    function formatTime(seconds: number): string {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
+    }
+
+    function nextTrack(): void {
+        currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+    }
+
+    function prevTrack(): void {
+        currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+    }
+
+    $effect(() =&gt; {
+        if (ended) {
+            nextTrack();
+        }
+    });
+&lt;/script&gt;
+
+&lt;audio
+    bind:this={audioElement}
+    bind:currentTime
+    bind:duration
+    bind:paused
+    bind:volume
+    bind:muted
+    bind:playbackRate
+    bind:ended
+    bind:seeking
+    src={currentTrack.src}
+&gt;&lt;/audio&gt;
+
+&lt;div class="audio-player"&gt;
+    &lt;div class="track-info"&gt;
+        &lt;strong&gt;{currentTrack.title}&lt;/strong&gt;
+        &lt;span&gt;{currentTrack.artist}&lt;/span&gt;
+    &lt;/div&gt;
+
+    &lt;div class="progress-bar"&gt;
+        &lt;input
+            type="range"
+            min="0"
+            max={duration || 0}
+            bind:value={currentTime}
+        /&gt;
+        &lt;span&gt;{formatTime(currentTime)} / {formatTime(duration)}&lt;/span&gt;
+    &lt;/div&gt;
+
+    &lt;div class="controls"&gt;
+        &lt;button onclick={prevTrack}&gt;⏮️&lt;/button&gt;
+        &lt;button onclick={() =&gt; paused = !paused}&gt;
+            {paused ? "▶️" : "⏸️"}
+        &lt;/button&gt;
+        &lt;button onclick={nextTrack}&gt;⏭️&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;div class="volume"&gt;
+        &lt;button onclick={() =&gt; muted = !muted}&gt;
+            {muted ? "🔇" : "🔊"}
+        &lt;/button&gt;
+        &lt;input type="range" min="0" max="1" step="0.1" bind:value={volume} /&gt;
+    &lt;/div&gt;
+
+    &lt;div class="speed"&gt;
+        &lt;label&gt;
+            Speed:
+            &lt;select bind:value={playbackRate}&gt;
+                &lt;option value={0.5}&gt;0.5x&lt;/option&gt;
+                &lt;option value={1}&gt;1x&lt;/option&gt;
+                &lt;option value={1.5}&gt;1.5x&lt;/option&gt;
+                &lt;option value={2}&gt;2x&lt;/option&gt;
+            &lt;/select&gt;
+        &lt;/label&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Binding with Getter/Setter Pattern</li>
+    <br/>
+    <ul>
+        <li>Create computed bindings using getters and setters:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    // Store value in cents, display in dollars
+    let cents: number = $state(1000);
+
+    // Create a "virtual" binding with getter/setter
+    let dollars = {
+        get value(): number {
+            return cents / 100;
+        },
+        set value(v: number) {
+            cents = Math.round(v * 100);
+        }
+    };
+
+    // Temperature conversion
+    let celsius: number = $state(0);
+
+    let fahrenheit = {
+        get value(): number {
+            return (celsius * 9/5) + 32;
+        },
+        set value(f: number) {
+            celsius = (f - 32) * 5/9;
+        }
+    };
+&lt;/script&gt;
+
+&lt;div&gt;
+    &lt;h4&gt;Currency (stored as cents: {cents})&lt;/h4&gt;
+    &lt;label&gt;
+        Dollars: $
+        &lt;input
+            type="number"
+            step="0.01"
+            value={dollars.value}
+            oninput={(e) =&gt; dollars.value = parseFloat(e.currentTarget.value) || 0}
+        /&gt;
+    &lt;/label&gt;
+&lt;/div&gt;
+
+&lt;div&gt;
+    &lt;h4&gt;Temperature&lt;/h4&gt;
+    &lt;label&gt;
+        Celsius:
+        &lt;input type="number" bind:value={celsius} /&gt;
+    &lt;/label&gt;
+    &lt;label&gt;
+        Fahrenheit:
+        &lt;input
+            type="number"
+            value={fahrenheit.value}
+            oninput={(e) =&gt; fahrenheit.value = parseFloat(e.currentTarget.value) || 0}
+        /&gt;
+    &lt;/label&gt;
+&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Binding to Custom Form Components</li>
+    <br/>
+    <ul>
+        <li>Create fully custom form components with binding support:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- StarRating.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        rating?: number;
+        max?: number;
+        readonly?: boolean;
+    }
+
+    let {
+        rating = $bindable(0),
+        max = 5,
+        readonly = false
+    }: Props = $props();
+
+    let hoverRating: number | null = $state(null);
+
+    function setRating(value: number): void {
+        if (!readonly) {
+            rating = value;
+        }
+    }
+
+    function handleHover(value: number | null): void {
+        if (!readonly) {
+            hoverRating = value;
+        }
+    }
+
+    let displayRating = $derived(hoverRating ?? rating);
+&lt;/script&gt;
+
+&lt;div class="star-rating" class:readonly&gt;
+    {#each Array(max) as _, i}
+        {@const value = i + 1}
+        &lt;button
+            type="button"
+            class="star"
+            class:filled={value &lt;= displayRating}
+            onclick={() =&gt; setRating(value)}
+            onmouseenter={() =&gt; handleHover(value)}
+            onmouseleave={() =&gt; handleHover(null)}
+            disabled={readonly}
+        &gt;
+            {value &lt;= displayRating ? "★" : "☆"}
+        &lt;/button&gt;
+    {/each}
+&lt;/div&gt;
+
+&lt;style&gt;
+    .star-rating { display: flex; gap: 4px; }
+    .star {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #ffc107;
+    }
+    .readonly .star { cursor: default; }
+&lt;/style&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- RangeSlider.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        min?: number;
+        max?: number;
+        step?: number;
+        value?: [number, number];
+    }
+
+    let {
+        min = 0,
+        max = 100,
+        step = 1,
+        value = $bindable([25, 75] as [number, number])
+    }: Props = $props();
+
+    function handleMinChange(e: Event): void {
+        const target = e.target as HTMLInputElement;
+        const newMin = parseFloat(target.value);
+        if (newMin &lt;= value[1]) {
+            value = [newMin, value[1]];
+        }
+    }
+
+    function handleMaxChange(e: Event): void {
+        const target = e.target as HTMLInputElement;
+        const newMax = parseFloat(target.value);
+        if (newMax &gt;= value[0]) {
+            value = [value[0], newMax];
+        }
+    }
+&lt;/script&gt;
+
+&lt;div class="range-slider"&gt;
+    &lt;input
+        type="range"
+        {min}
+        {max}
+        {step}
+        value={value[0]}
+        oninput={handleMinChange}
+    /&gt;
+    &lt;input
+        type="range"
+        {min}
+        {max}
+        {step}
+        value={value[1]}
+        oninput={handleMaxChange}
+    /&gt;
+    &lt;div class="values"&gt;
+        {value[0]} - {value[1]}
+    &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import StarRating from "./StarRating.svelte";
+    import RangeSlider from "./RangeSlider.svelte";
+
+    let movieRating: number = $state(3);
+    let priceRange: [number, number] = $state([20, 80]);
+&lt;/script&gt;
+
+&lt;h4&gt;Rate this movie:&lt;/h4&gt;
+&lt;StarRating bind:rating={movieRating} /&gt;
+&lt;p&gt;You rated: {movieRating} stars&lt;/p&gt;
+
+&lt;h4&gt;Price range:&lt;/h4&gt;
+&lt;RangeSlider bind:value={priceRange} min={0} max={100} /&gt;
+&lt;p&gt;Selected: ${priceRange[0]} - ${priceRange[1]}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Debounced Binding</li>
+    <br/>
+    <ul>
+        <li>Create bindings with debouncing for performance:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- DebouncedInput.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        value?: string;
+        delay?: number;
+        placeholder?: string;
+    }
+
+    let {
+        value = $bindable(""),
+        delay = 300,
+        placeholder = ""
+    }: Props = $props();
+
+    let internalValue: string = $state(value);
+    let timeoutId: ReturnType&lt;typeof setTimeout&gt;;
+
+    // Sync internal value when external value changes
+    $effect(() =&gt; {
+        internalValue = value;
+    });
+
+    function handleInput(e: Event): void {
+        const target = e.target as HTMLInputElement;
+        internalValue = target.value;
+
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() =&gt; {
+            value = internalValue;
+        }, delay);
+    }
+
+    // Cleanup on unmount
+    $effect(() =&gt; {
+        return () =&gt; clearTimeout(timeoutId);
+    });
+&lt;/script&gt;
+
+&lt;input
+    type="text"
+    value={internalValue}
+    oninput={handleInput}
+    {placeholder}
+/&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import DebouncedInput from "./DebouncedInput.svelte";
+
+    let searchQuery: string = $state("");
+    let searchCount: number = $state(0);
+
+    $effect(() =&gt; {
+        if (searchQuery) {
+            searchCount++;
+            console.log(`Searching for: ${searchQuery}`);
+        }
+    });
+&lt;/script&gt;
+
+&lt;DebouncedInput
+    bind:value={searchQuery}
+    delay={500}
+    placeholder="Search..."
+/&gt;
+
+&lt;p&gt;Query: {searchQuery}&lt;/p&gt;
+&lt;p&gt;Search triggered: {searchCount} times&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Binding to Scroll Position</li>
+    <br/>
+    <ul>
+        <li>Create scroll-bound animations and effects:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let scrollY: number = $state(0);
+    let innerHeight: number = $state(0);
+    let scrollContainer: HTMLDivElement;
+    let containerScrollTop: number = $state(0);
+
+    let scrollProgress = $derived(
+        scrollY / (document.body.scrollHeight - innerHeight) * 100 || 0
+    );
+
+    let headerOpacity = $derived(
+        Math.max(0, 1 - scrollY / 200)
+    );
+
+    let showBackToTop = $derived(scrollY &gt; 300);
+
+    function scrollToTop(): void {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+&lt;/script&gt;
+
+&lt;svelte:window bind:scrollY bind:innerHeight /&gt;
+
+&lt;!-- Progress bar --&gt;
+&lt;div class="scroll-progress" style="width: {scrollProgress}%"&gt;&lt;/div&gt;
+
+&lt;!-- Header with fade effect --&gt;
+&lt;header style="opacity: {headerOpacity}"&gt;
+    &lt;h1&gt;Scroll Demo&lt;/h1&gt;
+&lt;/header&gt;
+
+&lt;!-- Content --&gt;
+&lt;main&gt;
+    &lt;p&gt;Scroll Y: {scrollY.toFixed(0)}px&lt;/p&gt;
+    &lt;p&gt;Progress: {scrollProgress.toFixed(1)}%&lt;/p&gt;
+
+    &lt;!-- Lots of content to enable scrolling --&gt;
+    {#each Array(50) as _, i}
+        &lt;p&gt;Paragraph {i + 1}&lt;/p&gt;
+    {/each}
+&lt;/main&gt;
+
+&lt;!-- Back to top button --&gt;
+{#if showBackToTop}
+    &lt;button class="back-to-top" onclick={scrollToTop}&gt;
+        ↑ Top
+    &lt;/button&gt;
+{/if}
+
+&lt;style&gt;
+    .scroll-progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 3px;
+        background: #007bff;
+        z-index: 100;
+        transition: width 0.1s;
+    }
+    header {
+        position: fixed;
+        top: 3px;
+        width: 100%;
+        background: white;
+        padding: 10px;
+        z-index: 99;
+    }
+    main { margin-top: 80px; }
+    .back-to-top {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+    }
+&lt;/style&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Advanced Bindings Summary</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Binding Type</th>
+            <th>Syntax</th>
+            <th>Use Case</th>
+        </tr>
+        <tr>
+            <td>Bindable prop</td>
+            <td><code>$bindable(default)</code></td>
+            <td>Two-way component props</td>
+        </tr>
+        <tr>
+            <td>File input</td>
+            <td><code>bind:files</code></td>
+            <td>File uploads</td>
+        </tr>
+        <tr>
+            <td>Details open</td>
+            <td><code>bind:open</code></td>
+            <td>Accordions, dropdowns</td>
+        </tr>
+        <tr>
+            <td>Component instance</td>
+            <td><code>bind:this</code></td>
+            <td>Call component methods</td>
+        </tr>
+        <tr>
+            <td>CSS custom property</td>
+            <td><code>style:--prop</code></td>
+            <td>Dynamic theming</td>
+        </tr>
+        <tr>
+            <td>Indeterminate</td>
+            <td><code>indeterminate</code></td>
+            <td>Partial checkbox state</td>
+        </tr>
+        <tr>
+            <td>Canvas reference</td>
+            <td><code>bind:this</code></td>
+            <td>Drawing, graphics</td>
+        </tr>
+        <tr>
+            <td>Audio/Video</td>
+            <td><code>bind:currentTime</code>, etc.</td>
+            <td>Media players</td>
+        </tr>
+        <tr>
+            <td>Window scroll</td>
+            <td><code>bind:scrollY</code></td>
+            <td>Scroll effects</td>
+        </tr>
+        <tr>
+            <td>Debounced</td>
+            <td>Custom component</td>
+            <td>Search, performance</td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
