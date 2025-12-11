@@ -153,6 +153,7 @@
         <li><a href="#svelte-reactivity">Reactivity</a></li>
         <li><a href="#svelte-props">Props</a></li>
         <li><a href="#svelte-logic">Logic</a></li>
+        <li><a href="#svelte-events">Events</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1730,7 +1731,7 @@ user.age = 26;  // This IS reactive in Svelte 5!
         <li>The <code>{#key}</code> block destroys and recreates its content when the key value changes:</li>
     </ul>
 
-<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+<pre><code class="language-ts line-numbers">&lt;script lang="ts"&gt;
     let userId: number = 1;
 &lt;/script&gt;
 
@@ -1756,7 +1757,7 @@ user.age = 26;  // This IS reactive in Svelte 5!
         <li><code>{#key}</code> is useful for triggering intro/outro transitions:</li>
     </ul>
 
-<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+<pre><code class="language-ts line-numbers">&lt;script lang="ts"&gt;
     import { fade } from "svelte/transition";
 
     let count: number = 0;
@@ -1782,7 +1783,7 @@ user.age = 26;  // This IS reactive in Svelte 5!
         <li>Logic blocks can be combined for complex rendering:</li>
     </ul>
 
-<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+<pre><code class="language-ts line-numbers">&lt;script lang="ts"&gt;
     interface Post {
         id: number;
         title: string;
@@ -1874,6 +1875,686 @@ user.age = 26;  // This IS reactive in Svelte 5!
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="svelte-events">Svelte Events</h3>
+<ol>
+    <li>What Are Events in Svelte?</li>
+    <br/>
+    <ul>
+        <li><b>Events</b> allow components to respond to user interactions and communicate with each other.</li>
+        <br/>
+        <li>Svelte supports:
+            <ul>
+                <li><b>DOM events</b> — Native browser events like click, input, submit</li>
+                <li><b>Component events</b> — Custom events dispatched from child to parent</li>
+            </ul>
+        </li>
+        <br/>
+        <li>Svelte 4 uses <code>on:event</code> syntax, while Svelte 5 uses <code>onevent</code> syntax.</li>
+    </ul>
+    <br/><br/>
+
+
+
+    <li>DOM Event Handling (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Use <code>on:</code> directive to listen to DOM events:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let count: number = 0;
+
+    function handleClick(): void {
+        count++;
+    }
+&lt;/script&gt;
+
+&lt;button on:click={handleClick}&gt;
+    Clicked {count} times
+&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Common DOM events:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Mouse events --&gt;
+&lt;button on:click={handleClick}&gt;Click&lt;/button&gt;
+&lt;div on:dblclick={handleDoubleClick}&gt;Double click&lt;/div&gt;
+&lt;div on:mouseenter={handleMouseEnter}&gt;Hover me&lt;/div&gt;
+&lt;div on:mouseleave={handleMouseLeave}&gt;Leave me&lt;/div&gt;
+&lt;div on:mousemove={handleMouseMove}&gt;Move inside&lt;/div&gt;
+
+&lt;!-- Keyboard events --&gt;
+&lt;input on:keydown={handleKeyDown} /&gt;
+&lt;input on:keyup={handleKeyUp} /&gt;
+&lt;input on:keypress={handleKeyPress} /&gt;
+
+&lt;!-- Form events --&gt;
+&lt;input on:input={handleInput} /&gt;
+&lt;input on:change={handleChange} /&gt;
+&lt;input on:focus={handleFocus} /&gt;
+&lt;input on:blur={handleBlur} /&gt;
+&lt;form on:submit={handleSubmit}&gt;...&lt;/form&gt;
+
+&lt;!-- Other events --&gt;
+&lt;div on:scroll={handleScroll}&gt;...&lt;/div&gt;
+&lt;img on:load={handleLoad} on:error={handleError} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>DOM Event Handling (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>In Svelte 5, use standard HTML attribute syntax:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let count: number = $state(0);
+
+    function handleClick(): void {
+        count++;
+    }
+&lt;/script&gt;
+
+&lt;button onclick={handleClick}&gt;
+    Clicked {count} times
+&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Svelte 5 event syntax --&gt;
+&lt;button onclick={handleClick}&gt;Click&lt;/button&gt;
+&lt;div ondblclick={handleDoubleClick}&gt;Double click&lt;/div&gt;
+&lt;input onkeydown={handleKeyDown} /&gt;
+&lt;input oninput={handleInput} /&gt;
+&lt;form onsubmit={handleSubmit}&gt;...&lt;/form&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Inline Event Handlers</li>
+    <br/>
+    <ul>
+        <li>You can define handlers inline using arrow functions:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let count: number = $state(0);
+    let message: string = $state("");
+&lt;/script&gt;
+
+&lt;!-- Svelte 5 syntax --&gt;
+&lt;button onclick={() =&gt; count++}&gt;Increment&lt;/button&gt;
+&lt;button onclick={() =&gt; count = 0}&gt;Reset&lt;/button&gt;
+&lt;button onclick={() =&gt; alert("Hello!")}&gt;Alert&lt;/button&gt;
+
+&lt;input oninput={(e) =&gt; message = e.currentTarget.value} /&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Svelte 4 syntax --&gt;
+&lt;button on:click={() =&gt; count++}&gt;Increment&lt;/button&gt;
+&lt;button on:click={() =&gt; count = 0}&gt;Reset&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>The Event Object</li>
+    <br/>
+    <ul>
+        <li>Event handlers receive the native DOM event object:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    function handleClick(event: MouseEvent): void {
+        console.log("Clicked at:", event.clientX, event.clientY);
+        console.log("Target:", event.target);
+        console.log("Current target:", event.currentTarget);
+    }
+
+    function handleKeyDown(event: KeyboardEvent): void {
+        console.log("Key pressed:", event.key);
+        console.log("Key code:", event.code);
+        if (event.key === "Enter") {
+            console.log("Enter pressed!");
+        }
+    }
+
+    function handleInput(event: Event): void {
+        const target = event.currentTarget as HTMLInputElement;
+        console.log("Input value:", target.value);
+    }
+&lt;/script&gt;
+
+&lt;button onclick={handleClick}&gt;Click me&lt;/button&gt;
+&lt;input onkeydown={handleKeyDown} /&gt;
+&lt;input oninput={handleInput} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Event Modifiers (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Svelte 4 provides modifiers to alter event behavior:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- preventDefault: Prevents default browser action --&gt;
+&lt;form on:submit|preventDefault={handleSubmit}&gt;
+    &lt;button type="submit"&gt;Submit&lt;/button&gt;
+&lt;/form&gt;
+
+&lt;!-- stopPropagation: Stops event from bubbling up --&gt;
+&lt;div on:click={handleOuter}&gt;
+    &lt;button on:click|stopPropagation={handleInner}&gt;Click&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;!-- once: Handler runs only once --&gt;
+&lt;button on:click|once={handleClick}&gt;Click once&lt;/button&gt;
+
+&lt;!-- capture: Use capture phase instead of bubble --&gt;
+&lt;div on:click|capture={handleClick}&gt;...&lt;/div&gt;
+
+&lt;!-- self: Only trigger if event.target is the element itself --&gt;
+&lt;div on:click|self={handleClick}&gt;
+    &lt;button&gt;Clicking here won't trigger parent&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;!-- passive: Improves scroll performance --&gt;
+&lt;div on:scroll|passive={handleScroll}&gt;...&lt;/div&gt;
+
+&lt;!-- nonpassive: Explicitly not passive --&gt;
+&lt;div on:touchstart|nonpassive={handleTouch}&gt;...&lt;/div&gt;
+
+&lt;!-- trusted: Only trigger for user-initiated events --&gt;
+&lt;button on:click|trusted={handleClick}&gt;...&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>Modifiers can be chained:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;form on:submit|preventDefault|stopPropagation={handleSubmit}&gt;
+    ...
+&lt;/form&gt;
+
+&lt;button on:click|once|capture={handleClick}&gt;...&lt;/button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Event Modifiers (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>Svelte 5 doesn't have the modifier syntax. Use standard JavaScript instead:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    function handleSubmit(event: SubmitEvent): void {
+        event.preventDefault();
+        // Handle form submission
+    }
+
+    function handleInnerClick(event: MouseEvent): void {
+        event.stopPropagation();
+        // Handle click
+    }
+&lt;/script&gt;
+
+&lt;form onsubmit={handleSubmit}&gt;
+    &lt;button type="submit"&gt;Submit&lt;/button&gt;
+&lt;/form&gt;
+
+&lt;div onclick={handleOuter}&gt;
+    &lt;button onclick={handleInnerClick}&gt;Click&lt;/button&gt;
+&lt;/div&gt;
+</code></pre>
+
+    <ul>
+        <li>For <code>once</code>, use a wrapper or state:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let clicked: boolean = $state(false);
+
+    function handleOnce(): void {
+        if (clicked) return;
+        clicked = true;
+        console.log("This runs only once");
+    }
+&lt;/script&gt;
+
+&lt;button onclick={handleOnce}&gt;Click once&lt;/button&gt;
+</code></pre>
+
+    <ul>
+        <li>For <code>capture</code> and <code>passive</code>, use <code>onclickcapture</code> or handle in <code>$effect</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Capture phase --&gt;
+&lt;div onclickcapture={handleClick}&gt;...&lt;/div&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Component Events (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Components can dispatch custom events to their parent using <code>createEventDispatcher</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Button.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { createEventDispatcher } from "svelte";
+
+    const dispatch = createEventDispatcher&lt;{
+        click: void;
+        customEvent: { message: string };
+    }&gt;();
+
+    function handleClick(): void {
+        dispatch("click");
+        dispatch("customEvent", { message: "Hello from child!" });
+    }
+&lt;/script&gt;
+
+&lt;button on:click={handleClick}&gt;
+    &lt;slot /&gt;
+&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Button from "./Button.svelte";
+
+    function handleCustomEvent(event: CustomEvent&lt;{ message: string }&gt;): void {
+        console.log(event.detail.message);
+    }
+&lt;/script&gt;
+
+&lt;Button on:click={() =&gt; console.log("Clicked!")} on:customEvent={handleCustomEvent}&gt;
+    Click me
+&lt;/Button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Component Events (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>In Svelte 5, use <u>callback props</u> instead of <code>createEventDispatcher</code>:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Button.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        onclick?: () =&gt; void;
+        onCustomEvent?: (data: { message: string }) =&gt; void;
+        children?: any;
+    }
+
+    let { onclick, onCustomEvent, children }: Props = $props();
+
+    function handleClick(): void {
+        onclick?.();
+        onCustomEvent?.({ message: "Hello from child!" });
+    }
+&lt;/script&gt;
+
+&lt;button onclick={handleClick}&gt;
+    {@render children?.()}
+&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Button from "./Button.svelte";
+
+    function handleCustomEvent(data: { message: string }): void {
+        console.log(data.message);
+    }
+&lt;/script&gt;
+
+&lt;Button onclick={() =&gt; console.log("Clicked!")} onCustomEvent={handleCustomEvent}&gt;
+    Click me
+&lt;/Button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Event Forwarding (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Forward DOM events from a child element without handling them:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Button.svelte --&gt;
+&lt;script lang="ts"&gt;
+    export let variant: string = "primary";
+&lt;/script&gt;
+
+&lt;!-- Forward click event to parent --&gt;
+&lt;button class="btn btn-{variant}" on:click&gt;
+    &lt;slot /&gt;
+&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Button from "./Button.svelte";
+&lt;/script&gt;
+
+&lt;Button on:click={() =&gt; console.log("Button clicked!")}&gt;
+    Click me
+&lt;/Button&gt;
+</code></pre>
+
+    <ul>
+        <li>The <code>on:click</code> without a value forwards the event.</li>
+        <br/>
+        <li>Forward multiple events:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;input
+    on:input
+    on:change
+    on:focus
+    on:blur
+    on:keydown
+/&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Event Forwarding (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>In Svelte 5, use rest props to forward events:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- Button.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import type { HTMLButtonAttributes } from "svelte/elements";
+
+    interface Props extends HTMLButtonAttributes {
+        variant?: string;
+    }
+
+    let { variant = "primary", children, ...rest }: Props = $props();
+&lt;/script&gt;
+
+&lt;button class="btn btn-{variant}" {...rest}&gt;
+    {@render children?.()}
+&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import Button from "./Button.svelte";
+&lt;/script&gt;
+
+&lt;Button onclick={() =&gt; console.log("Clicked!")} onmouseenter={() =&gt; console.log("Hovered!")}&gt;
+    Click me
+&lt;/Button&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Typed Custom Events (Svelte 4)</li>
+    <br/>
+    <ul>
+        <li>Strongly type custom events with generics:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- SearchBox.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import { createEventDispatcher } from "svelte";
+
+    interface SearchEvents {
+        search: string;
+        clear: void;
+        select: { id: number; label: string };
+    }
+
+    const dispatch = createEventDispatcher&lt;SearchEvents&gt;();
+
+    let query: string = "";
+
+    function handleSearch(): void {
+        dispatch("search", query);
+    }
+
+    function handleClear(): void {
+        query = "";
+        dispatch("clear");
+    }
+
+    function handleSelect(id: number, label: string): void {
+        dispatch("select", { id, label });
+    }
+&lt;/script&gt;
+
+&lt;input bind:value={query} on:input={handleSearch} /&gt;
+&lt;button on:click={handleClear}&gt;Clear&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import SearchBox from "./SearchBox.svelte";
+
+    function onSearch(event: CustomEvent&lt;string&gt;): void {
+        console.log("Searching for:", event.detail);
+    }
+
+    function onClear(): void {
+        console.log("Search cleared");
+    }
+
+    function onSelect(event: CustomEvent&lt;{ id: number; label: string }&gt;): void {
+        console.log("Selected:", event.detail.id, event.detail.label);
+    }
+&lt;/script&gt;
+
+&lt;SearchBox on:search={onSearch} on:clear={onClear} on:select={onSelect} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Typed Callback Props (Svelte 5)</li>
+    <br/>
+    <ul>
+        <li>In Svelte 5, callbacks are naturally typed:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;!-- SearchBox.svelte --&gt;
+&lt;script lang="ts"&gt;
+    interface Props {
+        onSearch?: (query: string) =&gt; void;
+        onClear?: () =&gt; void;
+        onSelect?: (item: { id: number; label: string }) =&gt; void;
+    }
+
+    let { onSearch, onClear, onSelect }: Props = $props();
+
+    let query: string = $state("");
+
+    function handleInput(): void {
+        onSearch?.(query);
+    }
+
+    function handleClear(): void {
+        query = "";
+        onClear?.();
+    }
+&lt;/script&gt;
+
+&lt;input bind:value={query} oninput={handleInput} /&gt;
+&lt;button onclick={handleClear}&gt;Clear&lt;/button&gt;
+</code></pre>
+
+<pre><code class="language-html line-numbers">&lt;!-- Parent.svelte --&gt;
+&lt;script lang="ts"&gt;
+    import SearchBox from "./SearchBox.svelte";
+
+    function handleSearch(query: string): void {
+        console.log("Searching for:", query);
+    }
+
+    function handleSelect(item: { id: number; label: string }): void {
+        console.log("Selected:", item.id, item.label);
+    }
+&lt;/script&gt;
+
+&lt;SearchBox onSearch={handleSearch} onClear={() =&gt; console.log("Cleared")} onSelect={handleSelect} /&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Handling Window and Document Events</li>
+    <br/>
+    <ul>
+        <li>Use <code>&lt;svelte:window&gt;</code> and <code>&lt;svelte:document&gt;</code> for global events:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let innerWidth: number = $state(0);
+    let innerHeight: number = $state(0);
+
+    function handleKeyDown(event: KeyboardEvent): void {
+        if (event.key === "Escape") {
+            console.log("Escape pressed!");
+        }
+    }
+
+    function handleVisibilityChange(): void {
+        console.log("Visibility:", document.visibilityState);
+    }
+&lt;/script&gt;
+
+&lt;!-- Window events --&gt;
+&lt;svelte:window
+    bind:innerWidth
+    bind:innerHeight
+    onkeydown={handleKeyDown}
+    onresize={() =&gt; console.log("Resized!")}
+/&gt;
+
+&lt;!-- Document events --&gt;
+&lt;svelte:document onvisibilitychange={handleVisibilityChange} /&gt;
+
+&lt;p&gt;Window size: {innerWidth} x {innerHeight}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Handling Body Events</li>
+    <br/>
+    <ul>
+        <li>Use <code>&lt;svelte:body&gt;</code> for body-level events:</li>
+    </ul>
+
+<pre><code class="language-html line-numbers">&lt;script lang="ts"&gt;
+    let mouseX: number = $state(0);
+    let mouseY: number = $state(0);
+
+    function handleMouseMove(event: MouseEvent): void {
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+    }
+&lt;/script&gt;
+
+&lt;svelte:body onmousemove={handleMouseMove} /&gt;
+
+&lt;p&gt;Mouse position: {mouseX}, {mouseY}&lt;/p&gt;
+</code></pre>
+    <br/><br/>
+
+
+
+    <li>Event Syntax Comparison</li>
+    <br/>
+
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Svelte 4</th>
+            <th>Svelte 5</th>
+        </tr>
+        <tr>
+            <td>DOM event</td>
+            <td><code>on:click={handler}</code></td>
+            <td><code>onclick={handler}</code></td>
+        </tr>
+        <tr>
+            <td>Inline handler</td>
+            <td><code>on:click={() => ...}</code></td>
+            <td><code>onclick={() => ...}</code></td>
+        </tr>
+        <tr>
+            <td>Modifiers</td>
+            <td><code>on:click|preventDefault</code></td>
+            <td><code>event.preventDefault()</code></td>
+        </tr>
+        <tr>
+            <td>Event forwarding</td>
+            <td><code>on:click</code> (no value)</td>
+            <td><code>{...rest}</code> spread</td>
+        </tr>
+        <tr>
+            <td>Component events</td>
+            <td><code>createEventDispatcher</code></td>
+            <td>Callback props</td>
+        </tr>
+        <tr>
+            <td>Listen to component</td>
+            <td><code>on:customEvent={handler}</code></td>
+            <td><code>onCustomEvent={handler}</code></td>
+        </tr>
+        <tr>
+            <td>Capture phase</td>
+            <td><code>on:click|capture</code></td>
+            <td><code>onclickcapture</code></td>
+        </tr>
+    </table>
+    <br/><br/>
+
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
