@@ -151,6 +151,7 @@
         <li><a href="#compiler-phases">Phases</a></li>
         <li><a href="#compiler-lexical-analyzer">Lexical Analyzer</a></li>
         <li><a href="#compiler-dfa-intro">Deterministic Finite Automata (DFA)</a></li>
+        <li><a href="#compiler-left-refactoring">Left Refactoring</a></li>
         <li><a href="#laotzus">A Simple Compiler I Wrote When I Was About 9 ~ 10</a></li>
     </ol>
 </nav>
@@ -1189,7 +1190,557 @@ print(run_dfa(transition, "q0", {"q2"}, "aab"))   // True
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="compiler-left-refactoring">Left Factoring</h3>
+<ol>
+    <li><b>What Is Left Factoring?</b></li>
 
+    <ul>
+        <br/>
+        <li/>
+            Left factoring is a grammar transformation technique used in compiler design.<br/>
+            It's essential for building <u>predictive parsers</u> (like LL(1) parsers) that need to decide which production to use by looking at only one token ahead.
+        </li>
+        <br/>
+        <li>When two or more productions for the same non-terminal start with the same symbol(s), the parser cannot decide which rule to apply.</li>
+        <br/>
+        <li>Left factoring extracts the common prefix into a single production, deferring the decision until after the prefix is consumed.</li>
+    </ul>
+    <br/>
+
+
+    <br/><br/>
+
+
+    <li><b>Why Do We Need It?</b></li>
+    <br/>
+    <ul>
+        <li>Consider a predictive parser looking at input and trying to choose a production:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Grammar:
+    A -> α β₁
+    A -> α β₂
+
+Problem: When parser sees the start of α, it cannot decide between the two rules!
+</code></pre>
+
+    <ul>
+        <li>The parser would need to "look ahead" beyond α to make a decision — but LL(1) parsers only look at <b>one</b> token.</li>
+        <li>Left factoring solves this by restructuring the grammar:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">After left factoring:
+    A  -> α A'
+    A' -> β₁
+    A' -> β₂
+
+Now: Parser consumes α first, THEN decides between β₁ and β₂.
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>The General Algorithm</b></li>
+    <br/>
+    <ul>
+        <li>For each non-terminal A with productions that share a common prefix α:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Before:
+    A -> α β₁ | α β₂ | ... | α βₙ | γ
+
+After:
+    A  -> α A' | γ
+    A' -> β₁ | β₂ | ... | βₙ
+</code></pre>
+
+    <ul>
+        <li>Where γ represents any alternatives that don't share the prefix α.</li>
+        <li>If βᵢ is empty for some i, then A' -> ε (epsilon) is one of the alternatives.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Example 1: Simple Arithmetic Expression</b></li>
+    <br/>
+    <ul>
+        <li>A classic example from expression parsing:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Before (problematic):
+    expr -> term + expr
+    expr -> term
+
+Problem: Both start with "term" — parser can't decide!
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>After left factoring:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">After (left-factored):
+    expr  -> term expr'
+    expr' -> + expr
+    expr' -> ε
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Visualization of the transformation:</li>
+    </ul>
+    <br/>
+
+    <svg viewBox="0 0 700 200" style="max-width: 700px; font-family: monospace;">
+        <!-- Before side -->
+        <text x="100" y="20" font-size="14" font-weight="bold" text-anchor="middle">Before</text>
+        <circle cx="100" cy="60" r="25" fill="#ffe6e6" stroke="#333" stroke-width="2"/>
+        <text x="100" y="65" font-size="12" text-anchor="middle">expr</text>
+
+        <line x1="85" y1="85" x2="50" y2="130" stroke="#333" stroke-width="1.5"/>
+        <line x1="115" y1="85" x2="150" y2="130" stroke="#333" stroke-width="1.5"/>
+
+        <text x="50" y="150" font-size="11" text-anchor="middle">term + expr</text>
+        <text x="150" y="150" font-size="11" text-anchor="middle">term</text>
+
+        <text x="100" y="180" font-size="11" fill="#c00" text-anchor="middle">⚠ Common prefix "term"</text>
+
+        <!-- Arrow -->
+        <line x1="220" y1="100" x2="280" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+            </marker>
+        </defs>
+
+        <!-- After side -->
+        <text x="480" y="20" font-size="14" font-weight="bold" text-anchor="middle">After</text>
+        <circle cx="400" cy="60" r="25" fill="#e6ffe6" stroke="#333" stroke-width="2"/>
+        <text x="400" y="65" font-size="12" text-anchor="middle">expr</text>
+
+        <line x1="400" y1="85" x2="400" y2="115" stroke="#333" stroke-width="1.5"/>
+        <text x="400" y="135" font-size="11" text-anchor="middle">term expr'</text>
+
+        <circle cx="560" cy="60" r="25" fill="#e6f3ff" stroke="#333" stroke-width="2"/>
+        <text x="560" y="65" font-size="12" text-anchor="middle">expr'</text>
+
+        <line x1="545" y1="85" x2="510" y2="130" stroke="#333" stroke-width="1.5"/>
+        <line x1="575" y1="85" x2="610" y2="130" stroke="#333" stroke-width="1.5"/>
+
+        <text x="510" y="150" font-size="11" text-anchor="middle">+ expr</text>
+        <text x="610" y="150" font-size="11" text-anchor="middle">ε</text>
+
+        <text x="480" y="180" font-size="11" fill="#080" text-anchor="middle">✓ Decision deferred to expr'</text>
+    </svg>
+
+    <br/><br/>
+
+
+    <li><b>Example 2: The Dangling Else Problem</b></li>
+    <br/>
+    <ul>
+        <li>This is a famous ambiguity in programming language grammars:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Before (problematic):
+    stmt -> if ( expr ) stmt else stmt
+    stmt -> if ( expr ) stmt
+    stmt -> while ( expr ) stmt
+    stmt -> id = expr ;
+
+Problem: Both "if" rules share a long common prefix!
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>After left factoring:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">After (left-factored):
+    stmt  -> if ( expr ) stmt stmt'
+    stmt  -> while ( expr ) stmt
+    stmt  -> id = expr ;
+    stmt' -> else stmt
+    stmt' -> ε
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The common prefix <code>if ( expr ) stmt</code> is factored out.</li>
+        <li>The decision between "else" and "nothing" is deferred to <code>stmt'</code>.</li>
+    </ul>
+
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Input After Parsing <code>if(expr)stmt</code></th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Next token is <code>else</code></td>
+                <td>Use <code>stmt' -> else stmt</code></td>
+            </tr>
+            <tr>
+                <td>Next token is something else</td>
+                <td>Use <code>stmt' -> ε</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Example 3: Multiple Groups of Common Prefixes</b></li>
+    <br/>
+    <ul>
+        <li>Sometimes you have multiple different prefixes that each need factoring:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Before (problematic):
+    decl -> int id ;
+    decl -> int id [ num ] ;
+    decl -> float id ;
+    decl -> float id [ num ] ;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Here we have TWO groups of common prefixes: <code>int id</code> and <code>float id</code>.</li>
+        <li>First pass — factor out within each group:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">After (left-factored):
+    decl  -> int id decl'
+    decl  -> float id decl'
+    decl' -> ;
+    decl' -> [ num ] ;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>We can go even further by factoring out the type:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Even more factored (optional):
+    decl  -> type id decl'
+    type  -> int
+    type  -> float
+    decl' -> ;
+    decl' -> [ num ] ;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Example 4: Three or More Alternatives</b></li>
+    <br/>
+    <ul>
+        <li>When more than two alternatives share a prefix, you may need multiple passes:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Before (problematic):
+    print_stmt -> print expr ;
+    print_stmt -> print expr , expr ;
+    print_stmt -> print expr , expr , expr ;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>First pass — factor out <code>print expr</code>:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">After (first pass):
+    print_stmt  -> print expr print_stmt'
+    print_stmt' -> ;
+    print_stmt' -> , expr ;
+    print_stmt' -> , expr , expr ;
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>But wait! <code>print_stmt'</code> still has common prefixes. Second pass:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">After (second pass):
+    print_stmt   -> print expr print_stmt'
+    print_stmt'  -> ;
+    print_stmt'  -> , expr print_stmt''
+    print_stmt'' -> ;
+    print_stmt'' -> , expr ;
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Example 5: Nested Factoring (Iterative Process)</b></li>
+    <br/>
+    <ul>
+        <li>A more complex example showing how factoring can require multiple iterations:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Before (problematic):
+    S -> a b c d
+    S -> a b c e
+    S -> a b f
+    S -> a g
+    S -> h
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>This requires THREE passes to fully factor. Here's the progression:</li>
+    </ul>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Pass</th>
+                <th>Common Prefix Found</th>
+                <th>Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td><code>a</code></td>
+                <td>Extract <code>S'</code> for what follows <code>a</code></td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td><code>b</code> (in S')</td>
+                <td>Extract <code>S''</code> for what follows <code>b</code></td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td><code>c</code> (in S'')</td>
+                <td>Extract <code>S'''</code> for what follows <code>c</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/>
+
+<pre><code class="language-plaintext line-numbers">After (pass 1):
+    S  -> a S'
+    S  -> h
+    S' -> b c d
+    S' -> b c e
+    S' -> b f
+    S' -> g
+
+After (pass 2):
+    S   -> a S'
+    S   -> h
+    S'  -> b S''
+    S'  -> g
+    S'' -> c d
+    S'' -> c e
+    S'' -> f
+
+After (pass 3 — final):
+    S    -> a S'
+    S    -> h
+    S'   -> b S''
+    S'   -> g
+    S''  -> c S'''
+    S''  -> f
+    S''' -> d
+    S''' -> e
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Visualizing the final grammar as a decision tree:</li>
+    </ul>
+    <br/>
+
+    <svg viewBox="-100 0 550 420" style="max-width: 500px; font-family: monospace;">
+        <!-- S node -->
+        <circle cx="200" cy="30" r="20" fill="#fffacd" stroke="#333" stroke-width="2"/>
+        <text x="200" y="35" font-size="12" text-anchor="middle">S</text>
+
+        <!-- S branches -->
+        <line x1="185" y1="48" x2="100" y2="90" stroke="#333" stroke-width="1.5"/>
+        <line x1="215" y1="48" x2="300" y2="90" stroke="#333" stroke-width="1.5"/>
+        <text x="135" y="65" font-size="10" fill="#666">a</text>
+        <text x="265" y="65" font-size="10" fill="#666">h</text>
+
+        <!-- S' node -->
+        <circle cx="100" cy="110" r="20" fill="#e6f3ff" stroke="#333" stroke-width="2"/>
+        <text x="100" y="115" font-size="12" text-anchor="middle">S'</text>
+
+        <!-- h terminal -->
+        <rect x="280" y="95" width="40" height="25" fill="#e6ffe6" stroke="#333" stroke-width="1"/>
+        <text x="300" y="112" font-size="11" text-anchor="middle">h</text>
+
+        <!-- S' branches -->
+        <line x1="85" y1="128" x2="40" y2="170" stroke="#333" stroke-width="1.5"/>
+        <line x1="115" y1="128" x2="160" y2="170" stroke="#333" stroke-width="1.5"/>
+        <text x="55" y="145" font-size="10" fill="#666">b</text>
+        <text x="145" y="145" font-size="10" fill="#666">g</text>
+
+        <!-- S'' node -->
+        <circle cx="40" cy="190" r="20" fill="#ffe6f0" stroke="#333" stroke-width="2"/>
+        <text x="40" y="195" font-size="12" text-anchor="middle">S''</text>
+
+        <!-- g terminal -->
+        <rect x="140" y="175" width="40" height="25" fill="#e6ffe6" stroke="#333" stroke-width="1"/>
+        <text x="160" y="190" font-size="11" text-anchor="middle">g</text>
+
+        <!-- S'' branches -->
+        <line x1="25" y1="208" x2="0" y2="250" stroke="#333" stroke-width="1.5"/>
+        <line x1="55" y1="208" x2="80" y2="250" stroke="#333" stroke-width="1.5"/>
+        <text x="5" y="225" font-size="10" fill="#666">c</text>
+        <text x="75" y="225" font-size="10" fill="#666">f</text>
+
+        <!-- S''' node -->
+        <circle cx="0" cy="270" r="18" fill="#f0e6ff" stroke="#333" stroke-width="2"/>
+        <text x="0" y="275" font-size="11" text-anchor="middle">S'''</text>
+
+        <!-- f terminal -->
+        <rect x="60" y="255" width="40" height="25" fill="#e6ffe6" stroke="#333" stroke-width="1"/>
+        <text x="80" y="272" font-size="11" text-anchor="middle">f</text>
+
+        <!-- S''' branches -->
+        <line x1="-12" y1="286" x2="-30" y2="310" stroke="#333" stroke-width="1.5"/>
+        <line x1="12" y1="286" x2="30" y2="310" stroke="#333" stroke-width="1.5"/>
+        <text x="-35" y="300" font-size="10" fill="#666">d</text>
+        <text x="35" y="300" font-size="10" fill="#666">e</text>
+        <!-- d terminal -->
+        <rect x="-60" y="315" width="40" height="25" fill="#e6ffe6" stroke="#333" stroke-width="1"/>
+        <text x="-40" y="332" font-size="11" text-anchor="middle">d</text>
+        <!-- e terminal -->
+        <rect x="20" y="315" width="40" height="25" fill="#e6ffe6" stroke="#333" stroke-width="1"/>
+        <text x="40" y="332" font-size="11" text-anchor="middle">e</text>
+
+        <!-- Legend -->
+        <rect x="350" y="150" width="15" height="15" fill="#fffacd" stroke="#333" stroke-width="1"/>
+        <text x="370" y="162" font-size="10">Non-terminal</text>
+        <rect x="350" y="175" width="15" height="15" fill="#e6ffe6" stroke="#333" stroke-width="1"/>
+        <text x="370" y="187" font-size="10">Terminal</text>
+    </svg>
+
+    <br/><br/>
+
+
+    <li><b>Example 6: A Realistic Function Definition Grammar</b></li>
+    <br/>
+    <ul>
+        <li>Real programming languages have complex grammars. Here's a function definition:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Before (problematic):
+    func -> id ( ) { stmts }
+    func -> id ( ) : type { stmts }
+    func -> id ( params ) { stmts }
+    func -> id ( params ) : type { stmts }
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>All four start with <code>id (</code> — a parser seeing <code>foo(</code> has no idea which rule to use!</li>
+        <li>After careful factoring:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">After (left-factored):
+    func    -> id ( func'
+    func'   -> ) func''
+    func'   -> params ) func''
+    func''  -> { stmts }
+    func''  -> : type { stmts }
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Decision points:</li>
+    </ul>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>After Seeing</th>
+                <th>Look At</th>
+                <th>Decision</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>id (</code></td>
+                <td>Next token</td>
+                <td><code>)</code> → no params; otherwise → has params</td>
+            </tr>
+            <tr>
+                <td><code>id ( ... )</code></td>
+                <td>Next token</td>
+                <td><code>{</code> → no return type; <code>:</code> → has return type</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>When Left Factoring Is Not Enough</b></li>
+    <br/>
+    <ul>
+        <li>Left factoring only helps with common <b>prefixes</b>.</li>
+        <li>It does NOT solve:
+            <ul>
+                <li><b>Left recursion</b>: <code>A -> A α | β</code> (needs different transformation)</li>
+                <li><b>Ambiguity</b>: when the grammar genuinely allows multiple parse trees</li>
+                <li><b>Non-LL(1) grammars</b>: some grammars simply cannot be made LL(1)</li>
+            </ul>
+        </li>
+    </ul>
+
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Problem</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Common prefixes</td>
+                <td>Left factoring ✓</td>
+            </tr>
+            <tr>
+                <td>Left recursion</td>
+                <td>Left recursion elimination</td>
+            </tr>
+            <tr>
+                <td>Ambiguity</td>
+                <td>Rewrite grammar or use precedence rules</td>
+            </tr>
+            <tr>
+                <td>Inherently non-LL(1)</td>
+                <td>Use more powerful parser (LR, GLR, etc.)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>Summary</b></li>
+    <br/>
+    <ul>
+        <li>Left factoring transforms: <code>A -> αβ₁ | αβ₂</code> into <code>A -> αA'</code> and <code>A' -> β₁ | β₂</code></li>
+        <li>It enables predictive (LL) parsing by deferring decisions until after common prefixes.</li>
+        <li>May require multiple passes for deeply nested common prefixes.</li>
+        <li>Often used together with left recursion elimination when building LL(1) parsers.</li>
+    </ul>
+    <br/><br/>
+
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
