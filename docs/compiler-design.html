@@ -152,6 +152,7 @@
         <li><a href="#compiler-lexical-analyzer">Lexical Analyzer</a></li>
         <li><a href="#compiler-dfa-intro">Deterministic Finite Automata (DFA)</a></li>
         <li><a href="#compiler-left-refactoring">Left Refactoring</a></li>
+        <li><a href="#compiler-predictive-parsing">Predictive Parsing</a></li>
         <li><a href="#laotzus">A Simple Compiler I Wrote When I Was About 9 ~ 10</a></li>
     </ol>
 </nav>
@@ -1218,8 +1219,8 @@ print(run_dfa(transition, "q0", {"q2"}, "aab"))   // True
     </ul>
 
 <pre><code class="language-plaintext line-numbers">Grammar:
-    A -> α β₁
-    A -> α β₂
+    A -&gt; α β₁
+    A -&gt; α β₂
 
 Problem: When parser sees the start of α, it cannot decide between the two rules!
 </code></pre>
@@ -1230,9 +1231,9 @@ Problem: When parser sees the start of α, it cannot decide between the two rule
     </ul>
 
 <pre><code class="language-plaintext line-numbers">After left factoring:
-    A  -> α A'
-    A' -> β₁
-    A' -> β₂
+    A  -&gt; α A'
+    A' -&gt; β₁
+    A' -&gt; β₂
 
 Now: Parser consumes α first, THEN decides between β₁ and β₂.
 </code></pre>
@@ -1247,16 +1248,16 @@ Now: Parser consumes α first, THEN decides between β₁ and β₂.
     </ul>
 
 <pre><code class="language-plaintext line-numbers">Before:
-    A -> α β₁ | α β₂ | ... | α βₙ | γ
+    A -&gt; α β₁ | α β₂ | ... | α βₙ | γ
 
 After:
-    A  -> α A' | γ
-    A' -> β₁ | β₂ | ... | βₙ
+    A  -&gt; α A' | γ
+    A' -&gt; β₁ | β₂ | ... | βₙ
 </code></pre>
 
     <ul>
         <li>Where γ represents any alternatives that don't share the prefix α.</li>
-        <li>If βᵢ is empty for some i, then A' -> ε (epsilon) is one of the alternatives.</li>
+        <li>If βᵢ is empty for some i, then A' -&gt; ε (epsilon) is one of the alternatives.</li>
     </ul>
 
     <br/><br/>
@@ -1269,8 +1270,8 @@ After:
     </ul>
 
 <pre><code class="language-plaintext line-numbers">Before (problematic):
-    expr -> term + expr
-    expr -> term
+    expr -&gt; term + expr
+    expr -&gt; term
 
 Problem: Both start with "term" — parser can't decide!
 </code></pre>
@@ -1281,9 +1282,9 @@ Problem: Both start with "term" — parser can't decide!
     </ul>
 
 <pre><code class="language-plaintext line-numbers">After (left-factored):
-    expr  -> term expr'
-    expr' -> + expr
-    expr' -> ε
+    expr  -&gt; term expr'
+    expr' -&gt; + expr
+    expr' -&gt; ε
 </code></pre>
 
     <br/>
@@ -1344,10 +1345,10 @@ Problem: Both start with "term" — parser can't decide!
     </ul>
 
 <pre><code class="language-plaintext line-numbers">Before (problematic):
-    stmt -> if ( expr ) stmt else stmt
-    stmt -> if ( expr ) stmt
-    stmt -> while ( expr ) stmt
-    stmt -> id = expr ;
+    stmt -&gt; if ( expr ) stmt else stmt
+    stmt -&gt; if ( expr ) stmt
+    stmt -&gt; while ( expr ) stmt
+    stmt -&gt; id = expr ;
 
 Problem: Both "if" rules share a long common prefix!
 </code></pre>
@@ -1358,11 +1359,11 @@ Problem: Both "if" rules share a long common prefix!
     </ul>
 
 <pre><code class="language-plaintext line-numbers">After (left-factored):
-    stmt  -> if ( expr ) stmt stmt'
-    stmt  -> while ( expr ) stmt
-    stmt  -> id = expr ;
-    stmt' -> else stmt
-    stmt' -> ε
+    stmt  -&gt; if ( expr ) stmt stmt'
+    stmt  -&gt; while ( expr ) stmt
+    stmt  -&gt; id = expr ;
+    stmt' -&gt; else stmt
+    stmt' -&gt; ε
 </code></pre>
 
     <br/>
@@ -1382,11 +1383,11 @@ Problem: Both "if" rules share a long common prefix!
         <tbody>
             <tr>
                 <td>Next token is <code>else</code></td>
-                <td>Use <code>stmt' -> else stmt</code></td>
+                <td>Use <code>stmt' -&gt; else stmt</code></td>
             </tr>
             <tr>
                 <td>Next token is something else</td>
-                <td>Use <code>stmt' -> ε</code></td>
+                <td>Use <code>stmt' -&gt; ε</code></td>
             </tr>
         </tbody>
     </table>
@@ -1401,10 +1402,10 @@ Problem: Both "if" rules share a long common prefix!
     </ul>
 
 <pre><code class="language-plaintext line-numbers">Before (problematic):
-    decl -> int id ;
-    decl -> int id [ num ] ;
-    decl -> float id ;
-    decl -> float id [ num ] ;
+    decl -&gt; int id ;
+    decl -&gt; int id [ num ] ;
+    decl -&gt; float id ;
+    decl -&gt; float id [ num ] ;
 </code></pre>
 
     <br/>
@@ -1414,10 +1415,10 @@ Problem: Both "if" rules share a long common prefix!
     </ul>
 
 <pre><code class="language-plaintext line-numbers">After (left-factored):
-    decl  -> int id decl'
-    decl  -> float id decl'
-    decl' -> ;
-    decl' -> [ num ] ;
+    decl  -&gt; int id decl'
+    decl  -&gt; float id decl'
+    decl' -&gt; ;
+    decl' -&gt; [ num ] ;
 </code></pre>
 
     <br/>
@@ -1426,11 +1427,11 @@ Problem: Both "if" rules share a long common prefix!
     </ul>
 
 <pre><code class="language-plaintext line-numbers">Even more factored (optional):
-    decl  -> type id decl'
-    type  -> int
-    type  -> float
-    decl' -> ;
-    decl' -> [ num ] ;
+    decl  -&gt; type id decl'
+    type  -&gt; int
+    type  -&gt; float
+    decl' -&gt; ;
+    decl' -&gt; [ num ] ;
 </code></pre>
 
     <br/><br/>
@@ -1443,9 +1444,9 @@ Problem: Both "if" rules share a long common prefix!
     </ul>
 
 <pre><code class="language-plaintext line-numbers">Before (problematic):
-    print_stmt -> print expr ;
-    print_stmt -> print expr , expr ;
-    print_stmt -> print expr , expr , expr ;
+    print_stmt -&gt; print expr ;
+    print_stmt -&gt; print expr , expr ;
+    print_stmt -&gt; print expr , expr , expr ;
 </code></pre>
 
     <br/>
@@ -1454,10 +1455,10 @@ Problem: Both "if" rules share a long common prefix!
     </ul>
 
 <pre><code class="language-plaintext line-numbers">After (first pass):
-    print_stmt  -> print expr print_stmt'
-    print_stmt' -> ;
-    print_stmt' -> , expr ;
-    print_stmt' -> , expr , expr ;
+    print_stmt  -&gt; print expr print_stmt'
+    print_stmt' -&gt; ;
+    print_stmt' -&gt; , expr ;
+    print_stmt' -&gt; , expr , expr ;
 </code></pre>
 
     <br/>
@@ -1466,11 +1467,11 @@ Problem: Both "if" rules share a long common prefix!
     </ul>
 
 <pre><code class="language-plaintext line-numbers">After (second pass):
-    print_stmt   -> print expr print_stmt'
-    print_stmt'  -> ;
-    print_stmt'  -> , expr print_stmt''
-    print_stmt'' -> ;
-    print_stmt'' -> , expr ;
+    print_stmt   -&gt; print expr print_stmt'
+    print_stmt'  -&gt; ;
+    print_stmt'  -&gt; , expr print_stmt''
+    print_stmt'' -&gt; ;
+    print_stmt'' -&gt; , expr ;
 </code></pre>
 
     <br/><br/>
@@ -1483,11 +1484,11 @@ Problem: Both "if" rules share a long common prefix!
     </ul>
 
 <pre><code class="language-plaintext line-numbers">Before (problematic):
-    S -> a b c d
-    S -> a b c e
-    S -> a b f
-    S -> a g
-    S -> h
+    S -&gt; a b c d
+    S -&gt; a b c e
+    S -&gt; a b f
+    S -&gt; a g
+    S -&gt; h
 </code></pre>
 
     <br/>
@@ -1526,31 +1527,31 @@ Problem: Both "if" rules share a long common prefix!
     <br/>
 
 <pre><code class="language-plaintext line-numbers">After (pass 1):
-    S  -> a S'
-    S  -> h
-    S' -> b c d
-    S' -> b c e
-    S' -> b f
-    S' -> g
+    S  -&gt; a S'
+    S  -&gt; h
+    S' -&gt; b c d
+    S' -&gt; b c e
+    S' -&gt; b f
+    S' -&gt; g
 
 After (pass 2):
-    S   -> a S'
-    S   -> h
-    S'  -> b S''
-    S'  -> g
-    S'' -> c d
-    S'' -> c e
-    S'' -> f
+    S   -&gt; a S'
+    S   -&gt; h
+    S'  -&gt; b S''
+    S'  -&gt; g
+    S'' -&gt; c d
+    S'' -&gt; c e
+    S'' -&gt; f
 
 After (pass 3 — final):
-    S    -> a S'
-    S    -> h
-    S'   -> b S''
-    S'   -> g
-    S''  -> c S'''
-    S''  -> f
-    S''' -> d
-    S''' -> e
+    S    -&gt; a S'
+    S    -&gt; h
+    S'   -&gt; b S''
+    S'   -&gt; g
+    S''  -&gt; c S'''
+    S''  -&gt; f
+    S''' -&gt; d
+    S''' -&gt; e
 </code></pre>
 
     <br/>
@@ -1635,10 +1636,10 @@ After (pass 3 — final):
     </ul>
 
 <pre><code class="language-plaintext line-numbers">Before (problematic):
-    func -> id ( ) { stmts }
-    func -> id ( ) : type { stmts }
-    func -> id ( params ) { stmts }
-    func -> id ( params ) : type { stmts }
+    func -&gt; id ( ) { stmts }
+    func -&gt; id ( ) : type { stmts }
+    func -&gt; id ( params ) { stmts }
+    func -&gt; id ( params ) : type { stmts }
 </code></pre>
 
     <br/>
@@ -1648,11 +1649,11 @@ After (pass 3 — final):
     </ul>
 
 <pre><code class="language-plaintext line-numbers">After (left-factored):
-    func    -> id ( func'
-    func'   -> ) func''
-    func'   -> params ) func''
-    func''  -> { stmts }
-    func''  -> : type { stmts }
+    func    -&gt; id ( func'
+    func'   -&gt; ) func''
+    func'   -&gt; params ) func''
+    func''  -&gt; { stmts }
+    func''  -&gt; : type { stmts }
 </code></pre>
 
     <br/>
@@ -1692,7 +1693,7 @@ After (pass 3 — final):
         <li>Left factoring only helps with common <b>prefixes</b>.</li>
         <li>It does NOT solve:
             <ul>
-                <li><b>Left recursion</b>: <code>A -> A α | β</code> (needs different transformation)</li>
+                <li><b>Left recursion</b>: <code>A -&gt; A α | β</code> (needs different transformation)</li>
                 <li><b>Ambiguity</b>: when the grammar genuinely allows multiple parse trees</li>
                 <li><b>Non-LL(1) grammars</b>: some grammars simply cannot be made LL(1)</li>
             </ul>
@@ -1733,7 +1734,7 @@ After (pass 3 — final):
     <li><b>Summary</b></li>
     <br/>
     <ul>
-        <li>Left factoring transforms: <code>A -> αβ₁ | αβ₂</code> into <code>A -> αA'</code> and <code>A' -> β₁ | β₂</code></li>
+        <li>Left factoring transforms: <code>A -&gt; αβ₁ | αβ₂</code> into <code>A -&gt; αA'</code> and <code>A' -&gt; β₁ | β₂</code></li>
         <li>It enables predictive (LL) parsing by deferring decisions until after common prefixes.</li>
         <li>May require multiple passes for deeply nested common prefixes.</li>
         <li>Often used together with left recursion elimination when building LL(1) parsers.</li>
@@ -1741,6 +1742,676 @@ After (pass 3 — final):
     <br/><br/>
 
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="predictive-parsing">Predictive Parsing</h3>
+<ol>
+    <li><b>What Is Predictive Parsing?</b></li>
+    <ul>
+        <br/>
+        <li>
+            Predictive parsing is what you get when you've successfully transformed your grammar
+            (using left factoring, left recursion elimination, etc.) so that one token of lookahead
+            is always sufficient to make the right choice—no guessing, no backtracking, no regrets.
+        </li>
+        <br/>
+        <li>A <u>predictive parser</u> is a top-down parser that never backtracks.</li>
+        <br/>
+        <li>At each step, it looks at the current non-terminal and the next input token, then <b>deterministically</b> chooses which production to use.</li>
+        <br/>
+        <li>This is only possible when the grammar has been carefully prepared (no left recursion, no common prefixes).</li>
+    </ul>
+    <br/>
+
+
+<pre><code class="language-plaintext line-numbers">The Promise of Predictive Parsing:
+
+    Current state: I'm trying to expand non-terminal A
+    I see token t in the input
+    ↓
+    I know EXACTLY which production to use (or that there's an error)
+    ↓
+    No guessing. No trying one rule and backtracking if it fails.
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>The Key Insight: FIRST Sets</b></li>
+    <br/>
+    <ul>
+        <li>For predictive parsing to work, we need to know: "What tokens can a production <i>start</i> with?"</li>
+        <li>This is captured by the <u>FIRST set</u>.</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Definition:
+
+    FIRST(α) = the set of all terminals (tokens) that can appear
+               as the first symbol of any string derived from α
+
+    If α can derive ε (empty string), then ε ∈ FIRST(α) as well.
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Simple examples:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">FIRST(if ( expr ) stmt)  = { if }       — always starts with "if"
+FIRST(while ( expr ) stmt) = { while }  — always starts with "while"
+FIRST(id = expr ;)       = { id }       — always starts with an identifier
+FIRST(+ term)            = { + }        — always starts with "+"
+FIRST(ε)                 = { ε }        — the empty string "starts with" nothing
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>The Golden Rule for Predictive Parsing</b></li>
+    <br/>
+    <ul>
+        <li>If <code>A -&gt; α</code> and <code>A -&gt; β</code> are two different productions for the same non-terminal:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">FIRST(α) ∩ FIRST(β) = ∅    (must be empty!)
+
+If they overlap, seeing a token in the overlap wouldn't tell you which production to use.
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>When this condition holds for all non-terminals, the grammar is suitable for predictive parsing.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>Example: Good Grammar (Predictive Parsing Works)</b></li>
+    <br/>
+
+<pre><code class="language-plaintext line-numbers">Grammar:
+    stmt -&gt; if ( expr ) stmt
+    stmt -&gt; while ( expr ) stmt
+    stmt -&gt; id = expr ;
+
+FIRST sets:
+    FIRST(if ( expr ) stmt)     = { if }
+    FIRST(while ( expr ) stmt)  = { while }
+    FIRST(id = expr ;)          = { id }
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Checking for overlap:</li>
+    </ul>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Pair</th>
+                <th>Intersection</th>
+                <th>Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{ if } ∩ { while }</td>
+                <td>∅</td>
+                <td>✓</td>
+            </tr>
+            <tr>
+                <td>{ if } ∩ { id }</td>
+                <td>∅</td>
+                <td>✓</td>
+            </tr>
+            <tr>
+                <td>{ while } ∩ { id }</td>
+                <td>∅</td>
+                <td>✓</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/>
+    <ul>
+        <li>No overlap! The parser can always decide:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">See "if"    → use stmt -&gt; if ( expr ) stmt
+See "while" → use stmt -&gt; while ( expr ) stmt
+See "id"    → use stmt -&gt; id = expr ;
+See anything else → syntax error!
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Example: Bad Grammar (Predictive Parsing Fails)</b></li>
+    <br/>
+
+<pre><code class="language-plaintext line-numbers">Grammar:
+    expr -&gt; term + expr
+    expr -&gt; term
+
+Assume term can start with digits (0-9):
+    FIRST(term + expr) = { 0, 1, 2, ..., 9 }
+    FIRST(term)        = { 0, 1, 2, ..., 9 }
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>The problem:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">FIRST(term + expr) ∩ FIRST(term) = { 0, 1, 2, ..., 9 }
+
+                                    ↑ Complete overlap!
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>If the parser sees <code>5</code>, it has no idea whether to use <code>expr -&gt; term + expr</code> or <code>expr -&gt; term</code>.</li>
+        <li>This is exactly why we need <b>left factoring</b>!</li>
+    </ul>
+
+    <br/>
+
+    <svg viewBox="0 0 600 180" style="max-width: 600px; font-family: monospace;">
+        <!-- Before -->
+        <text x="120" y="20" font-size="14" font-weight="bold" text-anchor="middle">Before (Bad)</text>
+
+        <circle cx="120" cy="60" r="25" fill="#ffe6e6" stroke="#c00" stroke-width="2"/>
+        <text x="120" y="65" font-size="12" text-anchor="middle">expr</text>
+
+        <text x="120" y="105" font-size="11" text-anchor="middle">Sees token "5"</text>
+        <text x="120" y="125" font-size="11" text-anchor="middle" fill="#c00">Which rule? 🤷</text>
+
+        <line x1="95" y1="135" x2="60" y2="160" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+        <line x1="145" y1="135" x2="180" y2="160" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+        <text x="60" y="175" font-size="10" text-anchor="middle" fill="#666">term + expr ?</text>
+        <text x="180" y="175" font-size="10" text-anchor="middle" fill="#666">term ?</text>
+
+        <!-- Arrow -->
+        <line x1="240" y1="90" x2="300" y2="90" stroke="#333" stroke-width="2" marker-end="url(#arrow2)"/>
+        <text x="270" y="80" font-size="10" text-anchor="middle">left factor</text>
+        <defs>
+            <marker id="arrow2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+            </marker>
+        </defs>
+
+        <!-- After -->
+        <text x="450" y="20" font-size="14" font-weight="bold" text-anchor="middle">After (Good)</text>
+
+        <circle cx="380" cy="60" r="25" fill="#e6ffe6" stroke="#080" stroke-width="2"/>
+        <text x="380" y="65" font-size="12" text-anchor="middle">expr</text>
+
+        <line x1="380" y1="85" x2="380" y2="110" stroke="#333" stroke-width="1.5"/>
+        <text x="380" y="130" font-size="11" text-anchor="middle">term expr'</text>
+
+        <circle cx="520" cy="60" r="25" fill="#e6f3ff" stroke="#333" stroke-width="2"/>
+        <text x="520" y="65" font-size="12" text-anchor="middle">expr'</text>
+
+        <text x="520" y="105" font-size="11" text-anchor="middle">Sees "+" or end</text>
+        <text x="520" y="125" font-size="11" text-anchor="middle" fill="#080">Now it's clear! ✓</text>
+
+        <line x1="500" y1="135" x2="470" y2="160" stroke="#333" stroke-width="1"/>
+        <line x1="540" y1="135" x2="570" y2="160" stroke="#333" stroke-width="1"/>
+        <text x="470" y="175" font-size="10" text-anchor="middle">+ expr</text>
+        <text x="570" y="175" font-size="10" text-anchor="middle">ε</text>
+    </svg>
+
+    <br/><br/>
+
+
+    <li><b>Computing FIRST Sets: The Algorithm</b></li>
+    <br/>
+    <ul>
+        <li>For a terminal <code>a</code>: <code>FIRST(a) = { a }</code></li>
+        <li>For epsilon: <code>FIRST(ε) = { ε }</code></li>
+        <li>For a non-terminal <code>A</code>, look at all its productions and take the union.</li>
+        <li>For a sequence <code>X₁ X₂ ... Xₙ</code>:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">FIRST(X₁ X₂ ... Xₙ):
+
+    1. Start with FIRST(X₁) (excluding ε)
+    2. If ε ∈ FIRST(X₁), also add FIRST(X₂) (excluding ε)
+    3. If ε ∈ FIRST(X₁) and ε ∈ FIRST(X₂), also add FIRST(X₃) ...
+    4. Continue until you hit an Xᵢ where ε ∉ FIRST(Xᵢ)
+    5. If ALL of X₁...Xₙ can derive ε, then add ε to the result
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example calculation:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Grammar:
+    E  -&gt; T E'
+    E' -&gt; + T E' | ε
+    T  -&gt; F T'
+    T' -&gt; * F T' | ε
+    F  -&gt; ( E ) | id
+
+Computing FIRST sets (iteratively):
+    FIRST(F)  = { (, id }
+    FIRST(T') = { *, ε }
+    FIRST(T)  = FIRST(F) = { (, id }
+    FIRST(E') = { +, ε }
+    FIRST(E)  = FIRST(T) = { (, id }
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>FOLLOW Sets: Handling Epsilon</b></li>
+    <br/>
+    <ul>
+        <li>When a production can derive ε, we also need to know what can <i>follow</i> that non-terminal.</li>
+        <li><u>FOLLOW(A)</u> = the set of terminals that can appear immediately after A in some derivation.</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Why we need FOLLOW:
+
+    E' -&gt; + T E'
+    E' -&gt; ε
+
+    If we see something NOT in FIRST(+ T E'), should we use E' -&gt; ε?
+    Only if that something is in FOLLOW(E')!
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>FOLLOW set rules:</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">1. $ ∈ FOLLOW(S) where S is the start symbol ($ = end of input)
+
+2. If A -&gt; α B β, then:
+   FIRST(β) - {ε} ⊆ FOLLOW(B)
+
+3. If A -&gt; α B, or A -&gt; α B β where ε ∈ FIRST(β), then:
+   FOLLOW(A) ⊆ FOLLOW(B)
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>The Parsing Table</b></li>
+    <br/>
+    <ul>
+        <li>Once we have FIRST and FOLLOW sets, we can build a <u>parsing table</u>.</li>
+        <li>The table tells us: "Given non-terminal A and lookahead token t, which production to use?"</li>
+    </ul>
+
+<pre><code class="language-plaintext line-numbers">Table construction:
+
+    For each production A -&gt; α:
+        1. For each terminal a ∈ FIRST(α), add A -&gt; α to Table[A, a]
+        2. If ε ∈ FIRST(α), for each terminal b ∈ FOLLOW(A), add A -&gt; α to Table[A, b]
+</code></pre>
+
+    <br/>
+    <ul>
+        <li>Example parsing table for arithmetic expressions:</li>
+    </ul>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th><code>id</code></th>
+                <th><code>+</code></th>
+                <th><code>*</code></th>
+                <th><code>(</code></th>
+                <th><code>)</code></th>
+                <th><code>$</code></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>E</code></td>
+                <td>E -&gt; T E'</td>
+                <td></td>
+                <td></td>
+                <td>E -&gt; T E'</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><code>E'</code></td>
+                <td></td>
+                <td>E' -&gt; + T E'</td>
+                <td></td>
+                <td></td>
+                <td>E' -&gt; ε</td>
+                <td>E' -&gt; ε</td>
+            </tr>
+            <tr>
+                <td><code>T</code></td>
+                <td>T -&gt; F T'</td>
+                <td></td>
+                <td></td>
+                <td>T -&gt; F T'</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><code>T'</code></td>
+                <td></td>
+                <td>T' -&gt; ε</td>
+                <td>T' -&gt; * F T'</td>
+                <td></td>
+                <td>T' -&gt; ε</td>
+                <td>T' -&gt; ε</td>
+            </tr>
+            <tr>
+                <td><code>F</code></td>
+                <td>F -&gt; id</td>
+                <td></td>
+                <td></td>
+                <td>F -&gt; ( E )</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/>
+    <ul>
+        <li>Empty cells = syntax error. Multiple entries in one cell = grammar is not LL(1).</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>The Predictive Parsing Algorithm</b></li>
+    <br/>
+    <ul>
+        <li>Uses a stack to track what we're expecting to see.</li>
+        <li>Matches terminals, expands non-terminals using the table.</li>
+    </ul>
+
+<pre><code class="language-python line-numbers">def predictive_parse(input_tokens, table, start_symbol):
+    stack = ['$', start_symbol]  # $ marks bottom
+    tokens = input_tokens + ['$']
+    pos = 0
+
+    while stack:
+        top = stack.pop()
+        current = tokens[pos]
+
+        if top == '$':
+            if current == '$':
+                return True  # Success!
+            else:
+                return False  # Error: extra input
+
+        elif top is terminal:
+            if top == current:
+                pos += 1  # Match! Consume token
+            else:
+                return False  # Error: mismatch
+
+        else:  # top is non-terminal
+            if (top, current) in table:
+                production = table[(top, current)]
+                # Push RHS in reverse order
+                for symbol in reversed(production.rhs):
+                    if symbol != 'ε':
+                        stack.append(symbol)
+            else:
+                return False  # Error: no rule
+
+    return pos == len(tokens) - 1
+</code></pre>
+
+    <br/><br/>
+
+
+    <li><b>Trace: Parsing <code>id + id * id</code></b></li>
+    <br/>
+    <ul>
+        <li>Let's trace through parsing the expression <code>id + id * id</code>:</li>
+    </ul>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Stack</th>
+                <th>Input</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>$ E</code></td>
+                <td><code>id + id * id $</code></td>
+                <td>E -&gt; T E' (Table[E, id])</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T</code></td>
+                <td><code>id + id * id $</code></td>
+                <td>T -&gt; F T' (Table[T, id])</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T' F</code></td>
+                <td><code>id + id * id $</code></td>
+                <td>F -&gt; id (Table[F, id])</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T' id</code></td>
+                <td><code>id + id * id $</code></td>
+                <td>Match id</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T'</code></td>
+                <td><code>+ id * id $</code></td>
+                <td>T' -&gt; ε (Table[T', +])</td>
+            </tr>
+            <tr>
+                <td><code>$ E'</code></td>
+                <td><code>+ id * id $</code></td>
+                <td>E' -&gt; + T E' (Table[E', +])</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T +</code></td>
+                <td><code>+ id * id $</code></td>
+                <td>Match +</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T</code></td>
+                <td><code>id * id $</code></td>
+                <td>T -&gt; F T'</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T' F</code></td>
+                <td><code>id * id $</code></td>
+                <td>F -&gt; id</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T' id</code></td>
+                <td><code>id * id $</code></td>
+                <td>Match id</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T'</code></td>
+                <td><code>* id $</code></td>
+                <td>T' -&gt; * F T'</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T' F *</code></td>
+                <td><code>* id $</code></td>
+                <td>Match *</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T' F</code></td>
+                <td><code>id $</code></td>
+                <td>F -&gt; id</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T' id</code></td>
+                <td><code>id $</code></td>
+                <td>Match id</td>
+            </tr>
+            <tr>
+                <td><code>$ E' T'</code></td>
+                <td><code>$</code></td>
+                <td>T' -&gt; ε</td>
+            </tr>
+            <tr>
+                <td><code>$ E'</code></td>
+                <td><code>$</code></td>
+                <td>E' -&gt; ε</td>
+            </tr>
+            <tr>
+                <td><code>$</code></td>
+                <td><code>$</code></td>
+                <td>Accept! ✓</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+
+
+    <li><b>LL(1) — What Does It Mean?</b></li>
+    <br/>
+    <ul>
+        <li>Predictive parsers are also called <u>LL(1) parsers</u>:</li>
+    </ul>
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Letter</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><b>L</b></td>
+                <td>Left-to-right scan of input</td>
+            </tr>
+            <tr>
+                <td><b>L</b></td>
+                <td>Leftmost derivation (expand leftmost non-terminal first)</td>
+            </tr>
+            <tr>
+                <td><b>1</b></td>
+                <td>One token of lookahead</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/>
+    <ul>
+        <li>A grammar is LL(1) if and only if its parsing table has no multiply-defined entries.</li>
+        <li>Not all grammars can be made LL(1) — some languages require more powerful parsers.</li>
+    </ul>
+
+    <br/><br/>
+
+
+    <li><b>After Parsing: Intermediate Representation</b></li>
+    <br/>
+    <ul>
+        <li>Once parsing succeeds, the compiler typically builds an <u>Intermediate Representation</u> (IR).</li>
+        <li>When computer scientists say "representation," they mean "how we encode or store information" — it doesn't have to be text.</li>
+        <li>Two main styles:</li>
+    </ul>
+
+    <br/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tree-Based IR (AST)</th>
+                <th>Linear IR (Three-Address Code)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Preserves hierarchical, nested structure</td>
+                <td>Flattens into a sequence of instructions</td>
+            </tr>
+            <tr>
+                <td>Each node = operation, children = operands</td>
+                <td>Explicit temporaries and jumps</td>
+            </tr>
+            <tr>
+                <td>Good for analysis and transformation</td>
+                <td>Closer to machine code</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/>
+    <ul>
+        <li>Example for <code>a + b * c</code>:</li>
+    </ul>
+    <br/>
+
+    <svg viewBox="0 0 750 300" style="max-width: 650px; font-family: monospace;">
+        <!-- AST side -->
+        <text x="120" y="20" font-size="14" font-weight="bold" text-anchor="middle">Tree-Based (AST)</text>
+
+        <circle cx="120" cy="60" r="20" fill="#fffacd" stroke="#333" stroke-width="2"/>
+        <text x="120" y="65" font-size="14" text-anchor="middle">+</text>
+
+        <line x1="105" y1="78" x2="60" y2="120" stroke="#333" stroke-width="1.5"/>
+        <line x1="135" y1="78" x2="180" y2="120" stroke="#333" stroke-width="1.5"/>
+
+        <circle cx="60" cy="140" r="18" fill="#e6ffe6" stroke="#333" stroke-width="1.5"/>
+        <text x="60" y="145" font-size="12" text-anchor="middle">a</text>
+
+        <circle cx="180" cy="140" r="20" fill="#fffacd" stroke="#333" stroke-width="2"/>
+        <text x="180" y="145" font-size="14" text-anchor="middle">*</text>
+
+        <line x1="165" y1="158" x2="140" y2="185" stroke="#333" stroke-width="1.5"/>
+        <line x1="195" y1="158" x2="220" y2="185" stroke="#333" stroke-width="1.5"/>
+
+        <circle cx="140" cy="195" r="15" fill="#e6ffe6" stroke="#333" stroke-width="1.5"/>
+        <text x="140" y="200" font-size="12" text-anchor="middle">b</text>
+
+        <circle cx="220" cy="195" r="15" fill="#e6ffe6" stroke="#333" stroke-width="1.5"/>
+        <text x="220" y="200" font-size="12" text-anchor="middle">c</text>
+
+        <!-- Divider -->
+        <line x1="320" y1="30" x2="320" y2="190" stroke="#ccc" stroke-width="1" stroke-dasharray="5"/>
+
+        <!-- Linear IR side -->
+        <text x="500" y="20" font-size="14" font-weight="bold" text-anchor="middle">Linear IR (Three-Address Code)</text>
+
+        <rect x="380" y="40" width="240" height="130" fill="#f6f8fa" stroke="#d0d7de" rx="5"/>
+
+        <text x="400" y="70" font-size="13">t1 = b * c</text>
+        <text x="400" y="100" font-size="13">t2 = a + t1</text>
+        <text x="400" y="130" font-size="13" fill="#666">// result in t2</text>
+
+        <text x="400" y="160" font-size="11" fill="#888">↑ Sequential, explicit temps</text>
+    </svg>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
