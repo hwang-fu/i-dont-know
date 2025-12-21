@@ -152,6 +152,7 @@
         <li><a href="#zod-primitive-types">Primitive Types</a></li>
         <li><a href="#zod-string-validators">String Validators</a></li>
         <li><a href="#zod-number-validators">Number Validators</a></li>
+        <li><a href="#zod-composite-types">Composite Types</a></li>
     </ol>
 </nav>
 <hr/>
@@ -905,7 +906,380 @@ ageSchema.parse(150);   // ❌ Exceeds max
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="zod-composite-types">Composite Types</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Composite types allow you to create schemas for complex data structures.</li>
+        <br/>
+        <li>All below are factory functions on the <code>z</code> namespace.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b><code>z.object()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.object&lt;T extends ZodRawShape&gt;(shape: T): ZodObject&lt;T&gt;</code></li>
+        <br/>
+        <li>Where <code>ZodRawShape = { [key: string]: ZodTypeAny }</code></li>
+        <br/>
+        <li>Creates a schema for an object with specified keys and their types.</li>
+        <br/>
+        <li>By default, unknown keys are stripped from output.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const UserSchema = z.object({
+    name: z.string(),
+    age: z.number(),
+});
+
+UserSchema.parse({ name: "Alice", age: 30 });
+// ✅ Returns { name: "Alice", age: 30 }
+
+UserSchema.parse({ name: "Bob", age: 25, extra: "ignored" });
+// ✅ Returns { name: "Bob", age: 25 } — extra key stripped
+
+UserSchema.parse({ name: "Charlie" });
+// ❌ ZodError: age is required
+
+UserSchema.parse({ name: "Dave", age: "thirty" });
+// ❌ ZodError: age expected number, received string
+
+// Type inference
+type User = z.infer&lt;typeof UserSchema&gt;;
+// { name: string; age: number }
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.array()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.array&lt;T extends ZodTypeAny&gt;(schema: T): ZodArray&lt;T&gt;</code></li>
+        <br/>
+        <li>Creates a schema for an array where each element matches the given schema.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.array(z.number());
+
+schema.parse([1, 2, 3]);       // ✅ Returns [1, 2, 3]
+schema.parse([]);              // ✅ Returns []
+schema.parse([1, "two", 3]);   // ❌ ZodError: Expected number at index 1
+schema.parse("not array");     // ❌ ZodError: Expected array
+
+// Array-specific validators
+z.array(z.string()).min(1);          // At least 1 element
+z.array(z.string()).max(5);          // At most 5 elements
+z.array(z.string()).length(3);       // Exactly 3 elements
+z.array(z.string()).nonempty();      // Alias for .min(1), also narrows type
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.tuple()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b></li>
+    </ul>
+<pre><code class="language-ts line-numbers">z.tuple&lt;T extends [ZodTypeAny, ...ZodTypeAny[]]&gt;(items: T): ZodTuple&lt;T&gt;
+
+// With rest element
+z.tuple&lt;T, R extends ZodTypeAny&gt;(items: T).rest(rest: R): ZodTuple&lt;T, R&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Creates a schema for a fixed-length array with specific types at each index.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.tuple([z.string(), z.number(), z.boolean()]);
+
+schema.parse(["hello", 42, true]);   // ✅ Returns ["hello", 42, true]
+schema.parse(["hi", 1, false]);      // ✅
+schema.parse(["hello", 42]);         // ❌ ZodError: Expected 3 items, received 2
+schema.parse([42, "hello", true]);   // ❌ ZodError: Type mismatch at index 0
+
+// With rest element
+const withRest = z.tuple([z.string(), z.number()]).rest(z.boolean());
+withRest.parse(["a", 1]);                    // ✅
+withRest.parse(["a", 1, true, false, true]); // ✅
+withRest.parse(["a", 1, "nope"]);            // ❌ Rest element must be boolean
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.record()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b></li>
+    </ul>
+<pre><code class="language-ts line-numbers">// Value-only (keys are strings)
+z.record&lt;V extends ZodTypeAny&gt;(valueSchema: V): ZodRecord&lt;ZodString, V&gt;
+
+// Key and value
+z.record&lt;K extends ZodString | ZodEnum | ZodUnion, V extends ZodTypeAny&gt;(
+    keySchema: K,
+    valueSchema: V
+): ZodRecord&lt;K, V&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Creates a schema for an object with arbitrary keys.</li>
+        <br/>
+        <li>Like TypeScript's <code>Record&lt;K, V&gt;</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">// String keys, number values
+const scores = z.record(z.number());
+
+scores.parse({ alice: 100, bob: 85 });  // ✅
+scores.parse({});                        // ✅
+scores.parse({ alice: "high" });         // ❌ Value must be number
+
+// Constrained keys with enum
+const StatusMap = z.record(
+    z.enum(["pending", "active", "done"]),
+    z.boolean()
+);
+
+StatusMap.parse({ pending: true, active: false });  // ✅
+StatusMap.parse({ invalid: true });                 // ❌ Invalid key
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.map()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.map&lt;K extends ZodTypeAny, V extends ZodTypeAny&gt;(keySchema: K, valueSchema: V): ZodMap&lt;K, V&gt;</code></li>
+        <br/>
+        <li>Creates a schema for JavaScript <code>Map</code> objects.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.map(z.string(), z.number());
+
+const validMap = new Map([["a", 1], ["b", 2]]);
+const invalidMap = new Map([["a", "one"]]);
+
+schema.parse(validMap);     // ✅ Returns Map { "a" => 1, "b" => 2 }
+schema.parse(invalidMap);   // ❌ ZodError: Value must be number
+schema.parse({});           // ❌ ZodError: Expected Map
+schema.parse(new Map());    // ✅ Empty map is valid
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.set()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.set&lt;T extends ZodTypeAny&gt;(valueSchema: T): ZodSet&lt;T&gt;</code></li>
+        <br/>
+        <li>Creates a schema for JavaScript <code>Set</code> objects.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.set(z.number());
+
+schema.parse(new Set([1, 2, 3]));      // ✅ Returns Set { 1, 2, 3 }
+schema.parse(new Set());               // ✅ Empty set
+schema.parse(new Set([1, "two"]));     // ❌ ZodError: Expected number
+schema.parse([1, 2, 3]);               // ❌ ZodError: Expected Set
+
+// Size constraints
+z.set(z.string()).min(1);    // At least 1 element
+z.set(z.string()).max(10);   // At most 10 elements
+z.set(z.string()).size(5);   // Exactly 5 elements
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.enum()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.enum&lt;T extends [string, ...string[]]&gt;(values: T): ZodEnum&lt;T&gt;</code></li>
+        <br/>
+        <li>Creates a schema for a set of allowed string literals.</li>
+        <br/>
+        <li>Provides autocomplete and type safety.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const Status = z.enum(["pending", "active", "completed"]);
+
+Status.parse("active");      // ✅ Returns "active"
+Status.parse("pending");     // ✅
+Status.parse("invalid");     // ❌ ZodError: Invalid enum value
+Status.parse(123);           // ❌ ZodError: Expected string
+
+// Access enum values
+Status.options;              // ["pending", "active", "completed"]
+Status.enum.active;          // "active" (for autocomplete)
+
+// Type inference
+type Status = z.infer&lt;typeof Status&gt;;  // "pending" | "active" | "completed"
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.nativeEnum()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.nativeEnum&lt;T extends EnumLike&gt;(enum: T): ZodNativeEnum&lt;T&gt;</code></li>
+        <br/>
+        <li>Where <code>EnumLike = { [key: string]: string | number }</code></li>
+        <br/>
+        <li>Creates a schema from an existing TypeScript <code>enum</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">enum Direction {
+    Up = "UP",
+    Down = "DOWN",
+    Left = "LEFT",
+    Right = "RIGHT",
+}
+
+const schema = z.nativeEnum(Direction);
+
+schema.parse("UP");           // ✅ Returns "UP"
+schema.parse(Direction.Up);   // ✅ Returns "UP"
+schema.parse("DIAGONAL");     // ❌ ZodError: Invalid enum value
+
+// Numeric enums
+enum StatusCode {
+    OK = 200,
+    NotFound = 404,
+}
+
+const codeSchema = z.nativeEnum(StatusCode);
+codeSchema.parse(200);        // ✅
+codeSchema.parse(500);        // ❌
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.union()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.union&lt;T extends [ZodTypeAny, ZodTypeAny, ...ZodTypeAny[]]&gt;(types: T): ZodUnion&lt;T&gt;</code></li>
+        <br/>
+        <li>Creates a schema that accepts any of the given types.</li>
+        <br/>
+        <li>Tries each in order.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.union([z.string(), z.number()]);
+
+schema.parse("hello");   // ✅ Returns "hello"
+schema.parse(42);        // ✅ Returns 42
+schema.parse(true);      // ❌ ZodError: Invalid input
+
+// Shorthand with .or()
+const same = z.string().or(z.number());
+
+// Complex union
+const Response = z.union([
+    z.object({ success: z.literal(true), data: z.string() }),
+    z.object({ success: z.literal(false), error: z.string() }),
+]);
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.discriminatedUnion()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b></li>
+    </ul>
+<pre><code class="language-ts line-numbers">z.discriminatedUnion&lt;
+    Discriminator extends string,
+    Types extends [ZodObject&lt;any&gt;, ...ZodObject&lt;any&gt;[]]
+&gt;(discriminator: Discriminator, types: Types): ZodDiscriminatedUnion&lt;Discriminator, Types&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Optimized union for objects sharing a common discriminator key.</li>
+        <br/>
+        <li>Better performance and error messages than <code>z.union()</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const Result = z.discriminatedUnion("status", [
+    z.object({ status: z.literal("success"), data: z.string() }),
+    z.object({ status: z.literal("error"), message: z.string() }),
+]);
+
+Result.parse({ status: "success", data: "hello" });
+// ✅ Returns { status: "success", data: "hello" }
+
+Result.parse({ status: "error", message: "failed" });
+// ✅
+
+Result.parse({ status: "error", data: "wrong field" });
+// ❌ ZodError: message is required (knows which branch based on "status")
+
+Result.parse({ status: "unknown" });
+// ❌ ZodError: Invalid discriminator value
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.intersection()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.intersection&lt;L extends ZodTypeAny, R extends ZodTypeAny&gt;(left: L, right: R): ZodIntersection&lt;L, R&gt;</code></li>
+        <br/>
+        <li>Combines two schemas — value must satisfy both.</li>
+        <br/>
+        <li>Like TypeScript's <code>A &amp; B</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const A = z.object({ a: z.string() });
+const B = z.object({ b: z.number() });
+
+const schema = z.intersection(A, B);
+
+schema.parse({ a: "hello", b: 42 });  // ✅ Returns { a: "hello", b: 42 }
+schema.parse({ a: "hello" });          // ❌ ZodError: b is required
+schema.parse({ b: 42 });               // ❌ ZodError: a is required
+
+// Shorthand with .and()
+const same = A.and(B);
+</code></pre>
+    <br/>
+    <ul>
+        <li><b>Note:</b> For merging objects, <code>.merge()</code> is often preferred over intersection.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.literal()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.literal&lt;T extends Primitive&gt;(value: T): ZodLiteral&lt;T&gt;</code></li>
+        <br/>
+        <li>Where <code>Primitive = string | number | boolean | bigint | symbol | null | undefined</code></li>
+        <br/>
+        <li>Creates a schema that matches exactly one specific primitive value.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.literal("hello");
+
+schema.parse("hello");   // ✅ Returns "hello"
+schema.parse("Hello");   // ❌ ZodError: Expected "hello"
+schema.parse("bye");     // ❌ ZodError
+
+// Other literal types
+z.literal(42).parse(42);         // ✅
+z.literal(true).parse(true);     // ✅
+z.literal(null).parse(null);     // ✅
+
+// Commonly used in discriminated unions
+const Event = z.discriminatedUnion("type", [
+    z.object({ type: z.literal("click"), x: z.number(), y: z.number() }),
+    z.object({ type: z.literal("keydown"), key: z.string() }),
+]);
+</code></pre>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
