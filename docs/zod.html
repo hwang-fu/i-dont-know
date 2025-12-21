@@ -149,7 +149,7 @@
 <nav id="toc" style="margin-bottom: 2rem;">
     <h2> <img src="resources/zod.png" alt="Logo" class="nav-icon"/></h2>
     <ol style="line-height: 1.8;">
-        <li><a href="#"></a></li>
+        <li><a href="#zod-primitive-types">Primitive Types</a></li>
     </ol>
 </nav>
 <hr/>
@@ -157,18 +157,255 @@
 
 
 <!-- * * * * * * * * * * * * * * -->
-<h3></h3>
+<h3 id="zod-primitive-types">Primitive Types</h3>
 <ol>
-    <li></li>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Zod is a TypeScript-first schema declaration and validation library.</li>
+        <br/>
+        <li>Primitive types are the foundational schemas that validate basic JavaScript values.</li>
+        <br/>
+        <li>All primitive schemas are created via factory functions on the <code>z</code> namespace.</li>
+    </ul>
     <br/>
     <br/>
-    <li></li>
+
+
+    <li><b><code>z.string()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.string(): ZodString</code></li>
+        <br/>
+        <li>Validates that a value is of type <code>string</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string();
+
+schema.parse("hello");      // ✅ Returns "hello"
+schema.parse("");           // ✅ Returns ""
+schema.parse(123);          // ❌ Throws ZodError: Expected string, received number
+schema.parse(null);         // ❌ Throws ZodError: Expected string, received null
+</code></pre>
     <br/>
     <br/>
-    <li></li>
+
+
+    <li><b><code>z.number()</code></b></li>
     <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.number(): ZodNumber</code></li>
+        <br/>
+        <li>Validates that a value is of type <code>number</code>. Rejects <code>NaN</code> by default.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.number();
+
+schema.parse(42);           // ✅ Returns 42
+schema.parse(3.14);         // ✅ Returns 3.14
+schema.parse(-100);         // ✅ Returns -100
+schema.parse(Infinity);     // ✅ Returns Infinity
+schema.parse("42");         // ❌ Throws ZodError: Expected number, received string
+schema.parse(NaN);          // ❌ Throws ZodError: Expected number, received nan
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.boolean()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.boolean(): ZodBoolean</code></li>
+        <br/>
+        <li>Validates that a value is <code>true</code> or <code>false</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.boolean();
+
+schema.parse(true);         // ✅ Returns true
+schema.parse(false);        // ✅ Returns false
+schema.parse(1);            // ❌ Throws ZodError: Expected boolean, received number
+schema.parse("true");       // ❌ Throws ZodError: Expected boolean, received string
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.bigint()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.bigint(): ZodBigInt</code></li>
+        <br/>
+        <li>Validates that a value is a JavaScript <code>BigInt</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.bigint();
+
+schema.parse(10n);          // ✅ Returns 10n
+schema.parse(BigInt(999));  // ✅ Returns 999n
+schema.parse(10);           // ❌ Throws ZodError: Expected bigint, received number
+schema.parse("10");         // ❌ Throws ZodError: Expected bigint, received string
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.date()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.date(): ZodDate</code></li>
+        <br/>
+        <li>Validates that a value is a JavaScript <code>Date</code> object. Rejects invalid dates.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.date();
+
+schema.parse(new Date());                    // ✅ Returns Date object
+schema.parse(new Date("2024-01-15"));        // ✅ Returns Date object
+schema.parse(new Date("invalid"));           // ❌ Throws ZodError: Invalid date
+schema.parse("2024-01-15");                  // ❌ Throws ZodError: Expected date, received string
+schema.parse(1705276800000);                 // ❌ Throws ZodError: Expected date, received number
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.undefined()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.undefined(): ZodUndefined</code></li>
+        <br/>
+        <li>Validates that a value is exactly <code>undefined</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.undefined();
+
+schema.parse(undefined);    // ✅ Returns undefined
+schema.parse(void 0);       // ✅ Returns undefined
+schema.parse(null);         // ❌ Throws ZodError: Expected undefined, received null
+schema.parse("");           // ❌ Throws ZodError: Expected undefined, received string
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.null()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.null(): ZodNull</code></li>
+        <br/>
+        <li>Validates that a value is exactly <code>null</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.null();
+
+schema.parse(null);         // ✅ Returns null
+schema.parse(undefined);    // ❌ Throws ZodError: Expected null, received undefined
+schema.parse(0);            // ❌ Throws ZodError: Expected null, received number
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.any()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.any(): ZodAny</code></li>
+        <br/>
+        <li>Accepts any value. No validation is performed.</li>
+        <br/>
+        <li>The inferred TypeScript type is <code>any</code>.</li>
+        <br/>
+        <li><b>Note:</b> Use sparingly — defeats the purpose of type safety.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.any();
+
+schema.parse("hello");      // ✅ Returns "hello"
+schema.parse(123);          // ✅ Returns 123
+schema.parse(null);         // ✅ Returns null
+schema.parse(undefined);    // ✅ Returns undefined
+schema.parse({ a: 1 });     // ✅ Returns { a: 1 }
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.unknown()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.unknown(): ZodUnknown</code></li>
+        <br/>
+        <li>Accepts any value (like <code>z.any()</code>), but infers TypeScript type as <code>unknown</code>.</li>
+        <br/>
+        <li>Forces you to narrow the type before use.</li>
+        <br/>
+        <li><b>Prefer <code>z.unknown()</code> over <code>z.any()</code></b> for type-safe handling of arbitrary data.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.unknown();
+
+schema.parse("hello");      // ✅ Returns "hello"
+schema.parse(123);          // ✅ Returns 123
+schema.parse(null);         // ✅ Returns null
+
+// TypeScript behavior:
+const result = schema.parse(someData);
+result.toUpperCase();       // ❌ TypeScript error: 'result' is of type 'unknown'
+
+// Must narrow first:
+if (typeof result === "string") {
+    result.toUpperCase();   // ✅ OK
+}
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.never()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.never(): ZodNever</code></li>
+        <br/>
+        <li>Always fails validation.</li>
+        <br/>
+        <li>Useful for exhaustive checks or marking impossible branches.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.never();
+
+schema.parse("anything");   // ❌ Throws ZodError
+schema.parse(undefined);    // ❌ Throws ZodError
+schema.parse(null);         // ❌ Throws ZodError
+
+// Practical use: exhaustive switch
+type Status = "active" | "inactive";
+function handleStatus(status: Status) {
+    switch (status) {
+        case "active": return "on";
+        case "inactive": return "off";
+        default:
+            z.never().parse(status); // Compile-time + runtime check for unhandled cases
+    }
+}
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.void()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.void(): ZodVoid</code></li>
+        <br/>
+        <li>Validates that a value is <code>undefined</code>.</li>
+        <br/>
+        <li>Semantically used for functions that return nothing.</li>
+        <br/>
+        <li><b>Note:</b> Functionally identical to <code>z.undefined()</code>, but conveys intent for return types.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.void();
+
+schema.parse(undefined);    // ✅ Returns undefined
+schema.parse(null);         // ❌ Throws ZodError: Expected void, received null
+schema.parse("hello");      // ❌ Throws ZodError: Expected void, received string
+
+// Typical use: function return type
+const fnSchema = z.function().args(z.string()).returns(z.void());
+</code></pre>
+
+    <br/><br/>
 </ol>
-<br/>
 <!-- * * * * * * * * * * * * * * -->
 
 
