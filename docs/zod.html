@@ -154,6 +154,7 @@
         <li><a href="#zod-number-validators">Number Validators</a></li>
         <li><a href="#zod-composite-types">Composite Types</a></li>
         <li><a href="#zod-modifiers">Modifiers</a></li>
+        <li><a href="#zod-object-utilities">Object Utilities</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1508,7 +1509,280 @@ data.tags.push("c");    // ❌ TypeScript error: Property 'push' does not exist
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="zod-object-utilities">Object Utilities</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>All methods below are called on a <code>ZodObject</code> instance.</li>
+        <br/>
+        <li>They allow you to derive new schemas from existing object schemas.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b><code>.extend()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodObject&lt;T&gt;.extend&lt;U extends ZodRawShape&gt;(shape: U): ZodObject&lt;T &amp; U&gt;</code></li>
+        <br/>
+        <li>Adds new fields to an object schema.</li>
+        <br/>
+        <li>Overwrites existing keys if duplicated.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const Base = z.object({ name: z.string() });
+const Extended = Base.extend({ age: z.number() });
+
+Extended.parse({ name: "Alice", age: 30 });  // ✅
+Extended.parse({ name: "Bob" });              // ❌ age required
+
+// Overwriting keys
+const Overwritten = Base.extend({ name: z.number() });
+Overwritten.parse({ name: 123 });  // ✅ name is now number
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.merge()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodObject&lt;T&gt;.merge&lt;U extends ZodObject&gt;(other: U): ZodObject&lt;T &amp; U["shape"]&gt;</code></li>
+        <br/>
+        <li>Merges two object schemas.</li>
+        <br/>
+        <li>Similar to <code>.extend()</code>, but takes a <code>ZodObject</code> instead of a raw shape.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const A = z.object({ a: z.string() });
+const B = z.object({ b: z.number() });
+const Merged = A.merge(B);
+
+Merged.parse({ a: "hello", b: 42 });  // ✅
+Merged.parse({ a: "hello" });          // ❌ b required
+
+// Type: { a: string; b: number }
+</code></pre>
+    <br/>
+    <ul>
+        <li><b>Note:</b> <code>.merge()</code> doesn't preserve modifiers like <code>.strict()</code>. Use <code>.extend()</code> if you need that.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.pick()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodObject&lt;T&gt;.pick&lt;K extends keyof T&gt;(keys: { [k in K]: true }): ZodObject&lt;Pick&lt;T, K&gt;&gt;</code></li>
+        <br/>
+        <li>Creates a new schema with only the specified keys.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const User = z.object({
+    id: z.number(),
+    name: z.string(),
+    email: z.string(),
+    password: z.string(),
+});
+
+const PublicUser = User.pick({ name: true, email: true });
+
+PublicUser.parse({ name: "Alice", email: "a@b.com" });  // ✅
+PublicUser.parse({ name: "Alice", email: "a@b.com", password: "x" });
+// ✅ Returns { name, email } — extra keys stripped
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.omit()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodObject&lt;T&gt;.omit&lt;K extends keyof T&gt;(keys: { [k in K]: true }): ZodObject&lt;Omit&lt;T, K&gt;&gt;</code></li>
+        <br/>
+        <li>Creates a new schema without the specified keys.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const User = z.object({
+    id: z.number(),
+    name: z.string(),
+    password: z.string(),
+});
+
+const SafeUser = User.omit({ password: true });
+
+SafeUser.parse({ id: 1, name: "Alice" });  // ✅
+// Type: { id: number; name: string }
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.partial()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b></li>
+    </ul>
+<pre><code class="language-ts line-numbers">ZodObject&lt;T&gt;.partial(): ZodObject&lt;{ [K in keyof T]: ZodOptional&lt;T[K]&gt; }&gt;
+ZodObject&lt;T&gt;.partial&lt;K extends keyof T&gt;(keys: { [k in K]: true }): ZodObject&lt;...&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Makes all (or specified) keys optional.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const User = z.object({
+    name: z.string(),
+    age: z.number(),
+});
+
+const PartialUser = User.partial();
+PartialUser.parse({});                    // ✅
+PartialUser.parse({ name: "Alice" });     // ✅
+PartialUser.parse({ age: 30 });           // ✅
+
+// Partial specific keys
+const PartialAge = User.partial({ age: true });
+PartialAge.parse({ name: "Alice" });      // ✅ age optional
+PartialAge.parse({});                     // ❌ name required
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.deepPartial()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodObject&lt;T&gt;.deepPartial(): ZodObject&lt;DeepPartial&lt;T&gt;&gt;</code></li>
+        <br/>
+        <li>Recursively makes all nested object keys optional.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const Schema = z.object({
+    user: z.object({
+        name: z.string(),
+        address: z.object({
+            city: z.string(),
+        }),
+    }),
+});
+
+const Deep = Schema.deepPartial();
+
+Deep.parse({});                          // ✅
+Deep.parse({ user: {} });                // ✅
+Deep.parse({ user: { address: {} } });   // ✅
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.required()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b></li>
+    </ul>
+<pre><code class="language-ts line-numbers">ZodObject&lt;T&gt;.required(): ZodObject&lt;{ [K in keyof T]: ZodNonOptional&lt;T[K]&gt; }&gt;
+ZodObject&lt;T&gt;.required&lt;K extends keyof T&gt;(keys: { [k in K]: true }): ZodObject&lt;...&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Makes all (or specified) optional keys required.</li>
+        <br/>
+        <li>Opposite of <code>.partial()</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const Base = z.object({
+    name: z.string().optional(),
+    age: z.number().optional(),
+});
+
+const Required = Base.required();
+Required.parse({ name: "Alice", age: 30 });  // ✅
+Required.parse({ name: "Alice" });            // ❌ age required
+
+// Specific keys
+const NameRequired = Base.required({ name: true });
+NameRequired.parse({ name: "Alice" });        // ✅ age still optional
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.passthrough()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodObject&lt;T&gt;.passthrough(): ZodObject&lt;T, "passthrough"&gt;</code></li>
+        <br/>
+        <li>Preserves unknown keys in output (default behavior strips them).</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.object({ name: z.string() }).passthrough();
+
+schema.parse({ name: "Alice", extra: "kept" });
+// ✅ Returns { name: "Alice", extra: "kept" }
+
+// Compare to default
+z.object({ name: z.string() }).parse({ name: "Alice", extra: "stripped" });
+// ✅ Returns { name: "Alice" } — extra removed
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.strict()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodObject&lt;T&gt;.strict(): ZodObject&lt;T, "strict"&gt;</code></li>
+        <br/>
+        <li>Fails validation if unknown keys are present.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.object({ name: z.string() }).strict();
+
+schema.parse({ name: "Alice" });              // ✅
+schema.parse({ name: "Alice", extra: 1 });    // ❌ ZodError: Unrecognized key "extra"
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.strip()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodObject&lt;T&gt;.strip(): ZodObject&lt;T, "strip"&gt;</code></li>
+        <br/>
+        <li>Removes unknown keys from output.</li>
+        <br/>
+        <li>This is the default behavior, but useful to reset after <code>.passthrough()</code> or <code>.strict()</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const passthrough = z.object({ a: z.string() }).passthrough();
+const stripped = passthrough.strip();
+
+stripped.parse({ a: "hi", b: "removed" });  // ✅ { a: "hi" }
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.keyof()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodObject&lt;T&gt;.keyof(): ZodEnum&lt;[keyof T, ...Array&lt;keyof T&gt;]&gt;</code></li>
+        <br/>
+        <li>Returns a <code>ZodEnum</code> of the object's keys.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const User = z.object({
+    id: z.number(),
+    name: z.string(),
+    email: z.string(),
+});
+
+const UserKey = User.keyof();
+
+UserKey.parse("id");       // ✅
+UserKey.parse("name");     // ✅
+UserKey.parse("password"); // ❌ Invalid enum value
+
+// Type: "id" | "name" | "email"
+</code></pre>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
