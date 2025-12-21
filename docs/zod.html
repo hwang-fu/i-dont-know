@@ -157,7 +157,7 @@
         <li><a href="#zod-object-utilities">Object Utilities</a></li>
         <li><a href="#zod-transformations-refinements">Transformations Refinements</a></li>
         <li><a href="#zod-parsing">Parsing</a></li>
-        <li><a href="#zod-"></a></li>
+        <li><a href="#zod-type-inference">Type Inference</a></li>
     </ol>
 </nav>
 <hr/>
@@ -2243,7 +2243,164 @@ if (result.success) {
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="zod-type-inference">Type Inference</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>These are TypeScript utility types, not runtime methods.</li>
+        <br/>
+        <li>They extract TypeScript types from Zod schemas.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b><code>z.infer&lt;&gt;</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>type z.infer&lt;T extends ZodType&gt; = T["_output"]</code></li>
+        <br/>
+        <li>Extracts the output type from a schema.</li>
+        <br/>
+        <li>The most commonly used inference utility.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const UserSchema = z.object({
+    name: z.string(),
+    age: z.number(),
+});
+
+type User = z.infer&lt;typeof UserSchema&gt;;
+// { name: string; age: number }
+
+// With transforms — infers OUTPUT type
+const schema = z.string().transform((s) =&gt; s.length);
+type Result = z.infer&lt;typeof schema&gt;;  // number
+
+// With optionals
+const Config = z.object({
+    port: z.number().default(3000),
+    host: z.string().optional(),
+});
+type Config = z.infer&lt;typeof Config&gt;;
+// { port: number; host?: string | undefined }
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.input&lt;&gt;</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>type z.input&lt;T extends ZodType&gt; = T["_input"]</code></li>
+        <br/>
+        <li>Extracts the <b>input</b> type — what the schema accepts before transforms/defaults.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().transform((s) =&gt; s.length);
+
+type Input = z.input&lt;typeof schema&gt;;   // string
+type Output = z.output&lt;typeof schema&gt;; // number
+
+// With defaults
+const Config = z.object({
+    port: z.number().default(3000),
+});
+
+type ConfigInput = z.input&lt;typeof Config&gt;;
+// { port?: number | undefined }  — port is optional in input
+
+type ConfigOutput = z.infer&lt;typeof Config&gt;;
+// { port: number }  — port is guaranteed in output
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.output&lt;&gt;</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>type z.output&lt;T extends ZodType&gt; = T["_output"]</code></li>
+        <br/>
+        <li>Extracts the <b>output</b> type.</li>
+        <br/>
+        <li>Identical to <code>z.infer&lt;&gt;</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().transform((s) =&gt; parseInt(s, 10));
+
+type Output = z.output&lt;typeof schema&gt;;  // number
+
+// z.infer and z.output are aliases
+type A = z.infer&lt;typeof schema&gt;;   // number
+type B = z.output&lt;typeof schema&gt;;  // number — same
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>When Input ≠ Output</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Schema</th>
+                <th><code>z.input&lt;&gt;</code></th>
+                <th><code>z.output&lt;&gt;</code> / <code>z.infer&lt;&gt;</code></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>z.string()</code></td>
+                <td><code>string</code></td>
+                <td><code>string</code></td>
+            </tr>
+            <tr>
+                <td><code>z.string().transform(s =&gt; s.length)</code></td>
+                <td><code>string</code></td>
+                <td><code>number</code></td>
+            </tr>
+            <tr>
+                <td><code>z.number().default(0)</code></td>
+                <td><code>number | undefined</code></td>
+                <td><code>number</code></td>
+            </tr>
+            <tr>
+                <td><code>z.string().optional()</code></td>
+                <td><code>string | undefined</code></td>
+                <td><code>string | undefined</code></td>
+            </tr>
+            <tr>
+                <td><code>z.coerce.number()</code></td>
+                <td><code>unknown</code></td>
+                <td><code>number</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <br/>
+
+
+    <li><b>How Type Inference Works</b></li>
+    <br/>
+    <ul>
+        <li>Zod uses <b>phantom types</b> to store type information:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">// Simplified Zod structure
+class ZodType&lt;Output, Input = Output&gt; {
+    _output!: Output;  // Phantom property (never assigned at runtime)
+    _input!: Input;
+}
+
+// Type aliases that extract phantom types
+type infer&lt;T extends ZodType&lt;any, any&gt;&gt; = T["_output"];
+type input&lt;T extends ZodType&lt;any, any&gt;&gt; = T["_input"];
+</code></pre>
+    <br/>
+    <ul>
+        <li>The <code>!</code> (definite assignment assertion) silences TypeScript's "never assigned" error for phantom properties.</li>
+    </ul>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
