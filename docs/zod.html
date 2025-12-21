@@ -150,6 +150,7 @@
     <h2> <img src="resources/zod.png" alt="Logo" class="nav-icon"/></h2>
     <ol style="line-height: 1.8;">
         <li><a href="#zod-primitive-types">Primitive Types</a></li>
+        <li><a href="#zod-string-validators">String Validators</a></li>
     </ol>
 </nav>
 <hr/>
@@ -413,7 +414,261 @@ const fnSchema = z.function().args(z.string()).returns(z.void());
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="zod-string-validators">String Validators</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>All methods below are chained on a <code>ZodString</code> instance (returned by <code>z.string()</code>).</li>
+        <br/>
+        <li>Some are <u>validators</u> (check conditions), others are <u>transformers</u> (modify output).</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b><code>.min()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.min(length: number, message?: string): ZodString</code></li>
+        <br/>
+        <li>Requires string to have at least <code>length</code> characters.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().min(3);
+
+schema.parse("hello");   // ✅ Returns "hello"
+schema.parse("abc");     // ✅ Returns "abc"
+schema.parse("ab");      // ❌ ZodError: String must contain at least 3 character(s)
+schema.parse("");        // ❌ ZodError
+
+// Custom message
+z.string().min(3, "Too short").parse("ab");  // ❌ ZodError: Too short
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.max()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.max(length: number, message?: string): ZodString</code></li>
+        <br/>
+        <li>Requires string to have at most <code>length</code> characters.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().max(5);
+
+schema.parse("hi");      // ✅ Returns "hi"
+schema.parse("hello");   // ✅ Returns "hello"
+schema.parse("hello!");  // ❌ ZodError: String must contain at most 5 character(s)
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.length()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.length(length: number, message?: string): ZodString</code></li>
+        <br/>
+        <li>Requires string to have exactly <code>length</code> characters.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().length(4);
+
+schema.parse("abcd");    // ✅ Returns "abcd"
+schema.parse("abc");     // ❌ ZodError: String must contain exactly 4 character(s)
+schema.parse("abcde");   // ❌ ZodError
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.email()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.email(message?: string): ZodString</code></li>
+        <br/>
+        <li>Validates that string is a valid email format.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().email();
+
+schema.parse("user@example.com");    // ✅ Returns "user@example.com"
+schema.parse("test@sub.domain.org"); // ✅ Returns "test@sub.domain.org"
+schema.parse("invalid");             // ❌ ZodError: Invalid email
+schema.parse("user@");               // ❌ ZodError: Invalid email
+schema.parse("@example.com");        // ❌ ZodError: Invalid email
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.url()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.url(message?: string): ZodString</code></li>
+        <br/>
+        <li>Validates that string is a valid URL.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().url();
+
+schema.parse("https://example.com");       // ✅
+schema.parse("http://localhost:3000");     // ✅
+schema.parse("ftp://files.example.com");   // ✅
+schema.parse("example.com");               // ❌ ZodError: Invalid url
+schema.parse("not a url");                 // ❌ ZodError: Invalid url
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.uuid()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.uuid(message?: string): ZodString</code></li>
+        <br/>
+        <li>Validates that string is a valid UUID (v1–v5 format).</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().uuid();
+
+schema.parse("550e8400-e29b-41d4-a716-446655440000");  // ✅
+schema.parse("123e4567-e89b-12d3-a456-426614174000");  // ✅
+schema.parse("not-a-uuid");                            // ❌ ZodError: Invalid uuid
+schema.parse("550e8400-e29b-41d4-a716");               // ❌ ZodError: Invalid uuid
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.regex()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.regex(regex: RegExp, message?: string): ZodString</code></li>
+        <br/>
+        <li>Validates that string matches the given regular expression.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().regex(/^[A-Z]{3}-\d{3}$/);
+
+schema.parse("ABC-123");   // ✅ Returns "ABC-123"
+schema.parse("XYZ-999");   // ✅ Returns "XYZ-999"
+schema.parse("abc-123");   // ❌ ZodError: Invalid
+schema.parse("ABCD-12");   // ❌ ZodError: Invalid
+
+// Custom message
+z.string().regex(/^\d+$/, "Numbers only").parse("abc");  // ❌ ZodError: Numbers only
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.startsWith()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.startsWith(prefix: string, message?: string): ZodString</code></li>
+        <br/>
+        <li>Requires string to start with the given prefix.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().startsWith("https://");
+
+schema.parse("https://example.com");  // ✅
+schema.parse("https://");             // ✅
+schema.parse("http://example.com");   // ❌ ZodError: Invalid input: must start with "https://"
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.endsWith()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.endsWith(suffix: string, message?: string): ZodString</code></li>
+        <br/>
+        <li>Requires string to end with the given suffix.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().endsWith(".json");
+
+schema.parse("config.json");    // ✅
+schema.parse("data.json");      // ✅
+schema.parse("config.yaml");    // ❌ ZodError: Invalid input: must end with ".json"
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.trim()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.trim(): ZodString</code></li>
+        <br/>
+        <li><b>Transforms</b> the string by removing leading and trailing whitespace.</li>
+        <br/>
+        <li>This is a transformation, not a validation.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().trim();
+
+schema.parse("  hello  ");   // ✅ Returns "hello"
+schema.parse("\n\tworld\n"); // ✅ Returns "world"
+schema.parse("no spaces");   // ✅ Returns "no spaces"
+
+// Often combined with .min() to reject empty/whitespace-only
+const nonEmpty = z.string().trim().min(1);
+nonEmpty.parse("   ");       // ❌ ZodError: String must contain at least 1 character(s)
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.toLowerCase()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.toLowerCase(): ZodString</code></li>
+        <br/>
+        <li><b>Transforms</b> the string to lowercase.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().toLowerCase();
+
+schema.parse("HELLO");       // ✅ Returns "hello"
+schema.parse("HeLLo WoRLD"); // ✅ Returns "hello world"
+schema.parse("already");     // ✅ Returns "already"
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.toUpperCase()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodString.toUpperCase(): ZodString</code></li>
+        <br/>
+        <li><b>Transforms</b> the string to uppercase.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().toUpperCase();
+
+schema.parse("hello");       // ✅ Returns "HELLO"
+schema.parse("HeLLo WoRLD"); // ✅ Returns "HELLO WORLD"
+schema.parse("ALREADY");     // ✅ Returns "ALREADY"
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Chaining Example</b></li>
+    <br/>
+    <ul>
+        <li>String validators can be chained:</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const usernameSchema = z.string()
+    .trim()
+    .toLowerCase()
+    .min(3)
+    .max(20)
+    .regex(/^[a-z0-9_]+$/);
+
+usernameSchema.parse("  John_Doe123  ");  // ✅ Returns "john_doe123"
+usernameSchema.parse("  AB  ");           // ❌ ZodError: min 3
+usernameSchema.parse("invalid-name!");    // ❌ ZodError: regex fails
+</code></pre>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
