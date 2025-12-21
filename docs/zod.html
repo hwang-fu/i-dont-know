@@ -156,6 +156,7 @@
         <li><a href="#zod-modifiers">Modifiers</a></li>
         <li><a href="#zod-object-utilities">Object Utilities</a></li>
         <li><a href="#zod-transformations-refinements">Transformations Refinements</a></li>
+        <li><a href="#zod-parsing">Parsing</a></li>
         <li><a href="#zod-"></a></li>
     </ol>
 </nav>
@@ -2062,7 +2063,179 @@ dateSchema.parse("2019-01-01");  // ❌ Too early
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="zod-parsing">Parsing</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>All methods below can be called on any <code>ZodType</code> instance.</li>
+        <br/>
+        <li>These methods validate input and return typed output.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b><code>.parse()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodType&lt;T&gt;.parse(data: unknown): T</code></li>
+        <br/>
+        <li>Validates input and returns typed output.</li>
+        <br/>
+        <li>Throws <code>ZodError</code> on failure.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string();
+
+schema.parse("hello");   // ✅ Returns "hello"
+schema.parse(123);       // ❌ Throws ZodError
+
+// Catching errors
+try {
+    schema.parse(123);
+} catch (e) {
+    if (e instanceof z.ZodError) {
+        console.log(e.errors);  // [{ code, message, path, ... }]
+    }
+}
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.safeParse()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b></li>
+    </ul>
+<pre><code class="language-ts line-numbers">ZodType&lt;T&gt;.safeParse(data: unknown):
+    | { success: true; data: T }
+    | { success: false; error: ZodError }
+</code></pre>
+    <br/>
+    <ul>
+        <li>Validates without throwing.</li>
+        <br/>
+        <li>Returns a discriminated union result.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.number();
+
+const good = schema.safeParse(42);
+// { success: true, data: 42 }
+
+const bad = schema.safeParse("oops");
+// { success: false, error: ZodError }
+
+// Usage pattern
+const result = schema.safeParse(input);
+if (result.success) {
+    console.log(result.data);  // Typed as number
+} else {
+    console.log(result.error.errors);
+}
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.parseAsync()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodType&lt;T&gt;.parseAsync(data: unknown): Promise&lt;T&gt;</code></li>
+        <br/>
+        <li>Async version of <code>.parse()</code>.</li>
+        <br/>
+        <li>Required when schema uses async refinements or transforms.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().refine(async (val) =&gt; {
+    const exists = await checkDatabase(val);
+    return !exists;
+}, "Already taken");
+
+await schema.parseAsync("newuser");  // ✅ Returns "newuser"
+await schema.parseAsync("existing"); // ❌ Throws ZodError
+
+// Note: calling .parse() on async schema throws
+schema.parse("test");  // ❌ Throws: "Async refinement encountered"
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.safeParseAsync()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b></li>
+    </ul>
+<pre><code class="language-ts line-numbers">ZodType&lt;T&gt;.safeParseAsync(data: unknown): Promise&lt;
+    | { success: true; data: T }
+    | { success: false; error: ZodError }
+&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Async version of <code>.safeParse()</code>.</li>
+        <br/>
+        <li>Non-throwing async validation.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().transform(async (val) =&gt; {
+    const user = await fetchUser(val);
+    return user;
+});
+
+const result = await schema.safeParseAsync("user123");
+
+if (result.success) {
+    console.log(result.data);  // User object
+} else {
+    console.log(result.error);
+}
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>When to Use Each</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Throws</th>
+                <th>Async</th>
+                <th>Use case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>.parse()</code></td>
+                <td>Yes</td>
+                <td>No</td>
+                <td>Simple validation, let errors propagate</td>
+            </tr>
+            <tr>
+                <td><code>.safeParse()</code></td>
+                <td>No</td>
+                <td>No</td>
+                <td>Handle errors locally, form validation</td>
+            </tr>
+            <tr>
+                <td><code>.parseAsync()</code></td>
+                <td>Yes</td>
+                <td>Yes</td>
+                <td>Async refinements/transforms</td>
+            </tr>
+            <tr>
+                <td><code>.safeParseAsync()</code></td>
+                <td>No</td>
+                <td>Yes</td>
+                <td>Async + local error handling</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
