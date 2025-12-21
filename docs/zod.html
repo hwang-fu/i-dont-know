@@ -153,6 +153,7 @@
         <li><a href="#zod-string-validators">String Validators</a></li>
         <li><a href="#zod-number-validators">Number Validators</a></li>
         <li><a href="#zod-composite-types">Composite Types</a></li>
+        <li><a href="#zod-modifiers">Modifiers</a></li>
     </ol>
 </nav>
 <hr/>
@@ -1287,7 +1288,219 @@ const Event = z.discriminatedUnion("type", [
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="zod-modifiers">Modifiers</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>Modifiers change how a schema handles optional, nullable, or default values.</li>
+        <br/>
+        <li>All methods below can be called on any <code>ZodType</code> instance.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b><code>.optional()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodType&lt;T&gt;.optional(): ZodOptional&lt;ZodType&lt;T&gt;&gt;</code></li>
+        <br/>
+        <li>Resulting type: <code>T | undefined</code></li>
+        <br/>
+        <li>Makes the value optional — <code>undefined</code> is accepted.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().optional();
+
+schema.parse("hello");    // ✅ Returns "hello"
+schema.parse(undefined);  // ✅ Returns undefined
+schema.parse(null);       // ❌ ZodError: Expected string, received null
+
+// In objects
+const User = z.object({
+    name: z.string(),
+    bio: z.string().optional(),
+});
+
+User.parse({ name: "Alice" });                  // ✅ { name: "Alice" }
+User.parse({ name: "Bob", bio: "Developer" }); // ✅ { name: "Bob", bio: "Developer" }
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.nullable()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodType&lt;T&gt;.nullable(): ZodNullable&lt;ZodType&lt;T&gt;&gt;</code></li>
+        <br/>
+        <li>Resulting type: <code>T | null</code></li>
+        <br/>
+        <li>Allows <code>null</code> as a valid value.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().nullable();
+
+schema.parse("hello");    // ✅ Returns "hello"
+schema.parse(null);       // ✅ Returns null
+schema.parse(undefined);  // ❌ ZodError: Expected string, received undefined
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.nullish()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodType&lt;T&gt;.nullish(): ZodOptional&lt;ZodNullable&lt;ZodType&lt;T&gt;&gt;&gt;</code></li>
+        <br/>
+        <li>Resulting type: <code>T | null | undefined</code></li>
+        <br/>
+        <li>Allows both <code>null</code> and <code>undefined</code>.</li>
+        <br/>
+        <li>Equivalent to <code>.nullable().optional()</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().nullish();
+
+schema.parse("hello");    // ✅ Returns "hello"
+schema.parse(null);       // ✅ Returns null
+schema.parse(undefined);  // ✅ Returns undefined
+schema.parse(123);        // ❌ ZodError
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.default()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b></li>
+    </ul>
+<pre><code class="language-ts line-numbers">ZodType&lt;T&gt;.default(defaultValue: T): ZodDefault&lt;ZodType&lt;T&gt;&gt;
+ZodType&lt;T&gt;.default(defaultFn: () =&gt; T): ZodDefault&lt;ZodType&lt;T&gt;&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Provides a default value when input is <code>undefined</code>.</li>
+        <br/>
+        <li>Accepts a value or a function (for mutable/dynamic defaults).</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().default("anonymous");
+
+schema.parse("Alice");     // ✅ Returns "Alice"
+schema.parse(undefined);   // ✅ Returns "anonymous"
+schema.parse(null);        // ❌ ZodError (null ≠ undefined)
+
+// Function form (avoids shared mutable reference)
+const withArray = z.array(z.string()).default(() => []);
+withArray.parse(undefined);  // ✅ Returns [] (new array each time)
+
+// In objects — missing keys are undefined
+const Config = z.object({
+    port: z.number().default(3000),
+    host: z.string().default("localhost"),
+});
+
+Config.parse({});  // ✅ { port: 3000, host: "localhost" }
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.catch()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b></li>
+    </ul>
+<pre><code class="language-ts line-numbers">ZodType&lt;T&gt;.catch(catchValue: T): ZodCatch&lt;ZodType&lt;T&gt;&gt;
+ZodType&lt;T&gt;.catch(catchFn: (ctx: { error: ZodError; input: unknown }) =&gt; T): ZodCatch&lt;ZodType&lt;T&gt;&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Returns a fallback value when validation fails (instead of throwing).</li>
+        <br/>
+        <li>Unlike <code>.default()</code>, this catches <b>any</b> invalid input, not just <code>undefined</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().catch("fallback");
+
+schema.parse("hello");     // ✅ Returns "hello"
+schema.parse(undefined);   // ✅ Returns "fallback"
+schema.parse(null);        // ✅ Returns "fallback"
+schema.parse(123);         // ✅ Returns "fallback"
+
+// Function form with context
+const smart = z.number().catch((ctx) => {
+    console.log("Invalid input:", ctx.input);
+    return 0;
+});
+smart.parse("bad");  // ✅ Returns 0, logs "Invalid input: bad"
+</code></pre>
+    <br/>
+    <ul>
+        <li><b>Comparison:</b></li>
+    </ul>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Input</th>
+                <th><code>.default("x")</code></th>
+                <th><code>.catch("x")</code></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>undefined</code></td>
+                <td><code>"x"</code></td>
+                <td><code>"x"</code></td>
+            </tr>
+            <tr>
+                <td><code>null</code></td>
+                <td>❌ throws</td>
+                <td><code>"x"</code></td>
+            </tr>
+            <tr>
+                <td><code>123</code></td>
+                <td>❌ throws</td>
+                <td><code>"x"</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.readonly()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodType&lt;T&gt;.readonly(): ZodReadonly&lt;ZodType&lt;T&gt;&gt;</code></li>
+        <br/>
+        <li>Resulting type: <code>Readonly&lt;T&gt;</code> (for objects/arrays)</li>
+        <br/>
+        <li>Marks the output type as <code>readonly</code> in TypeScript.</li>
+        <br/>
+        <li>No runtime effect — purely for type inference.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.object({
+    name: z.string(),
+    tags: z.array(z.string()),
+}).readonly();
+
+type Result = z.infer&lt;typeof schema&gt;;
+// {
+//   readonly name: string;
+//   readonly tags: readonly string[];
+// }
+
+const data = schema.parse({ name: "Test", tags: ["a", "b"] });
+data.name = "New";      // ❌ TypeScript error: Cannot assign to 'name'
+data.tags.push("c");    // ❌ TypeScript error: Property 'push' does not exist
+
+// Runtime: no enforcement
+(data as any).name = "Mutated";  // Works at runtime
+</code></pre>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
