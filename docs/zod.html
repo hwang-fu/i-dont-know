@@ -155,6 +155,8 @@
         <li><a href="#zod-composite-types">Composite Types</a></li>
         <li><a href="#zod-modifiers">Modifiers</a></li>
         <li><a href="#zod-object-utilities">Object Utilities</a></li>
+        <li><a href="#zod-transformations-refinements">Transformations Refinements</a></li>
+        <li><a href="#zod-"></a></li>
     </ol>
 </nav>
 <hr/>
@@ -1790,7 +1792,269 @@ UserKey.parse("password"); // ❌ Invalid enum value
 
 
 <!-- * * * * * * * * * * * * * * -->
+<h3 id="zod-transformations-refinements">Transformations &amp; Refinements</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>All methods below can be called on any <code>ZodType</code> instance.</li>
+        <br/>
+        <li>Refinements add custom validation logic.</li>
+        <br/>
+        <li>Transformations change the output value or type.</li>
+    </ul>
+    <br/>
+    <br/>
 
+
+    <li><b><code>.transform()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodType&lt;T&gt;.transform&lt;U&gt;(fn: (value: T, ctx: RefinementCtx) =&gt; U): ZodEffects&lt;ZodType&lt;T&gt;, U&gt;</code></li>
+        <br/>
+        <li>Transforms the validated value into a different value/type.</li>
+        <br/>
+        <li>Runs after validation passes.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().transform((val) =&gt; val.length);
+
+schema.parse("hello");   // ✅ Returns 5 (number)
+schema.parse("");        // ✅ Returns 0
+
+// String to Date
+const dateSchema = z.string().transform((val) =&gt; new Date(val));
+dateSchema.parse("2024-01-15");  // ✅ Returns Date object
+
+// Type changes
+type Input = z.input&lt;typeof schema&gt;;   // string
+type Output = z.output&lt;typeof schema&gt;; // number
+
+// Chained transforms
+const chain = z.string()
+    .transform((s) =&gt; s.trim())
+    .transform((s) =&gt; s.toUpperCase())
+    .transform((s) =&gt; s.split(""));
+
+chain.parse("  hi  ");  // ✅ Returns ["H", "I"]
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.refine()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b></li>
+    </ul>
+<pre><code class="language-ts line-numbers">ZodType&lt;T&gt;.refine(
+    check: (value: T) =&gt; boolean | Promise&lt;boolean&gt;,
+    message?: string | { message?: string; path?: (string | number)[]; params?: object }
+): ZodEffects&lt;ZodType&lt;T&gt;, T&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Adds custom validation logic.</li>
+        <br/>
+        <li>Returns <code>true</code> to pass, <code>false</code> to fail.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().refine((val) =&gt; val.includes("@"), {
+    message: "Must contain @",
+});
+
+schema.parse("user@example.com");  // ✅
+schema.parse("invalid");            // ❌ ZodError: Must contain @
+
+// Multiple refinements
+const password = z.string()
+    .min(8)
+    .refine((val) =&gt; /[A-Z]/.test(val), "Must contain uppercase")
+    .refine((val) =&gt; /[0-9]/.test(val), "Must contain number");
+
+password.parse("weakpass");   // ❌ Must contain uppercase
+password.parse("Weakpass");   // ❌ Must contain number
+password.parse("Strong1x");   // ✅
+
+// Object-level refinement
+const Form = z.object({
+    password: z.string(),
+    confirm: z.string(),
+}).refine((data) =&gt; data.password === data.confirm, {
+    message: "Passwords don't match",
+    path: ["confirm"],  // Error appears on confirm field
+});
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.superRefine()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b></li>
+    </ul>
+<pre><code class="language-ts line-numbers">ZodType&lt;T&gt;.superRefine(
+    fn: (value: T, ctx: RefinementCtx) =&gt; void | Promise&lt;void&gt;
+): ZodEffects&lt;ZodType&lt;T&gt;, T&gt;
+</code></pre>
+    <br/>
+    <ul>
+        <li>Advanced refinement with full control.</li>
+        <br/>
+        <li>Add multiple errors, custom error codes, or abort early.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.string().superRefine((val, ctx) =&gt; {
+    if (val.length &lt; 3) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Too short",
+        });
+    }
+    if (!val.includes("@")) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Must contain @",
+        });
+    }
+});
+
+schema.parse("ab");  // ❌ Two errors: "Too short" AND "Must contain @"
+
+// Abort early with fatal flag
+const abortEarly = z.string().superRefine((val, ctx) =&gt; {
+    if (val.length === 0) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Required",
+            fatal: true,  // Stops further refinements
+        });
+        return z.NEVER;
+    }
+});
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>z.preprocess()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>z.preprocess&lt;T extends ZodTypeAny&gt;(fn: (value: unknown) =&gt; unknown, schema: T): ZodEffects&lt;T&gt;</code></li>
+        <br/>
+        <li>Transforms input <b>before</b> validation.</li>
+        <br/>
+        <li>Useful for coercion from unknown input.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">// Coerce string to number
+const numSchema = z.preprocess(
+    (val) =&gt; (typeof val === "string" ? parseInt(val, 10) : val),
+    z.number()
+);
+
+numSchema.parse("42");   // ✅ Returns 42
+numSchema.parse(42);     // ✅ Returns 42
+numSchema.parse("abc");  // ❌ NaN fails z.number()
+
+// Normalize empty strings to undefined
+const optionalString = z.preprocess(
+    (val) =&gt; (val === "" ? undefined : val),
+    z.string().optional()
+);
+
+optionalString.parse("");         // ✅ Returns undefined
+optionalString.parse("hello");    // ✅ Returns "hello"
+
+// Parse JSON
+const jsonSchema = z.preprocess(
+    (val) =&gt; (typeof val === "string" ? JSON.parse(val) : val),
+    z.object({ name: z.string() })
+);
+
+jsonSchema.parse('{"name":"Alice"}');  // ✅ { name: "Alice" }
+</code></pre>
+    <br/>
+    <ul>
+        <li><b>Note:</b> Zod also provides <code>z.coerce.*</code> shortcuts: <code>z.coerce.number()</code>, <code>z.coerce.string()</code>, etc.</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.pipe()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodType&lt;T&gt;.pipe&lt;U extends ZodTypeAny&gt;(schema: U): ZodPipeline&lt;ZodType&lt;T&gt;, U&gt;</code></li>
+        <br/>
+        <li>Chains schemas — output of first becomes input of second.</li>
+        <br/>
+        <li>Useful for transform → validate sequences.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">// Transform then validate
+const schema = z.string()
+    .transform((val) =&gt; val.length)
+    .pipe(z.number().min(3));
+
+schema.parse("hello");  // ✅ Returns 5
+schema.parse("hi");     // ❌ ZodError: Number must be &gt;= 3
+
+// Coerce and validate
+const dateSchema = z.coerce.date().pipe(
+    z.date().min(new Date("2020-01-01"))
+);
+
+dateSchema.parse("2024-01-01");  // ✅
+dateSchema.parse("2019-01-01");  // ❌ Too early
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Comparison Summary</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>When it runs</th>
+                <th>Input</th>
+                <th>Use case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>z.preprocess()</code></td>
+                <td>Before validation</td>
+                <td><code>unknown</code></td>
+                <td>Coerce raw input</td>
+            </tr>
+            <tr>
+                <td><code>.refine()</code></td>
+                <td>After validation</td>
+                <td><code>T</code></td>
+                <td>Custom validation</td>
+            </tr>
+            <tr>
+                <td><code>.superRefine()</code></td>
+                <td>After validation</td>
+                <td><code>T</code></td>
+                <td>Multiple errors, complex logic</td>
+            </tr>
+            <tr>
+                <td><code>.transform()</code></td>
+                <td>After validation</td>
+                <td><code>T</code></td>
+                <td>Change value/type</td>
+            </tr>
+            <tr>
+                <td><code>.pipe()</code></td>
+                <td>After first schema</td>
+                <td>Output of first</td>
+                <td>Chain schemas</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br/><br/>
+</ol>
 <!-- * * * * * * * * * * * * * * -->
 
 
