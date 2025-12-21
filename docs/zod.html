@@ -151,6 +151,7 @@
     <ol style="line-height: 1.8;">
         <li><a href="#zod-primitive-types">Primitive Types</a></li>
         <li><a href="#zod-string-validators">String Validators</a></li>
+        <li><a href="#zod-number-validators">Number Validators</a></li>
     </ol>
 </nav>
 <hr/>
@@ -669,6 +670,266 @@ usernameSchema.parse("invalid-name!");    // ❌ ZodError: regex fails
 
     <br/><br/>
 </ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+<h3 id="zod-number-validators">Number Validators</h3>
+<ol>
+    <li><b>Introduction</b></li>
+    <br/>
+    <ul>
+        <li>All methods below are called on a <code>ZodNumber</code> instance (returned by <code>z.number()</code>).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.min()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodNumber.min(value: number, message?: string | { message?: string }): ZodNumber</code></li>
+        <br/>
+        <li>Requires number to be greater than or equal to <code>value</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.number().min(5);
+
+schema.parse(5);     // ✅ Returns 5
+schema.parse(10);    // ✅ Returns 10
+schema.parse(4.99);  // ❌ ZodError: Number must be greater than or equal to 5
+schema.parse(-10);   // ❌ ZodError
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.max()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodNumber.max(value: number, message?: string | { message?: string }): ZodNumber</code></li>
+        <br/>
+        <li>Requires number to be less than or equal to <code>value</code>.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.number().max(100);
+
+schema.parse(100);   // ✅ Returns 100
+schema.parse(50);    // ✅ Returns 50
+schema.parse(101);   // ❌ ZodError: Number must be less than or equal to 100
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.int()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodNumber.int(message?: string | { message?: string }): ZodNumber</code></li>
+        <br/>
+        <li>Requires number to be an integer (no decimal part).</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.number().int();
+
+schema.parse(42);    // ✅ Returns 42
+schema.parse(-10);   // ✅ Returns -10
+schema.parse(0);     // ✅ Returns 0
+schema.parse(3.14);  // ❌ ZodError: Expected integer, received float
+schema.parse(5.0);   // ✅ Returns 5 (5.0 === 5 in JS)
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.positive()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodNumber.positive(message?: string | { message?: string }): ZodNumber</code></li>
+        <br/>
+        <li>Requires number to be greater than 0.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.number().positive();
+
+schema.parse(1);     // ✅ Returns 1
+schema.parse(0.001); // ✅ Returns 0.001
+schema.parse(0);     // ❌ ZodError: Number must be greater than 0
+schema.parse(-5);    // ❌ ZodError
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.negative()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodNumber.negative(message?: string | { message?: string }): ZodNumber</code></li>
+        <br/>
+        <li>Requires number to be less than 0.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.number().negative();
+
+schema.parse(-1);    // ✅ Returns -1
+schema.parse(-0.01); // ✅ Returns -0.01
+schema.parse(0);     // ❌ ZodError: Number must be less than 0
+schema.parse(5);     // ❌ ZodError
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.nonnegative()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodNumber.nonnegative(message?: string | { message?: string }): ZodNumber</code></li>
+        <br/>
+        <li>Requires number to be greater than or equal to 0.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.number().nonnegative();
+
+schema.parse(0);     // ✅ Returns 0
+schema.parse(100);   // ✅ Returns 100
+schema.parse(-1);    // ❌ ZodError: Number must be greater than or equal to 0
+schema.parse(-0.01); // ❌ ZodError
+</code></pre>
+    <br/>
+    <ul>
+        <li><b>Note:</b> There's also <code>.nonpositive()</code> (≤ 0).</li>
+    </ul>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.finite()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodNumber.finite(message?: string | { message?: string }): ZodNumber</code></li>
+        <br/>
+        <li>Requires number to be finite (rejects <code>Infinity</code> and <code>-Infinity</code>).</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.number().finite();
+
+schema.parse(999999999);   // ✅ Returns 999999999
+schema.parse(-999999999);  // ✅ Returns -999999999
+schema.parse(0);           // ✅ Returns 0
+schema.parse(Infinity);    // ❌ ZodError: Number must be finite
+schema.parse(-Infinity);   // ❌ ZodError
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b><code>.safe()</code></b></li>
+    <br/>
+    <ul>
+        <li><b>Signature:</b> <code>ZodNumber.safe(message?: string | { message?: string }): ZodNumber</code></li>
+        <br/>
+        <li>Restricts the number to JavaScript's "safe integer" range:</li>
+        <br/>
+        <li><code>-9007199254740991</code> to <code>9007199254740991</code></li>
+        <br/>
+        <li>(<code>Number.MIN_SAFE_INTEGER</code> to <code>Number.MAX_SAFE_INTEGER</code>)</li>
+        <br/>
+        <li><b>Why it exists:</b> JavaScript's <code>number</code> type loses precision for integers outside this range.</li>
+    </ul>
+<pre><code class="language-ts line-numbers">const schema = z.number().safe();
+
+schema.parse(9007199254740991);   // ✅ MAX_SAFE_INTEGER
+schema.parse(-9007199254740991);  // ✅ MIN_SAFE_INTEGER
+schema.parse(9007199254740992);   // ❌ ZodError: Number must be safe
+
+// Why this matters:
+console.log(9007199254740992 === 9007199254740993);  // true (precision lost!)
+</code></pre>
+    <br/>
+    <br/>
+
+
+    <li><b>Additional Number Validators</b></li>
+    <br/>
+    <table>
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Signature</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>.gt(n)</code></td>
+                <td><code>ZodNumber.gt(value: number, message?): ZodNumber</code></td>
+                <td>Greater than (exclusive)</td>
+            </tr>
+            <tr>
+                <td><code>.gte(n)</code></td>
+                <td><code>ZodNumber.gte(value: number, message?): ZodNumber</code></td>
+                <td>Alias for <code>.min()</code></td>
+            </tr>
+            <tr>
+                <td><code>.lt(n)</code></td>
+                <td><code>ZodNumber.lt(value: number, message?): ZodNumber</code></td>
+                <td>Less than (exclusive)</td>
+            </tr>
+            <tr>
+                <td><code>.lte(n)</code></td>
+                <td><code>ZodNumber.lte(value: number, message?): ZodNumber</code></td>
+                <td>Alias for <code>.max()</code></td>
+            </tr>
+            <tr>
+                <td><code>.multipleOf(n)</code></td>
+                <td><code>ZodNumber.multipleOf(value: number, message?): ZodNumber</code></td>
+                <td>Must be divisible by <code>n</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <br/>
+    <br/>
+
+
+    <li><b>Chaining Example</b></li>
+<pre><code class="language-ts line-numbers">const ageSchema = z.number().int().nonnegative().max(120);
+
+ageSchema.parse(25);    // ✅ Returns 25
+ageSchema.parse(25.5);  // ❌ Not an integer
+ageSchema.parse(-1);    // ❌ Negative
+ageSchema.parse(150);   // ❌ Exceeds max
+</code></pre>
+
+    <br/><br/>
+</ol>
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
+<!-- * * * * * * * * * * * * * * -->
+
+
+<hr/>
+
+
+<!-- * * * * * * * * * * * * * * -->
+
 <!-- * * * * * * * * * * * * * * -->
 
 
